@@ -1,5 +1,5 @@
 Require Import Eqdep_dec.
-Require Export Base.
+Require Export Shared.Base.
 
 Delimit Scope vector_scope with vector.
 Open Scope vector_scope.

@@ -1,4 +1,4 @@
-Require Export Base.
+Require Export Shared.Base.
 Require Export Datatypes.
 Require Export Tape.
 Require Export Relations.

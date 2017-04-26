@@ -1,6 +1,6 @@
 (** ** Finite Sets **)
 
-Require Export Base.
+Require Export Shared.Base.
 Require Import Eqdep_dec.
 
 Delimit Scope finSet_scope with finSet.

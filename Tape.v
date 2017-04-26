@@ -1,4 +1,3 @@
-Require Export Base.
 Require Export Datatypes.
 Require Export FinSet.
 
