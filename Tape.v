@@ -8,15 +8,12 @@ Module Tape.
 
   Section Tape.
 
+    (* The alphabet *)
     Variable alphabet : finSet.
-    
-    Definition digit  : Type := alphabet.
-    Definition symbol : Type := option digit.
 
     Implicit Types (n i : nat).
-    Implicit Types (a b c : digit).
-    Implicit Types (r l m x : symbol).
-    Implicit Types (rs ls xs ys : list symbol).
+    Implicit Types (r l m x : alphabet).
+    Implicit Types (rs ls xs ys : list alphabet).
 
     Inductive tape : Type :=
     | Empty : tape
@@ -31,15 +28,11 @@ Module Tape.
 
     Implicit Types (mv : move).
 
-    Fixpoint emptyspace n := match n with 0 => nil | S n => @None digit :: emptyspace n end.
-    Lemma emptyspace_size n : | emptyspace n | = n. Proof. induction n; cbn; omega. Qed.
-    Lemma emptyspace_blank n x : x el emptyspace n -> x = @None digit. Proof. induction n; cbn; intuition. Qed.
-
     Definition leftOf tape :=
       match tape with
       | Empty => nil
       | Middle ls m rs => ls
-      | RightOf i l ls => emptyspace i ++ l :: ls
+      | RightOf i l ls => l :: ls
       | LeftOf i r rs  => nil
       end.
 
@@ -48,12 +41,12 @@ Module Tape.
       | Empty => nil
       | Middle ls m rs => rs
       | RightOf i l ls => nil
-      | LeftOf i r rs => emptyspace i ++ r :: rs
+      | LeftOf i r rs => r :: rs
       end.
 
     Definition symbolAt tape :=
       match tape with
-      | Middle ls m rs => m
+      | Middle ls m rs => Some m
       | _ => None
       end.
 
@@ -93,10 +86,10 @@ Module Tape.
       | Stay => tape
       end.
 
-    Definition write tape (s : symbol) :=
+    Definition write tape (s : option alphabet) :=
       match s with
       | None => tape
-      | x => Middle (leftOf tape) x (rightOf tape)
+      | Some x => Middle (leftOf tape) x (rightOf tape)
       end.
     
     
