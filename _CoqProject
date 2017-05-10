@@ -1,0 +1,25 @@
+-R . "FormalComplexity"
+-Q ../base-library "Shared"
+-I "../smpl/src"
+
+-install none
+COQDOCFLAGS = "--charset utf-8 -s --parse-comments --with-header ./website/resources/header.html --with-footer ./website/resources/footer.html --index indexpage"
+
+TM/Prelim.v
+TM/Relations.v
+TM/TM.v
+
+TM/Basic/Nop.v
+TM/Basic/Basic.v
+TM/Basic/Mono.v
+TM/Basic/Multi.v
+TM/Basic/WriteString.v
+
+TM/Combinators/Combinators.v
+TM/Combinators/Match.v
+TM/Combinators/SequentialComposition.v
+TM/Combinators/If.v
+TM/Combinators/While.v
+
+TM/Compound.v
+TM/Lift.v
