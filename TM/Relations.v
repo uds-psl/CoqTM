@@ -593,7 +593,52 @@ Qed.
 Lemma star_vector_lift_eq X (R : Rel X X) ni n (i : ni < n) :
   ⇑(i) (star R) =2 star (⇑(i) R).
 Proof.
-  split.
+  split; hnf.
+  - {
+      (* unfold lift_vector_rel; cbn. *)
+      intros xv yv H.
+      destruct H as (H&H'). unfold lift_vector_rel in H.
+      remember (get_at i xv) as xi in H.
+      remember (get_at i yv) as yi in H.
+      
+
+      induction H.
+      - replace xv with yv. constructor.
+        unfold Eq_in in H'.
+        apply get_at_eq_iff.
+        intros nj j. decide (ni = nj) as [H|H].
+        + subst. intros j'.
+          replace (get_at j' xv) with (get_at i xv).
+          replace (get_at j yv) with (get_at i yv).
+          congruence.
+          * apply get_at_ext.
+          * apply get_at_ext.
+        + intros j'. rewrite H'.
+          * apply get_at_ext.
+          * firstorder.
+      - 
+        apply IHstar; auto. Undo.
+        
+
+        unfold lift_vector_rel in *; unfold project in *.
+        rewrite Heqyi in IHstar. subst.
+
+        eapply starC with (y := Vector.replace yv (Fin.of_nat_lt i) y); hnf; try split; hnf.
+        + 
+          replace (get_at i (Vector.replace yv (Fin.of_nat_lt i) y)) with y. assumption.
+          apply vec_replace_nth.
+        + intros nj j H''.
+          rewrite H'; auto. apply vec_replace_nth_nochange.
+          contradict H''. rewrite !Fin.to_nat_of_nat in H''. congruence.
+        + admit.
+    }
+  - {
+      intros x y. induction 1.
+      - split; hnf; constructor.
+      - split; hnf.
+        + eapply starC. eapply H. firstorder.
+        + firstorder. rewrite H4; firstorder.
+    }
 Admitted.
 
 Lemma function_vector_lift_eq X Y (R : Rel X X) ni n (i : ni < n) c :
