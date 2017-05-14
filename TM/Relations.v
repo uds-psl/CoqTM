@@ -383,7 +383,6 @@ Proof.
   constructor;firstorder.
 Qed.
 
-
 (* Instance subrel_rcomp_proper X Y Z: *)
 (*   Proper (@subrel X Y ==> @subrel Y Z ==> @subrel X Z) (@rcomp X Y Z). *)
 (* Proof. *)
@@ -590,47 +589,44 @@ Proof.
     econstructor. econstructor. eauto. eauto. cbn in *. etransitivity; eauto.
 Qed.
 
+Lemma tapes_eq_iff (X : Type)  (n : nat) (t t' : Vector.t X n) (i : nat) (itape itape' : i < n) : (Eq_in (<> i) t t') -> (get_at itape t = get_at itape' t') -> t = t'.
+Proof.
+  intros. eapply get_at_eq_iff.
+  intros. decide (m = i).
+  - subst. erewrite get_at_ext. rewrite H0. eapply get_at_ext.
+  - rewrite H; eauto. eapply get_at_ext.
+Qed.
+
+
+
 Lemma star_vector_lift_eq X (R : Rel X X) ni n (i : ni < n) :
   ⇑(i) (star R) =2 star (⇑(i) R).
 Proof.
   split; hnf.
   - {
-      (* unfold lift_vector_rel; cbn. *)
       intros xv yv H.
-      destruct H as (H&H'). unfold lift_vector_rel in H.
-      remember (get_at i xv) as xi in H.
-      remember (get_at i yv) as yi in H.
-      
-
-      induction H.
-      - replace xv with yv. constructor.
-        unfold Eq_in in H'.
-        apply get_at_eq_iff.
-        intros nj j. decide (ni = nj) as [H|H].
-        + subst. intros j'.
-          replace (get_at j' xv) with (get_at i xv).
-          replace (get_at j yv) with (get_at i yv).
-          congruence.
-          * apply get_at_ext.
-          * apply get_at_ext.
-        + intros j'. rewrite H'.
-          * apply get_at_ext.
-          * firstorder.
-      - 
-        apply IHstar; auto. Undo.
-        
-
-        unfold lift_vector_rel in *; unfold project in *.
-        rewrite Heqyi in IHstar. subst.
-
-        eapply starC with (y := Vector.replace yv (Fin.of_nat_lt i) y); hnf; try split; hnf.
-        + 
-          replace (get_at i (Vector.replace yv (Fin.of_nat_lt i) y)) with y. assumption.
-          apply vec_replace_nth.
-        + intros nj j H''.
-          rewrite H'; auto. apply vec_replace_nth_nochange.
-          contradict H''. rewrite !Fin.to_nat_of_nat in H''. congruence.
-        + admit.
+      destruct H as (H&H1). unfold lift_vector_rel in H.
+      apply star_pow in H. apply star_pow.
+      destruct H as (k&H). exists k.
+      revert xv yv H H1. induction k; cbn in *; intros xv yv H H1.
+      - eapply tapes_eq_iff; eauto.
+      - hnf.
+        destruct H as (y&H&H').
+        unfold pow in *.
+        exists (Vector.replace yv (Fin.of_nat_lt i) y). split.
+        + split.
+          * unfold lift_vector_rel.
+            replace (get_at i (Vector.replace yv (Fin.of_nat_lt i) y)) with y. assumption.
+            apply vec_replace_nth.
+          * unfold Eq_in in *. firstorder. rewrite H1; auto.
+            apply vec_replace_nth_nochange. contradict H0. unfold project.
+            rewrite !Fin.to_nat_of_nat in H0. congruence.
+        + apply IHk.
+          * replace (get_at i (Vector.replace yv (Fin.of_nat_lt i) y)) with y; firstorder.
+            apply vec_replace_nth.
+          * unfold Eq_in in *. firstorder. symmetry.
+            apply vec_replace_nth_nochange. contradict H0. unfold project.
+            rewrite !Fin.to_nat_of_nat in H0. congruence.
     }
   - {
       intros x y. induction 1.
@@ -639,7 +635,7 @@ Proof.
         + eapply starC. eapply H. firstorder.
         + firstorder. rewrite H4; firstorder.
     }
-Admitted.
+Qed.
 
 Lemma function_vector_lift_eq X Y (R : Rel X X) ni n (i : ni < n) c :
   (⇑[ i ] (↑ (fun y : Y => y = c) ⊗ R)) =2 (↑ (fun y : Y => y = c) ⊗ ⇑( i ) R).
@@ -995,14 +991,6 @@ Proof.
 Qed.
 
 Definition functional X Y (R : Rel X Y) := forall x y1 y2, R x y1 -> R x y2 -> y1 = y2. 
-
-Lemma tapes_eq_iff (X : Type)  (n : nat) (t t' : Vector.t X n) (i : nat) (itape itape' : i < n) : (Eq_in (<> i) t t') -> (get_at itape t = get_at itape' t') -> t = t'.
-Proof.
-  intros. eapply get_at_eq_iff.
-  intros. decide (m = i).
-  - subst. erewrite get_at_ext. rewrite H0. eapply get_at_ext.
-  - rewrite H; eauto. eapply get_at_ext.
-Qed.
 
 Lemma functional_vector_lift_eq X Y (R : Rel X (Y * X)) ni n (i : ni < n) :
   functional R -> functional (⇑[i] R).
