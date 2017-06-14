@@ -168,32 +168,34 @@ Hint Unfold compose.
 Section tabulate_vec.
 
   Variable X : Type.
-  
-  Fixpoint tabulate_vec' (n : nat) (m : nat) (f : nat -> X) : Vector.t X n :=
-    match n with
-    | 0 => Vector.nil _
-    | S n => Vector.cons _ (f m) _ (tabulate_vec' n (m + 1) f)
-    end.
 
-  Lemma get_at_tabulate_vec' n (f : nat -> X) m (H : m < n) k :
-    VectorDef.nth (tabulate_vec' n k f) (Fin.of_nat_lt H) = f (k + m).
+  Fixpoint tabulate_vec' (n : nat) (f : Fin.t n -> X) {struct n} : Vector.t X n.
   Proof.
-    revert m H k; induction n; intros.
-    - omega.
-    - destruct m.
-      + cbn. f_equal. omega.
-      + cbn. cbn [tabulate_vec']. rewrite IHn. f_equal. omega.
-  Qed.
+    destruct n.
+    - apply Vector.nil.
+    - apply Vector.cons.
+      + apply f, Fin.F1.
+      + apply tabulate_vec'. intros m. apply f, Fin.FS, m.
+  Defined.
 
+  Lemma nth_tabulate' n (f : Fin.t n -> X) (m : Fin.t n) :
+    Vector.nth (tabulate_vec' f) m = f m.
+  Proof.
+    induction m.
+    - cbn. reflexivity.
+    - cbn. rewrite IHm. reflexivity.
+  Qed.
+  
   Definition tabulate_vec (n : nat) (f : nat -> X) : Vector.t X n :=
-    tabulate_vec' n 0 f.
+    @tabulate_vec' n (fun n => f (proj1_sig (Fin.to_nat n))).
 
   Lemma nth_tabulate n (f : nat -> X) m (H : m < n) :
     VectorDef.nth (tabulate_vec n f) (Fin.of_nat_lt H) = f m.
   Proof.
-    eapply get_at_tabulate_vec'.
+    unfold tabulate_vec. rewrite nth_tabulate'. f_equal.
+    symmetry. rewrite Fin.to_nat_of_nat. reflexivity.
   Qed.
-  
+
 End tabulate_vec.
 
 Section get_at.
