@@ -687,27 +687,14 @@ Proof.
     eapply H. eauto.
 Qed.
 
-Fixpoint reorder m n Z (indices : Vector.t (Fin.t m) n) (V : Vector.t Z m) : Vector.t Z n.
-Proof.
-  destruct indices.
-  - econstructor.
-  - econstructor. eapply Vector.nth. exact V. exact h. eapply reorder. exact indices. exact V.
-Defined.
+Definition reorder m n Z (indices : Vector.t (Fin.t n) m) (V : Vector.t Z n) : Vector.t Z m :=
+  Vector.map (Vector.nth V) indices.
+
+Lemma reorder_nth m n Z (indices : Vector.t (Fin.t n) m) (V : Vector.t Z n) (k : Fin.t m) :
+  (reorder indices V) [@ k] = V [@ (indices [@ k])].
+Proof. now apply Vector.nth_map. Qed.
 
 
-(*
-Section test.
-  Open Scope vector_scope.
-
-  Let vec : Vector.t nat 6 := Vector.of_list [4; 8; 15; 16; 23; 42].
-  Lemma t1 : Fin.t 3. Proof. apply (@Fin.of_nat_lt 2). omega. Defined.
-  Lemma t2 : Fin.t 3. Proof. apply (@Fin.of_nat_lt 1). omega. Defined.
-  Lemma t3 : Fin.t 3. Proof. apply (@Fin.of_nat_lt 0). omega. Defined.
-
-  Compute (Vector.of_list [t1;t2;t3;t1;t1;t1]).
-  Compute @reorder 3 6 nat (Vector.of_list [t1;t2;t3;t1;t1;t1]) (Vector.of_list [1;2;3]).
-End test.
-*)
 
 Fixpoint permute m n (indices : Vector.t (Fin.t m) n) (i : Fin.t m) : option (Fin.t n).
 Proof.
