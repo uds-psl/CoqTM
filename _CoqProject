@@ -22,4 +22,4 @@ TM/Combinators/If.v
 TM/Combinators/While.v
 
 TM/Compound.v
-TM/Lift.v
+TM/Inject.v

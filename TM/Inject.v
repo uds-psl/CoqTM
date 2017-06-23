@@ -1,14 +1,4 @@
 Require Import Prelim Relations TM Shared.Tactics.AutoIndTac Compound.
-Require Import TM.Relations.
-
-Fixpoint inject m n Z (indices : Vector.t ((Fin.t n)) m) (def : Z) (V : Vector.t Z m) : Vector.t Z n.
-Proof.
-  destruct indices.
-  - apply (Vector.const def).
-  - rename n0 into m. remember (S m) as Sn. destruct V eqn:E; inversion HeqSn; subst.
-    pose (x := inject _ _ _ indices def t).
-    exact (Vector.replace x h h0).
-Defined.
 
 Inductive dupfree X : forall n, Vector.t X n -> Prop :=
   dupfreeVN : dupfree (@Vector.nil X)
@@ -20,9 +10,64 @@ Proof.
   intros. induction V;dependent destruct p; cbn in *; subst; econstructor; eauto.
 Qed.
 
-Lemma inject_correct_Some m n Z (indices : Vector.t (Fin.t n) m) (def : Z) (V : Vector.t Z m) pos new_pos :
+Definition vect_zip (X Y : Type) (m : nat) (vx : Vector.t X m) (vy : Vector.t Y m) : Vector.t (X * Y) m := Vector.map2 pair vx vy.
+
+Fixpoint inject m n Z (indices : Vector.t ((Fin.t n)) m) (init : Vector.t Z n) (V : Vector.t Z m)
+           : Vector.t Z n.
+  destruct indices.
+  - apply init.
+  - rename n0 into m. remember (S m) as Sm. destruct V eqn:E; inversion HeqSm; subst.
+    pose (x := inject _ _ _ indices init t). exact (Vector.replace x h h0).
+Defined.
+
+(*
+Section Test.
+  Definition Z := nat.
+  Definition n := 6.
+  Definition m := 4.
+  
+  Definition indicies : Vector.t ((Fin.t n)) m.
+  Proof.
+    unfold n, m.
+    constructor. do 2 apply Fin.FS. apply Fin.F1.
+    constructor. do 1 apply Fin.FS. apply Fin.F1.
+    constructor. do 3 apply Fin.FS. apply Fin.F1.
+    constructor. do 4 apply Fin.FS. apply Fin.F1.
+    constructor.
+  Defined.
+
+  Definition init : Vector.t Z n.
+  Proof.
+    unfold n, m.
+    constructor. exact 4.
+    constructor. exact 8.
+    constructor. exact 15.
+    constructor. exact 16.
+    constructor. exact 23.
+    constructor. exact 42.
+    constructor.
+  Defined.
+
+  Definition V : Vector.t Z m.
+  Proof.
+    unfold n, m.
+    constructor. exact 1.
+    constructor. exact 2.
+    constructor. exact 3.
+    constructor. exact 4.
+    constructor.
+  Defined.
+
+  Check inject.
+  Compute inject indicies init V.
+  
+End Test.
+*)
+
+
+Lemma inject_correct_Some m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m) pos new_pos :
   dupfree indices ->
-  indices[@pos] = new_pos -> V[@pos] = (inject indices def V) [@new_pos].
+  indices[@pos] = new_pos -> (inject indices init V) [@new_pos] = V[@pos].
 Proof.
   intros. induction H; cbn in *.
   - inv pos.
@@ -31,26 +76,40 @@ Proof.
     + now rewrite Vector_replace_nth.
     + decide (x = V0[@p]); subst.
       * exfalso. eapply H. eapply Vector_nth_In; eauto.
-      * erewrite Vector_replace_nth2; eauto.
+      * erewrite Vector_replace_nth2; auto.
 Qed.
 
-Lemma inject_correct m n Z (indices : Vector.t (Fin.t n) m) (def : Z) (V : Vector.t Z m) :
-  dupfree indices -> reorder indices (inject indices def V) = V.
+Lemma inject_correct m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m) :
+  dupfree indices -> reorder indices (inject indices init V) = V.
 Proof.
   intros H. unfold reorder. apply Vector.eq_nth_iff. intros p ? <-.
-  erewrite Vector.nth_map; eauto. erewrite <- inject_correct_Some; eauto.
+  erewrite Vector.nth_map; eauto. erewrite inject_correct_Some; eauto.
 Qed.
-  
+
+
+Definition inject_default m n Z (indices : Vector.t ((Fin.t n)) m) (def : Z) (V : Vector.t Z m) :=
+  inject indices (Vector.const def n) V.
+
+
+Lemma inject_correct_id_Some m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) pos :
+  dupfree indices ->
+  init[@pos] = (inject indices init (reorder indices init))[@pos].
+Proof.
+  intros. induction H as [ | m index indices H1 H2 IH]; cbn in *.
+  - reflexivity.
+  - decide (index = pos) as [->|d].
+    + now rewrite Vector_replace_nth.
+    + rewrite IH. now rewrite Vector_replace_nth2.
+Qed.
+
+Lemma inject_correct_id m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) :
+  dupfree indices -> init = (inject indices init (reorder indices init)).
+Proof.
+  intros H. apply Vector.eq_nth_iff. intros p ? <-. now apply inject_correct_id_Some.
+Qed.
+
 Section Map_Algebra.
   
-  Lemma typecheck (m n : nat) (A I X Y Z : Type)
-        (x : Vector.t X n) (y : Vector.t Y n) (i : Vector.t I m)
-        (f : Vector.t A n -> I -> Z)
-        (g : X -> Y -> A) :
-    Vector.map (f (Vector.map2 g x y)) i =
-    Vector.map (f (Vector.map2 g x y)) i.
-  Abort.
-
   Lemma map_map (A B I : Type) (n : nat) (g : A -> B)  (f : I -> A) (i : Vector.t I n) :
     Vector.map g (Vector.map f i) = Vector.map (fun x => g (f x)) i.
   Proof.
@@ -94,7 +153,60 @@ Section Map_Algebra.
   
 End Map_Algebra.
 
-    
+Lemma inject_execute_step
+      (m n : nat)
+      (pos : Fin.t n)
+      (indices : Vector.t (Fin.t n) m)
+      (Act : Type)
+      (acts : Vector.t Act m)
+      (Tape  : Type)
+      (tapes : Vector.t Tape n)
+      (step : Tape -> Act -> Tape)
+      (nop : Act) :
+  dupfree indices ->
+  (forall t : Tape, step t nop = t) ->
+  step (tapes[@pos]) ((inject_default indices nop acts)[@pos]) =
+  (inject indices tapes
+          (Vector.map2 step (reorder indices tapes) acts))[@pos].
+Proof.
+  intros H_dupfree nop_fix. 
+  induction H_dupfree as [ | m index indices H1 H2 IH].
+  - simpl. rewrite <- nop_fix. f_equal. now apply Vector.const_nth.
+  - dependent destruct acts. rename h into act. rename t into acts. cbn. 
+    decide (index = pos) as [->|d].
+    + now rewrite !Vector_replace_nth.
+    + rewrite !Vector_replace_nth2; auto. now apply IH.
+Qed.
+
+
+Section Loop_Propagate.
+  Variable (A B : Type).
+  Variable (ha : A -> bool) (hb : B -> bool).
+  Variable (inj : A -> B -> B) (sur : B -> A).
+  Variable (f : A -> A) (g : B -> B).
+      
+  Variable (Inj1   : forall a b, sur (inj a b) = a).
+  Variable (Inj2   : forall a, inj (sur a) a = a).
+  Variable (Ha     : forall a b, ha a = hb (inj a b)).
+  Variable (Hb     : forall b, hb b = ha (sur b)).
+  Variable (step_1 : forall b, sur (g b) = f (sur b)).
+  Variable (step_2 : forall b, g b = inj (f (sur b)) b).
+
+  Lemma loop_propagate (k : nat) (b0 : B) (a__k : A) :
+      loop k f ha (sur b0) = Some a__k ->
+      exists b__k, loop k g hb b0 = Some (inj a__k b__k).
+  Proof.
+    revert b0 a__k. induction k as [ |k IH]; intros b0 a__k Sim; cbn in *.
+    - exists b0. rewrite <- !(Hb b0) in Sim. destruct (hb b0) eqn:E; inv Sim. now rewrite Inj2.
+    - rewrite <- (Hb b0) in Sim. destruct (hb b0) eqn:E; inv Sim; cbn in *.
+      + exists b0. now rewrite Inj2.
+      + rename H0 into Sim. rewrite <- step_1 in Sim. apply IH in Sim.
+        destruct Sim as (b__k&Sim). eexists. eapply Sim.
+  Qed.
+
+End Loop_Propagate.
+
+
 Section Injection.
 
   Variable sig : finType.
@@ -111,7 +223,7 @@ Section Injection.
   Definition trans_inj :=
     fun '(q, sym ) =>
       let (q', act) := trans (m := projT1 pM) (q, reorder I sym) in
-      (q', inject I (None, N) act).
+      (q', inject_default I (None, N) act).
 
   Definition injectM : mTM sig n.
   Proof.
@@ -158,15 +270,15 @@ Section Injection.
     rewrite <- E3, <- E4. f_equal. f_equal. now apply map_map_nth.
   Qed.
 
-  Lemma sim_loop (c1 c2 : mconfig sig (states (projT1 pM)) n) (i : nat) :
+  Lemma sim_loop (c1 c2 : mconfig sig (states injectM) n) (i : nat) :
     loopM (M := injectM) i c1 = Some c2 ->
     loopM (M := projT1 pM) i (mk_mconfig (cstate c1) (reorder I (ctapes c1))) =
     Some (mk_mconfig (cstate c2) (reorder I (ctapes c2))).
   Proof.
-    unfold loopM in *. general induction i; cbn in *.
+    unfold loopM in *. revert c2 c1. induction i; intros c2 c1 H; cbn in *.
     - destruct (halt _) eqn:E; now inv H.
-    - destruct (halt _) eqn:E; inv H; try rewrite E in *; auto.
-      rewrite sim_step with (c2 := step (M := injectM) c1); auto.
+    - destruct (halt _) eqn:E; inv H; auto.
+      rewrite sim_step with (c1 := c1) (c2 := step (M := injectM) c1); [ | reflexivity]. apply IHi. apply H1.
   Qed.
   
   Lemma Inject_sem (R : Rel (tapes sig (S m)) (F * tapes sig (S m))) :
@@ -180,10 +292,69 @@ Section Injection.
     - 
   Admitted.
 
+
+  Lemma propagate_step
+        (c1 : mconfig sig (states (projT1 pM)) n)
+        (c2 : mconfig sig (states (injectM)) m) :
+    step (M := projT1 pM) (mk_mconfig (cstate c1) (reorder I (ctapes c1))) = c2 ->
+    step (M := injectM) c1 = mk_mconfig (cstate c2) (inject I (ctapes c1) (ctapes c2)).
+  Proof.
+    intros H. unfold injectM in *. cbn in *.
+    destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2. cbn in *.
+    unfold step in *. cbn in *.
+    unfold reorder in *. cbn in *.
+    destruct (trans (state1, Vector.map (current (sig:=sig)) (Vector.map (Vector.nth tapes1) I))) as (q, act) eqn:E3.
+    injection H. intros <- ->. cbn in *. clear H.
+    destruct (trans
+                (state1,
+                 Vector.map
+                   (Vector.nth (Vector.map (current (sig:=sig)) tapes1)) I)) as (q', act') eqn:E4.
+    enough ((state2, act) = (q', act')) as X.
+    {
+      inversion X. subst. f_equal. apply Vector.eq_nth_iff. intros pos ? <-.
+      erewrite Vector.nth_map2; eauto.
+      unfold tape_move_mono.
+      apply (@inject_execute_step (S m) (S n) pos I
+                                  (prod (option sig) move) act' (tape sig) tapes1 (@tape_move_mono sig) (None, N));
+        firstorder.
+    }
+    rewrite <- E3, <- E4. f_equal. f_equal. now rewrite map_map_nth.
+  Qed.
+
+
+  Lemma propagate_loop (i : nat)
+        (c1 : mconfig sig (states (injectM)) n)
+        (c2 : mconfig sig (states (injectM)) m) :
+    loopM (M := projT1 pM) i (mk_mconfig (cstate c1) (reorder I (ctapes c1))) = Some c2 ->
+    exists b__k : mconfig sig (states (injectM)) n, loopM (M := injectM) i c1 =
+    Some (mk_mconfig (cstate c2) (inject I (ctapes b__k) (ctapes c2))).
+  Proof.
+    unfold loopM in *. intros H.
+
+    apply (@loop_propagate
+             (mconfig sig (states (projT1 pM)) m) (mconfig sig (states injectM) n)
+             (fun c : mconfig sig (states (projT1 pM)) m => halt (cstate c))
+             (fun c : mconfig sig (states injectM) n => halt (cstate c))
+             (fun c2 c1 => mk_mconfig (cstate c2) (inject I (ctapes c1) (ctapes c2)))
+             (fun c : mconfig sig (states (projT1 pM)) n => mk_mconfig (cstate c) (reorder I (ctapes c)))
+             (step (M := projT1 pM))
+             (step (M := injectM))
+          ); cbn; firstorder.
+    (* - erewrite inject_correct. now destruct a. assumption. *)
+    - destruct a. cbn. f_equal. now erewrite inject_correct_id.
+    - now erewrite sim_step.
+    (* - now erewrite propagate_step. *)
+  Qed.
+
   Lemma Inject_term T :
     projT1 pM ↓ T ->
     projT1 Inject ↓ liftT_gen I T.
   Proof.
-  Admitted.
+    unfold terminatesIn. intros H initTapes i HRel.
+    specialize (H (reorder I initTapes) i).
+    destruct H as (outc&H).
+    - now apply HRel.
+    - pose proof (@propagate_loop i (initc injectM initTapes) outc H) as (X&X'). cbn in *. eauto.
+  Qed.
 
-End.
+End Injection.
