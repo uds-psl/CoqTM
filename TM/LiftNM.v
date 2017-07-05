@@ -1,8 +1,4 @@
-Require Import Prelim Relations TM Shared.Tactics.AutoIndTac Compound.
-
-Inductive dupfree X : forall n, Vector.t X n -> Prop :=
-  dupfreeVN : dupfree (@Vector.nil X)
-| dupfreeVC n (x : X) (V : Vector.t X n) : ~ Vector.In x V -> dupfree V -> (dupfree (x ::: V))%vector_scope.
+Require Import Prelim Relations TM Shared.Tactics.AutoIndTac Compound Injection.
 
 Lemma Vector_nth_In (X : Type) (n : nat) (p : Fin.t n) (m : nat) (new_pos : X) (V : Vector.t X n) :
     V[@p] = new_pos -> Vector.In (new_pos) V.
@@ -207,7 +203,7 @@ Section Loop_Propagate.
 End Loop_Propagate.
 
 
-Section Injection.
+Section LiftNM.
 
   Variable sig : finType.
 
@@ -357,4 +353,4 @@ Section Injection.
     - pose proof (@propagate_loop i (initc injectM initTapes) outc H) as (X&X'). cbn in *. eauto.
   Qed.
 
-End Injection.
+End LiftNM.

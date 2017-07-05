@@ -22,4 +22,7 @@ TM/Combinators/If.v
 TM/Combinators/While.v
 
 TM/Compound.v
-TM/Inject.v
+
+TM/Injection.v
+TM/LiftNM.v
+TM/LiftSigmaTau.v
