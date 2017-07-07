@@ -26,3 +26,5 @@ TM/Compound.v
 TM/Injection.v
 TM/LiftNM.v
 TM/LiftSigmaTau.v
+
+TM/Encoding.v
