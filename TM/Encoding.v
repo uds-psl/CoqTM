@@ -186,9 +186,9 @@ Proof.
 Qed.
 
 
-Inductive suffix_induction : list codsig -> Type :=
-| suffix_induction_con (ys : list codsig) : (forall xs: list codsig, suffix xs ys -> xs <> ys -> suffix_induction xs) ->
-                                            suffix_induction ys.
+Inductive suffix_induction (ys : list codsig) : Type :=
+| suffix_induction_con : (forall xs: list codsig, suffix xs ys -> xs <> ys -> suffix_induction xs) ->
+                         suffix_induction ys.
 
 Inductive size_ind (X : Type) (f : X -> nat) : X -> Type :=
 | size_ind_intro (x : X) : (forall y, f y < f x -> size_ind f y) -> size_ind f x.
@@ -251,35 +251,81 @@ Definition decoding_output (e : codtype) (string : list codsig) :=
 Definition decoding_function (e : codtype) :=
   forall string : list codsig, decoding_output e string.
 
-(* TODO: Make this a fixpoint *)
-Definition decode_list' (e : codtype)
-         (decodeEntries : decoding_function e)
-         (string : list codsig)
-         (ind : suffix_induction string) :
-  option (list (codtype_to_type e) * {rest : list codsig & suffix rest string }).
+Inductive my_induction : nat -> Type :=
+| my_induction_intro (m : nat) (H: forall n, n < m -> my_induction n) : my_induction m.
+
+Fixpoint my_induction_test (m : nat) (e : my_induction m) {struct e} : nat.
 Proof.
-  induction ind as [string T IH]; cbn in *.
-  destruct string as [ | s ss].
-  - invalid_encoding.
-  - destruct s eqn:E.
-    + (* con = true *)
-      destruct (decodeEntries ss) as [ (dec1, (rest1, HRest1)) | ]; [ | invalid_encoding].
-      (* assert (IH : forall xs : list codsig,
-                 suffix xs (Con :: ss) ->
-                 xs <> Con :: ss ->
-                 option
-                   (list (codtype_to_type e) *
-                    {rest : list codsig & suffix rest xs})).
-      {
-        intros ***. apply decode_list'. exact decodeEntries. now apply T.
-      } *)
-      destruct (IH rest1) as [ (dec2, (rest2, HRest2)) | ]; [ | | | invalid_encoding].
-      * now apply suffix_skip.
-      * intros ->. now apply suffix_put in HRest1.
-      * do 2 constructor. apply (dec1 :: dec2). exists rest2. apply suffix_skip. eapply suffix_transitive; eauto.
-    + (* nil = false *)
-      do 2 constructor. apply nil. exists ss. apply suffix_skip, suffix_full.
-Defined.
+  destruct e as [m H].
+  destruct m.
+  - apply 0.
+  - assert (my_induction m). apply H. do 2 constructor. apply (my_induction_test m H0).
+Abort. 
+
+Fixpoint my_induction_test (m : nat) (e : my_induction m) {struct e} : nat :=
+  match e with
+    @my_induction_intro m H => 0
+  end.
+
+Lemma suffix_skip' (X : Type) (x : X) (xs : list X) :
+  suffix xs (x :: xs).
+Proof. apply suffix_skip, suffix_full. Qed.
+
+Lemma tam (xs : list nat) : True.
+Proof.
+  destruct xs as [ | x xs'] eqn:E.
+  Show Proof.
+
+Abort.
+
+
+Check (
+(fun xs : list nat =>
+ let E := eq_refl : xs = xs in
+ match xs as l0 return (xs = l0 -> nat) with
+ | [] => fun E0 : xs = [] => 0
+ | x :: xs' => fun E0 : xs = x :: xs' => 0
+ end E)
+  [1]).
+
+Lemma decode_list'_helper1 (e : codtype) (x : codsig) (string : list codsig) (ss : list codsig) :
+      string = x :: ss -> suffix ss string.
+Proof. intros ->. apply suffix_skip'. Qed.
+
+Lemma decode_list'_helper2 (e : codtype) (x : codsig) (string : list codsig) (ss : list codsig) :
+      string = x :: ss -> ss <> string.
+Proof. intros ->. intros H. now apply list_con_neq in H. Qed.
+
+Lemma decode_list'_helper3 (e : codtype) (x : codsig) (string : list codsig) (ss : list codsig)
+      (Rest2 : {rest : list codsig & suffix rest ss}) :
+  suffix (projT1 Rest2) (x :: ss).
+Proof. cbn. destruct Rest2. cbn. subst. now apply suffix_skip. Qed.
+
+(* Dont ask how long this took *)
+Fixpoint decode_list' (e : codtype) (decodeEntries : decoding_function e) (string : list codsig)
+         (ind : suffix_induction string) { struct ind } :
+  option (list (codtype_to_type e) * {rest : list codsig & suffix rest string }) :=
+  let E := eq_refl : string = string in
+  (match string as string'
+         return
+         (string = string' ->
+          option (list (codtype_to_type e) * {rest : list codsig & suffix rest string' })) with
+   | nil => fun E0 : string = [] => None
+   | true  :: ss => fun E0 : string = true :: ss =>
+                     match (decodeEntries ss) with
+                     | None => None
+                     | Some (dec1, Rest1) =>
+                       match ind with
+                       | suffix_induction_con H => 
+                         match (@decode_list' e decodeEntries ss (H _ (decode_list'_helper1 e E0) (decode_list'_helper2 e E0))) with
+                         | None => None
+                         | Some (dec2, Rest2) =>
+                           Some (dec1 :: dec2, existT _ (projT1 Rest2) (decode_list'_helper3 e true string Rest2))
+                         end
+                       end
+                     end
+   | false :: ss => fun E0 : string = false :: ss => Some (nil, existT _ ss (suffix_skip' _ _))
+   end) E.
 
 Definition decode_list (e : codtype) (decodeEntries : decoding_function e)
            (string : list codsig) :=
@@ -320,6 +366,7 @@ Defined.
 Compute decode (codunit) [].
 Compute decode (codtuple codunit codunit) [].
 Compute decode (codtriple codunit codunit codunit) [].
+Compute (@from_option codbool (Some (from_bool false)), from_nat 3).
 Compute decode (codtuple (codopt codbool) codnat) (@encode (codtuple (codopt codbool) codnat)
                                                            (@from_option codbool (Some (from_bool false)), from_nat 3)).
 Compute decode (codtuple (codopt codbool) codnat) (@encode (codtuple (codopt codbool) codnat)
@@ -369,6 +416,7 @@ Proof.
   - split. reflexivity. apply prefix_app, prefix_full.
 Admitted.
 
+
 Lemma encode_decode_list (t : codtype) (ls : list (codtype_to_type t))
       (decode_entries : decoding_function t)
       (encode_entries : encoding_function t) :
@@ -384,17 +432,63 @@ Lemma encode_decode_list (t : codtype) (ls : list (codtype_to_type t))
 Proof.
   intros H. unfold decode_list.
   induction ls as [ | l ls IH].
-  - cbn. auto. (* holds, when you "Defined." instead of "Qed." suffix_induction_provider and size_Ind. *)
+  - cbn. auto.
   - cbn.
     destruct (decode_entries (encode_entries l ++ encode_list encode_entries ls)) as [(vt, (restt, Hrestt))| ] eqn:E1; cbn in *; auto.
     + destruct restt eqn:E2; cbn in *; auto.
       * admit.
       * destruct c eqn:E3; cbn in *; auto. admit. admit.
     + admit.
-Admitted.
-  
+Abort.
 
-Lemma encode_decode (t : codtype) (v : codtype_to_type t) (string : list codsig) :
+Lemma encode_decode_list (t : codtype) (string : list codsig) ls rest
+      (decode_entries : decoding_function t)
+      (encode_entries : encoding_function t) :
+  (forall string' v' rest',
+      decode_entries string' = Some (v', rest') -> encode_entries v' ++ (projT1 rest') = string'
+  ) ->
+  decode_list decode_entries string = Some (ls, rest) -> encode_list encode_entries ls ++ (projT1 rest) = string.
+Proof.
+  intros encode_decode_entries. unfold decode_list.
+  generalize (suffix_induction_provider string) as ind. induction ind as [xs H IH].
+  cbn in *.
+  destruct xs eqn:E; intros H1; try discriminate.
+  destruct c.
+  - destruct (decode_entries l) eqn:E2; try discriminate.
+    destruct p, s. unfold suffix_induction_rect in *. cbn in *.
+Admitted.
+
+
+  
+Lemma encode_decode (t : codtype) (string : list codsig) v rest :
+  decode t string = Some (v, rest) -> encode v ++ (projT1 rest) = string.
+Proof.
+  revert string v rest. induction t; intros string v rest H.
+  - cbn in *. destruct v as (v1, v2).
+    destruct (decode t1 string) as [(cod1, (rest1, HRest1))| ] eqn:E1; cbn in *; try discriminate.
+    destruct (decode t2 rest1) as [(cod2, (rest2, HRest2))| ] eqn:E2; cbn in *; try discriminate.
+    inv H.
+    specialize (IHt1 _ _ _ E1). cbn in *.
+    specialize (IHt2 _ _ _ E2). cbn in *.
+    subst. now rewrite app_assoc.
+  - eapply encode_decode_list; eauto.
+  - cbn in *. destruct v as [v1|v2].
+    + destruct string; try discriminate; cbn in *.
+      destruct c; try discriminate.
+      * destruct (decode t1 string) eqn:E; cbn in *; try discriminate.
+        destruct p, s. inv H. specialize (IHt1 _ _ _ E). cbn in *. subst. reflexivity.
+      * destruct (decode t2 string) eqn:E; cbn in *; try discriminate.
+        destruct p, s. inv H.
+    + destruct string; try discriminate; cbn in *.
+      destruct c; try discriminate.
+      * destruct (decode t1 string) eqn:E; cbn in *; try discriminate.
+        destruct p, s. inv H.
+      * destruct (decode t2 string) eqn:E; cbn in *; try discriminate.
+        destruct p, s. inv H. specialize (IHt2 _ _ _ E). cbn in *. subst. reflexivity.
+  - cbn in *. destruct rest. cbn in *. now inv H.
+Qed.
+
+Lemma encode_decode_nil (t : codtype) (v : codtype_to_type t) (string : list codsig) :
   match decode t (encode v) with
   | Some (v', rest) => v = v' /\ projT1 rest = []
   | None => False
@@ -420,4 +514,6 @@ Proof.
       * specialize (IHt2 v). rewrite E in IHt2. cbn in *. intuition; subst; auto.
       * specialize (IHt2 v). rewrite E in IHt2. cbn in *. intuition; subst; auto.
   - destruct v. auto.
-Admitted.
+Restart.
+Proof.
+  
