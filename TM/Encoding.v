@@ -1,10 +1,8 @@
 Require Import Prelim LiftNM Compound.
 
 (** * Coding Alphabet *)
-Definition codsig : Type := bool.
 
-Instance codsig_dec : eq_dec codsig.
-Proof. intros x y. hnf. decide equality. Defined.
+Notation "'codsig'" := (bool).
 
 (** * Coding Types **)
 
@@ -68,8 +66,10 @@ Fixpoint from_nat n : (codtype_to_type codnat) :=
 
 
 (** Test *)
+(*
 Compute @encode (codtuple (codopt codbool) codnat) (@from_option codbool (Some (from_bool false)), from_nat 3).
 Compute @encode (codtuple (codopt codbool) codnat) (@from_option codbool None, from_nat 3).
+*)
 
 
 (** * Suffix *)
@@ -248,58 +248,38 @@ Ltac invalid_encoding := apply None.
 Definition decoding_output (e : codtype) (string : list codsig) :=
   option (codtype_to_type e * {rest : list codsig & suffix rest string}).
 
+Definition decoding_output_proj (e : codtype) :=
+  option (codtype_to_type e * list codsig).
+
 Definition decoding_function (e : codtype) :=
   forall string : list codsig, decoding_output e string.
 
-Inductive my_induction : nat -> Type :=
-| my_induction_intro (m : nat) (H: forall n, n < m -> my_induction n) : my_induction m.
+Definition decoding_output_project (e : codtype) (string : list codsig) : decoding_output e string -> decoding_output_proj e.
+Proof. destruct 1; [ | apply None]. destruct p. apply Some. constructor. apply c. apply (projT1 s). Defined.
 
-Fixpoint my_induction_test (m : nat) (e : my_induction m) {struct e} : nat.
-Proof.
-  destruct e as [m H].
-  destruct m.
-  - apply 0.
-  - assert (my_induction m). apply H. do 2 constructor. apply (my_induction_test m H0).
-Abort. 
-
-Fixpoint my_induction_test (m : nat) (e : my_induction m) {struct e} : nat :=
-  match e with
-    @my_induction_intro m H => 0
-  end.
 
 Lemma suffix_skip' (X : Type) (x : X) (xs : list X) :
   suffix xs (x :: xs).
 Proof. apply suffix_skip, suffix_full. Qed.
 
-Lemma tam (xs : list nat) : True.
-Proof.
-  destruct xs as [ | x xs'] eqn:E.
-  Show Proof.
+Lemma decode_list'_helper1 (e : codtype) (x : codsig) (string : list codsig) (ss : list codsig)
+      (Rest1 : {rest : list codsig & suffix rest ss}) :
+  string = x :: ss -> suffix (projT1 Rest1) string.
+Proof. intros ->. destruct Rest1; cbn. now apply suffix_skip. Qed.
 
-Abort.
-
-
-Check (
-(fun xs : list nat =>
- let E := eq_refl : xs = xs in
- match xs as l0 return (xs = l0 -> nat) with
- | [] => fun E0 : xs = [] => 0
- | x :: xs' => fun E0 : xs = x :: xs' => 0
- end E)
-  [1]).
-
-Lemma decode_list'_helper1 (e : codtype) (x : codsig) (string : list codsig) (ss : list codsig) :
-      string = x :: ss -> suffix ss string.
-Proof. intros ->. apply suffix_skip'. Qed.
-
-Lemma decode_list'_helper2 (e : codtype) (x : codsig) (string : list codsig) (ss : list codsig) :
-      string = x :: ss -> ss <> string.
-Proof. intros ->. intros H. now apply list_con_neq in H. Qed.
+Lemma decode_list'_helper2 (e : codtype) (x : codsig) (string : list codsig) (ss : list codsig)
+      (Rest2 : {rest : list codsig & suffix rest ss}) :
+      string = x :: ss -> projT1 Rest2 <> string.
+Proof. intros ->. destruct Rest2; cbn. intros ->. now apply suffix_put in s. Qed.
 
 Lemma decode_list'_helper3 (e : codtype) (x : codsig) (string : list codsig) (ss : list codsig)
-      (Rest2 : {rest : list codsig & suffix rest ss}) :
-  suffix (projT1 Rest2) (x :: ss).
-Proof. cbn. destruct Rest2. cbn. subst. now apply suffix_skip. Qed.
+      (Rest1 : {rest : list codsig & suffix rest ss})
+      (Rest2 : {rest : list codsig & suffix rest (projT1 Rest1)}) :
+  {rest : list codsig & suffix rest (x :: ss)}.
+Proof.
+  destruct Rest1 as (rest1, HRest1). destruct Rest2 as (rest2, HRest2). cbn in *.
+  exists rest2. apply suffix_skip. eapply suffix_transitive; eauto.
+Defined.
 
 (* Dont ask how long this took *)
 Fixpoint decode_list' (e : codtype) (decodeEntries : decoding_function e) (string : list codsig)
@@ -317,10 +297,13 @@ Fixpoint decode_list' (e : codtype) (decodeEntries : decoding_function e) (strin
                      | Some (dec1, Rest1) =>
                        match ind with
                        | suffix_induction_con H => 
-                         match (@decode_list' e decodeEntries ss (H _ (decode_list'_helper1 e E0) (decode_list'_helper2 e E0))) with
+                         match (@decode_list' e decodeEntries (projT1 Rest1) (H (projT1 Rest1)
+                                                                                (decode_list'_helper1 e Rest1 E0)
+                                                                                (decode_list'_helper2 e E0)
+                               )) with
                          | None => None
                          | Some (dec2, Rest2) =>
-                           Some (dec1 :: dec2, existT _ (projT1 Rest2) (decode_list'_helper3 e true string Rest2))
+                           Some (dec1 :: dec2, @decode_list'_helper3 e true string ss Rest1 Rest2)
                          end
                        end
                      end
@@ -363,83 +346,25 @@ Defined.
 
 (** Test *)
 
-Compute decode (codunit) [].
-Compute decode (codtuple codunit codunit) [].
-Compute decode (codtriple codunit codunit codunit) [].
-Compute (@from_option codbool (Some (from_bool false)), from_nat 3).
-Compute decode (codtuple (codopt codbool) codnat) (@encode (codtuple (codopt codbool) codnat)
-                                                           (@from_option codbool (Some (from_bool false)), from_nat 3)).
-Compute decode (codtuple (codopt codbool) codnat) (@encode (codtuple (codopt codbool) codnat)
-                                                           (@from_option codbool None, from_nat 3)).
+(*
+Compute decoding_output_project (decode (codunit) []).
+Compute decoding_output_project (decode (codtuple codunit codunit) []).
+Compute decoding_output_project (decode (codtriple codunit codunit codunit) []).
+Compute ((@from_option codbool (Some (from_bool false)), from_nat 3)).
+Compute decoding_output_project
+        (decode (codtuple (codopt codbool) codnat)
+                (@encode (codtuple (codopt codbool) codnat)
+                         (@from_option codbool (Some (from_bool false)), from_nat 3))).
+Compute decoding_output_project
+        (decode (codtuple (codopt codbool) codnat)
+                (@encode (codtuple (codopt codbool) codnat)
+                         (@from_option codbool None, from_nat 3))).
+Compute decoding_output_project
+        (decode (codtuple (codopt codbool) codnat)
+                (@encode (codtuple (codopt codbool) codnat)
+                         (@from_option codbool None, from_nat 3) ++ [true; true; false])).
+*)
 
-Lemma decode_monoton (t : codtype) (string1 string2 : list codsig) :
-  match decode t (string1) with
-  | Some (v, rest) => match decode t (string1 ++ string2) with
-                     | Some (v', rest') => v = v' /\ prefix (projT1 rest) (projT1 rest')
-                     | None => False
-                     end
-  | None => True
-  end.
-Proof.
-  revert string1 string2. induction t; intros string1 string2; cbn in *.
-  - destruct (decode t1 string1) as [(v1, (rest1, Hrest1))| ] eqn:E1; auto.
-    destruct (decode t1 (string1 ++ string2)) as [(vt, (restt, Hrestt))| ] eqn:E2.
-    + destruct (decode t2 rest1) as [(v2, (rest2, Hrest2))| ] eqn:E3; cbn in *; auto.
-      destruct (decode t2 restt) as [(v2',(rest2',Hrest2'))| ]eqn:E4; cbn in *.
-      * pose proof (IHt1 string1 string2) as IHt1'.
-        rewrite E1 in IHt1'. rewrite E2 in IHt1'. destruct IHt1' as (->&IHt1'). cbn in *.
-        pose proof (IHt2 rest1 rest2') as IHt2'.
-        rewrite E3 in IHt2'. cbn in *.
-        destruct (decode t2 (rest1 ++ rest2')) as [(v3, (rest3, Hrest3))| ] eqn:E5; cbn in *; auto.
-        destruct IHt2' as (->&IHt2'). admit.
-      *
-        specialize (IHt1 string1 string2). rewrite E1 in IHt1. rewrite E2 in IHt1.
-        destruct IHt1 as (->&IHt1).
-        specialize (IHt2 rest1 rest2). rewrite E3 in IHt2.
-        destruct (decode t2 (rest1 ++ rest2)) eqn:E5; cbn in *; auto.
-        destruct p. destruct IHt2 as (->&IHt2).
-        admit.
-    + specialize (IHt1 string1 string2). specialize (IHt2 string1 string2).
-      now erewrite E2, E1 in *.
-  - admit.
-  - destruct string1 eqn:E; auto; cbn in *. destruct c eqn:E2; cbn in *; auto.
-    + destruct (decode t1 l) as [(v1, (rest1, Hrest1))| ] eqn:E3; auto.
-      destruct (decode t1 (l ++ string2)) as [(v2, (rest2, Hrest2))| ] eqn:E4; cbn in *; auto.
-      * specialize (IHt1 l string2). rewrite E3 in IHt1. rewrite E4 in IHt1. destruct IHt1 as (->&IHt1); cbn in *.
-        split; auto.
-      * specialize (IHt1 l string2). rewrite E3 in IHt1. rewrite E4 in IHt1; auto.
-    + destruct (decode t2 l) as [(v1, (rest1, Hrest1))| ] eqn:E3; cbn in *; auto.
-      destruct (decode t2 (l ++ string2)) as [(v2, (rest2, Hrest2))| ] eqn:E4; cbn in *; auto.
-      * specialize (IHt2 l string2). rewrite E3 in IHt2. rewrite E4 in IHt2. destruct IHt2 as (->&IHt2); cbn in *.
-        split; auto.
-      * specialize (IHt2 l string2). rewrite E3 in IHt2. rewrite E4 in IHt2; auto.
-  - split. reflexivity. apply prefix_app, prefix_full.
-Admitted.
-
-
-Lemma encode_decode_list (t : codtype) (ls : list (codtype_to_type t))
-      (decode_entries : decoding_function t)
-      (encode_entries : encoding_function t) :
-  (forall v : (codtype_to_type t),
-      match decode_entries (encode_entries v) with
-      | Some (v', rest) => v = v' /\ projT1 rest = []
-      | None => False
-      end) ->
-  match decode_list decode_entries (@encode_list t encode_entries ls) with
-  | Some (ls', rest) => ls = ls' /\ projT1 rest = []
-  | None => False
-  end.
-Proof.
-  intros H. unfold decode_list.
-  induction ls as [ | l ls IH].
-  - cbn. auto.
-  - cbn.
-    destruct (decode_entries (encode_entries l ++ encode_list encode_entries ls)) as [(vt, (restt, Hrestt))| ] eqn:E1; cbn in *; auto.
-    + destruct restt eqn:E2; cbn in *; auto.
-      * admit.
-      * destruct c eqn:E3; cbn in *; auto. admit. admit.
-    + admit.
-Abort.
 
 Lemma encode_decode_list (t : codtype) (string : list codsig) ls rest
       (decode_entries : decoding_function t)
@@ -450,16 +375,25 @@ Lemma encode_decode_list (t : codtype) (string : list codsig) ls rest
   decode_list decode_entries string = Some (ls, rest) -> encode_list encode_entries ls ++ (projT1 rest) = string.
 Proof.
   intros encode_decode_entries. unfold decode_list.
-  generalize (suffix_induction_provider string) as ind. induction ind as [xs H IH].
+  generalize (suffix_induction_provider string) as ind.
+  intros ind. revert ls rest. induction ind as [xs H IH]; intros ls rest H1.
   cbn in *.
-  destruct xs eqn:E; intros H1; try discriminate.
-  destruct c.
-  - destruct (decode_entries l) eqn:E2; try discriminate.
-    destruct p, s. unfold suffix_induction_rect in *. cbn in *.
-Admitted.
+  destruct xs as [ | x ss] eqn:E; try discriminate.
+  destruct x; cbn in *.
+  - destruct (decode_entries ss) as [(dec1, Rest1)| ] eqn:E2; try discriminate; cbn in *.
+    destruct (decode_list' decode_entries
+                           (H (projT1 Rest1)
+                              (decode_list'_helper1 t Rest1 eq_refl)
+                              (decode_list'_helper2 t eq_refl)))
+      as [(dec2, Rest2)| ] eqn:E3; try discriminate. inv H1.
+    specialize (IH _ _ _ _ _ E3).
+    destruct Rest1, Rest2. cbn in *. f_equal.
+    rewrite <- app_assoc. rewrite IH.
+    erewrite <- encode_decode_entries; eauto.
+    cbn. reflexivity.
+  - inv H1. cbn. reflexivity.
+Qed.
 
-
-  
 Lemma encode_decode (t : codtype) (string : list codsig) v rest :
   decode t string = Some (v, rest) -> encode v ++ (projT1 rest) = string.
 Proof.
@@ -474,46 +408,16 @@ Proof.
   - eapply encode_decode_list; eauto.
   - cbn in *. destruct v as [v1|v2].
     + destruct string; try discriminate; cbn in *.
-      destruct c; try discriminate.
+      destruct b; try discriminate.
       * destruct (decode t1 string) eqn:E; cbn in *; try discriminate.
         destruct p, s. inv H. specialize (IHt1 _ _ _ E). cbn in *. subst. reflexivity.
       * destruct (decode t2 string) eqn:E; cbn in *; try discriminate.
         destruct p, s. inv H.
     + destruct string; try discriminate; cbn in *.
-      destruct c; try discriminate.
+      destruct b; try discriminate.
       * destruct (decode t1 string) eqn:E; cbn in *; try discriminate.
         destruct p, s. inv H.
       * destruct (decode t2 string) eqn:E; cbn in *; try discriminate.
         destruct p, s. inv H. specialize (IHt2 _ _ _ E). cbn in *. subst. reflexivity.
   - cbn in *. destruct rest. cbn in *. now inv H.
 Qed.
-
-Lemma encode_decode_nil (t : codtype) (v : codtype_to_type t) (string : list codsig) :
-  match decode t (encode v) with
-  | Some (v', rest) => v = v' /\ projT1 rest = []
-  | None => False
-  end.
-Proof.
-  induction t; cbn in *.
-  - destruct v as (v1, v2); cbn in *.
-    destruct (decode t1 (encode v1 ++ encode v2)) as [(dec1, (rest1, HRest1)) | ] eqn:E1; cbn in *.
-    + destruct (decode t2 rest1) as [(dec2, (rest2, HRest2)) | ] eqn:E2; cbn in *.
-      *
-        specialize (IHt2 dec2).
-        destruct (decode t2 (encode dec2)) as [(v2',Rest2')| ] eqn:E3; auto.
-        destruct IHt2 as (->&IHt2).
-        admit.
-      * admit.
-    + admit.
-  - apply encode_decode_list. auto.
-  - destruct v as [v|v].
-    + destruct (decode t1 (encode v)) as [(v1, (rest1, Hrest1))| ] eqn:E; cbn in *; auto.
-      * specialize (IHt1 v). rewrite E in IHt1. cbn in *. intuition; subst; auto.
-      * specialize (IHt1 v). rewrite E in IHt1. cbn in *. intuition; subst; auto.
-    + destruct (decode t2 (encode v)) as [(v2, (rest2, Hrest2))| ] eqn:E; cbn in *; auto.
-      * specialize (IHt2 v). rewrite E in IHt2. cbn in *. intuition; subst; auto.
-      * specialize (IHt2 v). rewrite E in IHt2. cbn in *. intuition; subst; auto.
-  - destruct v. auto.
-Restart.
-Proof.
-  
