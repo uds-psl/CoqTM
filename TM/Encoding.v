@@ -1,11 +1,7 @@
 Require Import Prelim LiftNM Compound.
 
 (** * Coding Alphabet *)
-Inductive codsig : Type :=
-| Con : codsig
-| Nil : codsig
-| Inl : codsig
-| Inr : codsig.
+Definition codsig : Type := bool.
 
 Instance codsig_dec : eq_dec codsig.
 Proof. intros x y. hnf. decide equality. Defined.
@@ -25,7 +21,7 @@ Proof. intros x y. hnf. decide equality. Defined.
 Definition codnat := codlist codunit.
 Definition codbool := codsum codunit codunit.
 Definition codopt (t : codtype) := codsum t codunit.
-Definition codtriple (t1 t2 t3 : codtype) := codtuple t1 (codtuple t2 t3).
+Definition codtriple (t1 t2 t3 : codtype) := codtuple (codtuple t1 t2) t3.
 
 Fixpoint codtype_to_type (t : codtype) : Type :=
   match t with
@@ -44,8 +40,8 @@ Definition encoding_function (t : codtype) :=
 Fixpoint encode_list (t : codtype) (encode_entries : encoding_function t) (xs : list (codtype_to_type t)) : list codsig.
 Proof.
   destruct xs.
-  - apply (Nil :: nil).
-  - apply (cons Con). apply app. apply (encode_entries c). apply (encode_list t encode_entries xs).
+  - apply (false :: nil).
+  - apply (cons true). apply app. apply (encode_entries c). apply (encode_list t encode_entries xs).
 Defined.
     
 Fixpoint encode (t : codtype) : codtype_to_type t -> list codsig.
@@ -54,8 +50,8 @@ Proof.
   - intros (a,b). apply (encode t1 a ++ encode t2 b).
   - apply encode_list. intros v. apply (encode t v).
   - intros [a|b].
-    + apply (Inl :: encode t1 a).
-    + apply (Inr :: encode t2 b).
+    + apply (true  :: encode t1 a).
+    + apply (false :: encode t2 b).
   - intros _. apply nil.
 Defined.
 
@@ -266,7 +262,7 @@ Proof.
   destruct string as [ | s ss].
   - invalid_encoding.
   - destruct s eqn:E.
-    + (* Con *)
+    + (* con = true *)
       destruct (decodeEntries ss) as [ (dec1, (rest1, HRest1)) | ]; [ | invalid_encoding].
       (* assert (IH : forall xs : list codsig,
                  suffix xs (Con :: ss) ->
@@ -281,9 +277,8 @@ Proof.
       * now apply suffix_skip.
       * intros ->. now apply suffix_put in HRest1.
       * do 2 constructor. apply (dec1 :: dec2). exists rest2. apply suffix_skip. eapply suffix_transitive; eauto.
-    + (* Nil *)
+    + (* nil = false *)
       do 2 constructor. apply nil. exists ss. apply suffix_skip, suffix_full.
-    + invalid_encoding. + invalid_encoding.
 Defined.
 
 Definition decode_list (e : codtype) (decodeEntries : decoding_function e)
@@ -307,11 +302,10 @@ Proof.
     destruct string as [ | s ss].
     + invalid_encoding.
     + destruct s eqn:E.
-      * invalid_encoding. * invalid_encoding.
-      * (* Inl *)
+      * (* Inl = true *)
         destruct (decode1 ss) as [ (dec, (rest, HRest)) | ]; [ | invalid_encoding].
         constructor. constructor. left.  apply dec. exists rest. now apply suffix_skip.
-      * (* Inr *)
+      * (* Inr = false *)
         destruct (decode2 ss) as [ (dec, (rest, HRest)) | ]; [ | invalid_encoding].
         constructor. constructor. right. apply dec. exists rest. now apply suffix_skip.
   - (* unit *)
@@ -395,7 +389,7 @@ Proof.
     destruct (decode_entries (encode_entries l ++ encode_list encode_entries ls)) as [(vt, (restt, Hrestt))| ] eqn:E1; cbn in *; auto.
     + destruct restt eqn:E2; cbn in *; auto.
       * admit.
-      * destruct c eqn:E3; cbn in *; auto. admit. admit. admit. admit.
+      * destruct c eqn:E3; cbn in *; auto. admit. admit.
     + admit.
 Admitted.
   
