@@ -62,13 +62,20 @@ Section Def_Function.
     {
       inj_f : X -> Y;
       inj_g : Y -> option X;
-      inj_f_injective : forall x1 x2, inj_f x1 = inj_f x2 -> x1 = x2;
       inj_g_adjoint : forall x, inj_g (inj_f x) = Some x;
     }.
 
   Lemma inj_g_surjective (I : injection_fun) :
     forall x, { y | (inj_g I) y = Some x }.
   Proof. intros x. pose proof (inj_g_adjoint I x). eauto. Defined.
+
+  Lemma inj_f_injective (I : injection_fun)
+    : forall x1 x2, inj_f I x1 = inj_f I x2 -> x1 = x2.
+  Proof.
+    intros x1 x2 H. assert (Some x1 = Some x2).
+    erewrite <- !inj_g_adjoint; eauto. now rewrite H.
+    now inv H0.
+  Qed.
   
 End Def_Function.
 
@@ -153,9 +160,6 @@ Section Convertion1.
   Defined.
 
   (* TODO *)
-  Lemma conv_injective : forall x1 x2, conv_f x1 = conv_f x2 -> x1 = x2.
-  Proof.
-  Admitted.
 
   Lemma conv_adjoint : forall x, conv_g (conv_f x) = Some x.
   Proof.
@@ -165,7 +169,7 @@ Section Convertion1.
   Admitted.
     
   Definition inj_conv_vec_to_fun : injection_fun X Y.
-    econstructor. apply conv_injective. apply conv_adjoint.
+    econstructor. apply conv_adjoint.
   Defined.
   
 End Convertion1.
