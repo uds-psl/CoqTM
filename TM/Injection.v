@@ -81,92 +81,136 @@ End Def_Function.
 
 
 Section find_i.
-  Variable (X : Type) (P : X -> Prop) (H_P : forall x, dec(P x)).
+  Variable (X : Type) (P : X -> bool).
 
-  Fixpoint find_i (xs : list X) : option nat :=
-    match xs with
-    | nil => None
-    | x :: xs' => if Dec (P x) then Some O else let try i := find_i xs' in Some (S i)
-    end.
+  Definition find_i (xs : list X) : {p : nat * X & List.nth_error xs (fst p) = Some (snd p) /\ P (snd p) = true} + (forall x, In x xs -> ~ P x).
+  Proof.
+    induction xs as [ | x xs IH]; cbn.
+    - eauto.
+    - destruct (P x) eqn:E.
+      + left. exists (0, x). cbn. auto.
+      + destruct IH as [((n,y),H)|H]; cbn in *.
+        * left. exists (S n, y). cbn. assumption.
+        * right. intros y [<- | ]; auto.
+  Defined.
 
-  Lemma find_i_correct_Some (xs : list X) (i : nat) :
-    find_i xs = Some i -> { x : X | P x /\ List.nth_error xs i = Some x }.
-  Proof.
-    revert i. induction xs; intros i; cbn.
-    - discriminate.
-    - decide (P a) as [H|H].
-      + inversion 1; subst. eauto.
-      + destruct (find_i xs) as [b| ] eqn:E.
-        * inversion 1; subst. destruct (IHxs b) as (y&Hy&Hy2). reflexivity. eauto.
-        * discriminate.
-  Qed.
-  
-  Lemma find_i_correct_None (xs : list X) :
-    find_i xs = None -> forall x, In x xs -> ~ P x.
-  Proof.
-    induction xs as [ | x xs IH]; intros H1 y. intros []. intros [-> | H2] H3; cbn in *.
-    - decide (P y). discriminate. firstorder.
-    - decide (P x). discriminate. 
-      destruct (find_i xs) eqn:E.
-      + discriminate.
-      + firstorder.
-  Qed.
-
-  Lemma find_i_correct_Some_first (xs : list X) (i : nat) :
-    find_i xs = Some i -> forall j e, j < i -> nth_error xs j = Some e -> ~ (P e).
-  Proof.
-    revert i. induction xs; intros i H1 j e H2 H3 H4; cbn in *.
-    - now apply nth_error_nil in H3.
-    - decide (P a) as [H|H].
-      + inv H1. omega.
-      + destruct (find_i xs) as [ b | ].
-        * inv H1. pose proof H3 as H3'.
-          apply nth_error_In in H3. cbn in H3. destruct H3 as [->|H3].
-          -- tauto.
-          -- intuition. destruct j; cbn in *.
-             ++ inv H3'. tauto.
-             ++ eapply IHxs; eauto. omega.
-        * discriminate.
-  Qed.
-  
 End find_i.
-Arguments find_i {_} _ {_} _ : rename.
+
+Lemma nth_error_Some' (A : Type) (x : A) (l : list A) (n : nat) :
+  nth_error l n = Some x -> n < | l |.
+Proof.
+  rewrite <- nth_error_Some. congruence.
+Qed.
+
+Definition nth_no_error (A : Type) (xs : list A) (n : nat) : { y : A & nth_error xs n = Some y } + (n >= |xs|).
+Proof.
+  revert n. induction xs as [ | x xs IH]; intros n; cbn in *.
+  - right. omega.
+  - destruct n; cbn.
+    + left. eauto.
+    + specialize (IH n) as [(y,H) | H].
+      * left. eauto.
+      * right. omega.
+Qed.
+
+Lemma vect_to_list_orig_size (A : Type) (n : nat) (I : Vector.t A n) :
+  n = | Vector.to_list I |.
+Proof. induction I. cbn. reflexivity. cbn. f_equal. now unfold Vector.to_list in *. Qed.
+
+Lemma vect_to_list_nth (A : Type) (n : nat) (i : nat) (Hi : i < n) (xv : Vector.t A n) :
+  nth_error (Vector.to_list xv) i =
+  Some xv[@Fin.of_nat_lt Hi].
+Proof.
+  revert n Hi xv. induction i; cbn in *; intros.
+  - destruct xv; cbn in *. omega. reflexivity.
+  - destruct xv; cbn in *. omega. now unfold Vector.to_list in *.
+Qed.
+
+Lemma vect_to_list_nth_el (A : Type) (n : nat) (i : nat) (Hi : i < n) (xv : Vector.t A n) :
+  (Vector.nth xv (Fin.of_nat_lt Hi)) el Vector.to_list xv.
+Proof. apply nth_error_In with (n := i). apply vect_to_list_nth. Qed.
+
+Lemma dupfree_error_nth (A : Type) (xs : list A) (n m : nat) (x : A) :
+  Dupfree.dupfree xs -> nth_error xs m = Some x -> nth_error xs n = Some x -> n = m.
+Proof.
+  intros H. revert n m x. induction H; intros; cbn in *.
+  - now apply nth_error_nil in H.
+  - destruct m, n; cbn in *; try inv H1; try inv H2; auto; try congruence.
+    + apply nth_error_In in H3. tauto.
+    + apply nth_error_In in H4. tauto.
+    + f_equal. eapply IHdupfree; eauto.
+Qed.
+
+Lemma vect_to_list_In (A : Type) (n : nat) (x : A) (xv : Vector.t A n) :
+  Vector.In x xv <-> List.In x (Vector.to_list xv).
+Proof.
+  split.
+  - induction 1; cbn in *; auto.
+  - revert x; induction xv; cbn in *; auto. intros x [<-|H]. constructor. unfold Vector.to_list in *. constructor. auto.
+Qed.
+
+Lemma dupfree_vect_to_list (A : Type) (n : nat) (xv : Vector.t A n) :
+  dupfree xv -> Dupfree.dupfree (Vector.to_list xv).
+Proof.
+  induction 1; cbn in *.
+  - constructor.
+  - constructor; auto. intros H1. apply H. now apply vect_to_list_In.
+Qed.
 
 
 (* Convert a vector-defined injection into a function-defined injection *)
 Section Convertion1.
 
-  Variable X Y : finType.
+  Variable X Y : eqType.
+  Variable (elem_X : list X).
+  Variable (elem_Y : list Y).
+  Variable (count_X : nat).
+  Variable (enum : forall x : X, In x elem_X).
+  Variable (X_dupfree : Dupfree.dupfree elem_X).
 
+  Variable I : Vector.t Y (|elem_X|).
+  Variable (I_dupfree : dupfree I).
 
-  Variable I : injection_vect X Y.
+  Lemma nat_lt_ge (m n : nat) : n < m -> n >= m -> False. Proof. intros. omega. Qed.
 
   Definition conv_f : X -> Y.
   Proof.
-    destruct I as [V HV]. intros x.
-    destruct (find_i (fun x' => x = x') (elem X)) as [n | ] eqn:E.
-    - apply find_i_correct_Some in E as (?&<-&H2).
-      eapply Vector.nth. apply V. eapply Fin.of_nat_lt.
-      eapply List.nth_error_Some. rewrite H2. congruence.
-    - pose proof (find_i_correct_None E) as E2. cbn in E2. specialize (E2 x). contradiction E2; auto.
+    intros x.
+    destruct (find_i (fun x' => Dec (x = x')) elem_X) as [(n&Hn) | H].
+    - eapply Vector.nth. apply I. eapply Fin.of_nat_lt. eapply nth_error_Some'. eapply Hn.
+    - specialize (H x). contradiction H; auto.
   Defined.
 
   Definition conv_g : Y -> option X.
   Proof.
-    destruct I as [V HV]. intros y.
-    apply find.
-    - intros x. decide (conv_f x = y); [exact true|exact false].
-    - apply elem.
+    intros y.
+    destruct (find_i (fun y' => Dec (y = y')) (Vector.to_list I)) as [((n,y')&Hn&Hn') | H]; cbn in *.
+    - apply Some. apply nth_error_Some' in Hn.
+      destruct (nth_no_error elem_X n) as [x | ].
+      + apply x.
+      + replace (| Vector.to_list I |) with (| elem_X |) in *. exfalso. eapply nat_lt_ge; eauto. apply vect_to_list_orig_size.
+    - apply None.
   Defined.
-
-  (* TODO *)
 
   Lemma conv_adjoint : forall x, conv_g (conv_f x) = Some x.
   Proof.
-    destruct I as [V HV] eqn:E. intros x. cbn.
-    unfold conv_g. subst.
-    unfold conv_f. subst.
-  Admitted.
+    intros x. unfold conv_f in *.
+    destruct (find_i (fun x' : X => Dec (x = x')) elem_X) as [((n&yn)&H1&H2) | H]; cbn in *.
+    - unfold conv_g. cbn.
+      destruct (find_i (fun y' : Y => Dec (I[@Fin.of_nat_lt (nth_error_Some' H1)] = y')) (Vector.to_list I))
+               as [((m&ym)&H3&H4) | H'].
+      + f_equal. destruct (nth_no_error elem_X m) as [(y'&Hy') | H'].
+        * decide (x = yn); cbn in *; try congruence; subst.
+          decide (I[@Fin.of_nat_lt (nth_error_Some' H1)] = ym); cbn in *; try congruence.
+          enough (n = m) as <- by congruence.
+          eapply dupfree_error_nth. eapply dupfree_vect_to_list. eapply I_dupfree. eapply H3.
+          erewrite vect_to_list_nth. f_equal. eauto.
+        * exfalso. pose proof (nth_error_Some' H1). decide (I[@Fin.of_nat_lt (nth_error_Some' H1)] = snd (m, ym)); cbn in *; try congruence.
+          decide (x = yn); cbn in *; try congruence. subst. pose proof (nth_error_Some' H3).
+          replace (| Vector.to_list I |) with (|elem_X|) in *. omega. apply vect_to_list_orig_size.
+      + exfalso. eapply H'; eauto. apply vect_to_list_nth_el.
+    - exfalso. specialize (H x). contradict H. auto.
+  Qed.
     
   Definition inj_conv_vec_to_fun : injection_fun X Y.
     econstructor. apply conv_adjoint.
