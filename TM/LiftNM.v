@@ -104,6 +104,28 @@ Proof.
   intros H. apply Vector.eq_nth_iff. intros p ? <-. now apply inject_correct_id_Some.
 Qed.
 
+Lemma inject_not_index m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m)
+      (k : nat) (Hk : k < n) :
+  dupfree indices ->
+  not_indices indices k -> (inject indices init V)[@Hk] = init[@Hk].
+Proof.
+  intros H. revert V k Hk. induction H as [ | m index indices H1 H2 IH]; intros V0 k Hk HI.
+  - cbn in *. reflexivity.
+  - dependent destruct V0. unfold not_indices in *. cbn in *.
+    decide (index = Hk) as [->|H]. rewrite Vector_replace_nth.
+    + exfalso. apply HI. replace (proj1_sig (Fin.to_nat Hk)) with k. constructor.
+      rewrite Fin.to_nat_of_nat. cbn. reflexivity.
+    + rewrite Vector_replace_nth2; auto. apply IH; auto. intros ?. apply HI; auto. constructor; auto.
+Qed.
+
+Lemma inject_default_not_index m n Z (indices : Vector.t (Fin.t n) m) (def : Z) (V : Vector.t Z m)
+      (k : nat) (Hk : k < n) :
+  dupfree indices ->
+  not_indices indices k -> (inject_default indices def V)[@Hk] = def.
+Proof.
+  intros. unfold inject_default. rewrite inject_not_index; auto. apply Vector.const_nth.
+Qed.
+
 Section Map_Algebra.
   
   Lemma map_map (A B I : Type) (n : nat) (g : A -> B)  (f : I -> A) (i : Vector.t I n) :
@@ -276,6 +298,34 @@ Section LiftNM.
     - destruct (halt _) eqn:E; inv H; auto.
       rewrite sim_step with (c1 := c1) (c2 := step (M := injectM) c1); [ | reflexivity]. apply IHi. apply H1.
   Qed.
+
+  Lemma sim_eq_step (c1 c2 : mconfig sig (states injectM) n) (k : nat) (Hk : k < S n) :
+    not_indices I k -> 
+    step (M := injectM) c1 = c2 ->
+    (ctapes c1)[@Hk] = (ctapes c2)[@Hk].
+  Proof.
+    intros HI H. unfold injectM in *.
+    destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2.
+    unfold step, reorder in *. cbn in *.
+    destruct (trans (state1, reorder I (Vector.map (current (sig:=sig)) tapes1))) as (q, act) eqn:E3.
+    inv H.
+    erewrite Vector.nth_map2; eauto.
+    replace ((inject_default I (None, N) act)[@Hk]) with (@None sig, N).
+    cbn. reflexivity.
+    symmetry. now apply inject_default_not_index.
+  Qed.
+
+  Lemma sim_eq_loop (c1 c2 : mconfig sig (states injectM) n) (i : nat) (k : nat) (Hk : k < S n) :
+    not_indices I k -> 
+    loopM (M := injectM) i c1 = Some c2 ->
+    (ctapes c1)[@Hk] = (ctapes c2)[@Hk].
+  Proof.
+    unfold loopM in *. revert c2 c1. induction i; intros c2 c1 H; cbn in *.
+    - destruct (halt _) eqn:E; inversion 1; auto.
+    - destruct (halt _) eqn:E; inversion 1; auto.
+      rewrite sim_eq_step with (c1 := c1) (c2 := step (M := injectM) c1); auto.
+  Qed.
+
   
   Lemma Inject_sem (R : Rel (tapes sig (S m)) (F * tapes sig (S m))) :
     pM ⊫ R ->
@@ -285,8 +335,9 @@ Section LiftNM.
     split.
     - apply (H (reorder I t) i (mk_mconfig (cstate outc) (reorder I (ctapes outc)))).
       pose proof (@sim_loop (initc injectM t) outc i) as Lemma. cbn in Lemma. now apply Lemma.
-    - 
-  Admitted.
+    - hnf. intros k Hk HI. unfold get_at.
+      pose proof (@sim_eq_loop (initc injectM t) outc i _ Hk HI) as Lemma. cbn in Lemma. now apply Lemma.
+  Qed.
 
 
   Lemma propagate_step
