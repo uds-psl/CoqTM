@@ -434,6 +434,108 @@ Proof.
 Defined.
 
 
+(** * Castings **)
+
+Class Cast (X Y : Type) :=
+  {
+    cast1 : X -> Y;
+    cast2 : Y -> X;
+    cast_adj1 : forall (x : X), cast2 (cast1 x) = x;
+    cast_adj2 : forall (y : Y), cast1 (cast2 y) = y;
+  }.
+
+Lemma adj_inj (X Y : Type) (f : X -> Y) (g : Y -> X) :
+  (forall (x : X), g (f x) = x) -> injective f.
+Proof.
+  intros H x1 x2 H2. rewrite <- (H x1), <- (H x2). rewrite H2. reflexivity.
+Qed.
+
+Section I_Cast.
+  Variable (X Y : Type) (cast : Cast X Y) (e : codeable X).
+  Definition encode_cast := fun y => encode (cast2 y).
+  Definition decode_cast := fun string => let try out' := decode string in let (dec, rest) := out' in Some (cast1 dec, rest).
+
+  Lemma encode_injective_cast :
+    forall (v1 v2 : Y) (r1 r2 : list bool),
+      encode_cast v1 ++ r1 = encode_cast v2 ++ r2 -> v1 = v2 /\ r1 = r2.
+  Proof.
+    intros v1 v2 r1 r2 H. eapply encode_injective in H as (H&->). split; auto. eapply adj_inj; eauto. eapply cast_adj2.
+  Qed.
+  
+  Lemma encode_decode_cast:
+    forall (string : list bool) (v : Y)
+      (rest : {rest : list bool & suffix rest string}),
+      decode_cast string = Some (v, rest) ->
+      encode_cast v ++ projT1 rest = string.
+  Proof.
+    unfold decode_cast, encode_cast. cbn in *.
+    intros string v rest H. apply encode_decode.
+    eapply adj_inj.
+    instantiate (1 := fun out => let try out' := out in let (dec, rest) := out' in Some (cast1 dec, rest)).
+    instantiate (1 := fun out => let try out' := out in let (dec, rest) := out' in Some (cast2 dec, rest)).
+    - intros xs. cbn. destruct xs; auto. destruct p. now rewrite cast_adj1.
+    - cbn. now rewrite cast_adj2.
+  Qed.
+
+  Lemma decode_encode_cast:
+    forall (v : Y) (rest : list bool),
+      match decode_cast (encode_cast v ++ rest) with
+      | Some (v', rest') => v = v' /\ projT1 rest' = rest
+      | None => False
+      end.
+  Proof.
+    unfold decode_cast, encode_cast. cbn in *.
+    intros v rest.
+    destruct (decode (encode (cast2 v) ++ rest)) as [(dec, Rest)| ] eqn:E1.
+    - pose proof (decode_encode (cast2 v) rest). rewrite E1 in H. destruct H. split; auto.
+      eapply adj_inj with (f := cast2) (g := cast1). apply cast_adj2. rewrite <- H. now rewrite cast_adj2.
+    - pose proof (decode_encode (cast2 v) rest). now rewrite E1 in H.
+  Qed.
+  
+  Lemma I_cast : codeable Y.
+  Proof.
+    esplit with (encode := encode_cast) (decode := decode_cast).
+    - apply encode_injective_cast.
+    - apply encode_decode_cast.
+    - apply decode_encode_cast.
+  Defined.
+
+End I_Cast.
+
+Instance cast_bool : Cast (unit + unit) bool.
+Proof.
+  split with (cast1 := fun p => match p with inl _ => true | inr _ => false end) (cast2 := fun (b : bool) => if b then inl tt else inr tt).
+  - intros [()|()]; auto.
+  - intros b. destruct b; auto.
+Defined.
+
+Instance I_bool : codeable bool.
+Proof. eapply I_cast. eapply cast_bool. auto. Defined.
+
+Instance cast_option (X : Type) : Cast (X + unit) (option X).
+Proof.
+  split with (cast1 := fun p => match p with inl x => Some x | inr _ => None end)
+             (cast2 := fun p => match p with Some x => inl x | None => inr tt end).
+  - intros [x|()]; auto.
+  - intros [x|  ]; auto.
+Defined.
+
+Instance I_option (X : Type) : codeable X -> codeable (option X).
+Proof. intros H. eapply I_cast. eapply cast_option. auto. Defined.
+
+Lemma repeat_length_unit:
+  forall xs : list unit, repeat tt (| xs |) = xs.
+Proof. intros xs. induction xs; cbn; auto. destruct a. f_equal. assumption. Qed.
+
+Instance cast_nat : Cast (list unit) nat.
+Proof.
+  split with (cast1 := @List.length unit) (cast2 := @List.repeat unit tt).
+  - apply repeat_length_unit.
+  - intros y. apply List.repeat_length.
+Defined.
+
+Instance I_nat : codeable nat.
+Proof. eapply I_cast. eapply cast_nat. auto. Defined.
 
 (** Test Playground *)
 
@@ -443,4 +545,10 @@ Compute decoding_output_project (decode (X := unit) (encode (tt, tt))).
 
 Compute (encode (X := list unit * (unit + unit) * (unit + unit)) ([tt;tt;tt], inr tt, inl tt)).
 Compute decoding_output_project (decode (X := list unit * (unit + unit) * (unit + unit)) (encode ([tt;tt;tt], inr tt, inl tt))).
+
+Compute encode [true; false].
+Compute encode [inl (Some (true)); inl None; inr tt].
+
+Compute (encode (Some [inl (Some (true)); inl None; inr 42])).
+Compute decoding_output_project (decode (X := option (list (option (bool) + nat))) (encode (Some [inl (Some (true)); inl None; inr 42]))).
 *)
