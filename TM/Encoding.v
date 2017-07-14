@@ -1,4 +1,5 @@
 Require Import Prelim.
+Require Import Recdef.
 
 (** * Suffix *)
 
@@ -180,38 +181,29 @@ Proof.
   exists rest2. apply suffix_skip. eapply suffix_transitive; eauto.
 Defined.
 
-Fixpoint decode_list' (X : Type) (decodeEntries : decoding_function X) (string : list bool)
-         (ind : suffix_induction string) { struct ind } :
+Function decode_list (X : Type) (decodeEntries : decoding_function X) (string : list bool) {measure length string} :
   option (list X * {rest : list bool & suffix rest string }) :=
-  let E := eq_refl : string = string in
-  (match string as string'
-         return
-         (string = string' ->
-          option (list X * {rest : list bool & suffix rest string' })) with
-   | nil => fun E0 : string = [] => None
-   | true  :: ss => fun E0 : string = true :: ss =>
-                     match (decodeEntries ss) with
-                     | None => None
-                     | Some (dec1, Rest1) =>
-                       match ind with
-                       | suffix_induction_con H => 
-                         match (@decode_list' X decodeEntries (projT1 Rest1) (H (projT1 Rest1)
-                                                                                (decode_list'_helper1 Rest1 E0)
-                                                                                (decode_list'_helper2 E0)
-                               )) with
-                         | None => None
-                         | Some (dec2, Rest2) =>
-                           Some (dec1 :: dec2, @decode_list'_helper3 true string ss Rest1 Rest2)
-                         end
-                       end
-                     end
-   | false :: ss => fun E0 : string = false :: ss => Some (nil, existT _ ss (suffix_skip' _ _))
-   end) E.
+  match string with
+   | nil =>  None
+   | true  :: ss => 
+     match (decodeEntries ss) with
+     | None => None
+     | Some (dec1, Rest1) =>
+       match
+         @decode_list X decodeEntries (projT1 Rest1) with
+       | None => None
+       | Some (dec2, Rest2) =>
+         Some (dec1 :: dec2, @decode_list'_helper3 true string ss Rest1 Rest2)
+       end
+     end
+   | false :: ss =>  Some (nil, existT _ ss (suffix_skip' _ _))
+   end.
+Proof.
+  intros X decodeEntries string b ss E2 E1 _ dec1 Rest1 _ H.
+  eapply suffix_size_decrease. eapply decode_list'_helper2; eauto. eapply decode_list'_helper1; eauto.
+Defined.
 
-Definition decode_list (X : Type) (decodeEntries : decoding_function X)
-           (string : list bool) :=
-  @decode_list' X decodeEntries string (suffix_induction_provider string).
-
+(** Pair decoding *)
 
 Definition decode_pair (X Y : Type) (decode1 : decoding_function X) (decode2 : decoding_function Y) (string : list bool) :
   option ((X * Y) * {rest : list bool & suffix rest string}).
@@ -220,6 +212,8 @@ Proof.
   destruct (decode2 rest1)  as [ (dec2, (rest2, Hrest2)) | ]; [ | invalid_encoding].
   do 2 constructor. constructor. apply dec1. apply dec2. exists rest2. eapply suffix_transitive; eauto.
 Defined.
+
+(** Sum decoding *)
 
 Definition decode_sum (X Y : Type) (decode1 : decoding_function X) (decode2 : decoding_function Y) (string : list bool) :
   option ((X + Y) * {rest : list bool & suffix rest string}).
@@ -257,26 +251,23 @@ Qed.
 Lemma encode_decode_list (X : Type) (e : codeable X) (string : list bool) ls rest :
   decode_list decode string = Some (ls, rest) -> encode_list encode ls ++ (projT1 rest) = string.
 Proof.
-  unfold decode_list.
-  generalize (suffix_induction_provider string) as ind.
-  intros ind. revert ls rest. induction ind as [xs H IH]; intros ls rest H1.
-  cbn in *.
+  revert ls rest.
+  pose proof (suffix_induction_provider string) as ind.
+  induction ind as [ xs H IH]; rewrite !decode_list_equation; intros ls rest H1; rewrite <- decode_list_equation in *.
   destruct xs as [ | x ss] eqn:E; try discriminate.
-  destruct x; cbn in *.
-  - destruct (decode ss) as [(dec1, Rest1)| ] eqn:E2; try discriminate; cbn in *.
-    destruct (decode_list' decode
-                           (H (projT1 Rest1)
-                              (decode_list'_helper1 Rest1 eq_refl)
-                              (decode_list'_helper2 eq_refl)))
+  destruct x; rewrite !decode_list_equation in *.
+  - destruct (decode ss) as [(dec1, Rest1)| ] eqn:E2; try discriminate; simpl in *.
+    destruct (decode_list decode (projT1 Rest1))
       as [(dec2, Rest2)| ] eqn:E3; try discriminate. inv H1.
-    specialize (IH _ _ _ _ _ E3).
-    destruct Rest1, Rest2. cbn in *. f_equal.
-    rewrite <- app_assoc. rewrite IH.
-    erewrite <- encode_decode; eauto.
-    cbn. reflexivity.
+    apply IH in E3; auto.
+    + destruct Rest1, Rest2. simpl in *. f_equal.
+      rewrite <- app_assoc. rewrite E3.
+      erewrite <- encode_decode; eauto.
+      cbn. reflexivity.
+    + eapply decode_list'_helper1; eauto.
+    + eapply decode_list'_helper2; eauto.
   - inv H1. cbn. reflexivity.
 Qed.
-
 
 Lemma decode_encode_list (X : Type) (e : codeable X) :
   forall (v : list X) (rest : list bool),
@@ -285,19 +276,19 @@ Lemma decode_encode_list (X : Type) (e : codeable X) :
     | None => False
     end.
 Proof.
-  intros v. induction v as [ | v vs IH]; intros rest.
-  - cbn. auto.
-  - cbn in *. rewrite <- !app_assoc in *.
+  intros v rest.
+  revert rest.
+  induction v as [ | v vs IH]; intros rest; rewrite !decode_list_equation; simpl.
+  - auto.
+  - rewrite <- !app_assoc in *.
     pose proof (decode_encode v (encode_list encode vs ++ rest)) as E1'.
-    destruct (decode (encode v ++ encode_list encode vs ++ rest)) as [(dec1&rest1&HRest1)| ] eqn:E1; cbn; auto.
-    cbn in E1'. destruct E1' as (->&->).
+    destruct (decode (encode v ++ encode_list encode vs ++ rest)) as [(dec1&rest1&Hrest1)| ] eqn:E1; auto.
+    simpl in *. destruct E1' as (->&->).
     specialize (IH rest).
-    destruct (encode_list encode vs ++ rest); auto.
-    destruct b; cbn in *; auto.
-    + destruct (decode l); auto. destruct p, s; cbn in *; auto.
-      destruct x0; cbn in *; auto. destruct b; cbn in *; auto. admit. admit.
-    + now destruct IH as (->&->).
-Admitted.
+    destruct (decode_list decode (encode_list encode vs ++ rest)) as [(dec2&rest2&Hrest2)| ]; auto.
+    simpl in *. destruct IH as (->&->). auto.
+Qed.
+
 
 Instance I_list (X : Type) (e1 : codeable X) : codeable (list X).
 Proof.
@@ -446,29 +437,10 @@ Defined.
 
 (** Test Playground *)
 
+(*
 Compute decoding_output_project (decode (X := unit) (encode tt)).
 Compute decoding_output_project (decode (X := unit) (encode (tt, tt))).
 
 Compute (encode (X := list unit * (unit + unit) * (unit + unit)) ([tt;tt;tt], inr tt, inl tt)).
 Compute decoding_output_project (decode (X := list unit * (unit + unit) * (unit + unit)) (encode ([tt;tt;tt], inr tt, inl tt))).
-
-
-(*
-Compute decoding_output_project (decode (codunit) []).
-Compute decoding_output_project (decode (codtuple codunit codunit) []).
-Compute decoding_output_project (decode (codtriple codunit codunit codunit) []).
-Compute ((@from_option codbool (Some (from_bool false)), from_nat 3)).
-Compute decoding_output_project
-        (decode (codtuple (codopt codbool) codnat)
-                (@encode (codtuple (codopt codbool) codnat)
-                         (@from_option codbool (Some (from_bool false)), from_nat 3))).
-Compute decoding_output_project
-        (decode (codtuple (codopt codbool) codnat)
-                (@encode (codtuple (codopt codbool) codnat)
-                         (@from_option codbool None, from_nat 3))).
-Compute decoding_output_project
-        (decode (codtuple (codopt codbool) codnat)
-                (@encode (codtuple (codopt codbool) codnat)
-                         (@from_option codbool None, from_nat 3) ++ [true; true; false])).
 *)
-
