@@ -1,4 +1,4 @@
-Require Import Prelim Relations TM Shared.Tactics.AutoIndTac Compound Injection.
+Require Import Prelim Relations TM Shared.Tactics.AutoIndTac Injection.
 
 Lemma Vector_nth_In (X : Type) (n : nat) (p : Fin.t n) (m : nat) (new_pos : X) (V : Vector.t X n) :
     V[@p] = new_pos -> Vector.In (new_pos) V.

@@ -10,10 +10,10 @@ TM/Relations.v
 TM/TM.v
 
 TM/Basic/Nop.v
-TM/Basic/Basic.v
-TM/Basic/Mono.v
-TM/Basic/Multi.v
-TM/Basic/WriteString.v
+# TM/Basic/Basic.v
+# TM/Basic/Mono.v
+# TM/Basic/Multi.v
+# TM/Basic/WriteString.v
 
 TM/Combinators/Combinators.v
 TM/Combinators/Match.v
@@ -21,7 +21,7 @@ TM/Combinators/SequentialComposition.v
 TM/Combinators/If.v
 TM/Combinators/While.v
 
-TM/Compound.v
+# TM/Compound.v
 
 TM/Injection.v
 TM/LiftNM.v

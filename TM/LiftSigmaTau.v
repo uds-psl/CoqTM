@@ -1,4 +1,4 @@
-Require Import Prelim TM.Relations TM Shared.Tactics.AutoIndTac Compound Injection.
+Require Import Prelim TM.Relations TM Shared.Tactics.AutoIndTac Injection.
 
 Section MapTape.
   Variable sig tau : finType.
