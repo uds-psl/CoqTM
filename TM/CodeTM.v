@@ -177,8 +177,6 @@ Section Computes_Composes.
     apply HComp'. apply HComp. assumption.
   Qed.
 
-  Print SequentialComposition.
-
   Lemma compose_computes_total (iin iout : Fin.t (S n_tapes)) (k1 k2 : nat) :
     pM ⊨(k1) computes_locally_R_p (F := F1) i1 i2 _ _ f ->
     pN ⊨(k2) computes_locally_R_p (F := F2) i2 i3 _ _ g ->
