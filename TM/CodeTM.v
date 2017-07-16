@@ -18,12 +18,20 @@ Section Tape_Local.
 
   Lemma tape_local_current_cons (x : sig) (xs : list sig) (t : tape sig) :
     tape_local t = x :: xs -> current t = Some x.
-  Proof. destruct t eqn:E; cbn; try congruence. Qed.
+  Proof. destruct t eqn:E; cbn; congruence. Qed.
 
   Lemma tape_local_right (x : sig) (xs : list sig) (t : tape sig) :
     tape_local t = x :: xs -> right t = xs.
-  Proof. destruct t eqn:E; cbn; try congruence. Qed.
-    
+  Proof. destruct t eqn:E; cbn; congruence. Qed.
+
+  Lemma tape_local_iff (t : tape sig) (xs : list sig) :
+    (tape_local t = xs /\ xs <> nil) <-> (exists x xs', xs = x :: xs' /\ current t = Some x /\ right t = xs').
+  Proof.
+    split.
+    - intros (H1&H2). destruct t eqn:E; cbn in *; try congruence. eauto.
+    - intros (x&xs'&->&H1&<-). split. destruct t eqn:E; cbn in *; congruence. discriminate.
+  Qed.
+
 End Tape_Local.
     
 Section Tape_Encodes.
