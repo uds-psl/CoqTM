@@ -44,6 +44,18 @@ Section Fix_TM_do_2.
 End Fix_TM_do_2.
 Arguments do_on_tapes {sig tapes_no} _ _ _.
 
+Lemma vect_map2_constant (X Y : Type) (n : nat) (f : X -> Y -> X) (xv : Vector.t X n) (yv : Vector.t Y n) :
+  (forall (x : X) (y : Y), Vector.In x xv -> Vector.In y yv -> f x y = x) ->
+  Vector.map2 f xv yv = xv.
+Proof.
+  Require Import Program.Equality.
+  revert xv yv. induction n; cbn in *; intros xv yv H.
+  - dependent destruct' xv. dependent destruct' yv. cbn in *. reflexivity.
+  - dependent destruct xv. dependent destruct yv. cbn in *.
+    rewrite H; [ | econstructor | econstructor]. f_equal. rewrite IHn; eauto.
+    intros x y H1 H2. rewrite H; eauto; econstructor; eauto.
+Qed.
+
 Section Fix_TM_do.
 
   Variable tapes_no : nat.
@@ -65,9 +77,11 @@ Section Fix_TM_do.
 
   Lemma do_on_tape_nothing t : tape_move_multi t (do_on_tape (None, TM.N)) = t.
   Proof.
-    unfold do_on_tape, tape_move_multi.
-    admit.
-  Admitted.
+    unfold do_on_tape, tape_move_multi. apply vect_map2_constant.
+    intros x y Hx Hy.
+    pose proof (in_tabulate is_a_tape Hy) as (i&Hi&->).
+    decide (i = on_tape); cbn; auto.
+  Qed.
   
   Lemma get_at_do_on_tape1 a :
     get_at is_a_tape (do_on_tape a) = a.

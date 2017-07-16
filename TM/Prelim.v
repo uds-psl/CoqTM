@@ -164,6 +164,64 @@ Hint Unfold compose.
 
 (** * Some missing Vector functions *)
 
+Tactic Notation "dependent" "destruct'" constr(V) :=
+  match type of V with
+  | Vector.t ?Z 0 =>
+    revert all except V;
+    pattern V; revert V;
+    eapply case0; intros
+  | Vector.t ?Z (S ?n) =>
+    revert all except V;
+    pattern V; revert n V;
+    eapply caseS; intros
+  | Fin.t 0 => inv V
+  | Fin.t (S ?n) =>
+    let pos := V in
+    revert all except pos;
+    pattern pos; revert n pos;
+    eapply Fin.caseS; intros
+  | _ => fail "Wrong type"
+  end.
+
+Tactic Notation "dependent" "destruct" constr(V) :=
+  match type of V with
+  | Vector.t ?Z (S ?n) =>
+    revert all except V;
+    pattern V; revert n V;
+    eapply caseS; intros
+  | Fin.t 0 => inv V
+  | Fin.t (S ?n) =>
+    let pos := V in
+    revert all except pos;
+    pattern pos; revert n pos;
+    eapply Fin.caseS; intros
+  | _ => fail "Wrong type"
+  end.
+
+
+Section In_nth.
+  Variable (A : Type) (n : nat).
+
+  Lemma vect_nth_In (v : Vector.t A n) (i : Fin.t n) (x : A) :
+    Vector.nth v i = x -> Vector.In x v.
+  Proof.
+    induction n; cbn in *.
+    - inv i.
+    - dependent destruct v. dependent destruct i; cbn in *; subst; econstructor; eauto.
+  Qed.
+
+  Lemma vect_nth_In' (v : Vector.t A n) (x : A) :
+    Vector.In x v -> exists i : Fin.t n, Vector.nth v i = x.
+  Proof.
+    induction n; cbn in *.
+    - inversion 1.
+    - dependent destruct v. inv H.
+      + apply EqdepFacts.eq_sigT_eq_dep in H3. induction H3. exists Fin.F1. auto.
+      + apply EqdepFacts.eq_sigT_eq_dep in H3. induction H3. specialize (IHn0 _ H2) as (i&<-). exists (Fin.FS i). auto.
+  Qed.
+
+End In_nth.
+
 
 Section tabulate_vec.
 
@@ -186,6 +244,17 @@ Section tabulate_vec.
     - cbn. rewrite IHm. reflexivity.
   Qed.
   
+  Lemma in_tabulate' n (f : Fin.t n -> X) (x : X) :
+    In x (tabulate_vec' (n := n) f) -> exists i : Fin.t n, x = f i.
+  Proof.
+    Require Import Program.Equality.
+    revert f x. induction n; intros f x H.
+    - cbn in *. inv H.
+    - cbn in *. dependent induction H.
+      + eauto.
+      + specialize (IHn (fun m => f (Fin.FS m)) _ H) as (i&IH). eauto.
+  Qed.
+  
   Definition tabulate_vec (n : nat) (f : nat -> X) : Vector.t X n :=
     @tabulate_vec' n (fun n => f (proj1_sig (Fin.to_nat n))).
 
@@ -194,6 +263,15 @@ Section tabulate_vec.
   Proof.
     unfold tabulate_vec. rewrite nth_tabulate'. f_equal.
     symmetry. rewrite Fin.to_nat_of_nat. reflexivity.
+  Qed.
+
+  Lemma in_tabulate n (f : nat -> X) m (H : m < n) (x : X) :
+    In x (tabulate_vec n f) -> exists i : nat, i < n /\ x = f i.
+  Proof.
+    unfold tabulate_vec. intros H1.
+    pose proof (in_tabulate' H1). cbn in *.
+    destruct H0 as (i&Hi). exists (proj1_sig (Fin.to_nat i)). split; auto.
+    destruct (Fin.to_nat i); cbn; auto.
   Qed.
 
 End tabulate_vec.
@@ -247,22 +325,6 @@ Proof.
   reflexivity.
   eapply Fin.of_nat_ext.
 Qed.  
-
-
-Tactic Notation "dependent" "destruct" constr(V) :=
-  match type of V with
-  | Vector.t ?Z (S ?n) =>
-    revert all except V;
-    pattern V; revert n V;
-    eapply caseS; intros
-  | Fin.t 0 => inv V
-  | Fin.t (S ?n) =>
-    let pos := V in
-    revert all except pos;
-    pattern pos; revert n pos;
-    eapply Fin.caseS; intros
-  | _ => fail "Wrong type"
-  end.
 
 
 Lemma nth_map {A B} (f: A -> B) {n} v (p1 p2: Fin.t n) (eq: p1 = p2):

@@ -20,6 +20,7 @@ Coercion Rel3_is_Rel : Rel3 >-> Rel.
 Definition fun_to_Rel F B Z  (R : F -> Rel B Z) : Rel (F * B) Z := fun p z => let (f,b) := p in R f b z.
 Notation "'⇑' R" := (fun_to_Rel R) (at level 30, format "'⇑' R").
 
+Definition Univ_rel {X Y : Type} : X -> Y -> Prop := fun x y => True.
 Definition Empty_rel {X Y : Type} : X -> Y -> Prop := fun x y => False.
 
 Definition rcomp X Y Z (R : Rel X Y) (S : Rel Y Z) : Rel X Z :=
