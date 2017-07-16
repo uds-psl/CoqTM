@@ -28,3 +28,4 @@ TM/LiftNM.v
 TM/LiftSigmaTau.v
 
 TM/Code.v
+TM/CodeTM.v
