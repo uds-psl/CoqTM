@@ -27,5 +27,6 @@ TM/Injection.v
 TM/LiftNM.v
 TM/LiftSigmaTau.v
 
-TM/Code.v
-TM/CodeTM.v
+TM/Code/Code.v
+TM/Code/CodeTM.v
+TM/Code/BoolTM.v

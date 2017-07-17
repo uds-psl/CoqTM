@@ -198,82 +198,61 @@ Section Computes_Composes.
 End Computes_Composes.
 
 
-Section Neg_TM.
+Section Computes2.
+  Variable n_tapes : nat.
+  Variable (i j k : Fin.t n_tapes).
+  Variable (X Y Z : Type) (cX : codeable X) (cY : codeable Y) (cZ : codeable Z).
+  Variable f : X * Y -> Z.
+  Variable F : finType.
 
-  Variable (F : finType) (def : bool_fin -> F).
+  Definition computes2_locally_R : relation (tapes bool_fin n_tapes) :=
+    fun tin tout =>
+      forall (x : X) (y : Y),
+        tape_encodes_locally cX ( tin[@i]) x ->
+        tape_encodes_locally cY ( tin[@j]) y ->
+        tape_encodes_locally cZ (tout[@k]) (f (x, y)).
 
-  Definition neg_TM_trans_mono :
-    bool_fin * (Vector.t (option bool_fin) 1) ->
-    bool_fin * (Vector.t (option bool_fin * move) 1).
+  Definition computes2_locally_R' : relation (tapes bool_fin n_tapes) :=
+    fun tin tout =>
+      forall (x : X) (y : Y),
+        tape_encodes_locally' cX ( tin[@i]) x ->
+        tape_encodes_locally' cY ( tin[@j]) y ->
+        tape_encodes_locally' cZ (tout[@k]) (f (x, y)).
+
+  Lemma computes2_locally_R_iff (tin tout : tapes bool_fin n_tapes) :
+    computes2_locally_R tin tout <-> computes2_locally_R' tin tout.
   Proof.
-    intros ([ | ], rd).
-    - constructor. apply true. constructor. apply (None, N). constructor.
-    - destruct (rd[@Fin.F1]) as [[ | ] | ].
-      + (* Some true  *) constructor. apply true. constructor. apply (Some false, N). constructor.
-      + (* Some false *) constructor. apply true. constructor. apply (Some true,  N). constructor.
-      + (* None       *) constructor. apply true. constructor. apply (None,       N). constructor.
-  Defined.
-
-  Definition neg_TM : mTM bool_fin 0.
-  Proof.
-    split with (states := bool_fin).
-    - apply neg_TM_trans_mono.
-    - apply false.
-    - apply id.
-  Defined.
-
-  Definition neg_mTM : { M : mTM bool_fin 0 & states M -> F}.
-  Proof.
-    exists neg_TM. apply def.
-  Defined.
-
-  Require Import Program.Equality.
-    
-  Lemma neg_TM_onestep (inittapes : tapes bool_fin 1) :
-    cstate (step (M := neg_TM) (initc neg_TM inittapes)) = true.
-  Proof.
-    unfold initc, step, neg_TM in *. cbn in *.
-    dependent induction inittapes. dependent induction inittapes. cbn in *. clear IHinittapes.
-    destruct (current h); cbn; auto. destruct e; cbn; auto.
+    unfold computes2_locally_R, computes2_locally_R'; intuition.
+    rewrite <- tape_encodes_locally_iff in *; auto.
+    rewrite -> tape_encodes_locally_iff in *; auto.
   Qed.
 
-  Lemma neg_TM_computes_sem :
-    neg_mTM ⊫ computes_locally_R_p (F := F) Fin.F1 Fin.F1 _ _ negb.
+  Definition computes2_locally_R_p : Rel (tapes bool_fin n_tapes) (F * tapes bool_fin n_tapes) :=
+    ignoreParam (computes2_locally_R).
+
+  Definition computes2_global_R : relation (tapes bool_fin n_tapes) :=
+    fun tin tout =>
+      forall (x : X) (y : Y),
+        tape_encodes_global cX ( tin[@i]) x ->
+        tape_encodes_global cY ( tin[@j]) y ->
+        tape_encodes_global cZ (tout[@j]) (f (x, y)).
+
+  Definition computes2_global_R' : relation (tapes bool_fin n_tapes) :=
+    fun tin tout =>
+      forall (x : X) (y : Y),
+        tape_encodes_global' cX ( tin[@i]) x ->
+        tape_encodes_global' cY ( tin[@j]) y ->
+        tape_encodes_global' cZ (tout[@j]) (f (x, y)).
+
+  Lemma computes2_global_R_iff (tin tout : tapes bool_fin n_tapes) :
+    computes2_global_R tin tout <-> computes2_global_R' tin tout.
   Proof.
-    hnf. intros inittapes i (b, outt) HLoop. cbn in *.
-    assert (i >= 1).
-    {
-      destruct i; cbn in *; try discriminate. cbn in *. omega.
-    }
-    pose proof loop_fulfills_p HLoop as H_Stop. cbn in *. destruct b; auto.
-    unfold loopM in *.
-    erewrite (loop_ge (k1 := 1) (k2 := i)) in HLoop. Focus 2. omega. Focus 2.
-    cbn. unfold id. unfold neg_TM. cbn. rewrite neg_TM_onestep. reflexivity. inv HLoop.
-    apply computes_locally_R_iff. hnf. intros x (rest1&E1).
-    unfold initc, step, neg_TM in *. cbn in *.
-    dependent induction inittapes. dependent induction inittapes. cbn in *. clear IHinittapes.
-    hnf.
-    destruct x; cbn in *;
-      erewrite !tape_local_current_cons in H1; eauto; cbn in *; inv H1; cbn in *; now eauto.
+    unfold computes2_global_R, computes2_global_R'; intuition.
+    rewrite <- tape_encodes_global_iff in *; auto.
+    rewrite -> tape_encodes_global_iff in *; auto.
   Qed.
 
-  Lemma neg_TM_computes_terminates_in :
-    neg_TM ↓ (fun _ => fun t => t = 1).
-  Proof.
-    hnf. intros inittape i ->. cbn. unfold id. rewrite neg_TM_onestep. eauto.
-  Qed.
+  Definition computes2_global_R_p : Rel (tapes bool_fin n_tapes) (F * tapes bool_fin n_tapes) :=
+    ignoreParam (computes2_global_R).
 
-  Lemma neq_TM_computes_total :
-    neg_mTM ⊨(1) computes_locally_R_p (F := F) Fin.F1 Fin.F1 _ _ negb.
-  Proof.
-    hnf. intros inittape.
-    dependent induction inittape. dependent induction inittape. clear IHinittape; cbn in *.
-    unfold id. rewrite neg_TM_onestep. econstructor. split. eauto.
-    hnf. intros x.
-    rewrite !tape_encodes_locally_iff. unfold tape_encodes_locally'. intros (tape&bl). cbn in *.
-    destruct x; cbn in *; exists tape;
-      cbn; unfold neg_TM, step; cbn;
-        erewrite tape_local_current_cons; eauto; cbn; f_equal; eapply tape_local_right; eauto.
-    Qed.
-  
-End Neg_TM.
+End Computes2.
