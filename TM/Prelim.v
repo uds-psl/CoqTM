@@ -1,5 +1,6 @@
 Require Export Shared.FiniteTypes.FinTypes Shared.FiniteTypes.BasicFinTypes Shared.FiniteTypes.CompoundFinTypes Shared.FiniteTypes.VectorFin  Shared.Tactics.AutoIndTac.
 Require Export Shared.Extra Shared.Base.
+Require Export Program.Equality.
 
 Declare ML Module "smpl".
 
@@ -198,6 +199,13 @@ Tactic Notation "dependent" "destruct" constr(V) :=
   | _ => fail "Wrong type"
   end.
 
+(* Destruct a vector of known size *)
+Ltac destruct_vector :=
+  repeat match goal with
+         | [ H : Vector.t ?X ?n |- _ ] => let IH := fresh "IH" H in
+                                        dependent induction H;
+                                        try clear IH
+         end.
 
 Section In_nth.
   Variable (A : Type) (n : nat).

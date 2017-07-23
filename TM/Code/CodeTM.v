@@ -11,7 +11,7 @@ Section Tape_Local.
   Definition tape_local (t : tape sig) : list sig :=
     match t with
     | niltape _ => nil
-    | leftof a l => nil (* XXX *)
+    | leftof a l => nil
     | rightof _ _ => nil
     | midtape _ a l => a :: l
     end.
@@ -32,69 +32,49 @@ Section Tape_Local.
     - intros (x&xs'&->&H1&<-). split. destruct t eqn:E; cbn in *; congruence. discriminate.
   Qed.
 
+  Lemma tape_local_nil (t : tape sig) :
+    tape_local t = nil <-> current t = None.
+  Proof.
+    destruct t; cbn; intuition; auto; congruence.
+  Qed.
+
+  Lemma tape_local_move_right (t : tape sig) (x : sig) (xs : list sig) :
+    tape_local t = x :: xs -> tape_local (tape_move_right t) = xs.
+  Proof.
+    intro H. destruct t eqn:E; cbn in *; try congruence.
+    inv H. destruct xs; cbn; auto.
+  Qed.
+
 End Tape_Local.
     
 Section Tape_Encodes.
 
   Variable (X : Type) (cX : codeable X).
 
-  Definition tape_encodes_locally (t : tape bool_fin) (x : X) : Prop :=
-    match decoding_output_project (decode (tape_local t)) with
-    | Some (cod, rest) => x = cod
-    | None => False
-    end.
+  Definition tape_encodes_locally_rest (t : tape bool_fin) (x : X) (rest : list bool_fin) : Prop :=
+    tape_local t = encode x ++ rest.
 
-  Definition tape_encodes_locally' (t : tape bool_fin) (x : X) : Prop :=
-    exists rest, tape_local t = encode x ++ rest.
+  Definition tape_encodes_locally (t : tape bool_fin) (x : X) : Prop :=
+    exists rest, tape_encodes_locally_rest t x rest.
   
-  Lemma tape_encodes_locally_iff (t : tape bool_fin) (x : X) :
-    tape_encodes_locally t x <-> tape_encodes_locally' t x.
-  Proof.
-    unfold tape_encodes_locally, decoding_output_project, tape_encodes_locally'. split.
-    - intros H. destruct (decode (tape_local t)) as [(cod&Rest)| ] eqn:E; auto. subst.
-      pose proof (@encode_decode _ _ (tape_local t) cod Rest E). eauto.
-    - intros (rest, ->).
-      pose proof (@decode_encode _ _ x rest).
-      pose proof (@encode_decode _ _ (tape_local t) x) as L.
-      destruct (decode (encode x ++ rest)) as [(dec,Rest)| ] eqn:E; auto.
-      intuition; auto.
-  Qed.
-  
-  Definition tape_encodes_locally_rest (t : tape bool_fin) (x_rest : X * list bool) : Prop :=
-    match decoding_output_project (decode (tape_local t)) with
-    | Some out => x_rest = out
-    | None => False
-    end.
+  Definition tape_encodes_global_rest (t : tape bool_fin) (x : X) (rest : list bool_fin) : Prop :=
+    exists rest, tapeToList t = encode x ++ rest.
 
   Definition tape_encodes_global (t : tape bool_fin) (x : X) : Prop :=
-    match decoding_output_project (decode (tapeToList t)) with
-    | Some (cod, rest) => x = cod
-    | None => False
-    end.
-
-  Definition tape_encodes_global' (t : tape bool_fin) (x : X) : Prop :=
-    exists rest, tapeToList t = encode x ++ rest.
+    exists rest, tape_encodes_global_rest t x rest.
   
-  Lemma tape_encodes_global_iff (t : tape bool_fin) (x : X) :
-    tape_encodes_global t x <-> tape_encodes_global' t x.
-  Proof.
-    unfold tape_encodes_global, decoding_output_project, tape_encodes_global'. split.
-    - intros H. destruct (decode (tapeToList t)) as [(cod&Rest)| ] eqn:E; auto. subst.
-      pose proof (@encode_decode _ _ (tapeToList t) cod Rest E). eauto.
-    - intros (rest, ->).
-      pose proof (@decode_encode _ _ x rest).
-      pose proof (@encode_decode _ _ (tapeToList t) x) as L.
-      destruct (decode (encode x ++ rest)) as [(dec,Rest)| ] eqn:E; auto.
-      intuition; auto.
-  Qed.
-  
-  Definition tape_encodes_global_rest (t : tape bool_fin) (x_rest : X * list bool) : Prop :=
-    match decoding_output_project (decode (tapeToList t)) with
-    | Some out => x_rest = out
-    | None => False
-    end.
-
 End Tape_Encodes.
+
+Hint Unfold tape_encodes_locally tape_encodes_locally_rest tape_encodes_global tape_encodes_global_rest.
+
+(*
+(* TODO *)
+(* Set X and cX as implict and maximally inserted *)
+Arguments tape_encodes_locally {_} {_}.
+Arguments tape_encodes_locally_rest {_} {_}.
+Arguments tape_encodes_global {_} {_}.
+Arguments tape_encodes_global_rest {_} {_}.
+*)
 
 Section Computes.
   Variable n_tapes : nat.
@@ -109,20 +89,6 @@ Section Computes.
         tape_encodes_locally _ ( tin[@i]) x ->
         tape_encodes_locally _ (tout[@j]) (f x).
 
-  Definition computes_locally_R' : relation (tapes bool_fin n_tapes) :=
-    fun tin tout =>
-      forall (x : X),
-        tape_encodes_locally' _ ( tin[@i]) x ->
-        tape_encodes_locally' _ (tout[@j]) (f x).
-
-  Lemma computes_locally_R_iff (tin tout : tapes bool_fin n_tapes) :
-    computes_locally_R tin tout <-> computes_locally_R' tin tout.
-  Proof.
-    unfold computes_locally_R, computes_locally_R'; intuition.
-    rewrite <- tape_encodes_locally_iff in *; auto.
-    rewrite -> tape_encodes_locally_iff in *; auto.
-  Qed.
-
   Definition computes_locally_R_p : Rel (tapes bool_fin n_tapes) (F * tapes bool_fin n_tapes) :=
     ignoreParam (computes_locally_R).
 
@@ -132,24 +98,12 @@ Section Computes.
         tape_encodes_global _ ( tin[@i]) x ->
         tape_encodes_global _ (tout[@j]) (f x).
   
-  Definition computes_global_R' : relation (tapes bool_fin n_tapes) :=
-    fun tin tout =>
-      forall (x : X),
-        tape_encodes_global' _ ( tin[@i]) x ->
-        tape_encodes_global' _ (tout[@j]) (f x).
-
-  Lemma computes_global_R_iff (tin tout : tapes bool_fin n_tapes) :
-    computes_global_R tin tout <-> computes_global_R' tin tout.
-  Proof.
-    unfold computes_global_R, computes_global_R'; intuition.
-    rewrite <- tape_encodes_global_iff in *; auto.
-    rewrite -> tape_encodes_global_iff in *; auto.
-  Qed.
-
   Definition computes_global_R_p : Rel (tapes bool_fin n_tapes) (F * tapes bool_fin n_tapes) :=
     ignoreParam (computes_global_R).
 
 End Computes.
+
+Hint Unfold computes_locally_R computes_locally_R computes_locally_R_p computes_global_R computes_global_R_p.
 
 Section Computes_Composes.
 
@@ -212,21 +166,6 @@ Section Computes2.
         tape_encodes_locally cY ( tin[@j]) y ->
         tape_encodes_locally cZ (tout[@k]) (f (x, y)).
 
-  Definition computes2_locally_R' : relation (tapes bool_fin n_tapes) :=
-    fun tin tout =>
-      forall (x : X) (y : Y),
-        tape_encodes_locally' cX ( tin[@i]) x ->
-        tape_encodes_locally' cY ( tin[@j]) y ->
-        tape_encodes_locally' cZ (tout[@k]) (f (x, y)).
-
-  Lemma computes2_locally_R_iff (tin tout : tapes bool_fin n_tapes) :
-    computes2_locally_R tin tout <-> computes2_locally_R' tin tout.
-  Proof.
-    unfold computes2_locally_R, computes2_locally_R'; intuition.
-    rewrite <- tape_encodes_locally_iff in *; auto.
-    rewrite -> tape_encodes_locally_iff in *; auto.
-  Qed.
-
   Definition computes2_locally_R_p : Rel (tapes bool_fin n_tapes) (F * tapes bool_fin n_tapes) :=
     ignoreParam (computes2_locally_R).
 
@@ -237,22 +176,63 @@ Section Computes2.
         tape_encodes_global cY ( tin[@j]) y ->
         tape_encodes_global cZ (tout[@j]) (f (x, y)).
 
-  Definition computes2_global_R' : relation (tapes bool_fin n_tapes) :=
-    fun tin tout =>
-      forall (x : X) (y : Y),
-        tape_encodes_global' cX ( tin[@i]) x ->
-        tape_encodes_global' cY ( tin[@j]) y ->
-        tape_encodes_global' cZ (tout[@j]) (f (x, y)).
-
-  Lemma computes2_global_R_iff (tin tout : tapes bool_fin n_tapes) :
-    computes2_global_R tin tout <-> computes2_global_R' tin tout.
-  Proof.
-    unfold computes2_global_R, computes2_global_R'; intuition.
-    rewrite <- tape_encodes_global_iff in *; auto.
-    rewrite -> tape_encodes_global_iff in *; auto.
-  Qed.
-
   Definition computes2_global_R_p : Rel (tapes bool_fin n_tapes) (F * tapes bool_fin n_tapes) :=
     ignoreParam (computes2_global_R).
 
 End Computes2.
+
+(* Copy the current data to the second tape and the first tape reamains locally the same (same rest). *)
+Section Copy_Stay.
+  Variable n_tapes : nat.
+  Variable (i j : Fin.t n_tapes).
+  Variable (X : Type) (cX : codeable X).
+  Variable F : finType.
+
+  Definition stay_locally_R1 : Rel (tape bool_fin) (tape bool_fin) :=
+    fun tp1 tp2 =>
+      forall (x : X) rest,
+        tape_encodes_locally_rest cX tp1 x rest ->
+        tape_encodes_locally_rest cX tp2 x rest.
+  
+  Definition stay_locally_R :=
+    fun tps1 tps2 => stay_locally_R1 (tps1[@i]) (tps2[@i]).
+
+  Definition stay_locally_R_p : Rel (tapes bool_fin n_tapes) (F * tapes bool_fin n_tapes) :=
+    ignoreParam stay_locally_R.
+
+  Lemma stay_locally_R_computes_id :
+    stay_locally_R <<=2 computes_locally_R i i _ _ (@id X).
+  Proof.
+    unfold stay_locally_R, stay_locally_R1,
+    computes_locally_R, tape_encodes_locally, tape_encodes_global_rest.
+    firstorder.
+  Qed.
+        
+End Copy_Stay.
+Hint Unfold stay_locally_R1 stay_locally_R stay_locally_R stay_locally_R_p.
+
+(* Copy the current data to the second tape and stop after the word on the first tape *)
+Section Copy_Move.
+  Variable n_tapes : nat.
+  Variable (i j : Fin.t n_tapes).
+  Variable (X : Type) (cX : codeable X).
+  Variable F : finType.
+
+  Definition skip_locally_R1 : Rel (tape bool_fin) (tape bool_fin) :=
+    fun tp1 tp2 =>
+      forall (x : X) rest,
+        tape_encodes_locally_rest _ tp1 x rest ->
+        tape_local tp2 = rest.
+
+  Definition skip_locally_R :=
+    fun tps1 tps2 => skip_locally_R1 (tps1[@i]) (tps2[@i]).
+
+  Definition copy_Move_locally_R : Rel (tapes bool_fin n_tapes) (tapes bool_fin n_tapes) :=
+    skip_locally_R ∩ computes_locally_R i j _ _ (@id X).
+
+  Definition copy_Move_locally_R_p : Rel (tapes bool_fin n_tapes) (F * tapes bool_fin n_tapes) :=
+    ignoreParam copy_Move_locally_R.
+
+End Copy_Move.
+
+Hint Unfold skip_locally_R skip_locally_R1 copy_Move_locally_R copy_Move_locally_R_p.

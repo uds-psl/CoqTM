@@ -340,3 +340,8 @@ Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 60, format "M
 Notation "M '⊫(' f ')' R" := ((M;f) ⊫ R) (no associativity, at level 60, format "M  '⊫(' f ')'  R").
 Notation "M '⊨(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨(' k ')'  R").
 Notation "M '⊨(' f ',' k ')' R" := (RealiseIn (M; f) R k) (no associativity, at level 45, format "M  '⊨(' f ',' k ')'  R").
+
+
+(* Destruct a vector of tapes of known size *)
+Ltac destruct_tapes := unfold tapes in *; destruct_vector.
+
