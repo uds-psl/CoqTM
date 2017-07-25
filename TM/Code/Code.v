@@ -212,6 +212,13 @@ Proof.
   - apply encode_injective_unit.
 Defined.
 
+(** Empty Set **)
+Instance I_empty : codeable Empty_set.
+Proof.
+  split with (encode := fun x : Empty_set => match x with end).
+  - intros v1. exfalso. destruct v1.
+Defined.
+
 
 (** * Castings **)
 
@@ -267,8 +274,9 @@ Defined.
 Instance I_nat : codeable nat.
 Proof. eapply I_cast. eapply cast_nat. auto. Defined.
 
-Section Fin.
 
+(* Non decodeable version *)
+Section Fin.
   Variable (n : nat).
 
   Definition fin_to_nat : (Fin.t n) -> nat :=
@@ -290,8 +298,70 @@ Section Fin.
 
   Instance I_Fin : codeable (Fin.t n).
   Proof. eapply I_cast. eapply cast_Fin. auto. Defined.
-  
 End Fin.
+
+(* Decodeable version *)
+Section Fin2.
+
+  Fixpoint cast_fin (n : nat) : Type :=
+    match n with
+    | 0 => Empty_set
+    | S n' => option (cast_fin n')
+    end.
+
+  Fixpoint cast_fin_codeable (n : nat) : codeable (cast_fin n) :=
+    match n with
+    | 0 => I_empty
+    | S n' => I_option (cast_fin_codeable n')
+    end.
+
+  Fixpoint fin_to_cast_fin (n : nat) (x : Fin.t n) : cast_fin n :=
+    match x with
+    | Fin.F1 => None
+    | @Fin.FS n' t => Some (@fin_to_cast_fin n' t)
+    end.
+
+  (* Compute cast_fin 2.
+  Compute fin_to_cast_fin (n := 3) (Fin.F1).
+  Compute fin_to_cast_fin (n := 3) (Fin.FS Fin.F1).
+  Compute fin_to_cast_fin (n := 3) (Fin.FS (Fin.FS Fin.F1)). *)
+
+  Fixpoint cast_fin_to_fin (n : nat) (x : cast_fin n) {struct n} : Fin.t n.
+  Proof.
+    destruct n; cbn in *; destruct x eqn:E.
+    - apply Fin.FS. apply (cast_fin_to_fin n c).
+    - apply Fin.F1.
+  Defined.
+
+  (* Compute cast_fin_to_fin (fin_to_cast_fin (n := 3) (Fin.FS Fin.F1)). *)
+
+  Lemma fin_to_cast_None (n : nat) (x : Fin.t (S n)) :
+    fin_to_cast_fin x = None -> x = Fin.F1.
+  Proof.
+    intros H. dependent induction x; auto. cbn in *. congruence.
+  Qed.
+
+  Lemma fin_to_cast_injective (n : nat) (x1 x2 : Fin.t n) :
+    fin_to_cast_fin x1 = fin_to_cast_fin x2 -> x1 = x2.
+  Proof.
+    revert x2. induction x1; intros x2 H; cbn in *.
+    - symmetry in H. eapply fin_to_cast_None in H. auto.
+    - dependent induction x2; cbn in *; auto; try congruence.
+      clear IHx2. inv H. f_equal. apply IHx1. assumption.
+  Qed.
+
+  Instance cast_fin2 (n : nat) : Cast (cast_fin n) (Fin.t n).
+  Proof.
+    split with (cast := fin_to_cast_fin (n := n)).
+    - apply fin_to_cast_injective.
+  Defined.
+
+  Instance I_Fin2 (n : nat) : codeable (Fin.t n).
+  Proof.
+    eapply I_cast. apply cast_fin2. apply cast_fin_codeable.
+  Defined.
+
+End Fin2.
 
 (** Test Playground *)
 
@@ -304,4 +374,5 @@ Compute encode [inl (Some (true)); inl None; inr tt].
 Compute (encode (Some [inl (Some (true)); inl None; inr 42])).
 
 Compute (@encode _ (I_Fin 10) (Fin.FS (Fin.FS (Fin.FS (Fin.F1))))).
+Compute (@encode _ (I_Fin2 10) (Fin.FS (Fin.FS (Fin.FS (Fin.F1))))).
 *)
