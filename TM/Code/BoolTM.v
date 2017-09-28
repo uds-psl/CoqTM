@@ -1,5 +1,5 @@
 Require Import TM.Prelim TM.TM TM.Code.Code TM.Code.CodeTM.
-Require Import TM.Combinators.SequentialComposition TM.Basic.Mono TM.Basic.Basic.
+Require Import TM.Combinators.SequentialComposition TM.Basic.Mono.
 
 Open Scope vector_scope.
 
@@ -254,13 +254,14 @@ Section CopyMove.
   Variable (F : finType) (def : bool_fin -> F).
 
   Local Definition Move_at_1 := Inject (n := 1) (Move bool_fin R) [| Fin.F1 |] .
+  Definition bool_copy_move_mTM := (bool_copy_mTM def ;; Move_at_1).
 
+
+  (* TODO: Automaticate this kind of lemmas *)
   Local Lemma dupfree : Injection.dupfree [| Fin.F1 (n := 1) |].
   Proof. constructor. inversion 1. constructor. Qed.
 
-  Definition bool_copy_move_mTM := (bool_copy_mTM def ;; Move_at_1).
-
-  Lemma Inj_1_helper : (1 < 2 /\ ~ Vector.In 1 [|0|]).
+  Local Lemma Inj_1_helper : (1 < 2 /\ ~ Vector.In 1 [|0|]).
   Proof.
     split.
     - omega.
@@ -269,7 +270,39 @@ Section CopyMove.
       apply EqdepFacts.eq_sigT_iff_eq_dep in H4. induction H4. destruct_vector. inv H3.
   Qed.
 
-  Definition bool_copy_move_TM_Sem :
+  Lemma bool_copy_move_TM_Sem :
+    bool_copy_move_mTM ⊨(3) copy_Move_locally_R_p (X := bool_fin) (F := bool_fin) Fin.F1 (Fin.FS Fin.F1) _.
+  Proof.
+    eapply RealiseIn_monotone with (k1 := 3); try omega.
+    - replace 3 with (1+1+1) by reflexivity. eapply Seq_total.
+      + eapply bool_copy_TM_computes_total.
+      + eapply Inject_total. apply dupfree. apply Move_Sem.
+    - intros intapes (fstate, ftapes). destruct_tapes. cbn. intros ((f, fstate')&(H1&H2)&H3&H4). hnf in *. split.
+      + intros x rest henc. hnf in *. cbn in *. clear H4.
+        assert (tape_encodes_locally I_bool h x) as lh1 by eauto. specialize (H1 _ lh1). clear lh1. hnf in H1.
+        destruct fstate; cbn in *.
+        * destruct H3 as (->&H3).
+          destruct x; cbn in henc.
+          -- erewrite tape_local_move_right; eauto. specialize (H2 true rest henc).  hnf in H2. cbn in H2. eauto.
+          -- erewrite tape_local_move_right; eauto. specialize (H2 false rest henc). hnf in H2. cbn in H2. eauto.
+        * hnf in H3. destruct H3 as (H3&<-).
+          destruct x; cbn in henc.
+          -- specialize (H2 true rest henc).  hnf in H2. cbn in H2. clear henc. exfalso.
+             enough (current fstate'[@Fin.F1] = Some true) by congruence.
+             eapply tape_local_current_cons; eauto.
+          -- specialize (H2 false rest henc). hnf in H2. cbn in H2. clear henc. exfalso.
+             enough (current fstate'[@Fin.F1] = Some false) by congruence.
+             eapply tape_local_current_cons; eauto.
+      + intros x HEnc. cbn in *. hnf in *. destruct HEnc as (rest&HEnc).
+        assert (tape_encodes_locally I_bool h x) as L1 by eauto. specialize (H1 _ L1). clear L1. (* XXX *)
+        specialize (H2 _ _ HEnc).
+        assert (1 < 2 /\ ~ Vector.In 1 [|0|]) as (L1&L2) by now apply Inj_1_helper.
+        specialize (H4 1 L1 L2). cbn in *. subst. eauto.
+  Qed.
+  
+    
+  (*
+  Lemma bool_copy_move_TM_Sem :
     bool_copy_move_mTM ⊫ copy_Move_locally_R_p (X := bool_fin) (F := bool_fin) Fin.F1 (Fin.FS Fin.F1) _.
   Proof.
     unfold bool_copy_move_mTM, Move_at_1.
@@ -287,33 +320,34 @@ Section CopyMove.
     unfold reorder, not_indices in *. unfold Vector.map in *. cbn in *.
     unfold Match.Match_p in *. cbn in *.
     split; hnf.
-    - intros x rest HEnc. hnf in *. cbn in *. clear H2'.
-      assert (tape_encodes_locally I_bool h x) as L1 by eauto. specialize (H1 _ L1). clear L1. (* XXX *)
+    - intros x rest henc. hnf in *. cbn in *. clear h2'.
+      assert (tape_encodes_locally i_bool h x) as l1 by eauto. specialize (h1 _ l1). clear l1. (* xxx *)
       destruct cstate as [state | (state & state') ]; cbn in *.
-      + hnf in H2. destruct H2 as (H2&->). hnf in *. subst.
+      + hnf in h2. destruct h2 as (h2&->). hnf in *. subst.
         enough (rest = nil) as -> by now apply tape_local_nil.
-        unfold tape_encodes_locally_rest in H1'.
-        pose proof (tape_local_nil h1) as (L1&L2).
-        rewrite L2 in H1'; eauto.
-        specialize (H1' x rest HEnc).
-        eapply appendNil; eauto.
-      + destruct (Fin.eqb state' m_true) eqn:E1.
-        * apply Fin.eqb_eq in E1. subst.
-          destruct H2 as (->&(b&H2)).
-          specialize (H1' x rest HEnc). hnf in H1'.
+        unfold tape_encodes_locally_rest in h1'.
+        pose proof (tape_local_nil h1) as (l1&l2).
+        rewrite l2 in h1'; eauto.
+        specialize (h1' x rest henc).
+        eapply appendnil; eauto.
+      + destruct (fin.eqb state' m_true) eqn:e1.
+        * apply fin.eqb_eq in e1. subst.
+          destruct h2 as (->&(b&h2)).
+          specialize (h1' x rest henc). hnf in h1'.
           eapply tape_local_move_right.
           destruct x; cbn in *; eauto.
-        * hnf in *. destruct H2 as (H2&H22). hnf in *. subst.
-        enough (rest = nil) as -> by now apply tape_local_nil.
-        pose proof (tape_local_nil h1) as (L1&L2).
-        specialize (H1' x rest HEnc). hnf in H1'.
-        rewrite L2 in H1'; auto.
-        eapply appendNil; eauto.
+        * hnf in *. destruct h2 as (h2&h22). hnf in *. subst.
+          enough (rest = nil) as -> by now apply tape_local_nil.
+          pose proof (tape_local_nil h1) as (l1&l2).
+          specialize (h1' x rest henc). hnf in h1'.
+          rewrite l2 in h1'; auto.
+          eapply appendnil; eauto.
     - intros x HEnc. cbn in *. hnf in *. destruct HEnc as (rest&HEnc).
       assert (tape_encodes_locally I_bool h x) as L1 by eauto. specialize (H1 _ L1). clear L1. (* XXX *)
       specialize (H1' _ _ HEnc).
       assert (1 < 2 /\ ~ Vector.In 1 [|0|]) as (L1&L2) by now apply Inj_1_helper.
       specialize (H2' 1 L1 L2). cbn in *. subst. eauto.
   Qed.
+  *)
   
 End CopyMove.

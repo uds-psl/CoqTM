@@ -258,8 +258,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
  
 
   Definition RealiseIn n (F : finType) (pM: {M : mTM n & states M -> F}) (R : Rel (tapes _) (F * tapes _)) k :=
-    let (M, f) := pM in
-    forall t, exists outc, loopM k (initc M t) = Some outc /\ R t (f (cstate outc), ctapes outc).
+    forall t, exists outc, loopM k (initc (projT1 pM) t) = Some outc /\ R t ((projT2 pM) (cstate outc), ctapes outc).
   
   Notation "M '⊨(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨(' k ')'  R").
   Notation "M '⊨(' f ',' k ')' R" := (RealiseIn (M; f) R k) (no associativity, at level 45, format "M  '⊨(' f ',' k ')'  R").
@@ -300,7 +299,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
    Fact RealiseIn_changeP n (M:mTM n) (F : finType) (f f' : states M -> F) (R : Rel (tapes _) (F * tapes _)) k :
       RealiseIn (M; f) R k -> (forall s, f s = f' s) -> RealiseIn (M ; f') R k.
    Proof.
-     firstorder congruence.
+     destruct M. cbn in *. unfold RealiseIn. cbn. firstorder congruence.
    Qed.
 
 

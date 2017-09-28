@@ -58,7 +58,6 @@ Section Composition.
     intros.
     eapply RealiseIn_monotone.
     eapply Match_total; eauto.
-    - destruct pM1. eassumption.
     - intros. cbn in f. destruct f.
       + eapply RealiseIn_monotone. destruct pM2. eassumption. instantiate (1 := Nat.max k2 k3); firstorder.
         instantiate (1 := fun t => match t with true => R2 | _ => R3 end). reflexivity.

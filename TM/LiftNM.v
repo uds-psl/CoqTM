@@ -398,10 +398,21 @@ Section LiftNM.
     projT1 Inject ↓ liftT_gen I T.
   Proof.
     unfold terminatesIn. intros H initTapes i HRel.
-    specialize (H (reorder I initTapes) i).
-    destruct H as (outc&H).
+    specialize (H (reorder I initTapes) i) as (outc&H).
     - now apply HRel.
     - pose proof (@propagate_loop i (initc injectM initTapes) outc H) as (X&X'). cbn in *. eauto.
+  Qed.
+
+  Lemma Inject_total R i :
+    pM ⊨(i) R ->
+    Inject ⊨(i) lift_gen_eq_p I R.
+  Proof.
+    intros H initTapes. hnf in *.
+    specialize (H (reorder I initTapes)) as (outc&H1&H2). cbn in *.
+    pose proof (@propagate_loop i (initc injectM initTapes) outc H1) as (X&X').
+    eexists. split. eassumption. cbn. hnf. split.
+    - hnf. cbn in *. now rewrite inject_correct.
+    - hnf. intros k ik1 ik2. unfold get_at. pose proof (@sim_eq_loop _ _ i k ik1 ik2 X') as H. now inv H.
   Qed.
 
 End LiftNM.
