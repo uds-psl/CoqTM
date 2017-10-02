@@ -1,18 +1,5 @@
 Require Import TM.TM TM.Basic.Mono TM.Combinators.SequentialComposition.
 
-(*
-Fixpoint stroverwrite (sig : Type) (str1 str2 : list sig) : list sig :=
-  match str1, str2 with
-  | str1, nil => str1
-  | nil, str2 => str2
-  | s1::str1', s2::str2' => s2 :: stroverwrite str1' str2'
-  end.
-
-  Lemma stroverwrite_nil (str1 : list sig) :
-    stroverwrite str1 [] = str1.
-  Proof. destruct str1; cbn; reflexivity. Qed.
-*)
-
 Section Write_String.
 
   Variable sig : finType.
@@ -23,53 +10,15 @@ Section Write_String.
     | e :: l0 => Write e ;; Move _ R ;; Write_String l0
     end.
 
-  (*
-  Fixpoint Tape_Write_String (t : tape sig) (str : list sig) :=
-    match t, str with
-    | t, nil => t
-    | niltape _, s :: str' => Tape_Write_String (rightof s []) str'
-    | leftof l rs, s :: str' => Tape_Write_String (midtape [s] l rs) str'
-    | midtape ls m nil, s :: str' => Tape_Write_String (rightof s ls) str'
-    | midtape ls m (r :: rs), s :: str' => Tape_Write_String (midtape (s :: ls) r rs) str'
-    | rightof r ls, s :: str' => Tape_Write_String (rightof s (r :: ls)) str'
-    end.
-   *)
-
   Fixpoint Tape_Write_String (t : tape sig) (str : list sig) :=
     match str with
     | nil => t
     | s :: str' => Tape_Write_String (tape_move_mono t (Some s, R)) str'
     end.
   
-  
   Lemma Tape_Write_String_nil (t : tape sig) :
     Tape_Write_String t nil = t.
   Proof. destruct t; cbn; auto. Qed.
-
-(*
-End write_string.
-Section Test.
-  Inductive Digit := zero | one | two | three | four | five | six | seven | eight | nine.
-  Instance digit_eq : eq_dec Digit.
-  Proof. unfold dec. intros x y. decide equality. Defined.
-  Instance digit_fin : finTypeC (EqType Digit).
-  Proof.
-    apply FinTypeC with (enum := [zero; one; two; three; four; five; six; seven; eight; nine]).
-    intros. destruct x; cbn; reflexivity.
-  Defined.
-  Compute Tape_Write_String (rightof three [two; one]) [].
-  Compute Tape_Write_String (rightof two [one]) [three].
-  Compute Tape_Write_String (rightof one []) [two; three].
-  Compute Tape_Write_String (niltape _) [zero; one; two].
-  Compute Tape_Write_String (niltape _) [zero; one].
-  Compute Tape_Write_String (niltape _) [zero].
-  Compute Tape_Write_String (midtape [zero;one] two [three;four;five]) [].
-  Compute Tape_Write_String (midtape [zero;one] two [three;four;five]) [six].
-  Compute Tape_Write_String (midtape [zero;one] two [three;four;five]) [six;seven].
-  Compute Tape_Write_String (midtape [zero;one] two [three;four;five]) [six;seven;eight].
-  Compute Tape_Write_String (midtape [zero;one] two [three;four;five]) [six;seven;eight;nine].
-End Test.
-*)
 
   Fixpoint Write_string_sem_fix (str : list sig) : Rel (tapes sig 1) (unit * tapes sig 1) :=
     match str with
