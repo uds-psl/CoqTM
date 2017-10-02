@@ -35,14 +35,12 @@ Section test_char.
   Definition tc_true : threeStates := Fin.FS (Fin.F1).
   Definition tc_false: threeStates := Fin.FS (Fin.FS (Fin.F1)).
 
-  Require Import TM.Basic.Basic.
-          
   Definition Test_Char_TM :=
     Mk_Mono_TM (states := threeStates)
       (fun s c => (match c with Some e => if f e then tc_true else tc_false | None => tc_false end , (None, TM.N) ))
       tc_start (fun x => negb (Fin.eqb x tc_start)).
 
-  Lemma test_chr_sem :
+  Lemma test_chr_Sem :
     Test_Char_TM ⊨(fun x : threeStates => Fin.eqb x tc_true,1)
                  Mk_R_p
                  (if? (@IdR _ ∩ (fun t t' => exists c, current t = Some c /\ f c = true))
@@ -57,40 +55,37 @@ Section test_char.
   Qed.
 
  Definition Test_Chr := (Test_Char_TM ; fun x : threeStates => Fin.eqb x tc_true).                            
-
 End test_char.
 
-(* 
-Section write.
+
+Section Write.
 
   Variable sig : finType.
-  Variable tapes_no : nat.
-
-  Variable on_tape : nat.
-  Hypothesis is_a_tape : on_tape < S tapes_no.
-
   Variable c : sig.
 
-  Definition w_start : threeStates := Fin.F1.
-  Definition w_halt : threeStates := Fin.FS (Fin.F1).
-
-  Definition write_trans (p : threeStates * Vector.t (option sig) (S tapes_no)) : threeStates * Vector.t (option sig * move) (S tapes_no) := (w_halt, do_on_tape is_a_tape (Some c, TM.N)).
-
-  Definition write : mTM sig tapes_no :=
-    Build_mTM write_trans w_start (fun x => negb (Fin.eqb x w_start)).
-
-  Definition Write := (write ; fun x : threeStates => tt).
-
-  Lemma write_sem :
-    Write ⊨(1) ⇑[is_a_tape] ignoreParam (fun t t' => t' = midtape (left t) c (right t)).
+  Definition Write_TM : mTM sig 0.
   Proof.
-    intros t.
-    exists (mk_mconfig w_halt (tape_move_multi t (do_on_tape is_a_tape (Some c, TM.N)))).
-    simpl_TM.
+    apply Mk_Mono_TM with (states := FinType (EqType bool)).
+    - intros [ | ] _.
+      + (* final state *)
+        apply (true, (None, N)).
+      + (* write c *)
+        apply (true, (Some c, N)).
+    - apply false.
+    - apply id.
+  Defined.
+  
+  Definition Write := (Write_TM; fun _ => tt).
+
+  Definition Write_R := Mk_R_p (F := FinType (EqType unit)) (ignoreParam (fun t t' => t' = midtape (left t) c (right t))).
+
+  Lemma Write_Sem :
+    Write ⊨(1) Write_R.
+  Proof.
+    intros t. destruct_tapes. cbn in *. eauto.
   Qed.
 
-End write.
-*)
+End Write.
 
 Section Move.
 
@@ -109,16 +104,17 @@ Section Move.
 
   Definition Move := (Move_TM; (fun x : threeStates => Fin.eqb x m_true)).
   
-  Definition MoveR :=  (if? (fun (t t' : tape sig) => t' = tape_move_mono t (None, D) /\ exists c, current t = Some c)
-                           ! ( (fun t t' => current t = None)) ∩ @IdR _ ).
+  Definition Move_R := Mk_R_p
+    (if? (fun (t t' : tape sig) => t' = tape_move_mono t (None, D) /\ exists c, current t = Some c)
+       ! ( (fun t t' => current t = None)) ∩ @IdR _ ).
 
   Lemma Move_Sem :
-    Move ⊨(1) Mk_R_p MoveR.
+    Move ⊨(1) Move_R.
   Proof.
-    unfold Mk_R_p, MoveR. hnf. intros tapes. destruct_tapes. cbn in *.
+    unfold Mk_R_p, Move_R. hnf. intros tapes. destruct_tapes. cbn in *.
     unfold Move_TM, Move, step, m_start, m_true, m_false in *. cbn in *.
     destruct (current h) eqn:E; cbn in *.
-    - exists (mk_mconfig m_true (tape_move_multi [| h |] [|(None, D)|])). cbn in *; repeat split; hnf; eauto.
+    - exists (mk_mconfig m_true (tape_move_multi [| h |] [|(None, D)|])). cbn in *. repeat split; hnf; eauto.
     - exists (mk_mconfig m_false [| h |]). cbn in *. repeat split; hnf; eauto.
   Qed.
 
@@ -185,3 +181,26 @@ Section read_char.
 
 End read_char.
 *)
+
+Section Mono_Nop.
+
+  Variable sig : finType.
+
+  Definition mono_nop_trans : unit -> option sig -> unit * (option sig * move) :=
+    fun u s => (u, (None, N)).
+
+  Definition mono_nop : mTM sig 0 := Mk_Mono_TM mono_nop_trans tt (fun _ => true).
+
+  Variable F : finType.
+  Variable f : F.
+
+  Definition mono_Nop := (mono_nop; fun _ => f).
+
+  Definition mono_Nop_R := (↑ (=f) ⊗ (@IdR (tapes sig 1))).
+
+  Lemma mono_Nop_Sem: mono_Nop ⊨(0) mono_Nop_R.
+  Proof.
+    intros ?. exists (initc mono_nop t). cbn. firstorder.
+  Qed.
+
+End Mono_Nop.
