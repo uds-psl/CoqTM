@@ -3,17 +3,18 @@ Require Import TM.TM TM.Basic.Mono TM.Combinators.SequentialComposition.
 Section Write_String.
 
   Variable sig : finType.
+  Variable D : move.
   
   Fixpoint Write_String (l : list sig) : {M : mTM sig 0 & states M -> unit} :=
     match l with
     | [] => mono_Nop sig tt
-    | e :: l0 => Write e ;; Move _ R ;; Write_String l0
+    | e :: l0 => Write e ;; Move _ D ;; Write_String l0
     end.
 
   Fixpoint Tape_Write_String (t : tape sig) (str : list sig) :=
     match str with
     | nil => t
-    | s :: str' => Tape_Write_String (tape_move_mono t (Some s, R)) str'
+    | s :: str' => Tape_Write_String (tape_move_mono t (Some s, D)) str'
     end.
   
   Lemma Tape_Write_String_nil (t : tape sig) :
@@ -23,7 +24,7 @@ Section Write_String.
   Fixpoint Write_string_sem_fix (str : list sig) : Rel (tapes sig 1) (unit * tapes sig 1) :=
     match str with
     | nil => mono_Nop_R tt
-    | s :: str' => Write_R s ∘ hideParam (Move_R R ∘ hideParam (Write_string_sem_fix str'))
+    | s :: str' => Write_R s ∘ hideParam (Move_R D ∘ hideParam (Write_string_sem_fix str'))
     end.
     
   Lemma Write_string_fix_Sem (str : list sig) :
