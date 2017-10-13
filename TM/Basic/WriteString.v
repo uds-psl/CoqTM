@@ -5,7 +5,7 @@ Section Write_String.
   Variable sig : finType.
   Variable D : move.
   
-  Fixpoint Write_String (l : list sig) : {M : mTM sig 0 & states M -> unit} :=
+  Fixpoint Write_String (l : list sig) : {M : mTM sig 1 & states M -> unit} :=
     match l with
     | [] => mono_Nop sig tt
     | e :: l0 => Write e ;; Move _ D ;; Write_String l0

@@ -193,7 +193,7 @@ Section LiftSigmaTau.
   Qed.
 
 
-  Lemma Lift_sem (R : Rel (tapes sig (S n)) (F * tapes sig (S n))) :
+  Lemma Lift_sem (R : Rel (tapes sig n) (F * tapes sig n)) :
     pMSig ⊫ R ->
     Lift ⊫ lift_sigma_tau_p (inj_g I) def R.
   Proof.

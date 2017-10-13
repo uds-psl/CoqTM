@@ -97,7 +97,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Record mTM (tapes_no:nat) : Type :=
     {
       states : finType; (* states of the TM *)
-      trans : states * (Vector.t (option sig) (S tapes_no)) -> states * (Vector.t ((option sig) * move) (S tapes_no)); (* the transition function *)
+      trans : states * (Vector.t (option sig) tapes_no) -> states * (Vector.t ((option sig) * move) tapes_no); (* the transition function *)
       start: states; (* the start state *)
       halt : states -> bool (* decidable subset of halting states *)
     }.
@@ -156,11 +156,11 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Record mconfig (states:finType) (n:nat): Type := mk_mconfig
                                                        {
                                                          cstate : states;
-                                                         ctapes : tapes (S n)
+                                                         ctapes : tapes n
                                                       }.
 
   (** Currently read characters on all tapes *)
-  Definition current_chars := fun (n : nat) (tapes : tapes (S n)) => Vector.map current tapes.
+  Definition current_chars := fun (n : nat) (tapes : tapes n) => Vector.map current tapes.
 
   (** ** Machine execution *)
   

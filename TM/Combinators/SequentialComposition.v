@@ -29,8 +29,8 @@ Section Composition.
     pM1 ⊫ R1 ->
     projT1 pM1 ↓(T1) ->
     projT1 pM2 ↓(T2) ->
-    projT1 Seq ↓(fun (x : tapes sig (S n)) (i : nat) =>
-            exists (j k : nat) (y : tapes sig (S n)) (f : F),
+    projT1 Seq ↓(fun (x : tapes sig n) (i : nat) =>
+            exists (j k : nat) (y : tapes sig n) (f : F),
               R1 x (f, y) /\ T1 x j /\ T2 y k /\ j + k < i).
   Proof.
     intros.

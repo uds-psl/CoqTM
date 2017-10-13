@@ -11,8 +11,8 @@ Section While.
   Variable p : states M -> bool.
   
   Definition while_trans :
-    (TM.states M) * Vector.t (option sig) (S n) ->
-    (TM.states M) * Vector.t (option sig * move) (S n) :=
+    (TM.states M) * Vector.t (option sig) n ->
+    (TM.states M) * Vector.t (option sig * move) n :=
     fun st => let (s,a) := st in
            if p s && halt s then (start M,null_action) else trans st.
 
@@ -128,7 +128,7 @@ Section While.
     M ⊫(p) R ->
     M ↓(T) ->
     functionalOn T' R -> 
-    (forall (x : tapes sig (S n)) (i:nat),
+    (forall (x : tapes sig n) (i:nat),
         T' x i -> exists (x':tapes _ _) (b:bool) i1,
           R x (b,x') /\ T x i1 /\ if b then exists i2, T' x' i2 /\ i1+1+i2<=i else i1 <= i)->
     While ↓(T').

@@ -110,12 +110,12 @@ Section Computes_Composes.
   Variable (X Y Z : Type) (cX : codeable X) (cY : codeable Y) (cZ : codeable Z).
   Variable (f : X -> Y) (g : Y -> Z).
   Variable (n_tapes : nat).
-  Variable (i1 i2 i3 : Fin.t (S n_tapes)).
+  Variable (i1 i2 i3 : Fin.t n_tapes).
   Variable (F1 F2 : finType).
   Variable (pM : {M : mTM bool_fin n_tapes & states M -> F1}).
   Variable (pN : {N : mTM bool_fin n_tapes & states N -> F2}).
 
-  Lemma compose_computes_sem (iin iout : Fin.t (S n_tapes)) :
+  Lemma compose_computes_sem (iin iout : Fin.t n_tapes) :
     pM ⊫ computes_locally_R_p (F := F1) i1 i2 _ _ f ->
     pN ⊫ computes_locally_R_p (F := F2) i2 i3 _ _ g ->
     (pM ;; pN) ⊫ computes_locally_R_p (F := F2) i1 i3 _ _ (fun x => g (f x)).

@@ -235,7 +235,7 @@ Section LiftNM.
   
   Variable pM : { M : mTM sig m & states M -> F}.
 
-  Variable I : Vector.t ((Fin.t (S n))) (S m).
+  Variable I : Vector.t ((Fin.t n)) m.
   Variable I_dupfree : dupfree I.
 
   Definition trans_inj :=
@@ -299,7 +299,7 @@ Section LiftNM.
       rewrite sim_step with (c1 := c1) (c2 := step (M := injectM) c1); [ | reflexivity]. apply IHi. apply H1.
   Qed.
 
-  Lemma sim_eq_step (c1 c2 : mconfig sig (states injectM) n) (k : nat) (Hk : k < S n) :
+  Lemma sim_eq_step (c1 c2 : mconfig sig (states injectM) n) (k : nat) (Hk : k < n) :
     not_indices I k -> 
     step (M := injectM) c1 = c2 ->
     (ctapes c1)[@Hk] = (ctapes c2)[@Hk].
@@ -315,7 +315,7 @@ Section LiftNM.
     symmetry. now apply inject_default_not_index.
   Qed.
 
-  Lemma sim_eq_loop (c1 c2 : mconfig sig (states injectM) n) (i : nat) (k : nat) (Hk : k < S n) :
+  Lemma sim_eq_loop (c1 c2 : mconfig sig (states injectM) n) (i : nat) (k : nat) (Hk : k < n) :
     not_indices I k -> 
     loopM (M := injectM) i c1 = Some c2 ->
     (ctapes c1)[@Hk] = (ctapes c2)[@Hk].
@@ -327,7 +327,7 @@ Section LiftNM.
   Qed.
 
   
-  Lemma Inject_sem (R : Rel (tapes sig (S m)) (F * tapes sig (S m))) :
+  Lemma Inject_sem (R : Rel (tapes sig m) (F * tapes sig m)) :
     pM ⊫ R ->
     Inject ⊫ lift_gen_eq_p I R.
   Proof.
@@ -361,7 +361,7 @@ Section LiftNM.
       inversion X. subst. f_equal. apply Vector.eq_nth_iff. intros pos ? <-.
       erewrite Vector.nth_map2; eauto.
       unfold tape_move_mono.
-      apply (@inject_execute_step (S m) (S n) pos I
+      apply (@inject_execute_step m n pos I
                                   (prod (option sig) move) act' (tape sig) tapes1 (@tape_move_mono sig) (None, N));
         firstorder.
     }

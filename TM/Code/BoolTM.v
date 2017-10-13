@@ -20,7 +20,7 @@ Section Neg_TM.
       + (* None       *) constructor. apply true. constructor. apply (None,       N). constructor.
   Defined.
 
-  Definition bool_neg_TM : mTM bool_fin 0.
+  Definition bool_neg_TM : mTM bool_fin 1.
   Proof.
     split with (states := bool_fin).
     - apply bool_neg_TM_trans.
@@ -28,7 +28,7 @@ Section Neg_TM.
     - apply id.
   Defined.
 
-  Definition bool_neg_mTM : { M : mTM bool_fin 0 & states M -> F} := (bool_neg_TM; def).
+  Definition bool_neg_mTM : { M : mTM bool_fin 1 & states M -> F} := (bool_neg_TM; def).
 
   Lemma bool_neg_TM_onestep (inittapes : tapes bool_fin 1) :
     cstate (step (M := bool_neg_TM) (initc bool_neg_TM inittapes)) = true.
@@ -96,7 +96,7 @@ Section Copy.
       + (* None *) apply (true, [| (None, N); (None, N)|]).
   Defined.
 
-  Definition bool_copy_TM : mTM bool_fin 1.
+  Definition bool_copy_TM : mTM bool_fin 2.
   Proof.
     split with (states := bool_fin).
     - apply bool_copy_TM_trans.
@@ -104,7 +104,7 @@ Section Copy.
     - apply id.
   Defined.
 
-  Definition bool_copy_mTM : { M : mTM bool_fin 1 & states M -> F} := (bool_copy_TM; def).
+  Definition bool_copy_mTM : { M : mTM bool_fin 2 & states M -> F} := (bool_copy_TM; def).
 
   Lemma bool_copy_TM_onestep (inittapes : tapes bool_fin 2) :
     cstate (step (M := bool_copy_TM) (initc bool_copy_TM inittapes)) = true.
@@ -175,7 +175,7 @@ Section Dual.
       apply (true, [| (Some (f (b1, b2)), N); (None, N) |]).
   Defined.
 
-  Definition bool_dual_TM : mTM bool_fin 1.
+  Definition bool_dual_TM : mTM bool_fin 2.
   Proof.
     split with (states := bool_fin).
     - apply bool_dual_TM_trans.
@@ -183,7 +183,7 @@ Section Dual.
     - apply id.
   Defined.
 
-  Definition bool_dual_mTM : { M : mTM bool_fin 1 & states M -> F} := (bool_dual_TM; def).
+  Definition bool_dual_mTM : { M : mTM bool_fin 2 & states M -> F} := (bool_dual_TM; def).
 
   Lemma bool_dual_TM_onestep (inittapes : tapes bool_fin 2) :
     cstate (step (M := bool_dual_TM) (initc bool_dual_TM inittapes)) = true.
@@ -253,7 +253,7 @@ Section CopyMove.
 
   Variable (F : finType) (def : bool_fin -> F).
 
-  Local Definition Move_at_1 := Inject (n := 1) (Move bool_fin R) [| Fin.F1 |] .
+  Local Definition Move_at_1 := Inject (n := 2) (Move bool_fin R) [| Fin.F1 |] .
   Definition bool_copy_move_mTM := (bool_copy_mTM def ;; Move_at_1).
 
 

@@ -9,7 +9,7 @@ Section Mk_Mono.
   Variable mono_trans : states -> option sig -> states * (option sig * move).
   Variable (init : states) (fin : states -> bool).
 
-  Definition Mk_Mono_TM : mTM sig 0.
+  Definition Mk_Mono_TM : mTM sig 1.
   Proof.
     split with (states := states).
     - intros (q&tape).
@@ -63,7 +63,7 @@ Section Write.
   Variable sig : finType.
   Variable c : sig.
 
-  Definition Write_TM : mTM sig 0.
+  Definition Write_TM : mTM sig 1.
   Proof.
     apply Mk_Mono_TM with (states := FinType (EqType bool)).
     - intros [ | ] _.
@@ -99,7 +99,7 @@ Section Move.
   Definition move_trans : threeStates -> option sig -> threeStates * (option sig * move) :=
     fun s p => match p with None => (m_false, (None, TM.N)) | Some c => (m_true, (None, D)) end.
   
-  Definition Move_TM : mTM sig 0 :=
+  Definition Move_TM : mTM sig 1 :=
     Mk_Mono_TM move_trans m_start (fun x => negb (Fin.eqb x m_start)).
 
   Definition Move := (Move_TM; (fun x : threeStates => Fin.eqb x m_true)).
@@ -189,7 +189,7 @@ Section Mono_Nop.
   Definition mono_nop_trans : unit -> option sig -> unit * (option sig * move) :=
     fun u s => (u, (None, N)).
 
-  Definition mono_nop : mTM sig 0 := Mk_Mono_TM mono_nop_trans tt (fun _ => true).
+  Definition mono_nop : mTM sig 1 := Mk_Mono_TM mono_nop_trans tt (fun _ => true).
 
   Variable F : finType.
   Variable f : F.

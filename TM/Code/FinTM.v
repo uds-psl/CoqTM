@@ -9,8 +9,8 @@ Open Scope vector_scope.
 Section Fin_Seq_TM.
 
   Variable X : finType.
-  Variable start : X.
   Variable f : X -> X.
+  Variable start : X.
   
   Lemma it_S (n : nat) (x : X) :
     it f n (f x) = f (it f n x).
@@ -42,7 +42,7 @@ Section Fin_Seq_TM.
     destruct 1 as [ _ | _ ]; [apply false | apply true].
   Defined.
   
-  Definition Fin_Seq_TM : mTM bool_fin 0.
+  Definition Fin_Seq_TM : mTM bool_fin 1.
   Proof.
     apply Mk_Mono_TM with (states := fin_seq_states).
     - apply fin_seq_TM_trans_mono.
@@ -50,7 +50,7 @@ Section Fin_Seq_TM.
     - apply fin_seq_fin.
   Defined.
 
-  Definition Fin_Seq : { M : mTM bool_fin 0 & states M -> option X }.
+  Definition Fin_Seq : { M : mTM bool_fin 1 & states M -> option X }.
   Proof.
     exists Fin_Seq_TM. intros [ _ | x ]; [apply None | apply (Some x)].
   Defined.
@@ -178,5 +178,6 @@ Section FinMod.
   Compute it (FinStep (n := 2)) 2 (Fin.F1).
   Compute it (FinStep (n := 2)) 3 (Fin.F1).
   *)
-  
+
+  Definition FinMod (n : nat) := Fin_Seq (@FinStep n) Fin.F1.
 End FinMod.

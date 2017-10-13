@@ -1,6 +1,8 @@
 Require Export TM Nop.
 Require Import Shared.FiniteTypes.DepPairs EqdepFacts.
 
+(* TODO: This is a mess. *)
+
 Section Match.
 
   Variable n : nat.
@@ -20,8 +22,8 @@ Section Match.
   Notation "'p1'":= (projT2 pM1) (only parsing).
 
   Definition match_trans :
-    (TM.states M1 + { f : F & TM.states (Mf f) }) * Vector.t (option sig) (S n) ->
-    (TM.states M1 + { f : F & TM.states (Mf f) }) * Vector.t (option sig * move) (S n) :=
+    (TM.states M1 + { f : F & TM.states (Mf f) }) * Vector.t (option sig) n ->
+    (TM.states M1 + { f : F & TM.states (Mf f) }) * Vector.t (option sig * move) n :=
     fun st => let (s,a) := st in
            match s with
            | inl s1 => if halt s1 then (inr (existT (fun f : F => states (Mf f)) (p1 s1) (start (Mf (p1 s1)))), null_action)
@@ -175,7 +177,7 @@ Section Match.
       assert (halt e = true). eapply loop_fulfills_p in Hx'. cbn in Hx'. cbn in Hx'. destruct (halt e); auto. rewrite H in H2.
       remember (mk_mconfig (inr (existT (fun f : F => states (Mf f)) (p1 e) (start (Mf (p1 e)))))
                            (Vector.map2 (tape_move_mono (sig:=sig)) ctapes
-                                        (Vector.cons (option sig * move) (None, N) n (repeatVector n (None, N))))) as x2.
+                                        (repeatVector n (None, N)))) as x2.
       pose (M2 := (Mf (p1 e))).
       eapply loop_unlift with (unlift := unlift_2 (p1 e))
                                 (f' := step (M := M2))
@@ -237,7 +239,7 @@ Section Match.
     pM1 ⊫ R1 ->
     M1 ↓(T1) ->
     (forall f : F, Mf f ↓(T f)) ->
-    projT1 MATCH ↓(⋃_f (fun (x : tapes sig (S n)) (i : nat) => exists (j k : nat) (y : tapes sig (S n)),
+    projT1 MATCH ↓(⋃_f (fun (x : tapes sig n) (i : nat) => exists (j k : nat) (y : tapes sig n),
                      R1 x (f, y) /\ T1 x j /\ T f y k /\ j + k < i)).
   Proof.
     intros Func Real1 Term1 Term2 t i Hf.
