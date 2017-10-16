@@ -447,7 +447,7 @@ Check Encode_Fin' 10.
 
 Compute
   encode
-  (codeable := Encode_Fin 10)
+  (codeable := Encode_Fin' 10)
   (Fin.FS (Fin.FS (Fin.FS (Fin.F1)))).
 
 Check Encode_Pair' (Encode_List (Encode_Unit)) Encode_Unit.
