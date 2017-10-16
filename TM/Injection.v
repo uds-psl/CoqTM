@@ -62,21 +62,23 @@ Section Def_Function.
     {
       inj_f : X -> Y;
       inj_g : Y -> option X;
-      inj_g_adjoint : forall x, inj_g (inj_f x) = Some x;
+      inj_inv : forall x y, inj_g y = Some x <-> y = inj_f x;
     }.
 
-  Lemma inj_g_surjective (I : injection_fun) :
-    forall x, { y | (inj_g I) y = Some x }.
-  Proof. intros x. pose proof (inj_g_adjoint I x). eauto. Defined.
+  Variable I : injection_fun.
 
-  Lemma inj_f_injective (I : injection_fun)
-    : forall x1 x2, inj_f I x1 = inj_f I x2 -> x1 = x2.
+  Lemma inj_g_adjoint : forall x, inj_g I (inj_f I x) = Some x.
+  Proof. intros. now apply inj_inv. Qed.
+
+  Lemma inj_g_surjective : forall x, { y | (inj_g I) y = Some x }.
+  Proof. intros x. pose proof (inj_g_adjoint x). eauto. Defined.
+
+  Lemma inj_f_injective : forall x1 x2, inj_f I x1 = inj_f I x2 -> x1 = x2.
   Proof.
-    intros x1 x2 H. assert (Some x1 = Some x2).
+    intros x1 x2 H. enough (Some x1 = Some x2) as HE by now inv HE.
     erewrite <- !inj_g_adjoint; eauto. now rewrite H.
-    now inv H0.
   Qed.
-  
+
 End Def_Function.
 
 
@@ -158,6 +160,8 @@ Proof.
 Qed.
 
 
+(* TODO: Unmess and/or make useful *)
+(*
 (* Convert a vector-defined injection into a function-defined injection *)
 Section Convertion1.
 
@@ -213,7 +217,8 @@ Section Convertion1.
   Qed.
     
   Definition inj_conv_vec_to_fun : injection_fun X Y.
-    econstructor. apply conv_adjoint.
+    econstructor. intros. split; eapply conv_adjoint.
   Defined.
   
 End Convertion1.
+*)
