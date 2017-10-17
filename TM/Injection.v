@@ -81,6 +81,34 @@ Section Def_Function.
 
 End Def_Function.
 
+Section Injection_Fun_Compose.
+  Variable (X Y Z : Type).
+  Hypothesis (inj1 : injection_fun X Y) (inj2 : injection_fun Y Z).
+
+  Definition inj_comp_f := fun x => inj_f inj2 (inj_f inj1 x).
+
+  Definition inj_comp_g :=
+    fun z =>
+      match inj_g inj2 z with
+      | Some y =>inj_g inj1 y
+      | None => None
+      end.
+
+  Lemma inj_comp_inv : forall (x : X) (y : Z), inj_comp_g y = Some x <-> y = inj_comp_f x.
+  Proof.
+    unfold inj_comp_f, inj_comp_g. firstorder.
+    - destruct (inj_g _) eqn:E1.
+      + apply inj_inv in E1 as ->. apply inj_inv in H as ->. reflexivity.
+      + congruence.
+    - destruct (inj_g inj2 y) eqn:E1.
+      + apply inj_inv in E1 as ->. apply inj_inv. now apply inj_f_injective in H.
+      + exfalso. apply inj_inv in H. congruence.
+  Qed.
+
+  Definition injection_fun_compose : injection_fun X Z := Build_injection_fun inj_comp_inv.
+
+End Injection_Fun_Compose.
+
 
 Section find_i.
   Variable (X : Type) (P : X -> bool).

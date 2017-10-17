@@ -1,4 +1,8 @@
 Require Import Prelim.
+Require Import Injection.
+
+Definition Fin_Bool := FinType (EqType bool).
+
 
 (** * Codeable Class **)
 
@@ -28,18 +32,19 @@ Section Codeable.
 End Codeable.
 Arguments encode { _ } { _ } { _ }.
 
-Section Encode_Fin.
+Section Encode_Finite.
   Variable X : finType.
 
-  Lemma encode_fin_injective :
+  Lemma encode_finite_injective :
     forall (v1 v2 : X) (r1 r2 : list X),
       [v1] ++ r1 = [v2] ++ r2 -> v1 = v2 /\ r1 = r2.
   Proof. firstorder; now inv H. Qed.
 
-  Instance Encode_Fin : codeable X X.
-  Proof. apply mk_codeable with (encode := fun x => [x]). apply encode_fin_injective. Defined.
+  Instance Encode_Finite : codeable X X.
+  Proof. apply mk_codeable with (encode := fun x => [x]). apply encode_finite_injective. Defined.
+End Encode_Finite.
 
-End Encode_Fin.
+Instance Encode_Bool : codeable (FinType (EqType bool)) bool := Encode_Finite (FinType (EqType bool)).
 
 
 Section RListInduction.
@@ -93,44 +98,6 @@ Section DoubleListInduction.
 End DoubleListInduction.
 
 
-Require Export Injection.
-
-Section Remap.
-
-  Variable (X : Type).
-  Variable (sig tau : Type).
-
-  Fixpoint remap (g : tau -> option sig) (str : list tau) : list sig * list tau :=
-    match str with
-    | nil => (nil, nil)
-    | y :: str' => match g y with
-                  | Some x => let (res1, res2) := remap g str' in (x :: res1, res2)
-                  | None => ([], str)
-                  end
-    end.
-
-  Hypothesis (inj : injection_fun sig tau).
-  Notation "'f'" := (inj_f inj). Notation "'g'" := (inj_g inj).
-
-  Lemma map_app_remap :
-    forall (str : list sig) (R : list tau),
-      let (str', r2) := remap g (map f str ++ R) in
-      { r1 : list sig | R = map f r1 ++ r2 /\ str' = str ++ r1}.
-  Proof.
-    intros str. induction str; intros; cbn in *.
-    - induction R; cbn.
-      + exists []. cbn. tauto.
-      + destruct (g a) eqn:E; cbn.
-        * destruct (remap g R). destruct IHR as (r1&->&->).
-          eexists. split; eauto. cbn. f_equal. now apply inj_inv.
-        * eexists. split; eauto. cbn. reflexivity.
-    - rewrite inj_g_adjoint.
-      specialize (IHstr R). destruct (remap g (map f str ++ R)). destruct IHstr as (r1&->&->).
-      eexists. split; eauto. 
-  Qed.
-
-End Remap.
-
 Section Map_Injective.
   Variable (sig tau : Type) (t : sig -> tau).
   Hypothesis t_injective : forall s1 s2, t s1 = t s2 -> s1 = s2.
@@ -147,7 +114,27 @@ Section Map_Injective.
 End Map_Injective.
 
 
-Section Map.
+Section Usefull_Injections.
+
+  Variable (sig tau : Type).
+
+  Definition option_inj : injection_fun sig (option sig).
+  Proof. apply Build_injection_fun with (inj_f := Some) (inj_g := id). firstorder. Defined.
+
+  Lemma inl_inj' : forall (x : sig) (y : sig + tau), match y with | inl x0 => Some x0 | inr _ => None end = Some x <-> y = inl x.
+  Proof. firstorder; destruct y; inv H; firstorder. Qed.
+
+  Definition inl_inj : injection_fun sig (sig + tau) := Build_injection_fun inl_inj'.
+
+  Lemma inr_inj' : forall (x : tau) (y : sig + tau), match y with | inl _ => None | inr x0 => Some x0 end = Some x <-> y = inr x.
+  Proof. firstorder; destruct y; inv H; firstorder. Qed.
+
+  Definition inr_inj : injection_fun tau (sig + tau) := Build_injection_fun inr_inj'.
+
+End Usefull_Injections.
+
+
+Section Encode_Map.
   Variable (X : Type).
   Variable (sig tau : finType).
   Hypothesis (code_sig : codeable sig X).
@@ -248,10 +235,10 @@ Section Map.
     now apply encode_map_injective.
   Defined.
   
-End Map.
+End Encode_Map.
 
 
-(* TODO: Injectivity of the X coding should be enough to show that. *)
+(* TODO: Injectivity of the X coding is enough. *)
 Section Stop.
 
   Variable X : Type.
@@ -262,130 +249,71 @@ Section Stop.
   *)
   Hypothesis (code_X : codeable sig X).
 
-  Definition option_inj : injection_fun sig (option sig).
-  Proof.
-    apply Build_injection_fun with (inj_f := Some) (inj_g := id). firstorder.
-  Defined.
-  
-  Definition encode_stop (x : X) : list (option sig) := encode (codeable := Encode_Map code_X option_inj) x ++ [None].
+  Definition encode_stop (x : X) : list (option sig) := encode (codeable := Encode_Map code_X (option_inj _)) x ++ [None].
 
   Lemma encode_stop_injective :
     forall (v1 v2 : X) (r1 r2 : list finType_CS),
       encode_stop v1 ++ r1 = encode_stop v2 ++ r2 -> v1 = v2 /\ r1 = r2.
   Proof.
     intros. unfold encode_stop in H. cbn in *. rewrite <- !app_assoc in H.
-    apply (encode_injective (codeable := Encode_Map code_X option_inj)) in H as [H1 H2]. now (inv H1; inv H2).
+    apply (encode_injective (codeable := Encode_Map code_X (option_inj _))) in H as [H1 H2]. now (inv H1; inv H2).
   Qed.
   
-  Instance Encode_Stop : codeable (FinType (EqType (option sig))) X.
-  Proof.
-    apply mk_codeable with (encode := encode_stop). now apply encode_stop_injective.
-  Qed.
+  Instance Encode_Stop : codeable (FinType (EqType (option sig))) X := mk_codeable encode_stop_injective.
   
 End Stop.
-
-
-
-Section Encode_Bool.
-  Lemma encode_bool_injective : forall (v1 v2 : bool) r1 r2, [v1] ++ r1 = [v2] ++ r2 -> v1 = v2 /\ r1 = r2.
-  Proof. intros v1 v2 r1 r2 H. now inv H. Qed.
-  Instance Encode_Bool : codeable (FinType (EqType bool)) bool := mk_codeable encode_bool_injective.
-End Encode_Bool.
 
 
 Section Encode_Sum.
   Variable (X Y : Type).
   Variable (sig tau : finType).
   Hypothesis (code_X : codeable sig X) (code_Y : codeable tau Y).
-
   
+  Definition inj_l_l := injection_fun_compose (inl_inj sig tau) (inl_inj _ bool).
+  Definition inj_l_r := injection_fun_compose (inr_inj sig tau) (inl_inj _ bool).
+
   Definition encode_sum (a : X + Y) : list (sig + tau + bool) :=
     match a with
-    | inl x => inr true  :: map (fun sig' => inl (inl sig')) (encode (codeable := code_X) x) ++ [inr  true]
-    | inr y => inr false :: map (fun tau' => inl (inr tau')) (encode (codeable := code_Y) y) ++ [inr false]
+    | inl x => inr true  :: encode (codeable := Encode_Map code_X inj_l_l) x
+    | inr y => inr false :: encode (codeable := Encode_Map code_Y inj_l_r) y
     end.
-
-  Fixpoint undo_encode_sum_X (str : list (sig + tau + bool)) : option (list sig) * list (sig + tau + bool) :=
-    match str with
-    | nil => (None, str)
-    | inl (inl x) :: rest =>
-      match undo_encode_sum_X rest with
-      | (Some x', rest') => (Some (x :: x'), rest')
-      | (None,    rest') => (Some [x],       rest')
-      end
-    | inl (inr x) :: rest => (None, str)
-    | inr true  :: rest => (Some [], rest)
-    | inr false :: rest => (None,    str)
-    end.
-      
-  Fixpoint undo_encode_sum_Y (str : list (sig + tau + bool)) : option (list tau) * list (sig + tau + bool). Admitted.
-
-  Definition undo_encode_sum (str : list (sig + tau + bool)) : option (list (sig + tau)) * list (sig + tau + bool) :=
-    match str with
-    | inr true  :: str => match undo_encode_sum_X str with
-                         | (Some x, rest') => (Some (map inl x), rest')
-                         | (None,   rest') => (None, rest')
-                         end
-    | inr false :: str => match undo_encode_sum_Y str with
-                         | (Some y, rest') => (Some (map inr y), rest')
-                         | (None,   rest') => (None, rest')
-                         end
-    | _ => (None, str)
-    end.
-
-  (*
-  Lemma encode_sum_inv (v : X + Y) (r1 r2 : list (sig + tau + bool)) :
-    encode_sum v = r1 -> undo_encode_sum (r1 ++ r2) = (Some (map inl r1), r2).
-*)
-  
 
   Lemma encode_sum_injective :
     forall (v1 v2 : X + Y) (r1 r2 : list (sig + tau + bool)),
       encode_sum v1 ++ r1 = encode_sum v2 ++ r2 -> v1 = v2 /\ r1 = r2.
   Proof.
-    (*
-    intros [v1|v1] [v2|v2] r1 r2; intros H1; cbn in *; inv H1.
-    - 
-
-      remember (encode v1) as e1. remember (encode v2) as e2.
-      revert r1 r2 H0.
-      induction e1; intros; cbn in *.
-      + destruct e2; cbn in *.
-        * split; auto. f_equal. eapply encode_injective'. congruence.
-        * split.
-          -- f_equal. eapply encode_injective'.
-*)
-  Admitted.
+    intros [x1|y1] [x2|y2] r1 r2; cbn; intros H; inv H.
+    - now pose proof (@encode_map_injective _ sig _ code_X inj_l_l x1 x2 r1 r2 H1) as (->&->).
+    - now pose proof (@encode_map_injective _ tau _ code_Y inj_l_r y1 y2 r1 r2 H1) as (->&->).
+  Qed.
 
   Instance Encode_Sum : codeable (FinType (EqType (sig + tau + bool))) (X + Y) := mk_codeable encode_sum_injective.
 End Encode_Sum.
 
 
 Section Encode_List.
-  Variable sigma : finType.
-  Variable (X : Type) (code_X : codeable sigma X).
+  Variable sig: finType.
+  Variable (X : Type) (code_X : codeable sig X).
 
-  Fixpoint encode_list (xs : list X) : list (sigma + bool) :=
+  Fixpoint encode_list (xs : list X) : list (sig + bool) :=
     match xs with
     | nil => [inr false]
-    | x :: xs' => inr true :: map inl (encode x (codeable := code_X)) ++ encode_list xs'
+    | x :: xs' => inr true :: encode (codeable := Encode_Map code_X (inl_inj _ _)) x ++ encode_list xs'
     end.
 
   Lemma encode_injective_list :
-    forall (v1 v2 : list X) (r1 r2 : list (sigma + bool)), encode_list v1 ++ r1 = encode_list v2 ++ r2 -> v1 = v2 /\ r1 = r2.
+    forall (v1 v2 : list X) (r1 r2 : list (sig + bool)), encode_list v1 ++ r1 = encode_list v2 ++ r2 -> v1 = v2 /\ r1 = r2.
   Proof.
     intros xs. induction xs as [ | x xs IH]; intros y2 r1 r2 H; cbn in *.
     + destruct y2; cbn in *; try congruence; cbn in *; try now inv H.
     + destruct y2 as [ | y ys]; cbn in *; auto.
       * congruence.
-      * inv H.
-        (*
-        apply encode_injective in H1.
-        rewrite <- !app_assoc in H1. apply encode_injective in H1. destruct H1 as (->&H1). apply IH in H1. intuition; congruence.
-         *)
-  Admitted.
+      * inv H. rewrite <- !app_assoc in H1.
+        pose proof (@encode_map_injective _ sig _ code_X (inl_inj sig bool) x y _ _ H1) as (->&L).
+        now specialize (IH _ _ _ L) as (->&->).
+  Qed.
 
-  Instance Encode_List : codeable (FinType (EqType (sigma + bool)))%type (list X) := mk_codeable encode_injective_list.
+  Instance Encode_List : codeable (FinType (EqType (sig + bool)))%type (list X) := mk_codeable encode_injective_list.
 
 End Encode_List.
 
@@ -410,25 +338,13 @@ End Encode_Pair.
 Section Encode_Pair'.
   Variable (X Y : Type) (sig tau : finType).
 
-  Definition inl_inj : injection_fun sig (sig + tau).
-  Proof.
-    apply Build_injection_fun with (inj_f := inl) (inj_g := fun z => match z with inl x => Some x | _ => None end).
-    firstorder; destruct y; inv H; firstorder.
-  Defined.
-
-  Definition inr_inj : injection_fun tau (sig + tau).
-  Proof.
-    apply Build_injection_fun with (inj_f := inr) (inj_g := fun z => match z with inr x => Some x | _ => None end).
-    firstorder; destruct y; inv H; firstorder.
-  Defined.
-
   Hypothesis (code_X : codeable sig X) (code_Y : codeable tau Y).
 
   Instance Encode_Pair' : codeable (FinType (EqType (sig + tau)%type)) (X * Y).
   Proof.
     apply Encode_Pair.
-    - apply (Encode_Map _ inl_inj).
-    - apply (Encode_Map _ inr_inj).
+    - apply (Encode_Map _ (inl_inj _ _)).
+    - apply (Encode_Map _ (inr_inj _ _)).
   Defined.
       
 End Encode_Pair'.
@@ -549,6 +465,7 @@ End Encode_Fin'.
 
 (** Test Playground *)
 
+(*
 Compute encode
         (codeable := Encode_Pair (Encode_Unit) (Encode_Unit))
         (tt, tt).
@@ -581,3 +498,4 @@ Compute encode true.
 Compute encode
         (codeable := Encode_Pair' (Encode_List (Encode_Unit)) _)
         ([tt;tt;tt], true).
+*)
