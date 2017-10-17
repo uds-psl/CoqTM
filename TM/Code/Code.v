@@ -66,6 +66,32 @@ Section RListInduction.
 
 End RListInduction.
 
+Section DoubleListInduction.
+  Variable (X Y : Type).
+
+  Inductive dlistInd : list X -> list Y -> Prop :=
+  | dlist_nil_nil   : dlistInd nil nil
+  | dlist_nil_cons  : forall y ys, dlistInd nil ys -> dlistInd nil (y :: ys)
+  | dlist_cons_nil  : forall x xs, dlistInd xs nil -> dlistInd (x :: xs) nil
+  | dlist_cons_cons : forall x xs y ys, dlistInd xs ys -> dlistInd (x :: xs) ys -> dlistInd xs (y :: ys) -> dlistInd (x :: xs) (y :: ys).
+
+  Lemma doublelistinduction_xs_nil xs : dlistInd xs nil.
+  Proof. induction xs; now constructor. Qed.
+
+  Lemma doublelistinduction_nil_ys ys : dlistInd nil ys.
+  Proof. induction ys; now constructor. Qed.
+
+  Lemma doubleListInduction xs ys : dlistInd xs ys.
+  Proof.
+    revert ys. induction xs; intros ys.
+    - apply doublelistinduction_nil_ys.
+    - destruct ys.
+      + constructor. apply doublelistinduction_xs_nil.
+      + constructor; auto. induction ys; constructor; auto.
+  Qed.
+
+End DoubleListInduction.
+
 
 Require Export Injection.
 
@@ -102,7 +128,24 @@ Section Remap.
       specialize (IHstr R). destruct (remap g (map f str ++ R)). destruct IHstr as (r1&->&->).
       eexists. split; eauto. 
   Qed.
+
 End Remap.
+
+Section Map_Injective.
+  Variable (sig tau : Type) (t : sig -> tau).
+  Hypothesis t_injective : forall s1 s2, t s1 = t s2 -> s1 = s2.
+
+  Lemma map_injective (xs ys : list sig) :
+    map t xs = map t ys -> xs = ys.
+  Proof.
+    revert ys. induction xs; intros ys H; cbn in *.
+    - erewrite map_eq_nil; eauto.
+    - destruct ys; cbn in *; inv H.
+      rewrite (t_injective H1). f_equal. auto.
+  Qed.
+
+End Map_Injective.
+
 
 Section Map.
   Variable (X : Type).
@@ -111,19 +154,94 @@ Section Map.
   Hypothesis (inj : injection_fun sig tau).
   Notation "'f'" := (inj_f inj). Notation "'g'" := (inj_g inj).
 
+  Lemma map_map_app_eq_None_None (ss1 ss2 : list sig) (t1 t2 : tau) (ts1 ts2 : list tau) :
+    g t1 = None -> g t2 = None ->
+    map f ss1 ++ [t1] ++ ts1 = map f ss2 ++ [t2] ++ ts2 ->
+    map f ss1 = map f ss2 /\ t1 = t2 /\ ts1 = ts2.
+  Proof.
+    intros H1 H2 H. induction (doubleListInduction ss1 ss2); cbn in *.
+    - now inv H.
+    - exfalso. inv H. clear H2 ys d IHd. enough (g (f y) = Some y) by congruence. apply inj_g_adjoint.
+    - exfalso. inv H. clear H1 xs d IHd. enough (g (f x) = Some x) by congruence. apply inj_g_adjoint.
+    - inv H.
+      enough (map f xs = map f ys /\ t1 = t2 /\ ts1 = ts2) as (HE1&HE2).
+      { split; now f_equal. }
+      now apply IHd1.
+  Qed.
+
+  Lemma map_map_app_eq (ss1 ss2 : list sig) (ts : list tau) :
+    map f ss1 = map f ss2 ++ ts ->
+    exists ss3, map f ss1 = map f ss2 ++ map f ss3.
+  Proof.
+    revert ss2 ts. induction ss1; intros ss2 ts H; cbn in *.
+    - symmetry in H. apply appendNil in H as (H&->). apply map_eq_nil in H as ->. exists nil. reflexivity.
+    - destruct ss2; cbn in *.
+      + destruct ts.
+        * congruence.
+        * exists (a :: ss1). reflexivity.
+      + inv H. specialize (IHss1 _ _ H2) as (ss3&IH). eexists. f_equal. rewrite IH. f_equal.
+  Qed.
+
+  Lemma map_app_eq_nil_None (ss1 ss2 : list sig) (t : tau) (ts : list tau) :
+    g t = None -> map f ss1 <> map f ss2 ++ [t] ++ ts.
+  Proof.
+    intros H C.
+    assert (forall x, x el (map f ss1) -> g x <> None) as Contra.
+    {
+      intros x (x'&Hx&_) % in_map_iff. symmetry in Hx. apply inj_inv in Hx. congruence.
+    }
+    rewrite C in Contra. apply (Contra t); auto.
+  Qed.
+
+  Lemma encode_map_injective':
+    forall (v1 v2 : X) (r1 r2 : list sig) (R1 R2 : list tau),
+      map f (encode v1 ++ r1) ++ R1 = map f (encode v2 ++ r2) ++ R2 -> v1 = v2 /\ map f r1 ++ R1 = map f r2 ++ R2.
+  Proof.
+    intros. revert r1 r2 H.
+    induction (doubleListInduction R1 R2); intros r1 r2 H; cbn in *.
+    - rewrite !app_nil_r in H. apply map_injective in H. apply encode_injective in H. intuition. congruence. apply inj_f_injective.
+    - destruct (g y) eqn:E.
+      + apply inj_inv in E as ->.
+        replace (f e :: ys) with (map f [e] ++ ys) in H by reflexivity.
+        rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
+        pose proof (IHd _ _ H) as (->&IH). rewrite !app_nil_r in *.
+        rewrite map_app in IH. rewrite <- app_assoc in IH. auto.
+      + rewrite !app_nil_r in *. exfalso. replace (y :: ys) with ([y] ++ ys) in H by reflexivity. eapply map_app_eq_nil_None; eauto.
+    - destruct (g x) eqn:E.
+      + apply inj_inv in E as ->.
+        replace (f e :: xs) with (map f [e] ++ xs) in H by reflexivity.
+        rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
+        pose proof (IHd _ _ H) as (->&IH). rewrite !app_nil_r in *.
+        rewrite map_app in IH. rewrite <- app_assoc in IH. auto.
+      + rewrite !app_nil_r in *. exfalso. replace (x :: xs) with ([x] ++ xs) in H by reflexivity. eapply map_app_eq_nil_None; eauto.
+    - destruct (g x) eqn:E1, (g y) eqn:E2.
+      + apply inj_inv in E1 as ->. apply inj_inv in E2 as ->.
+        replace (f e  :: xs) with (map f [e ] ++ xs) in H by reflexivity.
+        replace (f e0 :: ys) with (map f [e0] ++ ys) in H by reflexivity.
+        rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H. symmetry in H.
+        rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H. symmetry in H.
+        pose proof (IHd1 _ _ H) as (->&IH). rewrite !map_app in IH. rewrite <- !app_assoc in IH. split; auto.
+      + apply inj_inv in E1 as ->.
+        replace (f e  :: xs) with (map f [e ] ++ xs) in H by reflexivity.
+        rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
+        pose proof (IHd3 _ _ H) as (->&IH). rewrite !map_app in IH. rewrite <- !app_assoc in IH. split; auto.
+      + apply inj_inv in E2 as ->.
+        replace (f e  :: ys) with (map f [e ] ++ ys) in H by reflexivity.
+        rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
+        pose proof (IHd2 _ _ H) as (->&IH). rewrite !map_app in IH. rewrite <- !app_assoc in IH. split; auto.
+      + replace (x :: xs) with ([x] ++ xs) in H by reflexivity. replace (y :: ys) with ([y] ++ ys) in H by reflexivity.
+        pose proof (map_map_app_eq_None_None E1 E2 H) as (L&->&->). apply map_injective in L. now apply encode_injective in L as (->&->).
+        apply inj_f_injective.
+  Qed.
+
 
   Lemma encode_map_injective :
     forall (v1 v2 : X) (r1 r2 : list tau),
       map f (encode v1) ++ r1 = map f (encode v2) ++ r2 -> v1 = v2 /\ r1 = r2.
   Proof.
-    intros.
-    pose proof (map_app_remap inj (encode v1) r1) as L1.
-    pose proof (map_app_remap inj (encode v2) r2) as L2.
-    destruct (remap g (map f (encode v1) ++ r1)). destruct (remap g (map f (encode v2) ++ r2)).
-    destruct L1 as (R1&L1&L1'). destruct L2 as (R2&L2&L2').
-    subst.
-  Admitted.
-    
+    intros. pose proof (@encode_map_injective' v1 v2 nil nil r1 r2) as L. cbn in L. rewrite !app_nil_r in L. auto.
+  Qed.
+
   Instance Encode_Map : codeable tau X.
   Proof.
     apply mk_codeable with (encode := fun x => map f (encode (codeable := code_sig) x)).
