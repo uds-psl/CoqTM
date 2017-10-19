@@ -147,15 +147,6 @@ Inductive star X (R: Rel X X) : Rel X X :=
 | starR x : star R x x
 | starC x y z : R x y -> star R y z -> star R x z.
 
-(*
-  Definition reflexive R := forall x, R x x.
-  Definition symmetric R := forall x y, R x y -> R y x.
-  Definition transitive R := forall x y z, R x y -> R y z -> R x z.
-  Definition functional R := forall x y z, R x y -> R x z -> y = z.
- *)
-
-
-
 (* Making first argument a non-uniform parameter doesn't simplify the induction principle. *)
 
 Lemma star_simpl_ind X (R: Rel X X) (p : X -> Prop) y :
@@ -255,19 +246,6 @@ Proof.
   - econstructor. split; eauto.
   - destruct H as [u [H1 H2]]; subst u; eassumption.
 Qed.
-(*
-  Lemma rcomp_comm X R m (s t : X) : rcomp R (it (rcomp R) m eq) s t <-> rcomp (it (rcomp R) m eq) R s t.
-  Proof.
-    split; intros H;
-    [rewrite (rcomp_eq s t (rcomp_1 R) (eq_ref _)) in H;
-      rewrite (rcomp_eq s t (eq_ref _) (rcomp_1 R)) |
-     rewrite (rcomp_eq s t (eq_ref _) (rcomp_1 R)) in H;
-       rewrite (rcomp_eq s t (rcomp_1 R) (eq_ref _))];
-    change ((it (rcomp R) m eq)) with (pow R m) in *;
-    try rewrite <- pow_add in *;
-    rewrite plus_comm; eassumption.
-  Qed.*)
-
 
 Instance eqrel_equiv X Y: Equivalence (@eqrel X Y).
 Proof.
@@ -896,12 +874,6 @@ Proof.
                         destruct b; firstorder. 
 Qed.      
 
-(* Instance update_R_proper X Y (Z : eqType) e : *)
-(*   Proper (@eqrel X Y ==> (pointwise_relation Z (@eqrel X Y)) ==> @eq Z ==> @eqrel X Y) (@update_R X Y Z e). *)
-(* Proof. *)
-(*   hnf. split; intros ? ? ?; unfold update_R in *; dec; subst; firstorder. *)
-(* Qed. *)
-
 Lemma hideParam_restrict X Y Z I F (R1 : Rel X Y) (R2 : Rel Y Z) f (y' : I):
   ignoreParam (Y := I) R1 ∘ hideParam (↑ (fun y : F => y = f) ⊗ R2) =2 ↑ (fun y : F => y = f) ⊗ (R1 ∘ R2).
 Proof.                                                                
@@ -911,116 +883,6 @@ Proof.
     eexists (_, x0). firstorder.
     Unshelve. eassumption.
 Qed.
-
-Inductive perm X : forall n n', Vector.t (Fin.t n') n -> Vector.t X n -> Vector.t X n' -> Prop :=
-  perm_nil n' I1 I2 : perm (n' := n') (Vector.nil _) I1 I2
-| perm_cons n n' I' I1 I2 f i :
-    Vector.nth I2 f = i ->
-    perm I' I1 I2 ->
-    perm (n := S n) (n' := n') (Vector.cons _ f _ I') (Vector.cons _ i _ I1) I2.
-
-Lemma lift_lift_gen_eq m n n' (I' : Vector.t (Fin.t n') n) (I1 : Vector.t (Fin.t m) n) (I2 : Vector.t (Fin.t m) n') X (R : Rel (Vector.t X _) (Vector.t X _)) :
-  perm I' I1 I2 ->
-  lift_gen_eq I1 R =2 lift_gen_eq I2 (lift_gen_eq I' R).
-Proof.
-  induction 1.
-  - revert I1. eapply Vector.case0.
-    split; intros ? ? ?.
-    + unfold lift_gen_eq in *.
-      destruct H.
-      assert (x = y). eapply get_at_eq_iff.
-      intros. unfold Eq_in in *. erewrite get_at_ext.
-      eapply H0. unfold not_indices; firstorder.
-      cbn. inversion 1.
-      subst.
-
-      firstorder.
-    + destruct H. destruct H.
-      unfold lift_gen_eq. split.
-      firstorder.
-
-      cutrewrite (x = y). reflexivity.
-
-      eapply get_at_eq_iff. intros.
-      erewrite get_at_ext.
-Admitted.
-
-Lemma lift_lift_gen_eq_p m n n' (I' : Vector.t (Fin.t n') n) (I1 : Vector.t (Fin.t m) n) (I2 : Vector.t (Fin.t m) n') X Y (R : Rel (Vector.t X _) (Y * Vector.t X _)) :
-  perm I' I1 I2 ->
-  lift_gen_eq_p I1 R =2 lift_gen_eq_p I2 (lift_gen_eq_p I' R).
-Proof.
-  induction 1.
-  - revert I1. eapply Vector.case0.
-    split; intros ? ? ?.
-    + unfold lift_gen_eq in *.
-      destruct H. destruct y as (z & y).
-      assert (x = y). eapply get_at_eq_iff.
-      intros. unfold Eq_in in *. erewrite get_at_ext.
-      eapply H0. unfold not_indices; firstorder.
-      cbn. inversion 1.
-      subst.
-
-      firstorder.
-    + destruct H. destruct y as (z & y). destruct H.
-      unfold lift_gen_eq. split.
-      firstorder.
-
-      cutrewrite (x = y). cbn. reflexivity.
-
-      eapply get_at_eq_iff. intros.
-      erewrite get_at_ext.
-Admitted.
-
-(* Section extend2. *)
-
-(*   Variable tapes_no : nat. *)
-
-(*   Variable tape_i : nat. *)
-(*   Hypothesis i_is_a_tape : tape_i < S tapes_no. *)
-
-(*   Variable tape_j : nat. *)
-(*   Hypothesis j_is_a_tape : tape_j < S tapes_no. *)
-
-(*   Hypothesis neq : tape_i <> tape_j. *)
-
-(*   Lemma lift_gen_eq_extend2 X (R : Rel (Vector.t X 1) (Vector.t X 1)) : ⇑⇑(i_is_a_tape) R =2 ⇑⇑(i_is_a_tape; j_is_a_tape) (fun t t' => R [|get_at tape_0 t|] [|get_at tape_0 t'|] /\ (get_at tape_1 t = get_at tape_1 t'))%vector_scope. *)
-(*   Proof. *)
-(*     etransitivity. *)
-(*     rewrite (lift_lift (I' := [| Fin.F1 (n := 1) |]%vector_scope)). reflexivity. *)
-(*     econstructor. *)
-(*     instantiate (1 := [| Fin.of_nat_lt i_is_a_tape; Fin.of_nat_lt j_is_a_tape |]%vector_scope). *)
-(*     reflexivity. *)
-(*     econstructor. *)
-(*     split; intros ? ? ?. *)
-(*     - firstorder. cbn in *. *)
-(*       unfold Eq_in in H1. *)
-(*       unfold get_at in H1. specialize (H1 1 tape_1). *)
-(*       cbn in H1. eapply H1. unfold not_indices. inversion 1. *)
-(*       subst. cbn in *. inv H2. inv H5. *)
-(*     - destruct H; split; eauto. *)
-(*       destruct H. cbn in *. unfold lift_gen. cbn. *)
-(*       unfold lift_gen_eq, lift_gen. cbn. split. *)
-(*       cbn. eassumption. rewrite H1. *)
-(*       intros ? ? ?. unfold get_at. destruct i. *)
-(*       + exfalso. eapply H2. econstructor. *)
-(*       + reflexivity. *)
-(*   Qed. *)
-
-      
-
-(* Section vector_bij. *)
-
-(*   Variable X : Type. *)
-
-(*   Definition singVec := Vector.t X 1. *)
-
-(*   Definition to_vec (x : X) : singVec := Vector.cons _ x _ (Vector.nil _). *)
-
-(*   Definition from_vec (v : singVec) : X := v[@Fin.F1]. *)
-
-(*   Coercion from_vec : singVec >-> X. *)
-
-(* End vector_bij. *)
 
 Section liftT_gen.
 
