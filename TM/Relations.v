@@ -124,12 +124,6 @@ Section Fix_X2.
 
   Local Notation "'V' Z" := (Vector.t Z n) (at level 10).
 
-  Definition lift_vector_rel i (iv : i < n) (R : Rel X Y) : Rel (V X) (V Y) :=
-    fun vx vz => R (get_at iv vx) (get_at iv vz).
-
-  Definition lift_vector_prel i (iv : i < n) (R : Rel X (Y * Z)) : Rel (V X) (Y * V Z) :=
-    fun vx p => let (y, vz) := p in R (get_at iv vx) (y, get_at iv vz).
-
   Definition Eq_in (f : nat -> Prop) : Rel (V X) (V X) :=
     fun vx vy => forall i (iv : i < n), f i -> get_at iv vx = get_at iv vy.
 
@@ -140,81 +134,6 @@ Definition project (i : nat) (m : nat) (H : i < m) := i.
 
 Definition IdR (X : Type) : Rel X X := eq.
 
-Notation "'↑(' i ')' R" := (lift_vector_rel i R) (at level 40).
-Notation "'⇑(' i ')' R" := (↑(i) R ∩ Eq_in (<> project i)) (at level 40).
-Notation "'↑[' i ']' R" := (lift_vector_prel i R) (at level 40).
-Notation "'⇑[' i ']' R" := (↑[i] R ∩ ignoreParam (Eq_in (<> project i))) (at level 40).
-
-Lemma rif_vector_lift X Y (R1 R2 : Rel X Y) ni n (i : ni < n) :
-  ↑[i] (if? R1 ! R2) =2 if? ↑(i) R1 ! ↑(i) R2.
-Proof.
-  firstorder.
-Qed.
-
-Lemma rintersect_vector_lift X Y (R1 R2 : Rel X Y) ni n (i : ni < n) :
-  ↑(i) (R1 ∩ R2) =2 ↑(i) R1 ∩ ↑(i) R2.
-Proof.
-  firstorder.
-Qed.
-
-Lemma rimplication_vector_lift X Y (R1 R2 : Rel X Y) ni n (i : ni < n) :
-  ↑(i) (R1 ⊂ R2) =2 ↑(i) R1 ⊂ ↑(i) R2.
-Proof.
-  firstorder.
-Qed.
-
-Lemma rintersect_vector_lift_eq X (R1 R2 : Rel X X) ni n (i : ni < n) :
-  ⇑(i) (R1 ∩ R2) =2 ⇑(i) R1 ∩ ⇑(i) R2.
-Proof.
-  firstorder.
-Qed.
-
-Lemma rimplication_vector_lift_eq X (R1 R2 : Rel X X) ni n (i : ni < n) :
-  ⇑(i) (R1 ⊂ R2) <<=2 ↑(i) R1 ⊂ ⇑(i) R2.
-Proof.
-  - firstorder.
-  (* - intros ? ? ?. split. *)
-  (*   + eapply rimplication_vector_lift. intros ?. eapply H in H0. firstorder. *)
-  (*   +  *)
-  
-Qed.
-
-Lemma runion_vector_lift_eq X (R1 R2 : Rel X X) ni n (i : ni < n) :
-  ⇑(i) (R1 ∪ R2) =2 ⇑(i) R1 ∪ ⇑(i) R2.
-Proof.
-  firstorder.
-Qed.
-
-Lemma rintersect_vector_lift_eq2 X Y (R1 R2 : Rel X (Y * X)) ni n (i : ni < n) :
-  ⇑[i] (R1 ∩ R2) =2 ⇑[i] R1 ∩ ⇑[i] R2.
-Proof.
-  split; intros ? (? & ?); cbn; firstorder.
-Qed.
-
-(* Lemma rimplication_vector_lift_eq2 X Y (R1 R2 : Rel X (Y * X)) ni n (i : ni < n) : *)
-(*   ⇑[i] (R1 ⊂ R2) =2 ⇑[i] R1 ⊂ ⇑[i] R2. *)
-(* Proof. *)
-(*   split; intros ? (? & ?); cbn; firstorder. *)
-(* Qed. *)
-
-Lemma runion_vector_lift_eq2 X Y (R1 R2 : Rel X (Y * X)) ni n (i : ni < n) :
-  ⇑[i] (R1 ∪ R2) =2 ⇑[i] R1 ∪ ⇑[i] R2.
-Proof.
-  split; intros ? (? & ?); cbn; firstorder.
-Qed.
-
-Lemma rif_vector_lift_eq X (R1 R2 : Rel X X) ni n (i : ni < n) :
-  ⇑[i] (if?  R1 ! R2) =2 if?  ⇑(i) R1 ! ⇑(i) R2.
-Proof.
-  split; intros ? [ []  ?]; firstorder.
-Qed.
-
-Lemma ignoreParam_vector_lift_eq X Y (R : Rel X X) ni n (i : ni < n) :
-  ⇑[i] (ignoreParam (Y := Y) R) =2 ignoreParam (⇑(i) R).
-Proof.
-  split; intros ? (? & ?); cbn; firstorder.
-Qed.
-
 Lemma ignore_hideParam X Y Z A (R1 : Rel X Y) (R2 : Rel Y Z) (a : A):
   ignoreParam (Y := A) R1 ∘ hideParam R2 =2 R1 ∘ R2.
 Proof.
@@ -222,36 +141,7 @@ Proof.
   exists (a, x0). firstorder.
 Qed.
 
-Lemma restrict_vector_lift_eq X Y (R : Rel X (Y * X)) ni n (i : ni < n) f :
-  ⇑(i) ( R |_ f) =2 ( ⇑[i] R ) |_ f.
-Proof.
-  firstorder.
-Qed.
-
-(* Lemma ignoreParam_rintersect X Y (R1 R2 : Rel X X) ni n (i : ni < n) : *)
-(*   ⇑[i] (ignoreParam (Y := Y) (R1 ∩ R2) =2 ignoreParam (⇑(i) R1). *)
-(* Proof. *)
-(*   split; intros ? (? & ?); cbn; firstorder. *)
-(* Qed. *)
-
 Hint Unfold project Eq_in.
-
-Lemma id_vector_lift X ni n (i : ni < n) :
-  ⇑(i) (@IdR X) =2 @IdR _.
-Proof.
-  split; intros ? ? ?; intuition.
-  - inv H. inv H0. unfold project in H1. 
-    eapply get_at_eq_iff.
-    intros.
-    decide (m = ni).
-    + subst. erewrite get_at_ext. rewrite H2.
-      eapply get_at_ext.
-    + erewrite get_at_ext. eapply H1. omega.
-  - unfold rintersection. split.
-    + unfold IdR in *. subst. reflexivity.
-    + unfold IdR in *. subst. firstorder.
-Qed.
-
 
 Inductive star X (R: Rel X X) : Rel X X :=
 | starR x : star R x x
@@ -477,21 +367,6 @@ Proof.
   cbv. intuition.
 Qed.
 
-Instance eqrel_lift_proper X Y n ni i :
-  Proper (@eqrel X Y ==> @eqrel (Vector.t X n) (Vector.t Y n)) (@lift_vector_rel X Y n ni i).
-Proof.
-  cbv. intuition.
-Qed.
-
-Instance eqrel_plift_proper X Y Z n ni i :
-  Proper (@eqrel X (Z * Y) ==> @eqrel (Vector.t X n) (Z * Vector.t Y n)) (@lift_vector_prel X Z Y n ni i).
-Proof.
-  intros ? ? ?. cbn.
-  hnf. split. hnf. intros. hnf. destruct y0.
-  eapply H. exact H0.
-  hnf. intros. hnf. destruct y0. eapply H. exact H0.
-Qed.
-
 Instance eqrel_restrict_proper X Y Z :
   Proper (@eqrel X (Y * Z) ==> @eq Y ==> @eqrel X Z) (@restrict X Y Z).
 Proof.
@@ -540,56 +415,6 @@ Proof.
 Qed.
 
 
-Lemma compose_vector_lift_eq X (R : Rel X X) (S : Rel X X) ni n (i : ni < n) :
-  ⇑(i) (R ∘ S) =2 (⇑(i) R ∘ ⇑(i) S).
-Proof.
-  split.
-  - {
-      hnf. intros t t' ((x & ? & ?) & ?).
-      exists (Vector.replace t (Fin.of_nat_lt i) x).
-      split; hnf.
-      - split.
-        + hnf. replace (get_at i (Vector.replace t (Fin.of_nat_lt i) x)) with x.
-          trivial. apply vec_replace_nth.
-        + unfold Eq_in, project. firstorder.
-          apply vec_replace_nth_nochange; contradict H2; rewrite !Fin.to_nat_of_nat in H2; congruence.
-      - split.
-        + hnf. replace (get_at i (Vector.replace t (Fin.of_nat_lt i) x)) with x.
-          eauto. apply vec_replace_nth.
-        + cbn. unfold Eq_in, project. firstorder.
-          rewrite <- H1; auto. symmetry.
-          apply vec_replace_nth_nochange; contradict H2; rewrite !Fin.to_nat_of_nat in H2; congruence.
-    }
-  - intros vx vy (vz&(H1&H1')&(H2&H2')).
-    repeat econstructor; eauto.
-    unfold Eq_in in *. firstorder. rewrite H1'; auto.
-Qed.
-
-Lemma compose_vector_lift_eq2 X Z (R : Rel X X) (S : Rel X (Z * X)) ni n (i : ni < n) :
-  ⇑[i] (R ∘ S) =2 (⇑(i) R ∘ ⇑[i] S).
-Proof.
-  split.
-  - {
-      hnf. intros t (z & t') ((x & ? & ?) & ?). hnf in *.
-      exists (Vector.replace t (Fin.of_nat_lt i) x).
-      split; hnf.
-      - split.
-        + hnf. replace (get_at i (Vector.replace t (Fin.of_nat_lt i) x)) with x.
-          eauto. apply vec_replace_nth.
-        + unfold Eq_in, project. firstorder.
-          apply vec_replace_nth_nochange; contradict H2; rewrite !Fin.to_nat_of_nat in H2; congruence.
-      - split.
-        + hnf. replace (get_at i (Vector.replace t (Fin.of_nat_lt i) x)) with x.
-          eauto. apply vec_replace_nth.
-        + cbn. unfold Eq_in, project. firstorder.
-          rewrite <- H1; auto. symmetry.
-          apply vec_replace_nth_nochange; contradict H2; rewrite !Fin.to_nat_of_nat in H2; congruence.
-    }
-  - hnf. intros t (z & t') (t'' & (? & ?) & (? & ?)).
-    econstructor.
-    econstructor. econstructor. eauto. eauto. cbn in *. etransitivity; eauto.
-Qed.
-
 Lemma tapes_eq_iff (X : Type)  (n : nat) (t t' : Vector.t X n) (i : nat) (itape itape' : i < n) : (Eq_in (<> i) t t') -> (get_at itape t = get_at itape' t') -> t = t'.
 Proof.
   intros. eapply get_at_eq_iff.
@@ -599,56 +424,6 @@ Proof.
 Qed.
 
 
-
-Lemma star_vector_lift_eq X (R : Rel X X) ni n (i : ni < n) :
-  ⇑(i) (star R) =2 star (⇑(i) R).
-Proof.
-  split; hnf.
-  - {
-      intros xv yv H.
-      destruct H as (H&H1). unfold lift_vector_rel in H.
-      apply star_pow in H. apply star_pow.
-      destruct H as (k&H). exists k.
-      revert xv yv H H1. induction k; cbn in *; intros xv yv H H1.
-      - eapply tapes_eq_iff; eauto.
-      - hnf.
-        destruct H as (y&H&H').
-        unfold pow in *.
-        exists (Vector.replace yv (Fin.of_nat_lt i) y). split.
-        + split.
-          * unfold lift_vector_rel.
-            replace (get_at i (Vector.replace yv (Fin.of_nat_lt i) y)) with y. assumption.
-            apply vec_replace_nth.
-          * unfold Eq_in in *. firstorder. rewrite H1; auto.
-            apply vec_replace_nth_nochange. contradict H0. unfold project.
-            rewrite !Fin.to_nat_of_nat in H0. congruence.
-        + apply IHk.
-          * replace (get_at i (Vector.replace yv (Fin.of_nat_lt i) y)) with y; firstorder.
-            apply vec_replace_nth.
-          * unfold Eq_in in *. firstorder. symmetry.
-            apply vec_replace_nth_nochange. contradict H0. unfold project.
-            rewrite !Fin.to_nat_of_nat in H0. congruence.
-    }
-  - {
-      intros x y. induction 1.
-      - split; hnf; constructor.
-      - split; hnf.
-        + eapply starC. eapply H. firstorder.
-        + firstorder. rewrite H4; firstorder.
-    }
-Qed.
-
-Lemma function_vector_lift_eq X Y (R : Rel X X) ni n (i : ni < n) c :
-  (⇑[ i ] (↑ (fun y : Y => y = c) ⊗ R)) =2 (↑ (fun y : Y => y = c) ⊗ ⇑( i ) R).
-Proof.
-  split; intros ? (? & ?) ?; firstorder.
-Qed.
-
-Lemma vector_lift_eq_subrel X Y (R S : Rel X (Y * X)) ni n (i : ni < n) :
-  R <<=2 S -> ⇑[i] R <<=2 ⇑[i] S.
-Proof.
-  intros H ? (? & ?) (? & ?); firstorder.
-Qed.
 
 Lemma function_restrict X Y (R : Rel X X) c :
   (↑ (fun y : Y => y = c) ⊗ R)|_c =2 R.
@@ -785,52 +560,6 @@ Proof.
   apply vec_replace_nth_nochange; contradict H; rewrite !Fin.to_nat_of_nat in H; congruence.
 Qed.
 
-Lemma lift_gen_singleton X Y (R : Rel X Y) n mi (m : mi < n) :
-  ↑↑( m ) (fun (x : Vector.t X 1) (y : Vector.t Y 1) => R (x[@ Fin.F1]) (y [@ Fin.F1]))
-  =2 ↑(m) R.
-Proof.
-  split; intros ? ?; firstorder.
-Qed.
-
-
-Lemma lift_gen_p_singleton X Y Z (R : Rel X (Y * Z)) n mi (m : mi < n) :
-  ↑↑[ m ] (fun (x : Vector.t X 1) (y : Y * Vector.t Z 1) => let (z,y) := y in R (x[@ Fin.F1]) (z, y [@ Fin.F1]))
-  =2 ↑[m] R.
-Proof.
-  split; intros ? ?; firstorder.
-Qed.
-
-
-Lemma lift_gen_eq_p_singleton X Z (R : Rel X (Z * X)) n mi (m : mi < n) :
-  ⇑⇑[ m ] (fun (x : Vector.t X 1) (y : Z * Vector.t X 1) => let (z,y) := y in R (x[@ Fin.F1]) (z, y [@ Fin.F1]))
-  =2 ⇑[m] R.
-Proof.
-  split; intros ? (? & ?); cbn in *.
-  - intros H. destruct H; split. now eapply lift_gen_p_singleton. cbn in *.
-    eapply Eq_in_monotone; eauto. intros. unfold project, not_indices in *.
-    cbn in *. rewrite Fin.to_nat_of_nat. cbn. intros ?. inv H2. congruence.
-    inv H5.
-  - intros H. destruct H; split. now eapply lift_gen_p_singleton. cbn in *.
-    eapply Eq_in_monotone; eauto. intros. unfold project, not_indices in *.
-    cbn in *. rewrite Fin.to_nat_of_nat in H1. cbn. intros ?. subst. cbn in H1. eapply H1.
-    econstructor.
-Qed.
-
-Lemma lift_gen_eq_singleton X (R : Rel X X) n mi (m : mi < n) :
-  ⇑⇑( m ) (fun (x : Vector.t X 1) (y : Vector.t X 1) => R (x[@ Fin.F1]) (y [@ Fin.F1]))
-  =2 ⇑(m) R.
-Proof.
-  split; intros ? ?; cbn in *.
-  - intros H. destruct H; split. now eapply lift_gen_singleton. cbn in *.
-    eapply Eq_in_monotone; eauto. intros. unfold project, not_indices in *.
-    cbn in *. rewrite Fin.to_nat_of_nat. cbn. intros ?. inv H2. congruence.
-    inv H5.
-  - intros H. destruct H; split. now eapply lift_gen_singleton. cbn in *.
-    eapply Eq_in_monotone; eauto. intros. unfold project, not_indices in *.
-    cbn in *. rewrite Fin.to_nat_of_nat in H1. cbn. intros ?. subst. cbn in H1. eapply H1.
-    econstructor.
-Qed. 
-      
 Lemma rif_lift_gen X Y n (R1 R2 : Rel (Vector.t X n) (Vector.t Y n)) m (I : Vector.t (Fin.t m) n) :
   lift_gen_p I (if? R1 ! R2) =2 if? lift_gen I R1 ! lift_gen I R2.
 Proof.
@@ -980,24 +709,11 @@ Qed.
 
 Definition functional X Y (R : Rel X Y) := forall x y1 y2, R x y1 -> R x y2 -> y1 = y2. 
 
-Lemma functional_vector_lift_eq X Y (R : Rel X (Y * X)) ni n (i : ni < n) :
-  functional R -> functional (⇑[i] R).
-Proof.
-  intros ? ? (? & ?) (? & ?) ? ?.
-  destruct H0, H1; cbn in *. eapply H in H0. eapply H0 in H1. inv H1.
-  f_equal. eapply tapes_eq_iff; eauto. etransitivity. symmetry. eauto. eauto.
-Qed.
-
-Instance not_indices_dec n m (I : Vector.t (Fin.t m) n) m0 : dec (not_indices I m0).
-Admitted.
-
 Lemma tapes_eq_iff_gen (X : Type) n m (I : Vector.t (Fin.t m) n) (t t' : Vector.t X m) :
   (Eq_in (not_indices I) t t') -> reorder I t = reorder I t' -> t = t'.
 Proof.
   intros. eapply get_at_eq_iff.
-  intros. decide (not_indices I m0).
-  - erewrite get_at_ext. rewrite H; eauto.
-  - unfold not_indices in n0.
+  intros. 
 Admitted.
 
 Lemma functional_lift_gen_eq_p X Z n (R: Rel (Vector.t X n) (Z * Vector.t X n)) m (I : Vector.t (Fin.t m) n) :
@@ -1044,7 +760,7 @@ Section extend.
       inversion H1. subst. omega. subst. inv H4.
     - eapply Eq_in_monotone. eassumption. intros. unfold not_indices in *. cbn in *.
       rewrite !Fin.to_nat_of_nat in *. rewrite Fin.to_nat_of_nat in H1.
-      intros ?. eapply H1. cbn in *. rewrite !Fin.to_nat_of_nat in *. cbn. econstructor. eassumption.
+      intros ?. eapply H1. cbn in *. cbn. econstructor. eassumption.
     - cbn in *. unfold lift_gen. cbn. unfold lift_gen in H. cbn in H. firstorder.
     - unfold lift_gen in H. cbn in H. destruct H.
       intros ? ? ?.
@@ -1074,7 +790,7 @@ Section extend.
       inversion H1. subst. omega. subst. inv H4.
     - eapply Eq_in_monotone. eassumption. intros. unfold not_indices in *. cbn in *.
       rewrite !Fin.to_nat_of_nat in *. rewrite Fin.to_nat_of_nat in H1.
-      intros ?. eapply H1. cbn in *. rewrite !Fin.to_nat_of_nat in *. cbn. econstructor. eassumption.
+      intros ?. eapply H1. cbn in *. cbn. econstructor. eassumption.
     - cbn in *. unfold lift_gen. cbn. unfold lift_gen in H. cbn in H. firstorder.
     - unfold lift_gen in H. cbn in H. destruct H.
       intros ? ? ?.
@@ -1112,7 +828,7 @@ Section extend.
         eapply get_at_ext.
       + rewrite H0. reflexivity.
         intros. unfold not_indices in *. cbn in *.
-        rewrite !Fin.to_nat_of_nat in *. rewrite Fin.to_nat_of_nat in H2.
+        rewrite !Fin.to_nat_of_nat in *.
         intros ?. cbn in *. eapply H2. cbn in *. inv H3. repeat econstructor.
         replace v with ([| tape_j |]%vector_scope) in H6.
         inv H6. omega. inv H5.
@@ -1139,7 +855,7 @@ Section extend.
         eapply get_at_ext.
       + rewrite H0. reflexivity.
         intros. unfold not_indices in *. cbn in *.
-        rewrite !Fin.to_nat_of_nat in *. rewrite Fin.to_nat_of_nat in H2.
+        rewrite !Fin.to_nat_of_nat in *. 
         intros ?. cbn in *. eapply H2. cbn in *. inv H3. repeat econstructor.
         replace v with ([| tape_j |]%vector_scope) in H6.
         inv H6. omega. inv H5.
@@ -1186,45 +902,6 @@ Qed.
 (*   hnf. split; intros ? ? ?; unfold update_R in *; dec; subst; firstorder. *)
 (* Qed. *)
 
-Lemma update_R_vector_lift X Y (Z : eqType) e (R1: Rel X Y) (R2 : Z -> Rel X Y) ni n (i : ni < n) z1 z2: z1 = z2 ->
-                                                                                                        update_R e (↑(i) R1) (fun s => ↑( i ) R2 s) z1 =2 ↑(i) (update_R e R1 R2) z2.
-Admitted.
-
-Lemma rifb_vector_lift_eq (b : bool) X Y (R1 R2 : Rel X (Y * X)) ni n (i : ni < n) :
-  rifb b ( ⇑[i] R1 ) ( ⇑[i] R2 ) =2 ⇑[i] rifb b R1 R2.
-Proof.
-Admitted.
-
-Lemma lift_gen_hideParam X Y Z m n (R1 : Rel (Vector.t X n) (Y * Vector.t X n)) (R2 : Rel (Vector.t X n) (Z * Vector.t X n)) (I : Vector.t (Fin.t m) n) :
-  lift_gen_eq_p I R1 ∘ hideParam (lift_gen_eq_p I R2) =2 lift_gen_eq_p I (R1 ∘ hideParam R2).
-  (* split; intros ? ?; cbn; firstorder; try destruct x0, y. *)
-  (* - cbn in *. eexists. split. eassumption. destruct H0. cbn in H0. eassumption. *)
-  (* - cbn in *. destruct H0. rewrite H1. eassumption. *)
-  (* - destruct y. cbn in *. firstorder. destruct x0. *)
-  (*   eexists (y,_). cbn. split. split. cbn in *. *)
-  (*   instantiate (1 := Vector.replace x (Fin.of_nat_lt i) x0 ). *)
-  (*   unfold get_at in *. now rewrite Vector_replace_nth. *)
-  (*   cbn. eapply Eq_in_replace. unfold project. firstorder. reflexivity. *)
-  (*   split. cbn. unfold get_at in *. now rewrite Vector_replace_nth. *)
-  (*   cbn. rewrite <- H0. symmetry. cbn. eapply Eq_in_replace. unfold project. firstorder. reflexivity. *)
-Admitted.
-
-Lemma lift_hideParam (X' Y Z : Type) (R1 : Rel X' (Y * X')) (R2 : Rel X' (Z * X')) ni n (i : ni < n) :
-  ⇑[i] R1 ∘ hideParam (⇑[i] R2) =2 ⇑[i] ( R1 ∘ hideParam R2 ).
-Proof.
-  split; intros ? ?; cbn; firstorder; try destruct x0, y.
-  - cbn in *. eexists. split. eassumption. destruct H0. cbn in H0. eassumption.
-  - cbn in *. destruct H0. rewrite H1. eassumption.
-  - destruct y. cbn in *. firstorder. destruct x0.
-    eexists (y,_). cbn. split. split. cbn in *.
-    instantiate (1 := Vector.replace x (Fin.of_nat_lt i) x0 ).
-    unfold get_at in *. now rewrite Vector_replace_nth.
-    cbn. eapply Eq_in_replace. unfold project. firstorder. reflexivity.
-    split. cbn. unfold get_at in *. now rewrite Vector_replace_nth.
-    cbn. rewrite <- H0. symmetry. cbn. eapply Eq_in_replace. unfold project. firstorder. reflexivity.
-Qed.
-
-
 Lemma hideParam_restrict X Y Z I F (R1 : Rel X Y) (R2 : Rel Y Z) f (y' : I):
   ignoreParam (Y := I) R1 ∘ hideParam (↑ (fun y : F => y = f) ⊗ R2) =2 ↑ (fun y : F => y = f) ⊗ (R1 ∘ R2).
 Proof.                                                                
@@ -1266,16 +943,6 @@ Proof.
 
       eapply get_at_eq_iff. intros.
       erewrite get_at_ext.
-      decide (not_indices I2 m0).
-      * firstorder.
-      * assert (reorder I2 x = reorder I2 y).
-        eapply get_at_eq_iff. intros. erewrite get_at_ext.
-        unfold Eq_in in H1. eapply H1. unfold not_indices; firstorder. inversion 1.
-        admit.
-  - split; intros ? ? ?.
-    + unfold lift_gen_eq.
-      split. destruct H1.
-      split. cbn in *.
 Admitted.
 
 Lemma lift_lift_gen_eq_p m n n' (I' : Vector.t (Fin.t n') n) (I1 : Vector.t (Fin.t m) n) (I2 : Vector.t (Fin.t m) n') X Y (R : Rel (Vector.t X _) (Y * Vector.t X _)) :
@@ -1302,16 +969,6 @@ Proof.
 
       eapply get_at_eq_iff. intros.
       erewrite get_at_ext.
-      decide (not_indices I2 m0).
-      * firstorder.
-      * assert (reorder I2 x = reorder I2 y).
-        eapply get_at_eq_iff. intros. erewrite get_at_ext.
-        unfold Eq_in in H1. eapply H1. unfold not_indices; firstorder. inversion 1.
-        admit.
-  - split; intros ? ? ?.
-    + unfold lift_gen_eq.
-      split. destruct H1. destruct y as (z & y).
-      split. cbn in *.
 Admitted.
 
 (* Section extend2. *)
@@ -1410,35 +1067,3 @@ Section liftT_gen.
   Qed.
 
 End liftT_gen.
-
-Section liftT.
-
-  Variable tapes_no : nat.
-  Variable on_tape : nat.
-  Hypothesis is_a_tape : on_tape < S tapes_no.
-  
-  Definition liftT n ni (i : ni < n) X Y (R : Rel X Y)  : Rel (Vector.t X n) Y :=
-    fun x y => R (get_at i x) y.
-
-  Lemma functionalOn_lift (X Y Z : Type) (R :  Rel _ Y) (R2 : Rel X (Z * X)) :
-    functionalOn R R2 ->
-    functionalOn
-      (liftT is_a_tape R)
-      (⇑[ is_a_tape] R2).
-  Proof.
-    intros. hnf in *. intros.
-    destruct H1, H2. cbn in *.
-    destruct z1 as (z1, t1), z2 as (z2, t2).
-    eapply H in H0.
-    Focus 2. exact H1. Focus 2. exact H2.
-    inv H0.
-    f_equal.
-    eapply get_at_eq_iff.
-    intros.
-    decide (m = on_tape).
-    + subst. erewrite get_at_ext. rewrite H7. eapply get_at_ext.
-    + rewrite <- H3. rewrite <- H4. eapply get_at_ext. eauto. eauto.
-  Qed.
-  
-End liftT.
-

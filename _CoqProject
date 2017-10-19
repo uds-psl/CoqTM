@@ -1,6 +1,6 @@
 -R . "FormalComplexity"
 -Q ../base-library "Shared"
--I "../smpl/src"
+ -I "../smpl/src"
 
 -install none
 COQDOCFLAGS = "--charset utf-8 -s --parse-comments --with-header ./website/resources/header.html --with-footer ./website/resources/footer.html --index indexpage"
