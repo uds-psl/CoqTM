@@ -6,11 +6,11 @@ Open Scope vector_scope.
 (* Read boolean from tape 1, negate it and write it back to tape 1 *)
 Section Neg_TM.
 
-  Variable (F : finType) (def : bool_fin -> F).
+  Variable (F : finType) (def : Bool_Fin -> F).
 
   Definition bool_neg_TM_trans :
-    bool_fin * (Vector.t (option bool_fin) 1) ->
-    bool_fin * (Vector.t (option bool_fin * move) 1).
+    Bool_Fin * (Vector.t (option Bool_Fin) 1) ->
+    Bool_Fin * (Vector.t (option Bool_Fin * move) 1).
   Proof.
     intros ([ | ], rd).
     - constructor. apply true. constructor. apply (None, N). constructor.
@@ -20,17 +20,17 @@ Section Neg_TM.
       + (* None       *) constructor. apply true. constructor. apply (None,       N). constructor.
   Defined.
 
-  Definition bool_neg_TM : mTM bool_fin 1.
+  Definition bool_neg_TM : mTM Bool_Fin 1.
   Proof.
-    split with (states := bool_fin).
+    split with (states := Bool_Fin).
     - apply bool_neg_TM_trans.
     - apply false.
     - apply id.
   Defined.
 
-  Definition bool_neg_mTM : { M : mTM bool_fin 1 & states M -> F} := (bool_neg_TM; def).
+  Definition bool_neg_mTM : { M : mTM Bool_Fin 1 & states M -> F} := (bool_neg_TM; def).
 
-  Lemma bool_neg_TM_onestep (inittapes : tapes bool_fin 1) :
+  Lemma bool_neg_TM_onestep (inittapes : tapes Bool_Fin 1) :
     cstate (step (M := bool_neg_TM) (initc bool_neg_TM inittapes)) = true.
   Proof.
     destruct_tapes.
@@ -83,11 +83,11 @@ End Neg_TM.
 (* Copy boolean from tape 1 to tape 2. *)
 Section Copy.
 
-  Variable (F : finType) (def : bool_fin -> F).
+  Variable (F : finType) (def : Bool_Fin -> F).
 
   Definition bool_copy_TM_trans :
-    bool_fin * (Vector.t (option bool_fin) 2) ->
-    bool_fin * (Vector.t (option bool_fin * move) 2).
+    Bool_Fin * (Vector.t (option Bool_Fin) 2) ->
+    Bool_Fin * (Vector.t (option Bool_Fin * move) 2).
   Proof.
     intros ([ | ], rd).
     - apply (true, [| (None, N); (None, N)|]).
@@ -96,17 +96,17 @@ Section Copy.
       + (* None *) apply (true, [| (None, N); (None, N)|]).
   Defined.
 
-  Definition bool_copy_TM : mTM bool_fin 2.
+  Definition bool_copy_TM : mTM Bool_Fin 2.
   Proof.
-    split with (states := bool_fin).
+    split with (states := Bool_Fin).
     - apply bool_copy_TM_trans.
     - apply false.
     - apply id.
   Defined.
 
-  Definition bool_copy_mTM : { M : mTM bool_fin 2 & states M -> F} := (bool_copy_TM; def).
+  Definition bool_copy_mTM : { M : mTM Bool_Fin 2 & states M -> F} := (bool_copy_TM; def).
 
-  Lemma bool_copy_TM_onestep (inittapes : tapes bool_fin 2) :
+  Lemma bool_copy_TM_onestep (inittapes : tapes Bool_Fin 2) :
     cstate (step (M := bool_copy_TM) (initc bool_copy_TM inittapes)) = true.
   Proof.
     unfold initc, step, bool_neg_TM in *. destruct_tapes. cbn in *. destruct (current h); cbn; auto.
@@ -115,7 +115,7 @@ Section Copy.
   Lemma bool_copy_TM_computes_sem :
     bool_copy_mTM ⊫
              (computes_locally_R_p (F := F) Fin.F1 (Fin.FS Fin.F1) _ _ (@id bool)) ∩
-             (stay_locally_R_p (X := bool_fin) (F := F) Fin.F1 _).
+             (stay_locally_R_p (X := Bool_Fin) (F := F) Fin.F1 _).
   Proof.
     hnf. intros inittapes i (b, outt) HLoop. cbn in *.
     assert (i >= 1).
@@ -148,7 +148,7 @@ Section Copy.
   Lemma bool_copy_TM_computes_total :
     bool_copy_mTM ⊨(1)
              (computes_locally_R_p (F := F) Fin.F1 (Fin.FS Fin.F1) _ _ (@id bool)) ∩
-             (stay_locally_R_p (X := bool_fin) (F := F) Fin.F1 _).
+             (stay_locally_R_p (X := Bool_Fin) (F := F) Fin.F1 _).
   Proof.
     hnf. intros inittapes.
     destruct_tapes; cbn in *.
@@ -161,12 +161,12 @@ End Copy.
 
 Section Dual.
 
-  Variable (F : finType) (def : bool_fin -> F).
+  Variable (F : finType) (def : Bool_Fin -> F).
   Variable (f : bool * bool -> bool).
 
   Definition bool_dual_TM_trans :
-    bool_fin * (Vector.t (option bool_fin) 2) ->
-    bool_fin * (Vector.t (option bool_fin * move) 2).
+    Bool_Fin * (Vector.t (option Bool_Fin) 2) ->
+    Bool_Fin * (Vector.t (option Bool_Fin * move) 2).
   Proof.
     intros ([ | ], rd).
     - apply (true, [| (None, N); (None, N)|]).
@@ -175,17 +175,17 @@ Section Dual.
       apply (true, [| (Some (f (b1, b2)), N); (None, N) |]).
   Defined.
 
-  Definition bool_dual_TM : mTM bool_fin 2.
+  Definition bool_dual_TM : mTM Bool_Fin 2.
   Proof.
-    split with (states := bool_fin).
+    split with (states := Bool_Fin).
     - apply bool_dual_TM_trans.
     - apply false.
     - apply id.
   Defined.
 
-  Definition bool_dual_mTM : { M : mTM bool_fin 2 & states M -> F} := (bool_dual_TM; def).
+  Definition bool_dual_mTM : { M : mTM Bool_Fin 2 & states M -> F} := (bool_dual_TM; def).
 
-  Lemma bool_dual_TM_onestep (inittapes : tapes bool_fin 2) :
+  Lemma bool_dual_TM_onestep (inittapes : tapes Bool_Fin 2) :
     cstate (step (M := bool_dual_TM) (initc bool_dual_TM inittapes)) = true.
   Proof.
     unfold initc, step, bool_dual_TM in *. destruct_tapes. cbn in *.
@@ -251,13 +251,13 @@ Require Import LiftNM.
 
 Section CopyMove.
 
-  Variable (F : finType) (def : bool_fin -> F).
+  Variable (F : finType) (def : Bool_Fin -> F).
 
-  Local Definition Move_at_1 := Inject (n := 2) (Move bool_fin R) [| Fin.F1 |] .
+  Local Definition Move_at_1 := Inject (n := 2) (Move Bool_Fin R) [| Fin.F1 |] .
   Definition bool_copy_move_mTM := (bool_copy_mTM def ;; Move_at_1).
 
 
-  (* TODO: Automaticate this kind of lemmas *)
+  (* TODO: Make dupfree and In computeable *)
   Local Lemma dupfree : Injection.dupfree [| Fin.F1 (n := 1) |].
   Proof. constructor. inversion 1. constructor. Qed.
 
@@ -271,7 +271,7 @@ Section CopyMove.
   Qed.
 
   Lemma bool_copy_move_TM_Sem :
-    bool_copy_move_mTM ⊨(3) copy_Move_locally_R_p (X := bool_fin) (F := bool_fin) Fin.F1 (Fin.FS Fin.F1) _.
+    bool_copy_move_mTM ⊨(3) copy_Move_locally_R_p (X := Bool_Fin) (F := Bool_Fin) Fin.F1 (Fin.FS Fin.F1) _.
   Proof.
     eapply RealiseIn_monotone with (k1 := 3); try omega.
     - replace 3 with (1+1+1) by reflexivity. eapply Seq_total.
@@ -279,7 +279,8 @@ Section CopyMove.
       + eapply Inject_total. apply dupfree. apply Move_Sem.
     - intros intapes (fstate, ftapes). destruct_tapes. cbn. intros ((f, fstate')&(H1&H2)&H3&H4). hnf in *. split.
       + intros x rest henc. hnf in *. cbn in *. clear H4.
-        assert (tape_encodes_locally I_bool h x) as lh1 by eauto. specialize (H1 _ lh1). clear lh1. hnf in H1.
+        assert (tape_encodes_locally Encode_Bool h x) as lh1 by (eexists; apply henc).
+        specialize (H1 _ lh1). clear lh1. hnf in H1.
         destruct fstate; cbn in *.
         * destruct H3 as (->&H3).
           destruct x; cbn in henc.
@@ -294,60 +295,10 @@ Section CopyMove.
              enough (current fstate'[@Fin.F1] = Some false) by congruence.
              eapply tape_local_current_cons; eauto.
       + intros x HEnc. cbn in *. hnf in *. destruct HEnc as (rest&HEnc).
-        assert (tape_encodes_locally I_bool h x) as L1 by eauto. specialize (H1 _ L1). clear L1. (* XXX *)
+        assert (tape_encodes_locally _ h x) as L1 by eauto. specialize (H1 _ L1). clear L1. (* XXX *)
         specialize (H2 _ _ HEnc).
         assert (1 < 2 /\ ~ Vector.In 1 [|0|]) as (L1&L2) by now apply Inj_1_helper.
         specialize (H4 1 L1 L2). cbn in *. subst. eauto.
   Qed.
-  
-    
-  (*
-  Lemma bool_copy_move_TM_Sem :
-    bool_copy_move_mTM ⊫ copy_Move_locally_R_p (X := bool_fin) (F := bool_fin) Fin.F1 (Fin.FS Fin.F1) _.
-  Proof.
-    unfold bool_copy_move_mTM, Move_at_1.
-    pose proof (Move_Sem (sig := bool_fin) R).
-    apply WRealise_total in H. cbn in H.
-    pose proof (@Inject_sem bool_fin 0 1 bool_fin (Move bool_fin R) [| Fin.F1 |] dupfree _ H).
-    pose proof (bool_copy_TM_computes_sem (F := F) (def := def)).
-    pose proof (Seq_sem H1 H0).
-    hnf in *. cbn in *. clear H H0 H1. intros t i outc HLoop.
-    specialize (H2 t i outc HLoop). hnf in *.
-    destruct H2 as ((f&midtapes)&(H1&H1')&(H2&H2')). hnf in *. cbn in *.
-    destruct outc.
-    destruct_tapes. cbn in *.
-    unfold id in *. cbn in *.
-    unfold reorder, not_indices in *. unfold Vector.map in *. cbn in *.
-    unfold Match.Match_p in *. cbn in *.
-    split; hnf.
-    - intros x rest henc. hnf in *. cbn in *. clear h2'.
-      assert (tape_encodes_locally i_bool h x) as l1 by eauto. specialize (h1 _ l1). clear l1. (* xxx *)
-      destruct cstate as [state | (state & state') ]; cbn in *.
-      + hnf in h2. destruct h2 as (h2&->). hnf in *. subst.
-        enough (rest = nil) as -> by now apply tape_local_nil.
-        unfold tape_encodes_locally_rest in h1'.
-        pose proof (tape_local_nil h1) as (l1&l2).
-        rewrite l2 in h1'; eauto.
-        specialize (h1' x rest henc).
-        eapply appendnil; eauto.
-      + destruct (fin.eqb state' m_true) eqn:e1.
-        * apply fin.eqb_eq in e1. subst.
-          destruct h2 as (->&(b&h2)).
-          specialize (h1' x rest henc). hnf in h1'.
-          eapply tape_local_move_right.
-          destruct x; cbn in *; eauto.
-        * hnf in *. destruct h2 as (h2&h22). hnf in *. subst.
-          enough (rest = nil) as -> by now apply tape_local_nil.
-          pose proof (tape_local_nil h1) as (l1&l2).
-          specialize (h1' x rest henc). hnf in h1'.
-          rewrite l2 in h1'; auto.
-          eapply appendnil; eauto.
-    - intros x HEnc. cbn in *. hnf in *. destruct HEnc as (rest&HEnc).
-      assert (tape_encodes_locally I_bool h x) as L1 by eauto. specialize (H1 _ L1). clear L1. (* XXX *)
-      specialize (H1' _ _ HEnc).
-      assert (1 < 2 /\ ~ Vector.In 1 [|0|]) as (L1&L2) by now apply Inj_1_helper.
-      specialize (H2' 1 L1 L2). cbn in *. subst. eauto.
-  Qed.
-  *)
   
 End CopyMove.

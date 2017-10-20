@@ -1,7 +1,7 @@
 Require Import Prelim.
 Require Import Injection.
 
-Definition Fin_Bool := FinType (EqType bool).
+Definition Bool_Fin := FinType (EqType bool).
 
 
 (** * Codeable Class **)
@@ -130,6 +130,25 @@ Section Usefull_Injections.
   Proof. firstorder; destruct y; inv H; firstorder. Qed.
 
   Definition inr_inj : injection_fun tau (sig + tau) := Build_injection_fun inr_inj'.
+
+  Lemma empty_left_inj' :
+    forall (x : Empty_set + sig) (y : sig),
+      Some (inr y) = Some x <-> y = match x with | inl devil => match devil return sig with end | inr x0 => x0 end.
+  Proof.
+    firstorder.
+    - now inversion H.
+    - destruct x as [ [] | ]. congruence.
+  Qed.
+  Definition empty_left_inj : injection_fun (Empty_set + sig) sig := Build_injection_fun empty_left_inj'.
+  Lemma empty_right_inj' :
+    forall (x : sig + Empty_set) (y : sig),
+      Some (inl y) = Some x <-> y = match x with | inr devil => match devil return sig with end | inl x0 => x0 end.
+  Proof.
+    firstorder.
+    - now inversion H.
+    - destruct x as [ | [] ]. congruence.
+  Qed.
+  Definition empty_right_inj : injection_fun (sig + Empty_set) sig := Build_injection_fun empty_right_inj'.
 
 End Usefull_Injections.
 
@@ -399,22 +418,13 @@ Section Encode_Cast.
 
 End Encode_Cast.
 
-Instance cast_bool : Cast (unit + unit) bool.
-Proof.
-  split with (cast_f := fun (b : bool) => if b then inl tt else inr tt).
-  - intros x1 x2 H. destruct x1, x2; auto; congruence.
-Defined.
-
-Instance I_bool : codeable (FinType (EqType bool)) bool.
-Proof. eapply Encode_Cast. shelve. eapply Encode_Bool. Unshelve. auto. Defined.
-
 Instance cast_option (X : Type) : Cast (X + unit) (option X).
 Proof.
   split with (cast_f := fun p => match p with Some x => inl x | None => inr tt end).
   - intros [x|  ] [y| ] H; auto; congruence.
 Defined.
 
-Instance I_option (X : Type) (sig : finType) : codeable sig X -> codeable (FinType (EqType (sig + Empty_set + bool))) (option X).
+Instance Encode_Option (X : Type) (sig : finType) : codeable sig X -> codeable (FinType (EqType (sig + Empty_set + bool))) (option X).
 Proof.
   intros H. eapply Encode_Cast. eapply cast_option.
   eapply Encode_Sum.
@@ -436,8 +446,12 @@ Proof.
   - apply repeat_surjective.
 Defined.
 
-Instance I_nat : codeable (FinType (EqType (Empty_set + bool))) nat.
-Proof. eapply Encode_Cast. apply cast_nat. apply Encode_List. apply Encode_Unit. Defined.
+Instance Encode_Nat : codeable Bool_Fin nat.
+Proof.
+  eapply Encode_Map.
+  - eapply Encode_Cast. Focus 2. apply Encode_List. apply Encode_Unit. apply cast_nat.
+  - cbn. apply empty_left_inj.
+Defined.
 
 Section Encode_Fin'.
   Variable (n : nat).
@@ -459,13 +473,21 @@ Section Encode_Fin'.
     apply fin_to_nat_injective.
   Defined.
 
-  Instance Encode_Fin' : codeable (FinType (EqType (Empty_set + bool))) (Fin.t n).
+  Instance Encode_Fin' : codeable Bool_Fin (Fin.t n).
   Proof. eapply Encode_Cast. eapply cast_Fin. auto. Defined.
 End Encode_Fin'.
 
 (** Test Playground *)
 
 (*
+Compute encode false.
+Compute encode true.
+Compute encode 42.
+
+Compute encode
+        (codeable := Encode_Pair' (Encode_List (Encode_Unit)) _)
+        ([tt;tt;tt], true).
+
 Compute encode
         (codeable := Encode_Pair (Encode_Unit) (Encode_Unit))
         (tt, tt).
@@ -491,11 +513,4 @@ Compute encode
         (codeable := Encode_Pair' (Encode_List (Encode_Unit)) Encode_Unit)
         ([tt;tt;tt], tt).
 
-Check Encode_Bool.
-
-Compute encode true.
-
-Compute encode
-        (codeable := Encode_Pair' (Encode_List (Encode_Unit)) _)
-        ([tt;tt;tt], true).
 *)

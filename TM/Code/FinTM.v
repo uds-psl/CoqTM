@@ -22,7 +22,7 @@ Section Fin_Seq_TM.
   Definition fin_seq_states := FinType (EqType (X + X))%type.
 
   Definition fin_seq_TM_trans_mono :
-    fin_seq_states -> option bool_fin -> fin_seq_states * (option bool_fin * move).
+    fin_seq_states -> option Bool_Fin -> fin_seq_states * (option Bool_Fin * move).
   Proof.
     intros q. destruct q as [x | y] eqn:E.
     - (* inl x *)
@@ -42,7 +42,7 @@ Section Fin_Seq_TM.
     destruct 1 as [ _ | _ ]; [apply false | apply true].
   Defined.
   
-  Definition Fin_Seq_TM : mTM bool_fin 1.
+  Definition Fin_Seq_TM : mTM Bool_Fin 1.
   Proof.
     apply Mk_Mono_TM with (states := fin_seq_states).
     - apply fin_seq_TM_trans_mono.
@@ -50,15 +50,15 @@ Section Fin_Seq_TM.
     - apply fin_seq_fin.
   Defined.
 
-  Definition Fin_Seq : { M : mTM bool_fin 1 & states M -> option X }.
+  Definition Fin_Seq : { M : mTM Bool_Fin 1 & states M -> option X }.
   Proof.
     exists Fin_Seq_TM. intros [ _ | x ]; [apply None | apply (Some x)].
   Defined.
 
   Lemma Fin_Seq_terminates_in_Strong :
-    forall (tape1 : tape bool_fin) (rest : list bool_fin) (i : nat)
+    forall (tape1 : tape Bool_Fin) (rest : list Bool_Fin) (i : nat)
       (x : X),
-      tape_local tape1 = encode i ++ rest ->
+      tape_local tape1 = encode (codeable := Encode_Nat) i ++ rest ->
       exists tape2, tape_local tape2 = rest /\
                loopM (M := Fin_Seq_TM) (S i) (mk_mconfig (inl x) [|tape1|]) =
                Some (mk_mconfig (inr (it f i x)) [|tape2|]).
@@ -70,8 +70,7 @@ Section Fin_Seq_TM.
       replace (current tape1) with (Some false); [ | erewrite tape_local_current_cons; now eauto]. cbn.
       exists (tape_move_right tape1). split; auto. erewrite tape_local_move_right; eauto.
     - assert (current tape1 = Some true) as H' by (erewrite tape_local_current_cons; eauto).
-      assert (tape_local (tape_move_right tape1) = encode_list encode_unit (repeat tt i) ++ rest)
-        as H'' by (erewrite tape_local_move_right; eauto).
+      assert (tape_local (tape_move_right tape1) = encode i ++ rest) as H'' by (erewrite tape_local_move_right; eauto). clear H.
       unfold step at 1. cbn. rewrite !H'.
       unfold it. cbn.
       unfold step at 2. unfold step at 2. cbn. rewrite !H'. cbn.
@@ -104,8 +103,8 @@ Section Fin_Seq_TM.
     destruct (@Fin_Seq_terminates_in_Strong h rest k start) as (?&?&?); eauto.
   Qed.
 
-  Definition Fin_Seq_R_p : Rel (tapes bool_fin 1) (option X * tapes bool_fin 1) :=
-    ignoreParam (@skip_locally_R 1 Fin.F1 nat _) ∩
+  Definition Fin_Seq_R_p : Rel (tapes Bool_Fin 1) (option X * tapes Bool_Fin 1) :=
+    ignoreParam (@skip_locally_R 1 Fin.F1 _ nat _) ∩
                 (fun tps1 '(ox, _) => forall n, tape_encodes_locally _ (tps1[@Fin.F1]) n -> ox = Some (it f n start)).
 
   Lemma Fin_Seq_WRealise : Fin_Seq ⊫ Fin_Seq_R_p.
