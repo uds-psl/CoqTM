@@ -1,8 +1,19 @@
+// Coq Files
 *.vo
 *.glob
 *.aux
 *.d
 \#*#
 *~
-*.sw*
 Makefile.coq
+
+// TeX files
+*.fls
+*.log
+*.out
+*.pdf
+*.thm
+*.fdb_latexmk
+
+// Vim files
+*.sw*
