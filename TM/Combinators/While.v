@@ -124,7 +124,6 @@ Section While.
 
 
   (*
-  (* TODO Versuche erst das zu beweisen und daraus das induktive Ding unten zu zeigen *)
   Lemma While_terminatesIn' t :
 
     pM ↓(T) ->
@@ -152,46 +151,27 @@ Section While.
   Qed.
 *)
 
-  (*
   Section WhileTerm.
 
-    Inductive WhileTerm : Rel (tapes sig n) (unit * nat) :=
-    | term_false input i          : T input (false, i) -> WhileTerm input (tt, i)
-    | term_true  input i j output : T input (true,  i) -> WhileTerm output (tt, j) -> WhileTerm input (tt, i+1+j).
+    Variable T : Rel (tapes sig n) (bool * tapes sig n * nat).
+
+    Inductive WhileTerm : Rel (tapes sig n) (unit * tapes sig n * nat) :=
+    | term_false i t1 t2      : T t1 (false, t2, i) -> WhileTerm t1 (tt, t2, i)
+    | term_true  i j t1 t2 t3 : T t1 (true, t2, i) -> WhileTerm t2 (tt, t3, j) -> WhileTerm t1 (tt, t3, i+1+j).
 
   End WhileTerm.
   
   
-  Lemma While_Terminates (T : Rel _ (_ * nat)):
-    pM ↓(T) -> WHILE ↓(WhileTerm T).
+  Lemma While_Terminates (T : Rel _ (bool * tapes sig n * nat)):
+    pM ⇓ T -> WHILE ⇓ WhileTerm T.
   Proof.
-    intros Term. hnf. intros t1. specialize (Term t1) as (c1&i1&eq&Term).
-    revert t1 eq Term; apply complete_induction with (x:=i1); clear i1; intros i1 IH t1 eq Term.
-    destruct c1 as [b tapes1].
-    destruct (
-
-
-
-  Restart.
-  Proof.
-    intros HR Term_M Func Hyp.
-    intros t i. revert t. apply complete_induction with (x:=i); clear i; intros i IH t T't.
-    destruct (Hyp _ _ T't) as (t'& b& i1&Rx&Tx&H).
-    destruct b.
-    -destruct H as (i2&T't'&Leq).
-     apply IH in T't' as (oenc & Eq);[ |omega].
-     exists oenc.
-     apply Term_M in Tx as (oenc1 & Eq1).
-     apply (loop_ge (k1:=i1 + (1 + i2)));[omega| ].
-     specialize (HR _ _ _ Eq1). specialize (Func _ _ T't _ _ HR Rx). inv Func.
-     now apply (While_true_merge Eq1).
-    -apply Term_M in Tx as [oenc Eq].
-     exists oenc.
-     eapply While_false_merge. eapply loop_ge;[ |exact Eq]. omega.
-     specialize (HR _ _ _ Eq).
-     specialize (Func _ _ T't _ _ HR Rx). now inv Func.
+    intros Term. hnf. intros t1 t3 [] k.
+    induction 1.
+    - specialize (Term _ _ _ _ H) as (conf&Term&Term'&->). symmetry in Term'.
+      exists conf. pose proof While_false_merge Term Term' as L. repeat split; auto. cbn. auto.
+      + admit.
   Qed.
-*)
+
 
 End While.
 (* Arguments While {n} {sig} M _. *)

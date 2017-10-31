@@ -25,12 +25,20 @@ Section Composition.
     firstorder.
   Qed.
 
-  Lemma Seq_Terminates t conf1 k1 conf2 k2 :
+  Lemma Seq_Terminates' t conf1 k1 conf2 k2 :
     (projT1 pM1) ↓↓ (t, (conf1, k1)) ->
     projT1 pM2 ↓↓ (ctapes conf1, (conf2, k2)) ->
     (projT1 Seq) ↓ t.
   Proof.
-    intros H1 H2. eapply Match_Terminates; eauto.
+    intros H1 H2. eapply Match_Terminates'; eauto.
+  Qed.
+
+  Lemma Seq_Terminates T1 T2 :
+    pM1 ⇓ T1 ->
+    pM2 ⇓ T2 ->
+    Seq ⇓ (fun t '(y'', t'', k'') => exists f k1 k2 t', T1 t (f, t', k1) /\ T2 t' (y'', t'', k2) /\ k1 + k2 < k'').
+  Proof.
+    intros H1 H2. now apply Match_Terminates.
   Qed.
 
   Lemma Seq_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) k1 k2:

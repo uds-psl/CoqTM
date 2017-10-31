@@ -243,23 +243,38 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Notation "M '↓' t" := (Terminates M t) (no associativity, at level 60, format "M  '↓'  t").
 
   Definition TerminatesAlways {n : nat} (M : mTM n) : Prop := forall t : tapes n, M ↓ t.
-  Notation "M ⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓'").
+  Notation "M ⇓⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓⇓'").
 
+  Definition TerminatesIn {n : nat} {F : finType} (pM : { M : mTM n & (states M -> F) }) (T : Rel (tapes _) (F * tapes n * nat)) :=
+    forall t1 t2 y k, T t1 (y, t2, k) -> exists conf, loopM k (initc (projT1 pM) t1) = Some conf /\ y = projT2 pM (cstate conf) /\ t2 = ctapes conf.
+  Notation "M ⇓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '⇓'  T").
 
+  Lemma TerminatesIn_monotone {n : nat} {F : finType} (pM : { M : mTM n & (states M -> F) }) (T1 T2 : Rel (tapes _) (F * tapes n * nat)) :
+    pM ⇓ T1 -> T2 <<=2 T1 -> pM ⇓ T2.
+  Proof.
+    intros H1 H2. firstorder.
+  Qed.
+
+  Lemma TerminatesIn_TerminatesAlways {n : nat} {F : finType} (pM : { M : mTM n & (states M -> F) }) (T : Rel (tapes _) (F * tapes _ * nat)) :
+    pM ⇓ T -> (forall t : tapes _, exists x, T t x) -> projT1 pM ⇓⇓.
+  Proof.
+    intros H. intros H1. hnf. intros t. specialize (H1 t) as (((y&t')&k)&H1). hnf in H. specialize (H t t' y k H1). firstorder.
+  Qed.
+  
   Lemma WRealise_to_Realise n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
-    projT1 pM ⇓ -> pM ⊫ R -> pM ⊨ R.
+    projT1 pM ⇓⇓ -> pM ⊫ R -> pM ⊨ R.
   Proof.
     intros H1 H2. intros input. specialize (H1 input) as (k&c&?). eauto.
   Qed.
 
   Lemma Realise_TerminatesAlways n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
-    pM ⊨ R -> projT1 pM ⇓.
+    pM ⊨ R -> projT1 pM ⇓⇓.
   Proof.
     intros H. intros t. specialize (H t) as (outc&k&H&H'). firstorder.
   Qed.
 
   Lemma Realise_iff n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
-    projT1 pM ⇓ /\ pM ⊫ R <-> pM ⊨ R.
+    projT1 pM ⇓⇓ /\ pM ⊫ R <-> pM ⊨ R.
   Proof.
     split.
     - intros (H1&H2). now eapply WRealise_to_Realise.
@@ -333,8 +348,8 @@ Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45
 Notation "M '⊨c(' f ',' k ')' R" := (RealiseIn (M; f) R k) (no associativity, at level 45, format "M  '⊨c(' f ',' k ')'  R").
 Notation "M '↓↓' T" := (TerminatesInto M T) (no associativity, at level 60, format "M  '↓↓'  T").
 Notation "M '↓' t" := (Terminates M t) (no associativity, at level 60, format "M  '↓'  t").
-
+Notation "M ⇓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '⇓'  T").
+Notation "M ⇓⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓⇓'").
 
 (* Destruct a vector of tapes of known size *)
 Ltac destruct_tapes := unfold tapes in *; destruct_vector.
-

@@ -231,7 +231,21 @@ Section Match.
     eapply Eq2.
   Qed.
 
-  Lemma Match_Terminates t conf1 k1 conf2 k2 :
+  Lemma Match_Terminates T T__f :
+    pM1 ⇓ T ->
+    (forall f : F, pMf f ⇓ T__f f) ->
+    MATCH ⇓ (fun t '(y'', t'', k'') => exists f k1 k2 t', T t (f, t', k1) /\ T__f f t' (y'', t'', k2) /\ k1 + k2 < k'').
+  Proof.
+    intros H1 H2. hnf. intros t t'' y'' k''. intros H. hnf in H. destruct H as (f&k1&k2&t'&H3&H4&H5).
+    hnf in H1. specialize (H1 t t' f k1 H3) as (conf1&loop1&->&->).
+    specialize (H2 (p1 (cstate conf1))). hnf in H2. specialize (H2 _ _ _ _ H4) as (conf2&loop2&->&->).
+    exists (lift_confR conf2). split; cbn; auto.
+    enough (loopM (k1 + (1 + k2)) (initc Match t) = Some (lift_confR conf2)).
+    { unfold loopM. apply loop_ge with (k1 := k1 + (1 + k2)). omega. assumption. }
+    eapply Match_merge; eauto.
+  Qed.
+
+  Lemma Match_Terminates' t conf1 k1 conf2 k2 :
     M1 ↓↓ (t, (conf1, k1)) ->
     projT1 (pMf (p1 (cstate conf1))) ↓↓ (ctapes conf1, (conf2, k2)) ->
     Match ↓ t.
