@@ -245,20 +245,22 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Definition TerminatesAlways {n : nat} (M : mTM n) : Prop := forall t : tapes n, M ↓ t.
   Notation "M ⇓⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓⇓'").
 
-  Definition TerminatesIn {n : nat} {F : finType} (pM : { M : mTM n & (states M -> F) }) (T : Rel (tapes _) (F * tapes n * nat)) :=
-    forall t1 t2 y k, T t1 (y, t2, k) -> exists conf, loopM k (initc (projT1 pM) t1) = Some conf /\ y = projT2 pM (cstate conf) /\ t2 = ctapes conf.
+  Definition TerminatesIn {n : nat} (M : mTM n) (T : Rel (tapes n) (mconfig (states M) n * nat)) :=
+    forall t1 conf k, T t1 (conf, k) -> loopM k (initc M t1) = Some conf.
+  Arguments TerminatesIn { _ } _.
   Notation "M ⇓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '⇓'  T").
 
-  Lemma TerminatesIn_monotone {n : nat} {F : finType} (pM : { M : mTM n & (states M -> F) }) (T1 T2 : Rel (tapes _) (F * tapes n * nat)) :
-    pM ⇓ T1 -> T2 <<=2 T1 -> pM ⇓ T2.
+  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : Rel (tapes _) (_ * _)) :
+    M ⇓ T1 -> T2 <<=2 T1 -> M ⇓ T2.
   Proof.
     intros H1 H2. firstorder.
   Qed.
 
-  Lemma TerminatesIn_TerminatesAlways {n : nat} {F : finType} (pM : { M : mTM n & (states M -> F) }) (T : Rel (tapes _) (F * tapes _ * nat)) :
-    pM ⇓ T -> (forall t : tapes _, exists x, T t x) -> projT1 pM ⇓⇓.
+  Lemma TerminatesIn_TerminatesAlways {n : nat} {F : finType} (M : mTM n) (T : Rel (tapes _) (_ * _)) :
+    M ⇓ T -> (forall t : tapes _, exists x, T t x) -> M ⇓⇓.
   Proof.
-    intros H. intros H1. hnf. intros t. specialize (H1 t) as (((y&t')&k)&H1). hnf in H. specialize (H t t' y k H1). firstorder.
+    intros H. intros H1. hnf. intros t. specialize (H1 t) as (((y&t')&k)&H1). hnf in H.
+    specialize (H t (mk_mconfig y t') k H1). firstorder.
   Qed.
   
   Lemma WRealise_to_Realise n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
@@ -338,6 +340,7 @@ End Fix_Sigma.
 (* Arguments WRealise {sig n F} pM R : clear implicits. *)
 (* Arguments RealiseIn {sig n F} pM R k : clear implicits. *)
 Arguments TerminatesInto {_} {_} _ _.
+Arguments TerminatesIn {_} {_} _.
 
 Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
 Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 60, format "M  '⊫'  R").
