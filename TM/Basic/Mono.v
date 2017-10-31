@@ -41,7 +41,7 @@ Section test_char.
       tc_start (fun x => negb (Fin.eqb x tc_start)).
 
   Lemma test_chr_Sem :
-    Test_Char_TM ⊨(fun x : threeStates => Fin.eqb x tc_true,1)
+    Test_Char_TM ⊨c(fun x : threeStates => Fin.eqb x tc_true,1)
                  Mk_R_p
                  (if? (@IdR _ ∩ (fun t t' => exists c, current t = Some c /\ f c = true))
                       ! (@IdR _ ∩ ((fun t t' => current t = None) ∪ (fun t t' => exists c, current t = Some c /\ f c = false)))).
@@ -80,7 +80,7 @@ Section Write.
   Definition Write_R := Mk_R_p (F := FinType (EqType unit)) (ignoreParam (fun t t' => t' = midtape (left t) c (right t))).
 
   Lemma Write_Sem :
-    Write ⊨(1) Write_R.
+    Write ⊨c(1) Write_R.
   Proof.
     intros t. destruct_tapes. cbn in *. eauto.
   Qed.
@@ -109,7 +109,7 @@ Section Move.
        ! ( (fun t t' => current t = None)) ∩ @IdR _ ).
 
   Lemma Move_Sem :
-    Move ⊨(1) Move_R.
+    Move ⊨c(1) Move_R.
   Proof.
     unfold Mk_R_p, Move_R. hnf. intros tapes. destruct_tapes. cbn in *.
     unfold Move_TM, Move, step, m_start, m_true, m_false in *. cbn in *.
@@ -198,9 +198,9 @@ Section Mono_Nop.
 
   Definition mono_Nop_R := (↑ (=f) ⊗ (@IdR (tapes sig 1))).
 
-  Lemma mono_Nop_Sem: mono_Nop ⊨(0) mono_Nop_R.
+  Lemma mono_Nop_Sem: mono_Nop ⊨c(0) mono_Nop_R.
   Proof.
-    intros ?. exists (initc mono_nop t). cbn. firstorder.
+    intros ?. exists (initc mono_nop input). cbn. firstorder.
   Qed.
 
 End Mono_Nop.

@@ -42,27 +42,12 @@ Definition Rsnd2 {X Y} : Rel X (Y * X) := fun x1 p => x1 = snd p.
 Definition ignoreParam X Y Z (R : Rel X Z) : Rel X (Y * Z)  := fun x '(y,z) => R x z.
 Definition hideParam X Y Z (R : Rel X Z) : Rel (Y * X) Z := fun '(_,x) z => R x z.
 
-Definition finite_rel_union (X Y : Type) (F : finType) (R : F -> Rel X Y) : Rel X Y := 
-  List.fold_right (fun f R' => runion (R f) R' ) (Empty_rel) (elem F).
-Notation "'⋃_' f R" := (finite_rel_union (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋃_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
-
-Lemma finite_rel_union_spec' (F : finType) (X Y : Type)  (R : F -> Rel X Y) x y A :
-  (exists f, R f x y /\ f el A) <-> List.fold_right (fun f R' => runion (R f) R' ) (Empty_rel) A x y.
-Proof.
-  induction A; firstorder congruence.
-Qed.
-
-Lemma finite_rel_union_spec (F : finType) (X Y : Type)  (R : F -> X -> Y -> Prop) x y :
-  (exists f, R f x y) <-> finite_rel_union R x y.
-Proof.
-  unfold finite_rel_union. split.
-  intros [f ?].
-  - eapply finite_rel_union_spec'; eauto.
-  - intros. eapply finite_rel_union_spec' in H; firstorder.      
-Qed.
+Definition finite_rel_union (X Y : Type) (F : Type) (R : F -> Rel X Y) : Rel X Y := 
+  fun x y => exists f, R f x y.
 
 Definition functionalOn X Y Z (T : Rel X Y) (R : Rel X Z) :=
   forall x i, T x i -> forall z1 z2, R x z1 -> R x z2 -> z1 = z2.
+Notation "'⋃_' f R" := (finite_rel_union (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋃_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
 
 Definition ignoreFirst X Y (R : Y -> Prop) : Rel X Y  := fun x y => R y.
 Notation "'↑' R" := (ignoreFirst R) (at level 40, format "'↑' R").
@@ -846,7 +831,7 @@ End extend.
 Instance finite_rel_union_proper (X Y : Type) (F : finType) :
   Proper (pointwise_relation F (@eqrel X Y) ==> @eqrel X Y) (@finite_rel_union X Y F). 
 Proof.
-  hnf. split; intros ? ? ?; rewrite <- finite_rel_union_spec in *; firstorder.
+  hnf. split; intros ? ? ?; firstorder.
 Qed.
 
 

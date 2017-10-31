@@ -28,16 +28,16 @@ Section Write_String.
     end.
     
   Lemma Write_string_fix_Sem (str : list sig) :
-    Write_String str ⊨(4 * |str|) (Write_string_sem_fix str).
+    Write_String str ⊨c(4 * |str|) (Write_string_sem_fix str).
   Proof.
     induction str.
     - cbn. apply mono_Nop_Sem.
     - cbn.
       replace (S ((| str |) + S ((| str |) + S ((| str |) + S ((| str |) + 0)))))
         with (1 + 1 + (1 + 1 + (4 * (|str|)))); [ | cbn; omega].
-      apply Seq_total.
+      apply Seq_RealiseIn.
       + apply Write_Sem.
-      + apply Seq_total.
+      + apply Seq_RealiseIn.
         * apply Move_Sem.
         * apply IHstr.
   Qed.
@@ -47,7 +47,7 @@ Section Write_String.
                 (ignoreParam (fun (t t' : tape sig) => t' = Tape_Write_String t str)).
 
   Lemma Write_string_Sem str :
-    Write_String str ⊨(4 * |str|) (Write_String_R str).
+    Write_String str ⊨c(4 * |str|) (Write_String_R str).
   Proof.
     eapply RealiseIn_monotone with (k1 := 4 * (|str|)); [now apply Write_string_fix_Sem | omega | ]. 
     induction str.

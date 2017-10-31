@@ -1,7 +1,7 @@
 (** * Definition of Multitape Turing Machines 
     
     - definitions taken from Asperti, Riciotti "Formalizing Turing Machines" and accompanying Matita foramlisation
-*)
+ *)
 
 Require Export Prelim Relations.
 Require Import Vector.
@@ -38,7 +38,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Definition sizeOfTape t := |tapeToList t|.
 
   Definition sizeOfmTapes n (v : tapes n) :=
-      Vector.fold_left max 0 (Vector.map sizeOfTape v).
+    Vector.fold_left max 0 (Vector.map sizeOfTape v).
   
   Definition current :=
     fun (t : tape) =>
@@ -65,14 +65,14 @@ we are on the right extremity of a non-empty tape (right overflow). *)
       | midtape _ _ r => r
       end.
 
-   Definition mk_tape ls c rs :=
+  Definition mk_tape ls c rs :=
     match c with
     | Some c => midtape ls c rs
     | None => match ls with
              | List.nil => match rs with
-                     | List.nil => niltape
-                     | r :: rs => leftof r rs
-                     end
+                          | List.nil => niltape
+                          | r :: rs => leftof r rs
+                          end
              | l :: ls => rightof l ls
              end
     end.
@@ -91,7 +91,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     apply (FinTypeC (enum := [L; R; N])).
     intros []; now cbv.
   Qed.
-    
+  
   (** ** Definition of Multitape Turing Machines *)
 
   Record mTM (tapes_no:nat) : Type :=
@@ -153,11 +153,12 @@ we are on the right extremity of a non-empty tape (right overflow). *)
 
   (** ** Configurations of TMs *)
   
-  Record mconfig (states:finType) (n:nat): Type := mk_mconfig
-                                                       {
-                                                         cstate : states;
-                                                         ctapes : tapes n
-                                                      }.
+  Record mconfig (states:finType) (n:nat): Type :=
+    mk_mconfig
+      {
+        cstate : states;
+        ctapes : tapes n
+      }.
 
   (** Currently read characters on all tapes *)
   Definition current_chars := fun (n : nat) (tapes : tapes n) => Vector.map current tapes.
@@ -172,144 +173,133 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   (** Run the machine i steps until it halts *)
   Definition loopM := fun n (M :mTM n) (i : nat) cin =>
                         loop i (@step n M) (fun c => halt (cstate c)) cin.
- 
+  
   (** Initial configuration *)  
   Definition initc := fun n (M : mTM n) tapes =>
                         mk_mconfig (n := n) (@start n M) tapes.
 
   (** ** Realisation of machines *)
-(*  
-  Definition Realise n (M:mTM n) (F : finType) (f : states M -> F) (R : PRel (tapes _) (nat*F)) :=
-      forall t, forall i, forall outc, loopM i (initc M t) = Some outc <-> R t (i,f (cstate outc)) (ctapes outc).
 
-  Arguments Realise {n} M {F} f R.*)
+  Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
   
   Definition WRealise n (F : finType) (pM : { M : mTM n & (states M -> F)}) (R : Rel (tapes _) (F * tapes _)) :=
     forall t i outc, loopM i (initc (projT1 pM) t) = Some outc -> R t ((projT2 pM) (cstate outc), ctapes outc).
-  
   Arguments WRealise {n F} pM R.
 
-  Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
+  Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 30, format "M  '⊫'  R").
+  Notation "M '⊫(' p ')' R" := (WRealise (M; p) R) (no associativity, at level 30, format "M  '⊫(' p ')'  R").
 
   (* That's still equivalent to Asperti's definition *)
   Goal forall n (M : mTM n) R, WRealise (M ; fun x => x) (fun x y => R x (snd y) ) <->
-      forall t i outc, loopM i (initc M t) = Some outc -> R t (ctapes outc).
+                          forall t i outc, loopM i (initc M t) = Some outc -> R t (ctapes outc).
   Proof.
     firstorder.
   Qed.
-  
-  Definition terminatesIn n (M : mTM n) (T: Rel (tapes _) nat) :=
-    forall t i , T t i -> exists outc, loopM i (initc M t) = Some outc.
 
-  (* That's still equivalent to Asperti's definition *)
-  Goal forall n (M : mTM n) t i, (terminatesIn M (fun t' i' => t=t' /\ i=i')) <->
-                          exists outc, loopM i (initc M t) = Some outc.
-  Proof.
-    intuition. now intros ? ? [-> ->]. 
-  Qed.
-
-  
-  Notation "M '↓' T" := (terminatesIn M T) (no associativity, at level 30, format "M  '↓'  T").
-  Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 30, format "M  '⊫'  R").
-  Notation "M '⊫(' f ')' R" := (WRealise (M;f) R) (no associativity, at level 30, format "M  '⊫(' f ')'  R").
-
-  (*
-  Notation "M '⊨(' f ')' R" := (Realise M f R) (no associativity, at level 45, format "M  '⊨(' f ')'  R").
-*)
-  (* Definition rprod A B C (R1 : A -> B -> Prop) (R2 : PRel A C) : PRel A (B * C) := *)
-  (*   fun a1 p a2 => let (b,c) := p in R1 a1 b /\ R2 a1 c a2. *)
-(*
-  Lemma WRealise_to_Realise n (M : mTM n) T (F : finType) (f: states M -> F) R:
-    M ⊨(f) rprod T R -> M ↓(T) -> M ⊫(f) R.
-  Proof.
-    unfold Realise, WRealise, terminatesIn, rprod in *. 
-    intuition.  eapply H in H1. firstorder.
-  Qed. *)
-  
   (** *** Basic Properties *)
 
   Fact WRealise_monotone n (M:mTM n) (F : finType) (f : states M -> F) (R1 R2 : Rel (tapes _) (F * tapes _)) :
-    WRealise (M; f) R1 -> R1 <<=2 R2  -> WRealise (M ; f) R2.
+    WRealise (M; f) R1 -> R1 <<=2 R2 -> WRealise (M ; f) R2.
   Proof.
     unfold WRealise. eauto. 
   Qed.
 
-  Fact terminatesIn_monotone n (M : mTM n) (T T': Rel (tapes _) nat)  :
-    terminatesIn M T -> T' <<=2 T -> terminatesIn M T'.
-  Proof.
-    unfold terminatesIn. eauto. 
-  Qed.
-
-  Fact terminatesIn_extend n (M : mTM n) (T: Rel (Vector.t (tape) _) nat) :
-     terminatesIn M T -> terminatesIn M (fun x i => exists j, j <= i /\ T x i).
-  Proof.
-    intros H i t (j & ? & H'). now specialize (H _ _ H'). 
-  Qed.
-
   Fact WRealise_changeP n (M:mTM n) (F : finType) (f f' : states M -> F) (R : Rel (tapes _) (F * tapes _)) :
-      WRealise (M; f) R -> (forall s, f s = f' s) -> WRealise (M ; f') R.
-   Proof.
-     intros ? ? ? ? ? ?.
-     cbn. rewrite <- H0. firstorder.
-   Qed.
+    WRealise (M; f) R -> (forall s, f s = f' s) -> WRealise (M ; f') R.
+  Proof.
+    intros ? ? ? ? ? ?. cbn. rewrite <- H0. firstorder.
+  Qed.
 
   (** *** Properties of total TMs *)
 
- 
+  Definition Realise {n : nat} {F : finType} (pM : { M : mTM n & (states M -> F) }) (R : Rel (tapes _) (F * tapes _)) :=
+    forall (input : tapes n),
+    exists outc k, loopM k (initc (projT1 pM) input) = Some outc /\
+              R input ((projT2 pM (cstate outc)), ctapes outc).
+  Notation "M '⊨' R" := (Realise M R) (no associativity, at level 45, format "M  '⊨'  R").
+  Notation "M '⊨(' p ')' R" := (Realise (M;p) R) (no associativity, at level 45, format "M  '⊨(' p ')'  R").
 
-  Definition RealiseIn n (F : finType) (pM: {M : mTM n & states M -> F}) (R : Rel (tapes _) (F * tapes _)) k :=
-    forall t, exists outc, loopM k (initc (projT1 pM) t) = Some outc /\ R t ((projT2 pM) (cstate outc), ctapes outc).
-  
-  Notation "M '⊨(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨(' k ')'  R").
-  Notation "M '⊨(' f ',' k ')' R" := (RealiseIn (M; f) R k) (no associativity, at level 45, format "M  '⊨(' f ',' k ')'  R").
-    
-  Lemma Realise_total n (M : mTM n) (F : finType) (p : states M -> F) R k :
-    (M;p) ⊫ R /\ M ↓(fun _ i => i >= k) <-> M ⊨(p,k) R.
-   Proof.
+  Lemma Realise_monotone n (F : finType) (pM : { M : mTM n & (states M -> F) }) R1 R2 :
+    pM ⊨ R1 -> R1 <<=2 R2 -> pM ⊨ R2.
+  Proof.
+    intros. hnf in *. firstorder.
+  Qed.
+
+  Lemma Realise_WRealise n (F : finType) (pM : { M : mTM n & (states M -> F) }) R :
+    pM ⊨ R -> pM ⊫ R.
+  Proof.
+    intros H. intros input k outc H1.
+    pose proof (H input) as (outc'&k'&H2&H3).
+    now rewrite (loop_functional H1 H2) in *.
+  Qed.
+
+  Definition TerminatesInto n (M : mTM n) : (tapes _) * (mconfig (states M) n * nat) -> Prop :=
+    fun '(input, (outc, k)) => loopM k (initc M input) = Some outc.
+  Notation "M '↓↓' T" := (@TerminatesInto _ M T) (no associativity, at level 60, format "M  '↓↓'  T").
+  Arguments TerminatesInto {_} _ _.
+
+  Definition Terminates n (M : mTM n) : tapes n -> Prop :=
+    fun tapes => exists (k : nat) (c : mconfig (states M) n), TerminatesInto M (tapes, (c, k)).
+  Notation "M '↓' t" := (Terminates M t) (no associativity, at level 60, format "M  '↓'  t").
+
+  Definition TerminatesAlways {n : nat} (M : mTM n) : Prop := forall t : tapes n, M ↓ t.
+  Notation "M ⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓'").
+
+
+  Lemma WRealise_to_Realise n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
+    projT1 pM ⇓ -> pM ⊫ R -> pM ⊨ R.
+  Proof.
+    intros H1 H2. intros input. specialize (H1 input) as (k&c&?). eauto.
+  Qed.
+
+  Lemma Realise_TerminatesAlways n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
+    pM ⊨ R -> projT1 pM ⇓.
+  Proof.
+    intros H. intros t. specialize (H t) as (outc&k&H&H'). firstorder.
+  Qed.
+
+  Lemma Realise_iff n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
+    projT1 pM ⇓ /\ pM ⊫ R <-> pM ⊨ R.
+  Proof.
     split.
-    - intros (HR & Ht) t. edestruct (Ht t k). cbn; omega. eauto.
-    - intros H.
-      split.
-      + intros t i cout Hc.
-        destruct (H t) as (? & ? & ?).
-        cutrewrite (cout = x).
-        eassumption.
-        eapply loop_functional; eauto.
-      + intros t i Hi.
-        edestruct (H t) as (? & ? & ?). 
-        exists x. eapply loop_ge; eauto.
-   Qed.
+    - intros (H1&H2). now eapply WRealise_to_Realise.
+    - intros H. split.
+      + now eapply Realise_TerminatesAlways.
+      + now eapply Realise_WRealise.
+  Qed.
 
-   Lemma WRealise_total n (M : mTM n) (F : finType) (p : states M -> F) R k :
-     M ⊨(p,k) R -> (M;p) ⊫ R.
-   Proof.
-     intros. now eapply Realise_total.
-   Qed.
+  Definition RealiseIn n (F : finType) (pM : { M : mTM n & (states M -> F) }) R (k : nat) :=
+    forall input, exists outc, loopM k (initc (projT1 pM) input) = Some outc /\ R input ((projT2 pM (cstate outc)), ctapes outc).
+  Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
+  Notation "M '⊨c(' p ',' k ')' R" := (RealiseIn (M; p) R k) (no associativity, at level 45, format "M  '⊨c(' p ',' k ')'  R").
 
-   Fact RealiseIn_monotone n (M:mTM n) (F : finType) (f : states M -> F) (R1 R2 : Rel (tapes _) (F * tapes _)) k1 k2 :
-     RealiseIn (M; f) R1 k1 -> k1 <= k2 -> R1 <<=2 R2  -> RealiseIn (M ; f) R2 k2.
-   Proof.
-     unfold RealiseIn. intuition. destruct (H t) as (outc & ?). exists outc.
-     split.
-     - unfold loopM. eapply loop_ge; eauto. intuition.
-     - intuition.
-   Qed.
+  Lemma RealiseIn_Realise n (F : finType) (pM : { M : mTM n & (states M -> F) }) R (k : nat) :
+    pM ⊨c(k) R -> pM ⊨ R.
+  Proof. firstorder. Qed.
 
-   
-   Fact RealiseIn_changeP n (M:mTM n) (F : finType) (f f' : states M -> F) (R : Rel (tapes _) (F * tapes _)) k :
-      RealiseIn (M; f) R k -> (forall s, f s = f' s) -> RealiseIn (M ; f') R k.
-   Proof.
-     destruct M. cbn in *. unfold RealiseIn. cbn. firstorder congruence.
-   Qed.
+  Fact RealiseIn_monotone n (F : finType) (pM : { M : mTM n & (states M -> F) }) (R1 R2 : Rel (tapes _) (F * tapes _)) k1 k2 :
+    pM ⊨c(k1) R1 -> k1 <= k2 -> R1 <<=2 R2  -> pM ⊨c(k2) R2.
+  Proof.
+    unfold RealiseIn. intros H1 H2 H3 input.
+    specialize (H1 input) as (outc & H1). exists outc.
+    split.
+    - unfold loopM. eapply loop_ge; eauto. intuition.
+    - intuition.
+  Qed.
+  
+  Fact RealiseIn_changeP n (M:mTM n) (F : finType) (f f' : states M -> F) (R : Rel (tapes _) (F * tapes _)) k :
+    RealiseIn (M; f) R k -> (forall s, f s = f' s) -> RealiseIn (M ; f') R k.
+  Proof.
+    destruct M. cbn in *. unfold RealiseIn. cbn. firstorder congruence.
+  Qed.
 
+  Fact RealiseIn_strengthen n (M : mTM n) (F : finType) (f : states M -> F) (R1 R2 : Rel (tapes _) (F * tapes _)) k :
+    WRealise (M; f) R2 -> RealiseIn (M ; f) R1 k -> RealiseIn (M ; f) (R1 ∩ R2) k.
+  Proof.
+    intros HwR HR t.  destruct (HR t) as (outc & ?). exists outc. firstorder.
+  Qed.
 
-   Fact RealiseIn_strengthen n (M : mTM n) (F : finType) (f : states M -> F) (R1 R2 : Rel (tapes _) (F * tapes _)) k :
-     WRealise (M; f) R2 -> RealiseIn (M ; f) R1 k -> RealiseIn (M ; f) (R1 ∩ R2) k.
-   Proof.
-     intros HwR HR t.  destruct (HR t) as (outc & ?). exists outc. firstorder.
-   Qed.
-   
-     (** ** Canonical relations *)
+  (** ** Canonical relations *)
 (*
   Definition R_mTM :=
     fun n (M : mTM n) q t1 t2 =>
@@ -326,19 +316,23 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Proof.
     firstorder subst. eauto.
   Qed.
-*)
+ *)
 End Fix_Sigma.
 
 (* Arguments Realise {sig} {n} M {F} f R : clear implicits. *)
 (* Arguments WRealise {sig n F} pM R : clear implicits. *)
 (* Arguments RealiseIn {sig n F} pM R k : clear implicits. *)
+Arguments TerminatesInto {_} {_} _ _.
 
 Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
-Notation "M '↓' T" := (terminatesIn M T) (no associativity, at level 60, format "M  '↓'  T").
 Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 60, format "M  '⊫'  R").
 Notation "M '⊫(' f ')' R" := ((M;f) ⊫ R) (no associativity, at level 60, format "M  '⊫(' f ')'  R").
-Notation "M '⊨(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨(' k ')'  R").
-Notation "M '⊨(' f ',' k ')' R" := (RealiseIn (M; f) R k) (no associativity, at level 45, format "M  '⊨(' f ',' k ')'  R").
+Notation "M '⊨' R" := (Realise M R) (no associativity, at level 60, format "M  '⊨'  R").
+Notation "M '⊨(' f ')' R" := ((M;f) ⊫ R) (no associativity, at level 60, format "M  '⊨(' f ')'  R").
+Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
+Notation "M '⊨c(' f ',' k ')' R" := (RealiseIn (M; f) R k) (no associativity, at level 45, format "M  '⊨c(' f ',' k ')'  R").
+Notation "M '↓↓' T" := (TerminatesInto M T) (no associativity, at level 60, format "M  '↓↓'  T").
+Notation "M '↓' t" := (Terminates M t) (no associativity, at level 60, format "M  '↓'  t").
 
 
 (* Destruct a vector of tapes of known size *)

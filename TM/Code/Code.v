@@ -245,7 +245,7 @@ Section Encode_Map.
     forall (v1 v2 : X) (r1 r2 : list tau),
       map f (encode v1) ++ r1 = map f (encode v2) ++ r2 -> v1 = v2 /\ r1 = r2.
   Proof.
-    intros. pose proof (@encode_map_injective' v1 v2 nil nil r1 r2) as L. cbn in L. rewrite !app_nil_r in L. auto.
+    intros. pose proof (@encode_map_injective' v1 v2 nil nil r1 r2) as L. cbn in L. rewrite !app_nil_r in L.
   Qed.
 
   Instance Encode_Map : codeable tau X.

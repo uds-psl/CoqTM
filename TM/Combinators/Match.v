@@ -1,8 +1,6 @@
 Require Export TM Nop.
 Require Import Shared.FiniteTypes.DepPairs EqdepFacts.
 
-(* TODO: This is a mess. *)
-
 Section Match.
 
   Variable n : nat.
@@ -18,8 +16,8 @@ Section Match.
   Notation "'p2' f" := (projT2 (pMf f)) (only parsing, at level 10).
 
 
-  Notation "'M1'" := (projT1 pM1) (only parsing).
-  Notation "'p1'":= (projT2 pM1) (only parsing).
+  Notation "'M1'" := (projT1 pM1).
+  Notation "'p1'":= (projT2 pM1).
 
   Definition match_trans :
     (TM.states M1 + { f : F & TM.states (Mf f) }) * Vector.t (option sig) n ->
@@ -220,7 +218,7 @@ Section Match.
 
   Definition MATCH := (Match; Match_p).
 
-  Lemma Match_sem (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) :
+  Lemma Match_WRealise (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) :
     pM1 ⊫ R1 ->
     (forall f : F, pMf f ⊫ R2 f) -> MATCH ⊫ (⋃_f (R1 |_ f) ∘ R2 f).
   Proof.
@@ -229,48 +227,42 @@ Section Match.
     unfold WRealise in HR1.
     eapply HR1 in Eq1.
     eapply HR2 in Eq2.
-    eapply finite_rel_union_spec.
     eexists _, _. split. eapply Eq1.
     eapply Eq2.
   Qed.
 
-  Lemma Match_terminatesIn (R1 : Rel _ (F * _)) T1 T :
-    functionalOn T1 R1 ->
-    pM1 ⊫ R1 ->
-    M1 ↓(T1) ->
-    (forall f : F, Mf f ↓(T f)) ->
-    projT1 MATCH ↓(⋃_f (fun (x : tapes sig n) (i : nat) => exists (j k : nat) (y : tapes sig n),
-                     R1 x (f, y) /\ T1 x j /\ T f y k /\ j + k < i)).
+  Lemma Match_Terminates t conf1 k1 conf2 k2 :
+    M1 ↓↓ (t, (conf1, k1)) ->
+    projT1 (pMf (p1 (cstate conf1))) ↓↓ (ctapes conf1, (conf2, k2)) ->
+    Match ↓ t.
   Proof.
-    intros Func Real1 Term1 Term2 t i Hf.
-    eapply finite_rel_union_spec in Hf as (f & j & k & y & ? & Term_t1 & Term_T & ?).
-    edestruct (Term1 _ _ Term_t1) as [t'' ?].
-    destruct (Term2 f _ _ Term_T) as [outc ?].
-    exists (lift_confR outc).
-    unfold loopM.
-    eapply loop_ge with (k1:=j+(1+k)). omega.
-    assert (HEq := Func _ _ Term_t1 _ _ H (Real1 _ _ _ H1)). inv HEq.
-    eapply Match_merge.
-    exact H1. rewrite <- H2. eapply Real1 in H1.
-    repeat f_equal.
+    intros H1 H2. hnf. exists (k1 + S k2), (lift_confR conf2). hnf. eapply Match_merge; eauto.
   Qed.
 
-  Lemma Match_total
-        (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) k1 k2:
-    projT1 pM1 ⊨(projT2 pM1, k1) R1 ->
-    (forall f : F, Mf f ⊨(projT2 (pMf f), k2) R2 f) ->
-    MATCH ⊨(1 + k1 + k2) (⋃_f (R1 |_ f) ∘ R2 f).
+  Lemma Match_RealiseIn (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) (k1 k2 : nat) :
+    pM1 ⊨c(k1) R1 ->
+    (forall f : F, pMf f ⊨c(k2) R2 f) ->
+    MATCH ⊨c(1 + k1 + k2) (⋃_f (R1 |_ f) ∘ R2 f).
   Proof.
     intros HR1 HR2 t.
     edestruct (HR1 t) as (c' & ? & ?).
     edestruct (HR2 (projT2 pM1 (cstate c')) (ctapes c')) as (outc & ? & ?).
     exists (lift_confR outc). split.
-    -  unfold loopM.
-       eapply loop_ge with (k1:=k1+(1+k2)). omega.
-       eapply Match_merge; eauto.
-    - cbn.
-      eapply finite_rel_union_spec.
-      firstorder.      
+    -  unfold loopM. eapply loop_ge with (k1:=k1+(1+k2)). omega. eapply Match_merge; eauto.
+    - hnf. firstorder.      
+  Qed.
+
+  Lemma Match_Realise (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) :
+    pM1 ⊨ R1 ->
+    (forall f : F, pMf f ⊨ R2 f) ->
+    MATCH ⊨ (⋃_f (R1 |_ f) ∘ R2 f).
+  Proof.
+    intros Term1 Term2 t.
+    specialize (Term1 t) as (outc'&j&Term1&Term1').
+    specialize (Term2 (p1 (cstate outc')) (ctapes outc')) as (outc''&i&Term2&Term2').
+    exists (lift_confR outc''), (j + S i). split.
+    - eapply Match_merge; eauto.
+    - hnf. exists (p1 (cstate outc')). exists (ctapes outc'). repeat split; auto.
   Qed.
 
 End Match.

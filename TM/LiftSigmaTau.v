@@ -25,7 +25,6 @@ Section SujectTape.
 
   Definition surjectTape := mapTape surject.
   Definition surjectTapes {n : nat} := mapTapes (n := n) surject.
-
 End SujectTape.
 
 
@@ -101,11 +100,11 @@ Section LiftSigmaTau.
   Variable I : injection_fun sig tau.
   Variable def : sig.
   Definition f := inj_f I.
-  Definition g : tau -> sig := fun t : tau => match (inj_g I t) with Some s => s | None => def end.
+  Definition g' : tau -> sig := surject (inj_g I) def.
 
   Definition lift_trans :=
     fun '(q, symm) =>
-      let (q', act) := trans (m := projT1 pMSig) (q, Vector.map (fun a => let try a' := a in Some (g a')) symm) in
+      let (q', act) := trans (m := projT1 pMSig) (q, Vector.map (fun a => let try a' := a in Some (g' a')) symm) in
       let act' := Vector.map (fun '(w, m) => (let try w' := w in Some (f w'), m)) act in
       (q', act').
 
@@ -151,12 +150,12 @@ Section LiftSigmaTau.
     unfold step in *. cbn in *.
     replace (fun a : option tau =>
                 match a with
-                | Some a0 => Some (g a0)
+                | Some a0 => Some (g' a0)
                 | None => None
-                end) with (fun a : option tau => let try a' := a in Some (g a')) in H by reflexivity.
+                end) with (fun a : option tau => let try a' := a in Some (g' a')) in H by reflexivity.
 
     destruct (trans
-                (state1, Vector.map (fun a : option tau => let try a' := a in Some (g a'))
+                (state1, Vector.map (fun a : option tau => let try a' := a in Some (g' a'))
                                     (Vector.map (current (sig:=tau)) tapes1))) as (q, act) eqn:E3.
     inv H.
     destruct (trans (state1, Vector.map (current (sig:=sig)) (surjectTapes (inj_g I) def tapes1)))

@@ -23,19 +23,14 @@ Section Nop.
 
   Definition Nop := (nop; fun _ => f).
 
-  Lemma Nop_total: Nop ⊨(0) (↑ (=f) ⊗ (@IdR _)).
+  Lemma Nop_total: Nop ⊨c(0) (↑ (=f) ⊗ (@IdR _)).
   Proof.
-    intros ?. exists (initc nop t). cbn. firstorder.
+    intros ?. exists (initc nop input). cbn. firstorder.
   Qed.
 
   Lemma Nop_sem: Nop ⊫ (↑ (=f) ⊗ (@IdR _)).
   Proof.
     intros ? ? ? ?. hnf. destruct i; cbn in *; now inv H.
-  Qed.
-
-  Lemma terminates_nop : terminatesIn nop (fun x i => True).
-  Proof.
-    intros ? ? ?. exists (initc nop t). now destruct i.
   Qed.
 
 End Nop.
