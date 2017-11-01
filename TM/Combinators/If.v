@@ -27,7 +27,7 @@ Section Composition.
     - hnf. intros H2 (f& t). intros ([ | ]& (y & H3&H3')). left. hnf. eauto. right. hnf. eauto.
   Qed.
 
-  Lemma If_Terminates_True t conf1 k1 conf2 k2 :
+  Lemma If_Terminates_True' t conf1 k1 conf2 k2 :
     (projT1 pM1) ↓↓ (t, (conf1, k1)) ->
     projT2 pM1 (cstate conf1) = true ->
     (projT1 pM2) ↓↓ (ctapes conf1, (conf2, k2)) ->
@@ -38,7 +38,7 @@ Section Composition.
     cbn in L. rewrite H2 in L. specialize (L conf2 k2 ). unfold If, MATCH. cbn [projT1]. eapply L; eauto.
   Qed.
     
-  Lemma If_Terminates_False t conf1 k1 conf2 k2 :
+  Lemma If_Terminates_False' t conf1 k1 conf2 k2 :
     (projT1 pM1) ↓↓ (t, (conf1, k1)) ->
     projT2 pM1 (cstate conf1) = false ->
     (projT1 pM3) ↓↓ (ctapes conf1, (conf2, k2)) ->
@@ -48,6 +48,41 @@ Section Composition.
     pose proof @Match_Terminates' n sig (FinType (EqType bool)) pM1 F2 (fun b => if b then pM2 else pM3) t conf1 k1 as L.
     cbn in L. rewrite H2 in L. specialize (L conf2 k2 ). unfold If, MATCH. cbn [projT1]. eapply L; eauto.
   Qed.
+
+  
+  Section If_Terminates.
+
+    Variable (T1 : (tapes sig n) -> nat -> Type).
+    Variable (T2 : (tapes sig n) -> nat -> Type).
+    Variable (T3 : (tapes sig n) -> nat -> Type).
+
+    Hypothesis (Term1 : projT1 pM1 ⇓ T1).
+    Hypothesis (Term2 : projT1 pM2 ⇓ T2).
+    Hypothesis (Term3 : projT1 pM3 ⇓ T3).
+
+    Inductive If_Terminates_Rel (t : tapes sig n) (k'' : nat) :=
+    | If_Terminates_True
+        (k k' : nat) (In : k + k' < k'') (m1 : T1 t k)
+        (m1True : projT2 pM1 (cstate (proj1_sig (Term1 m1))) = true)
+        (m2 : T2 (ctapes (proj1_sig (Term1 m1))) k')
+    | If_Terminates_False
+        (k k' : nat) (In : k + k' < k'') (m1 : T1 t k)
+        (m1False : projT2 pM1 (cstate (proj1_sig (Term1 m1))) = false)
+        (m3 : T3 (ctapes (proj1_sig (Term1 m1))) k').
+                                                
+    Lemma If_Terminates :
+      projT1 If ⇓ If_Terminates_Rel.
+    Proof.
+      unfold If, MATCH. cbn.
+      eapply TerminatesIn_monotone.
+      - apply Match_Terminates. instantiate (1 := fun b => if b then T2 else T3).
+        intros [ | ]; auto. Unshelve. apply T1. apply Term1.
+      - intros t k''. intros [k k' H1 H2 H3 | k k' H1 H2 H3]; econstructor; eauto.
+        + instantiate (1 := H2). destruct (Term1 H2) as (q'&t''). cbn in *. rewrite H3. assumption.
+        + instantiate (1 := H2). destruct (Term1 H2) as (q'&t''). cbn in *. rewrite H3. assumption.
+    Qed.
+
+  End If_Terminates.
   
   Lemma If_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) k1 k2 k3:
     pM1 ⊨c(k1) R1 ->

@@ -245,22 +245,22 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Definition TerminatesAlways {n : nat} (M : mTM n) : Prop := forall t : tapes n, M ↓ t.
   Notation "M ⇓⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓⇓'").
 
-  Definition TerminatesIn {n : nat} (M : mTM n) (T : Rel (tapes n) (mconfig (states M) n * nat)) :=
-    forall t1 conf k, T t1 (conf, k) -> loopM k (initc M t1) = Some conf.
+  Definition TerminatesIn {n : nat} (M : mTM n) (T : (tapes n) -> nat -> Type) :=
+    forall t1 k, T t1 k -> { conf | loopM k (initc M t1) = Some conf }.
   Arguments TerminatesIn { _ } _.
   Notation "M ⇓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '⇓'  T").
 
-  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : Rel (tapes _) (_ * _)) :
-    M ⇓ T1 -> T2 <<=2 T1 -> M ⇓ T2.
+  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : (tapes _) -> _ -> Type) :
+    M ⇓ T1 -> (forall x y, T2 x y -> T1 x y) -> M ⇓ T2.
   Proof.
     intros H1 H2. firstorder.
   Qed.
 
-  Lemma TerminatesIn_TerminatesAlways {n : nat} {F : finType} (M : mTM n) (T : Rel (tapes _) (_ * _)) :
+  Lemma TerminatesIn_TerminatesAlways {n : nat} {F : finType} (M : mTM n) (T : Rel (tapes _) _) :
     M ⇓ T -> (forall t : tapes _, exists x, T t x) -> M ⇓⇓.
   Proof.
-    intros H. intros H1. hnf. intros t. specialize (H1 t) as (((y&t')&k)&H1). hnf in H.
-    specialize (H t (mk_mconfig y t') k H1). firstorder.
+    intros H. intros H1. hnf. intros t. specialize (H1 t) as (k&H1). hnf in H.
+    specialize (H t k H1). firstorder.
   Qed.
   
   Lemma WRealise_to_Realise n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :

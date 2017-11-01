@@ -232,34 +232,36 @@ Section Match.
   Qed.
 
 
-  Definition Match_Terminates_Rel (T : Rel (tapes sig n) (mconfig sig (states M1) n * nat))
-             (T__f : forall x : F, Rel (tapes sig n) (mconfig sig (states (projT1 (pMf x))) n * nat)) : Rel (tapes sig n) (mconfig sig (states Match) n * nat) :=
-    fun (t : tapes sig n) '(c'', k'') =>
-      let (q, t'') := c'' in
-      match q with
-      | inl _ => False (* Match cannot halt inside a M1 state. *)
-      | inr q =>
-        let (f, q') := q in
-        exists c1 c2 (k1 k2 : nat),
-          T t (c1, k1) /\ (* Execute M *)
-          T__f (p1 (cstate c1)) (ctapes c1) (c2, k2) /\ (* Execute Mf *)
-          c'' = lift_confR c2 /\ (* Match holds in the corresponding state, where Mf hold *)
-          k1 + k2 < k'' (* Number of steps is greater then the number of steps from M1 plus from Mf *)
-      end.
+  Section Match_Terminates.
 
-  Lemma Match_Terminates T T__f :
-    projT1 pM1 ⇓ T ->
-    (forall f : F, projT1 (pMf f) ⇓ T__f f) ->
-    Match ⇓ Match_Terminates_Rel T T__f.
-  Proof.
-    intros H1 H2. hnf. intros t (q1&t1) k1. cbn.
-    destruct q1 as [ | (f&q')]. tauto.
-    intros (c1&c2&k2&k3&H3&H4&->&H5).
-    specialize (H1 _ _ _ H3). specialize (H2 _ _ _ _ H4).
-    enough (loopM (k2 + (1 + k3)) (initc Match t) = Some (lift_confR c2)).
-    { unfold loopM. apply loop_ge with (k1 := k2 + (1 + k3)). omega. assumption. }
-    eapply Match_merge; eauto.
-  Qed.
+    Variable (T : (tapes sig n) -> nat -> Type).
+    Variable (T__f : forall x : F, (tapes sig n) -> nat -> Type).
+
+    Hypothesis (Term : projT1 pM1 ⇓ T).
+    Hypothesis (Term__f : forall f : F, projT1 (pMf f) ⇓ T__f f).
+
+    Record Match_Terminates_Rel (t : tapes sig n) (k'' : nat) : Type :=
+      {
+        term_k : nat;
+        term_k' : nat;
+        term_In : term_k + term_k' < k'';
+        term_m1 : T t term_k;
+        term_m2 : T__f (p1 (cstate (proj1_sig (Term term_m1)))) (ctapes (proj1_sig (Term term_m1))) term_k';
+      }.
+
+    Lemma Match_Terminates :
+      Match ⇓ Match_Terminates_Rel.
+    Proof.
+      hnf. intros t k'' [k k' H1 H2 H3].
+      destruct (Term H2) as (conf&H). cbn in H3.
+      destruct (Term__f H3) as (conf'&H').
+      exists (lift_confR conf').
+      enough (loopM (k + (1 + k')) (initc Match t) = Some (lift_confR conf')).
+      { unfold loopM. apply loop_ge with (k1 := k + (1 + k')). omega. assumption. }
+      eapply Match_merge; eauto.
+    Qed.
+
+  End Match_Terminates.
 
   Lemma Match_Terminates' t conf1 k1 conf2 k2 :
     M1 ↓↓ (t, (conf1, k1)) ->

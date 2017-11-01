@@ -125,29 +125,26 @@ Section While.
 
   Section WhileTerm.
 
-    Variable T : Rel (tapes sig n) (mconfig sig (states (projT1 pM)) n * nat).
-
-    Inductive WhileTerm : (tapes sig n) -> (mconfig sig (states (projT1 pM)) n) -> nat -> Prop :=
-    | term_false (i : nat) (q : states (projT1 pM)) (t1 t2 : tapes sig n) :
-        T t1 (mk_mconfig q t2, i) ->
-        projT2 pM q = false ->
-        WhileTerm t1 (mk_mconfig q t2) i
-    | term_true (i j : nat) (q1 q2 : states (projT1 pM)) (t1 t2 t3 : tapes sig n) :
-        T t1 (mk_mconfig q1 t2, i) ->
-        projT2 pM q1 = true ->
-        WhileTerm t2 (mk_mconfig q2 t3) j ->
-        WhileTerm t1 (mk_mconfig q2 t3) (i + (1 + j)).
-
-    Definition WhileTerm' : Rel (tapes sig n) (mconfig sig (states (projT1 pM)) n * nat) :=
-      fun t '(c, k) => WhileTerm t c k.
+    Variable T : Rel (tapes sig n) nat.
+    Hypothesis Term : projT1 pM ⇓ T.
+    Inductive WhileTerm : (tapes sig n) -> nat -> Type :=
+    | term_false (i : nat) (t1 : tapes sig n) (p : T t1 i) :
+        projT2 pM (cstate (proj1_sig (Term p))) = false ->
+        WhileTerm t1 i
+    | term_true (i j : nat) (t1 : tapes sig n) (p : T t1 i) :
+        projT2 pM (cstate (proj1_sig (Term p))) = true ->
+        WhileTerm (ctapes (proj1_sig (Term p))) j ->
+        WhileTerm t1 (i + (1 + j)).
 
     Lemma While_Terminates :
-        projT1 pM ⇓ T -> While ⇓ WhileTerm'.
+         While ⇓ WhileTerm.
     Proof.
-      intros Term. hnf. intros t1 t3 k H. unfold WhileTerm' in *.
-      induction H as [k q t1 t2 H1 H2 | i j q1 q2 t1 t2 t3 H1 H2 H3 H4].
-      - hnf in Term. specialize (Term t1 (mk_mconfig q t2) k H1). now apply While_false_merge.
-      - eapply While_true_merge; eauto.
+      hnf. intros t1 k H.
+      induction H as [i t1 p H1 | i j t1 p H1 H2 IH].
+      - hnf in Term.
+        destruct (Term p) as (conf'&H) eqn:E. exists conf'. apply While_false_merge; auto.
+      - destruct (Term p) as (conf'&H) eqn:E.
+        destruct IH as (confIH&IH). exists confIH. eapply While_true_merge; eauto.
     Qed.
 
   End WhileTerm.
