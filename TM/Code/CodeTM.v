@@ -112,13 +112,13 @@ Section Computes_Composes.
   Variable (pM : {M : mTM sig n_tapes & states M -> F1}).
   Variable (pN : {N : mTM sig n_tapes & states N -> F2}).
 
-  Lemma compose_computes_sem (iin iout : Fin.t n_tapes) :
+  Lemma compose_computes_WRealise (iin iout : Fin.t n_tapes) :
     pM ⊫ computes_locally_R_p (F := F1) i1 i2 _ _ f ->
     pN ⊫ computes_locally_R_p (F := F2) i2 i3 _ _ g ->
     (pM ;; pN) ⊫ computes_locally_R_p (F := F2) i1 i3 _ _ (fun x => g (f x)).
   Proof.
     intros H1 H2.
-    pose proof (SequentialComposition.Seq_sem H1 H2) as HComp.
+    pose proof (SequentialComposition.Seq_WRealise H1 H2) as HComp.
     hnf. intros intape i outc HLoop.
     hnf. intros x Hx. cbn in outc.
     specialize (HComp intape i outc HLoop).
@@ -128,13 +128,13 @@ Section Computes_Composes.
     apply HComp'. apply HComp. assumption.
   Qed.
 
-  Lemma compose_computes_total (iin iout : Fin.t (S n_tapes)) (k1 k2 : nat) :
-    pM ⊨(k1) computes_locally_R_p (F := F1) i1 i2 _ _ f ->
-    pN ⊨(k2) computes_locally_R_p (F := F2) i2 i3 _ _ g ->
-    (pM ;; pN) ⊨(1+k1+k2) computes_locally_R_p (F := F2) i1 i3 _ _ (fun x => g (f x)).
+  Lemma compose_computes_RealiseIn (iin iout : Fin.t (S n_tapes)) (k1 k2 : nat) :
+    pM ⊨c(k1) computes_locally_R_p (F := F1) i1 i2 _ _ f ->
+    pN ⊨c(k2) computes_locally_R_p (F := F2) i2 i3 _ _ g ->
+    (pM ;; pN) ⊨c(1+k1+k2) computes_locally_R_p (F := F2) i1 i3 _ _ (fun x => g (f x)).
   Proof.
     intros H1 H2.
-    pose proof (SequentialComposition.Seq_total H1 H2) as HComp.
+    pose proof (SequentialComposition.Seq_RealiseIn H1 H2) as HComp.
     intros intape.
     specialize (HComp intape) as (outtape&HLoop&HComp).
     unfold computes_locally_R_p in HComp. cbn in HComp.

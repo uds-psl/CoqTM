@@ -59,13 +59,13 @@ Section Neg_TM.
   Qed.
 
   Lemma bool_neg_TM_computes_terminates_in :
-    bool_neg_TM ↓ (fun _ => fun t => t = 1).
+    bool_neg_TM ⇓ (fun _ => fun t => t = 1).
   Proof.
     hnf. intros inittape i ->. cbn. unfold id. rewrite bool_neg_TM_onestep. eauto.
   Qed.
 
   Lemma bool_neq_TM_computes_total :
-    bool_neg_mTM ⊨(1) computes_locally_R_p (F := F) Fin.F1 Fin.F1 _ _ negb.
+    bool_neg_mTM ⊨c(1) computes_locally_R_p (F := F) Fin.F1 Fin.F1 _ _ negb.
   Proof.
     hnf. intros inittape.
     destruct_tapes. cbn in *.
@@ -140,13 +140,13 @@ Section Copy.
   Qed.
 
   Lemma bool_copy_TM_computes_terminates_in :
-    bool_copy_TM ↓ (fun _ => fun t => t = 1).
+    bool_copy_TM ⇓ (fun _ => fun t => t = 1).
   Proof.
     hnf. intros inittape i ->. cbn. unfold id. rewrite bool_copy_TM_onestep. eauto.
   Qed.
 
   Lemma bool_copy_TM_computes_total :
-    bool_copy_mTM ⊨(1)
+    bool_copy_mTM ⊨c(1)
              (computes_locally_R_p (F := F) Fin.F1 (Fin.FS Fin.F1) _ _ (@id bool)) ∩
              (stay_locally_R_p (X := Bool_Fin) (F := F) Fin.F1 _).
   Proof.
@@ -229,13 +229,13 @@ Section Dual.
   Qed.
 
   Lemma bool_dual_TM_computes_terminates_in :
-    bool_dual_TM ↓ (fun _ => fun t => t = 1).
+    bool_dual_TM ⇓ (fun _ => fun t => t = 1).
   Proof.
     hnf. intros inittape i ->. cbn. unfold id. rewrite bool_dual_TM_onestep. eauto.
   Qed.
 
   Lemma bool_dual_TM_computes_total :
-    bool_dual_mTM ⊨(1)
+    bool_dual_mTM ⊨c(1)
              (stay_locally_R_p (F := F) (Fin.FS Fin.F1) _) ∩
              computes2_locally_R_p (F := F) Fin.F1 (Fin.FS Fin.F1) Fin.F1 _ _ _ f.
   Proof.
@@ -247,7 +247,7 @@ Section Dual.
 End Dual.
 
 Require Import TM.Basic.Mono.
-Require Import LiftNM.
+Require Import LiftMN.
 
 Section CopyMove.
 
@@ -258,25 +258,23 @@ Section CopyMove.
 
 
   (* TODO: Make dupfree and In computeable *)
-  Local Lemma dupfree : Injection.dupfree [| Fin.F1 (n := 1) |].
+  Local Lemma dupfree : dupfree [| Fin.F1 (n := 1) |].
   Proof. constructor. inversion 1. constructor. Qed.
 
-  Local Lemma Inj_1_helper : (1 < 2 /\ ~ Vector.In 1 [|0|]).
+  Local Lemma Inj_1_helper : ~ Vector.In (Fin.FS (Fin.F1 (n := 0))) [|Fin.F1 |].
   Proof.
-    split.
-    - omega.
-    - inversion 1; subst.
-      apply EqdepFacts.eq_sigT_iff_eq_dep in H3. induction H3. inv H.
-      apply EqdepFacts.eq_sigT_iff_eq_dep in H4. induction H4. destruct_vector. inv H3.
+    inversion 1; subst.
+    apply EqdepFacts.eq_sigT_iff_eq_dep in H3. induction H3. inv H.
+    apply EqdepFacts.eq_sigT_iff_eq_dep in H4. induction H4. destruct_vector. inv H3.
   Qed.
 
   Lemma bool_copy_move_TM_Sem :
-    bool_copy_move_mTM ⊨(3) copy_Move_locally_R_p (X := Bool_Fin) (F := Bool_Fin) Fin.F1 (Fin.FS Fin.F1) _.
+    bool_copy_move_mTM ⊨c(3) copy_Move_locally_R_p (X := Bool_Fin) (F := Bool_Fin) Fin.F1 (Fin.FS Fin.F1) _.
   Proof.
     eapply RealiseIn_monotone with (k1 := 3); try omega.
-    - replace 3 with (1+1+1) by reflexivity. eapply Seq_total.
+    - replace 3 with (1+1+1) by reflexivity. eapply Seq_RealiseIn.
       + eapply bool_copy_TM_computes_total.
-      + eapply Inject_total. apply dupfree. apply Move_Sem.
+      + eapply Inject_RealisesIn. apply dupfree. apply Move_Sem.
     - intros intapes (fstate, ftapes). destruct_tapes. cbn. intros ((f, fstate')&(H1&H2)&H3&H4). hnf in *. split.
       + intros x rest henc. hnf in *. cbn in *. clear H4.
         assert (tape_encodes_locally Encode_Bool h x) as lh1 by (eexists; apply henc).
@@ -297,8 +295,8 @@ Section CopyMove.
       + intros x HEnc. cbn in *. hnf in *. destruct HEnc as (rest&HEnc).
         assert (tape_encodes_locally _ h x) as L1 by eauto. specialize (H1 _ L1). clear L1. (* XXX *)
         specialize (H2 _ _ HEnc).
-        assert (1 < 2 /\ ~ Vector.In 1 [|0|]) as (L1&L2) by now apply Inj_1_helper.
-        specialize (H4 1 L1 L2). cbn in *. subst. eauto.
+        pose proof Inj_1_helper as L1.
+        specialize (H4 (Fin.FS Fin.F1) L1). cbn in *. subst. eauto.
   Qed.
   
 End CopyMove.
