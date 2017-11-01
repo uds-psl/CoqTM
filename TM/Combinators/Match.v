@@ -231,17 +231,33 @@ Section Match.
     eapply Eq2.
   Qed.
 
+
+  Definition Match_Terminates_Rel (T : Rel (tapes sig n) (mconfig sig (states M1) n * nat))
+             (T__f : forall x : F, Rel (tapes sig n) (mconfig sig (states (projT1 (pMf x))) n * nat)) : Rel (tapes sig n) (mconfig sig (states Match) n * nat) :=
+    fun (t : tapes sig n) '(c'', k'') =>
+      let (q, t'') := c'' in
+      match q with
+      | inl _ => False (* Match cannot halt inside a M1 state. *)
+      | inr q =>
+        let (f, q') := q in
+        exists c1 c2 (k1 k2 : nat),
+          T t (c1, k1) /\ (* Execute M *)
+          T__f (p1 (cstate c1)) (ctapes c1) (c2, k2) /\ (* Execute Mf *)
+          c'' = lift_confR c2 /\ (* Match holds in the corresponding state, where Mf hold *)
+          k1 + k2 < k'' (* Number of steps is greater then the number of steps from M1 plus from Mf *)
+      end.
+
   Lemma Match_Terminates T T__f :
-    pM1 ⇓ T ->
-    (forall f : F, pMf f ⇓ T__f f) ->
-    MATCH ⇓ (fun t '(y'', t'', k'') => exists f k1 k2 t', T t (f, t', k1) /\ T__f f t' (y'', t'', k2) /\ k1 + k2 < k'').
+    projT1 pM1 ⇓ T ->
+    (forall f : F, projT1 (pMf f) ⇓ T__f f) ->
+    Match ⇓ Match_Terminates_Rel T T__f.
   Proof.
-    intros H1 H2. hnf. intros t t'' y'' k''. intros H. hnf in H. destruct H as (f&k1&k2&t'&H3&H4&H5).
-    hnf in H1. specialize (H1 t t' f k1 H3) as (conf1&loop1&->&->).
-    specialize (H2 (p1 (cstate conf1))). hnf in H2. specialize (H2 _ _ _ _ H4) as (conf2&loop2&->&->).
-    exists (lift_confR conf2). split; cbn; auto.
-    enough (loopM (k1 + (1 + k2)) (initc Match t) = Some (lift_confR conf2)).
-    { unfold loopM. apply loop_ge with (k1 := k1 + (1 + k2)). omega. assumption. }
+    intros H1 H2. hnf. intros t (q1&t1) k1. cbn.
+    destruct q1 as [ | (f&q')]. tauto.
+    intros (c1&c2&k2&k3&H3&H4&->&H5).
+    specialize (H1 _ _ _ H3). specialize (H2 _ _ _ _ H4).
+    enough (loopM (k2 + (1 + k3)) (initc Match t) = Some (lift_confR c2)).
+    { unfold loopM. apply loop_ge with (k1 := k2 + (1 + k3)). omega. assumption. }
     eapply Match_merge; eauto.
   Qed.
 

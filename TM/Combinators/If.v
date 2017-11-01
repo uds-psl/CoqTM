@@ -48,20 +48,7 @@ Section Composition.
     pose proof @Match_Terminates' n sig (FinType (EqType bool)) pM1 F2 (fun b => if b then pM2 else pM3) t conf1 k1 as L.
     cbn in L. rewrite H2 in L. specialize (L conf2 k2 ). unfold If, MATCH. cbn [projT1]. eapply L; eauto.
   Qed.
-
-  Lemma Match_Terminates T1 T2 T3 :
-    pM1 ⇓ T1 ->
-    pM2 ⇓ T2 ->
-    pM3 ⇓ T3 ->
-    If ⇓ (fun t '(y'', t'', k'') =>
-            exists f k1 k2 t', T1 t (f, t', k1) /\ (f = true /\ T2 t' (y'', t'', k2) \/ f = false /\ T3 t' (y'', t'', k2)) /\ k1 + k2 < k'').
-  Proof.
-    intros H1 H2 H3. eapply TerminatesIn_monotone.
-    - unfold If. apply Match_Terminates with (T__f := fun f : bool => if f then T2 else T3). apply H1. intros [ | ]; cbn; assumption.
-    - hnf. intros t ((y&t2)&k2). intros (f&k1&k3&t'&H&H'&H''). destruct H' as [ (-> & H') | (-> & H')]; [exists true | exists false]; firstorder.
-  Qed.
   
-
   Lemma If_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) k1 k2 k3:
     pM1 ⊨c(k1) R1 ->
     pM2 ⊨c(k2) R2 ->

@@ -33,14 +33,6 @@ Section Composition.
     intros H1 H2. eapply Match_Terminates'; eauto.
   Qed.
 
-  Lemma Seq_Terminates T1 T2 :
-    pM1 ⇓ T1 ->
-    pM2 ⇓ T2 ->
-    Seq ⇓ (fun t '(y'', t'', k'') => exists f k1 k2 t', T1 t (f, t', k1) /\ T2 t' (y'', t'', k2) /\ k1 + k2 < k'').
-  Proof.
-    intros H1 H2. now apply Match_Terminates.
-  Qed.
-
   Lemma Seq_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) k1 k2:
     pM1 ⊨c(k1) R1 ->
     pM2 ⊨c(k2) R2 ->
