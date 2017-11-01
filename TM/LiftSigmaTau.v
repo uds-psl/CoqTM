@@ -1,4 +1,4 @@
-Require Import Prelim TM.Relations TM Shared.Tactics.AutoIndTac Injection.
+Require Import Prelim TM.Relations TM Shared.Tactics.AutoIndTac Retract.
 
 Section MapTape.
   Variable sig tau : finType.
@@ -58,29 +58,29 @@ End InjectTape.
 
 Section InjectSurject.
   Variable sig tau : finType.
-  Variable I : injection_fun sig tau.
+  Variable I : retract sig tau.
   Variable def : sig.
 
   Lemma surject_inject' (l : list sig) :
-    map (fun t : tau => match inj_g I t with
+    map (fun t : tau => match retract_g I t with
                      | Some s => s
                      | None => def
-                     end) (map (inj_f I) l) = l.
+                     end) (map (retract_f I) l) = l.
   Proof.
     induction l; cbn.
     - reflexivity.
-    - rewrite inj_g_adjoint. f_equal. assumption.
+    - rewrite retract_g_adjoint. f_equal. assumption.
   Qed.
   
   Lemma surject_inject_tape (t : tape sig) :
-    surjectTape (inj_g I) def (injectTape (inj_f I) t) = t.
+    surjectTape (retract_g I) def (injectTape (retract_f I) t) = t.
   Proof.
     unfold surjectTape, injectTape, surject.
-    destruct t; cbn; f_equal; try rewrite inj_g_adjoint; auto; apply surject_inject'.
+    destruct t; cbn; f_equal; try rewrite retract_g_adjoint; auto; apply surject_inject'.
   Qed.
 
   Lemma surject_inject_tapes {n : nat} (t : Vector.t (tape sig) n) :
-    surjectTapes (inj_g I) def (injectTapes (inj_f I) t) = t.
+    surjectTapes (retract_g I) def (injectTapes (retract_f I) t) = t.
   Proof.
     unfold surjectTapes, injectTapes, mapTapes.
     apply Vector.eq_nth_iff. intros p ? <-. 
@@ -97,10 +97,10 @@ Section LiftSigmaTau.
   Variable F : finType.
   Variable pMSig : { M : mTM sig n & states M -> F}.
 
-  Variable I : injection_fun sig tau.
+  Variable I : retract sig tau.
   Variable def : sig.
-  Definition f := inj_f I.
-  Definition g' : tau -> sig := surject (inj_g I) def.
+  Definition f := retract_f I.
+  Definition g' : tau -> sig := surject (retract_g I) def.
 
   Definition lift_trans :=
     fun '(q, symm) =>
@@ -122,28 +122,28 @@ Section LiftSigmaTau.
 
   Lemma surject_step :
     forall (tape : tape tau) (act : option sig * move),
-      tape_move_mono (mapTape (surject (inj_g I) def) tape) act =
-      mapTape (surject (inj_g I) def)
+      tape_move_mono (mapTape (surject (retract_g I) def) tape) act =
+      mapTape (surject (retract_g I) def)
               (tape_move_mono tape
                               (let '(w, m) := act in (let try w' := w in Some (f w'), m))).
   Proof.
     intros tape. intros (w,m).
     unfold tape_move_mono, tape_move, tape_write, surject. cbn.
     destruct tape; cbn;
-      try (destruct m, w; cbn; f_equal; now rewrite inj_g_adjoint).
+      try (destruct m, w; cbn; f_equal; now rewrite retract_g_adjoint).
     destruct m, w; cbn.
-    - unfold mapTape. cbn. destruct l; cbn; f_equal; now rewrite inj_g_adjoint.
-    - unfold mapTape. cbn. destruct l; cbn; f_equal; now rewrite inj_g_adjoint.
-    - unfold mapTape. cbn. destruct l, l0; cbn; f_equal; now rewrite inj_g_adjoint.
-    - unfold mapTape. cbn. destruct l, l0; cbn; f_equal; now rewrite inj_g_adjoint.
-    - unfold mapTape. cbn. destruct l, l0; cbn; f_equal; now rewrite inj_g_adjoint.
-    - unfold mapTape. cbn. destruct l, l0; cbn; f_equal; now rewrite inj_g_adjoint.
+    - unfold mapTape. cbn. destruct l; cbn; f_equal; now rewrite retract_g_adjoint.
+    - unfold mapTape. cbn. destruct l; cbn; f_equal; now rewrite retract_g_adjoint.
+    - unfold mapTape. cbn. destruct l, l0; cbn; f_equal; now rewrite retract_g_adjoint.
+    - unfold mapTape. cbn. destruct l, l0; cbn; f_equal; now rewrite retract_g_adjoint.
+    - unfold mapTape. cbn. destruct l, l0; cbn; f_equal; now rewrite retract_g_adjoint.
+    - unfold mapTape. cbn. destruct l, l0; cbn; f_equal; now rewrite retract_g_adjoint.
   Qed.
 
   Lemma sim_step (c1 c2 : mconfig tau (states (projT1 pMSig)) n) :
     step (M := liftM) c1 = c2 ->
-    step (M := projT1 pMSig) (mk_mconfig (cstate c1) (surjectTapes (inj_g I) def (ctapes c1))) =
-    (mk_mconfig (cstate c2) (surjectTapes (inj_g I) def (ctapes c2))).
+    step (M := projT1 pMSig) (mk_mconfig (cstate c1) (surjectTapes (retract_g I) def (ctapes c1))) =
+    (mk_mconfig (cstate c2) (surjectTapes (retract_g I) def (ctapes c2))).
   Proof.
     intros H. cbn.
     destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2.
@@ -158,7 +158,7 @@ Section LiftSigmaTau.
                 (state1, Vector.map (fun a : option tau => let try a' := a in Some (g' a'))
                                     (Vector.map (current (sig:=tau)) tapes1))) as (q, act) eqn:E3.
     inv H.
-    destruct (trans (state1, Vector.map (current (sig:=sig)) (surjectTapes (inj_g I) def tapes1)))
+    destruct (trans (state1, Vector.map (current (sig:=sig)) (surjectTapes (retract_g I) def tapes1)))
       as (q', act') eqn:E4.
     enough ((state2, act) = (q', act')) as X.
     {
@@ -166,8 +166,8 @@ Section LiftSigmaTau.
       unfold surjectTapes, mapTapes. apply Vector.eq_nth_iff. intros p ? <-.
       erewrite !Vector.nth_map, !Vector.nth_map2, !Vector.nth_map; eauto.
       (* again, stick to notations *)
-      change (tape_move_mono (mapTape (surject (inj_g I) def) tapes1[@p]) act'[@p] =
-              mapTape (surject (inj_g I) def)
+      change (tape_move_mono (mapTape (surject (retract_g I) def) tapes1[@p]) act'[@p] =
+              mapTape (surject (retract_g I) def)
                       (tape_move_mono tapes1[@p]
                                       (let '(w, m) := act'[@p] in (let try w' := w in Some (f w'), m)))).
       (* generalize (act'[@p]) as act. generalize (tapes1[@p]) as tape. *)
@@ -182,8 +182,8 @@ Section LiftSigmaTau.
 
   Lemma sim_loop (c1 c2 : mconfig tau (states liftM) n) (i : nat) :
     loopM (M := liftM) i c1 = Some c2 ->
-    loopM (M := projT1 pMSig) i (mk_mconfig (cstate c1) (surjectTapes (inj_g I) def (ctapes c1))) =
-    Some (mk_mconfig (cstate c2) (surjectTapes (inj_g I) def (ctapes c2))).
+    loopM (M := projT1 pMSig) i (mk_mconfig (cstate c1) (surjectTapes (retract_g I) def (ctapes c1))) =
+    Some (mk_mconfig (cstate c2) (surjectTapes (retract_g I) def (ctapes c2))).
   Proof.
     unfold loopM in *. revert c2 c1. induction i; intros c2 c1 H; cbn in *.
     - destruct (halt _) eqn:E; now inv H.
@@ -194,10 +194,10 @@ Section LiftSigmaTau.
 
   Lemma Lift_sem (R : Rel (tapes sig n) (F * tapes sig n)) :
     pMSig ⊫ R ->
-    Lift ⊫ lift_sigma_tau_p (inj_g I) def R.
+    Lift ⊫ lift_sigma_tau_p (retract_g I) def R.
   Proof.
     intros H. intros t i outc Hloop. unfold lift_sigma_tau_p.
-    apply (H (surjectTapes (inj_g I) def t) i (mk_mconfig (cstate outc) (surjectTapes (inj_g I) def (ctapes outc)))).
+    apply (H (surjectTapes (retract_g I) def t) i (mk_mconfig (cstate outc) (surjectTapes (retract_g I) def (ctapes outc)))).
     now apply (@sim_loop (initc liftM t) outc i).
   Qed.
     

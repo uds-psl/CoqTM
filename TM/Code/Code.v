@@ -1,5 +1,5 @@
 Require Import Prelim.
-Require Import Injection.
+Require Import Retract.
 
 Definition Bool_Fin := FinType (EqType bool).
 
@@ -118,18 +118,18 @@ Section Usefull_Injections.
 
   Variable (sig tau : Type).
 
-  Definition option_inj : injection_fun sig (option sig).
-  Proof. apply Build_injection_fun with (inj_f := Some) (inj_g := id). firstorder. Defined.
+  Definition option_inj : tight_retract sig (option sig).
+  Proof. apply Build_tight_retract with (tretract_f := Some) (tretract_g := id). firstorder. Defined.
 
   Lemma inl_inj' : forall (x : sig) (y : sig + tau), match y with | inl x0 => Some x0 | inr _ => None end = Some x <-> y = inl x.
   Proof. firstorder; destruct y; inv H; firstorder. Qed.
 
-  Definition inl_inj : injection_fun sig (sig + tau) := Build_injection_fun inl_inj'.
+  Definition inl_inj : tight_retract sig (sig + tau) := Build_tight_retract inl_inj'.
 
   Lemma inr_inj' : forall (x : tau) (y : sig + tau), match y with | inl _ => None | inr x0 => Some x0 end = Some x <-> y = inr x.
   Proof. firstorder; destruct y; inv H; firstorder. Qed.
 
-  Definition inr_inj : injection_fun tau (sig + tau) := Build_injection_fun inr_inj'.
+  Definition inr_inj : tight_retract tau (sig + tau) := Build_tight_retract inr_inj'.
 
   Lemma empty_left_inj' :
     forall (x : Empty_set + sig) (y : sig),
@@ -139,7 +139,7 @@ Section Usefull_Injections.
     - now inversion H.
     - destruct x as [ [] | ]. congruence.
   Qed.
-  Definition empty_left_inj : injection_fun (Empty_set + sig) sig := Build_injection_fun empty_left_inj'.
+  Definition empty_left_inj : tight_retract (Empty_set + sig) sig := Build_tight_retract empty_left_inj'.
   Lemma empty_right_inj' :
     forall (x : sig + Empty_set) (y : sig),
       Some (inl y) = Some x <-> y = match x with | inr devil => match devil return sig with end | inl x0 => x0 end.
@@ -148,7 +148,7 @@ Section Usefull_Injections.
     - now inversion H.
     - destruct x as [ | [] ]. congruence.
   Qed.
-  Definition empty_right_inj : injection_fun (sig + Empty_set) sig := Build_injection_fun empty_right_inj'.
+  Definition empty_right_inj : tight_retract (sig + Empty_set) sig := Build_tight_retract empty_right_inj'.
 
 End Usefull_Injections.
 
@@ -157,8 +157,8 @@ Section Encode_Map.
   Variable (X : Type).
   Variable (sig tau : finType).
   Hypothesis (code_sig : codeable sig X).
-  Hypothesis (inj : injection_fun sig tau).
-  Notation "'f'" := (inj_f inj). Notation "'g'" := (inj_g inj).
+  Hypothesis (inj : tight_retract sig tau).
+  Notation "'f'" := (tretract_f inj). Notation "'g'" := (tretract_g inj).
 
   Lemma map_map_app_eq_None_None (ss1 ss2 : list sig) (t1 t2 : tau) (ts1 ts2 : list tau) :
     g t1 = None -> g t2 = None ->
@@ -167,8 +167,8 @@ Section Encode_Map.
   Proof.
     intros H1 H2 H. induction (doubleListInduction ss1 ss2); cbn in *.
     - now inv H.
-    - exfalso. inv H. clear H2 ys d IHd. enough (g (f y) = Some y) by congruence. apply inj_g_adjoint.
-    - exfalso. inv H. clear H1 xs d IHd. enough (g (f x) = Some x) by congruence. apply inj_g_adjoint.
+    - exfalso. inv H. clear H2 ys d IHd. enough (g (f y) = Some y) by congruence. apply tretract_g_adjoint.
+    - exfalso. inv H. clear H1 xs d IHd. enough (g (f x) = Some x) by congruence. apply tretract_g_adjoint.
     - inv H.
       enough (map f xs = map f ys /\ t1 = t2 /\ ts1 = ts2) as (HE1&HE2).
       { split; now f_equal. }
@@ -194,7 +194,7 @@ Section Encode_Map.
     intros H C.
     assert (forall x, x el (map f ss1) -> g x <> None) as Contra.
     {
-      intros x (x'&Hx&_) % in_map_iff. symmetry in Hx. apply inj_inv in Hx. congruence.
+      intros x (x'&Hx&_) % in_map_iff. symmetry in Hx. apply tretract_inv in Hx. congruence.
     }
     rewrite C in Contra. apply (Contra t); auto.
   Qed.
@@ -205,39 +205,39 @@ Section Encode_Map.
   Proof.
     intros. revert r1 r2 H.
     induction (doubleListInduction R1 R2); intros r1 r2 H; cbn in *.
-    - rewrite !app_nil_r in H. apply map_injective in H. apply encode_injective in H. intuition. congruence. apply inj_f_injective.
+    - rewrite !app_nil_r in H. apply map_injective in H. apply encode_injective in H. intuition. congruence. apply tretract_f_injective.
     - destruct (g y) eqn:E.
-      + apply inj_inv in E as ->.
+      + apply tretract_inv in E as ->.
         replace (f e :: ys) with (map f [e] ++ ys) in H by reflexivity.
         rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
         pose proof (IHd _ _ H) as (->&IH). rewrite !app_nil_r in *.
         rewrite map_app in IH. rewrite <- app_assoc in IH. auto.
       + rewrite !app_nil_r in *. exfalso. replace (y :: ys) with ([y] ++ ys) in H by reflexivity. eapply map_app_eq_nil_None; eauto.
     - destruct (g x) eqn:E.
-      + apply inj_inv in E as ->.
+      + apply tretract_inv in E as ->.
         replace (f e :: xs) with (map f [e] ++ xs) in H by reflexivity.
         rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
         pose proof (IHd _ _ H) as (->&IH). rewrite !app_nil_r in *.
         rewrite map_app in IH. rewrite <- app_assoc in IH. auto.
       + rewrite !app_nil_r in *. exfalso. replace (x :: xs) with ([x] ++ xs) in H by reflexivity. eapply map_app_eq_nil_None; eauto.
     - destruct (g x) eqn:E1, (g y) eqn:E2.
-      + apply inj_inv in E1 as ->. apply inj_inv in E2 as ->.
+      + apply tretract_inv in E1 as ->. apply tretract_inv in E2 as ->.
         replace (f e  :: xs) with (map f [e ] ++ xs) in H by reflexivity.
         replace (f e0 :: ys) with (map f [e0] ++ ys) in H by reflexivity.
         rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H. symmetry in H.
         rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H. symmetry in H.
         pose proof (IHd1 _ _ H) as (->&IH). rewrite !map_app in IH. rewrite <- !app_assoc in IH. split; auto.
-      + apply inj_inv in E1 as ->.
+      + apply tretract_inv in E1 as ->.
         replace (f e  :: xs) with (map f [e ] ++ xs) in H by reflexivity.
         rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
         pose proof (IHd3 _ _ H) as (->&IH). rewrite !map_app in IH. rewrite <- !app_assoc in IH. split; auto.
-      + apply inj_inv in E2 as ->.
+      + apply tretract_inv in E2 as ->.
         replace (f e  :: ys) with (map f [e ] ++ ys) in H by reflexivity.
         rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
         pose proof (IHd2 _ _ H) as (->&IH). rewrite !map_app in IH. rewrite <- !app_assoc in IH. split; auto.
       + replace (x :: xs) with ([x] ++ xs) in H by reflexivity. replace (y :: ys) with ([y] ++ ys) in H by reflexivity.
         pose proof (map_map_app_eq_None_None E1 E2 H) as (L&->&->). apply map_injective in L. now apply encode_injective in L as (->&->).
-        apply inj_f_injective.
+        apply tretract_f_injective.
   Qed.
 
 
@@ -287,14 +287,14 @@ Section Encode_Sum.
   Variable (X Y : Type).
   Variable (sig tau : finType).
   Hypothesis (code_X : codeable sig X) (code_Y : codeable tau Y).
-  
-  Definition inj_l_l := injection_fun_compose (inl_inj sig tau) (inl_inj _ bool).
-  Definition inj_l_r := injection_fun_compose (inr_inj sig tau) (inl_inj _ bool).
+
+  Definition retract_l_l := tretract_compose (inl_inj sig tau) (inl_inj _ bool).
+  Definition retract_l_r := tretract_compose (inr_inj sig tau) (inl_inj _ bool).
 
   Definition encode_sum (a : X + Y) : list (sig + tau + bool) :=
     match a with
-    | inl x => inr true  :: encode (codeable := Encode_Map code_X inj_l_l) x
-    | inr y => inr false :: encode (codeable := Encode_Map code_Y inj_l_r) y
+    | inl x => inr true  :: encode (codeable := Encode_Map code_X retract_l_l) x
+    | inr y => inr false :: encode (codeable := Encode_Map code_Y retract_l_r) y
     end.
 
   Lemma encode_sum_injective :
@@ -302,8 +302,8 @@ Section Encode_Sum.
       encode_sum v1 ++ r1 = encode_sum v2 ++ r2 -> v1 = v2 /\ r1 = r2.
   Proof.
     intros [x1|y1] [x2|y2] r1 r2; cbn; intros H; inv H.
-    - now pose proof (@encode_map_injective _ sig _ code_X inj_l_l x1 x2 r1 r2 H1) as (->&->).
-    - now pose proof (@encode_map_injective _ tau _ code_Y inj_l_r y1 y2 r1 r2 H1) as (->&->).
+    - now pose proof (@encode_map_injective _ sig _ code_X retract_l_l x1 x2 r1 r2 H1) as (->&->).
+    - now pose proof (@encode_map_injective _ tau _ code_Y retract_l_r y1 y2 r1 r2 H1) as (->&->).
   Qed.
 
   Instance Encode_Sum : codeable (FinType (EqType (sig + tau + bool))) (X + Y) := mk_codeable encode_sum_injective.
