@@ -23,8 +23,9 @@ TM/Combinators/While.v
 # Nie wieder:
 # TM/Compound.v
 
-TM/Injection.v
-TM/LiftNM.v
+# TM/Injection.v
+TM/Retract.v
+TM/LiftMN.v
 TM/LiftSigmaTau.v
 
 TM/Code/Code.v
