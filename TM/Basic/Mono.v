@@ -3,6 +3,7 @@ Require Import TM.TM.
 Open Scope vector_scope.
 
 Definition threeStates := FinType (EqType (Fin.t 3)).
+Definition fourStates := FinType (EqType (Fin.t 4)).
 
 Section Mk_Mono.
   Variable (sig states : finType).
@@ -31,30 +32,43 @@ Section test_char.
   Variable sig : finType.
   Variable f : sig -> bool.
 
-  Definition tc_start : threeStates := Fin.F1.
-  Definition tc_true : threeStates := Fin.FS (Fin.F1).
-  Definition tc_false: threeStates := Fin.FS (Fin.FS (Fin.F1)).
+  Definition tc_start : fourStates := Fin.F1.
+  Definition tc_true  : fourStates := Fin.FS (Fin.F1).
+  Definition tc_false : fourStates := Fin.FS (Fin.FS (Fin.F1)).
+  Definition tc_None  : fourStates := Fin.FS (Fin.FS (Fin.FS Fin.F1)).
 
   Definition Test_Char_TM :=
-    Mk_Mono_TM (states := threeStates)
-      (fun s c => (match c with Some e => if f e then tc_true else tc_false | None => tc_false end , (None, TM.N) ))
+    Mk_Mono_TM (states := fourStates)
+      (fun s c => (match c with Some e => if f e then tc_true else tc_false | None => tc_None end , (None, TM.N) ))
       tc_start (fun x => negb (Fin.eqb x tc_start)).
 
+  Definition Test_Char_p : fourStates -> option bool :=
+    fun x => if Fin.eqb x tc_true then Some true else
+            if Fin.eqb x tc_false then Some false else
+              None.
+
+  Definition TEST_CHAR := (Test_Char_TM; Test_Char_p).
+
   Lemma test_chr_Sem :
-    Test_Char_TM ⊨c(fun x : threeStates => Fin.eqb x tc_true,1)
+    TEST_CHAR ⊨c(1)
                  Mk_R_p
-                 (if? (@IdR _ ∩ (fun t t' => exists c, current t = Some c /\ f c = true))
-                      ! (@IdR _ ∩ ((fun t t' => current t = None) ∪ (fun t t' => exists c, current t = Some c /\ f c = false)))).
+                 (ignoreParam (@IdR _) ∩
+                              (fun (t : tape sig) (Y : option bool * tape sig) =>
+                                 match Y with
+                                   (Some b, t2) => exists c, current t = Some c /\ f c = b
+                                 | (None, t2) => current t = None
+                                 end
+                              )
+                 ).
   Proof.
-    hnf. intros intapes. destruct_tapes. cbn in *.
-    destruct (current _) eqn:E.
-    destruct (f e) eqn:Ef.
-    - exists (mk_mconfig tc_true  [| h |]). cbn in *. repeat split; hnf; eauto.
-    - exists (mk_mconfig tc_false [| h |]). cbn in *. repeat split; hnf; eauto.
-    - exists (mk_mconfig tc_false [| h |]). cbn in *. repeat split; hnf; eauto.
+    hnf. intros intapes. destruct_tapes. cbn.
+    destruct (current h) eqn:E; cbn.
+    - destruct (f e) eqn:Ef; cbn.
+      + exists (mk_mconfig tc_true  [| h |]). cbn in *. repeat split; hnf; eauto.
+      + exists (mk_mconfig tc_false [| h |]). cbn in *. repeat split; hnf; eauto.
+    - exists (mk_mconfig tc_None [| h |]). cbn in *. repeat split; hnf; eauto.
   Qed.
 
- Definition Test_Chr := (Test_Char_TM ; fun x : threeStates => Fin.eqb x tc_true).                            
 End test_char.
 
 
