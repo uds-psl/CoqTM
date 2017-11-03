@@ -6,19 +6,20 @@ Section While.
   Variable n : nat.
   Variable sig : finType.
 
-  Variable pM : { M : mTM sig n & states M -> bool }.
-  
+  Variable F : finType.
+  Variable pM : { M : mTM sig n & states M -> bool * F }.
+
   Definition while_trans :
     (TM.states (projT1 pM)) * Vector.t (option sig) n ->
     (TM.states (projT1 pM)) * Vector.t (option sig * move) n :=
     fun st => let (s,a) := st in
-           if projT2 pM s && halt s then (start (projT1 pM),null_action) else trans st.
+           if fst (projT2 pM s) && halt s then (start (projT1 pM),null_action) else trans st.
 
   Definition While : mTM sig n :=
     Build_mTM while_trans (start (projT1 pM))
-              (fun s => halt s && negb (projT2 pM s)).
+              (fun s => halt s && negb (fst (projT2 pM s))).
 
-  Definition WHILE := (While; fun _ => tt).
+  Definition WHILE := (While; fun s => snd (projT2 pM s)).
 
   Local Arguments loopM {_ _} _ _ _.
   Local Arguments halt {_ _} _ _.
@@ -32,8 +33,9 @@ Section While.
  
   Lemma While_split i res c:
     loopM While i c = Some res ->
-    (exists i1 x1 i2,  loopM (projT1 pM) i1 c = Some x1 /\
-                     loopM While i2 x1 = Some res /\ i = i1 + i2 ).
+    exists i1 x1 i2,
+      loopM (projT1 pM) i1 c = Some x1 /\
+      loopM While i2 x1 = Some res /\ i = i1 + i2.
   Proof.
     intros.
     unfold loopM in H.
@@ -47,8 +49,8 @@ Section While.
     -intros b. unfold halt at 2. cbn. now intros ->. 
   Qed.
 
-  Lemma While_true_split i (x : mconfig _ (states While) _) oenc :
-    halt (projT1 pM) (cstate x) = true  -> projT2 pM (cstate x) = true->
+  Lemma While_true_split i (x : mconfig _ (states While) _) oenc (f : F) :
+    halt (projT1 pM) (cstate x) = true  -> projT2 pM (cstate x) = (true, f) ->
     loopM While i x = Some oenc ->
     exists i', i = 1+i' /\ loopM While i' (initc While (ctapes x)) = Some oenc.
   Proof.
@@ -60,10 +62,10 @@ Section While.
     rewrite hx,px. cbn -[tape_move_multi null_action]. now rewrite tape_move_null_action.
   Qed.
 
-  Lemma While_true_merge i1 i2 (t x1 : mconfig _ (states While) _) oenc :
+  Lemma While_true_merge i1 i2 (t x1 : mconfig _ (states While) _) oenc (f : F) :
     loopM (projT1 pM) i1 t = Some x1 ->
     loopM While i2 (initc While (ctapes x1)) = Some oenc ->
-    (projT2 pM) (cstate x1) = true ->
+    (projT2 pM) (cstate x1) = (true, f) ->
     loopM While (i1+(1+i2)) t = Some oenc.
   Proof.
     intros Eq1 Eq2 px1.
@@ -81,9 +83,9 @@ Section While.
      rewrite hx1,px1;cbn -[tape_move_multi null_action]. now rewrite tape_move_null_action. 
   Qed.
 
-   Lemma While_false_merge i1 (t : mconfig _ (states While) _) oenc :
+   Lemma While_false_merge i1 (t : mconfig _ (states While) _) oenc (f : F) :
     loopM (projT1 pM) i1 t = Some oenc ->
-    projT2 pM (cstate oenc) = false ->
+    projT2 pM (cstate oenc) = (false, f) ->
     loopM While i1 t = Some oenc.
   Proof.
     intros Eq px1.
@@ -98,28 +100,39 @@ Section While.
     intros ? ? H ?. inv H. eexists. split;[ |reflexivity].
     cbn in H0. f_equal. unfold step at 2;cbn. rewrite H0. now rewrite andb_false_r.  reflexivity. 
   Qed.
-    
-  Lemma While_Realise (R : Rel _ (bool * _)) :
+
+
+  Lemma While_Realise (R : Rel _ (bool * F * _)) :
     pM ⊫ R ->
-    WHILE ⊫ ( (star (R |_ true)) ∘ (ignoreParam (R |_ false))).
+    WHILE ⊫ ( (star (⋃_f R |_ (true, f))) ∘ (ignoreParam (⋃_f R |_ (false, f)))).
   Proof.
     intros HR t1 i1 oenc2 eq. unfold initc in eq.
-    revert t1 eq; apply complete_induction with (x:=i1); clear i1; intros i1 IH t1 eq.
-    apply While_split in eq as (i2&x0&i3&Eq1&Eq2&->).
-    assert (hx0 : halt (projT1 pM) (cstate x0) = true)
-      by (eapply loop_fulfills_p in Eq1;  destruct halt;auto).
-    destruct (projT2 pM (cstate x0)) eqn: px0.
-    -apply While_true_split in Eq2 as (i' & -> & Eq2);[ |assumption..].
-     apply IH in Eq2;[ |omega].
-     eapply use_subrel.
-     rewrite <- star_rcomp_idem. rewrite rcomp_assoc. reflexivity.
-     exists (ctapes x0);split.
-     +apply R_in_star.
-      apply HR in Eq1. cbn in Eq1. now rewrite px0 in Eq1.
-     +assumption.
-    -exists t1. split;[now apply starR| ]. hnf.
-     unfold loopM in Eq2; rewrite loop_fulfills_p_0 in Eq2;[ |cbn;now rewrite hx0, px0]. inv Eq2.
-     apply HR in Eq1. cbn in Eq1. now rewrite px0 in Eq1.
+    revert t1 eq; apply complete_induction with (x := i1); clear i1; intros i1 IH t1 eq.
+    eapply While_split in eq as (i2&x0&i3&Eq1&Eq2&->). (* cbn -[WHILE] in *. *)
+    assert (halt (projT1 pM) (cstate x0) = true) as hx0.
+    {
+      eapply loop_fulfills_p in Eq1. destruct halt; auto.
+    }
+    assert (halt While (cstate oenc2) = true) as Hoenc2.
+    {
+      eapply loop_fulfills_p in Eq2. destruct halt; auto.
+    }
+    apply andb_true_iff in Hoenc2 as (Hoenc2&Hoenc2'). apply negb_true_iff in Hoenc2'.
+    destruct (projT2 pM (cstate oenc2)) as [b f] eqn:Eoenc2.
+    destruct b; cbn in Hoenc2'; auto; clear Hoenc2'.
+    destruct (projT2 pM (cstate x0)) as [bx0 fx0] eqn:px0.
+    destruct bx0.
+    - eapply While_true_split in Eq2 as (i' & -> & Eq2); eauto.
+      apply IH in Eq2; [ | omega]. hnf in Eq2.
+      destruct Eq2 as (y&Eq2&Eq2'). hnf in Eq2, Eq2'. destruct Eq2' as (f'&Eq2'). hnf in Eq2'.
+      eapply use_subrel.
+      rewrite <- star_rcomp_idem. rewrite rcomp_assoc. reflexivity.
+      hnf. exists (ctapes x0). split.
+      + apply R_in_star. apply HR in Eq1. cbn in Eq1. rewrite px0 in Eq1. hnf. eauto.
+      + repeat (econstructor; hnf; eauto).
+    - hnf. exists t1. split; [now apply starR | ]. hnf.
+      unfold  loopM in Eq2. rewrite loop_fulfills_p_0 in Eq2; [ | cbn; now rewrite px0, hx0]. inv Eq2.
+      apply HR in Eq1. cbn in Eq1. rewrite px0 in Eq1. repeat (econstructor; hnf; eauto).
   Qed.
 
 
@@ -128,11 +141,11 @@ Section While.
     Variable T : Rel (tapes sig n) nat.
     Hypothesis Term : projT1 pM ⇓ T.
     Inductive WhileTerm : (tapes sig n) -> nat -> Type :=
-    | term_false (i : nat) (t1 : tapes sig n) (p : T t1 i) :
-        projT2 pM (cstate (proj1_sig (Term p))) = false ->
+    | term_false (i : nat) (t1 : tapes sig n) (p : T t1 i) (f : F) :
+        projT2 pM (cstate (proj1_sig (Term p))) = (false, f) ->
         WhileTerm t1 i
-    | term_true (i j : nat) (t1 : tapes sig n) (p : T t1 i) :
-        projT2 pM (cstate (proj1_sig (Term p))) = true ->
+    | term_true (i j : nat) (t1 : tapes sig n) (p : T t1 i) (f : F) :
+        projT2 pM (cstate (proj1_sig (Term p))) = (true, f) ->
         WhileTerm (ctapes (proj1_sig (Term p))) j ->
         WhileTerm t1 (i + (1 + j)).
 
@@ -140,10 +153,10 @@ Section While.
          While ⇓ WhileTerm.
     Proof.
       hnf. intros t1 k H.
-      induction H as [i t1 p H1 | i j t1 p H1 H2 IH].
+      induction H as [i t1 p H1 f | i j t1 p f H1 H2 IH].
       - hnf in Term.
-        destruct (Term p) as (conf'&H) eqn:E. exists conf'. apply While_false_merge; auto.
-      - destruct (Term p) as (conf'&H) eqn:E.
+        destruct (Term p) as (conf'&H) eqn:E. exists conf'. eapply While_false_merge; eauto.
+      - destruct (Term p) as (conf'&H) eqn:E. cbn in *.
         destruct IH as (confIH&IH). exists confIH. eapply While_true_merge; eauto.
     Qed.
 
