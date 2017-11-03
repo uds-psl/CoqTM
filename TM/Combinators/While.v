@@ -102,13 +102,13 @@ Section While.
   Qed.
 
 
-  Lemma While_Realise (R : Rel _ (bool * F * _)) :
+  Lemma While_WRealise (R : Rel _ (bool * F * _)) :
     pM ⊫ R ->
-    WHILE ⊫ ( (star (⋃_f R |_ (true, f))) ∘ (ignoreParam (⋃_f R |_ (false, f)))).
+    WHILE ⊫ ( (star (⋃_f R |_ (true, f))) ∘ (fun t '(f, t') => R t (false, f, t'))).
   Proof.
     intros HR t1 i1 oenc2 eq. unfold initc in eq.
     revert t1 eq; apply complete_induction with (x := i1); clear i1; intros i1 IH t1 eq.
-    eapply While_split in eq as (i2&x0&i3&Eq1&Eq2&->). (* cbn -[WHILE] in *. *)
+    eapply While_split in eq as (i2&x0&i3&Eq1&Eq2&->).
     assert (halt (projT1 pM) (cstate x0) = true) as hx0.
     {
       eapply loop_fulfills_p in Eq1. destruct halt; auto.
@@ -124,7 +124,7 @@ Section While.
     destruct bx0.
     - eapply While_true_split in Eq2 as (i' & -> & Eq2); eauto.
       apply IH in Eq2; [ | omega]. hnf in Eq2.
-      destruct Eq2 as (y&Eq2&Eq2'). hnf in Eq2, Eq2'. destruct Eq2' as (f'&Eq2'). hnf in Eq2'.
+      destruct Eq2 as (y&Eq2&Eq2'). hnf in Eq2, Eq2'.
       eapply use_subrel.
       rewrite <- star_rcomp_idem. rewrite rcomp_assoc. reflexivity.
       hnf. exists (ctapes x0). split.
@@ -132,7 +132,7 @@ Section While.
       + repeat (econstructor; hnf; eauto).
     - hnf. exists t1. split; [now apply starR | ]. hnf.
       unfold  loopM in Eq2. rewrite loop_fulfills_p_0 in Eq2; [ | cbn; now rewrite px0, hx0]. inv Eq2.
-      apply HR in Eq1. cbn in Eq1. rewrite px0 in Eq1. repeat (econstructor; hnf; eauto).
+      apply HR in Eq1. cbn in Eq1. cbn. rewrite px0. cbn. auto. rewrite px0 in Eq1. auto.
   Qed.
 
 
