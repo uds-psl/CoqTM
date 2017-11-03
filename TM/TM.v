@@ -263,19 +263,19 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     specialize (H t k H1). firstorder.
   Qed.
   
-  Lemma WRealise_to_Realise n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
+  Lemma WRealise_to_Realise n (F : finType) (pM : { M : mTM n & (states M -> F) }) R :
     projT1 pM ⇓⇓ -> pM ⊫ R -> pM ⊨ R.
   Proof.
     intros H1 H2. intros input. specialize (H1 input) as (k&c&?). eauto.
   Qed.
 
-  Lemma Realise_TerminatesAlways n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
+  Lemma Realise_TerminatesAlways n (F : finType) (pM : { M : mTM n & (states M -> F) }) R :
     pM ⊨ R -> projT1 pM ⇓⇓.
   Proof.
     intros H. intros t. specialize (H t) as (outc&k&H&H'). firstorder.
   Qed.
 
-  Lemma Realise_iff n (F : finType) (f : F) (pM : { M : mTM n & (states M -> F) }) R :
+  Lemma Realise_iff n (F : finType) (pM : { M : mTM n & (states M -> F) }) R :
     projT1 pM ⇓⇓ /\ pM ⊫ R <-> pM ⊨ R.
   Proof.
     split.
