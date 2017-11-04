@@ -182,11 +182,26 @@ Section move_to_symbol.
     | midtape l1 c l2 => time_until_symbol_list (c :: l2)
     end.
 
+  Fixpoint time_until_symbol_l (t : tape sig) :=
+    match t with
+    | niltape _ => 2
+    | leftof c r => 2
+    | rightof c r => 2
+    | midtape l1 c l2 => time_until_symbol_list (c :: l1)
+    end.
+
+  Definition time_until_symbol D (t : tape sig) :=
+    match D with
+    | L => time_until_symbol_l t
+    | R => time_until_symbol_r t
+    | N => 0
+    end.
+  
 
   (* TODO: Make this proof/excution faster, by inserting counters in WhileTerm *)
   (* It can also be made faster by replacing the read machine by a machine that reads and terminates in the right state. *)
-  Lemma move_to_symbol_R_term :
-    projT1 (MoveToSymbol R) ⇓ (fun x i => i = 5 * time_until_symbol_r (x[@Fin.F1])).
+  Lemma MoveToSymbol_R_Term :
+    projT1 (MoveToSymbol R) ⇓ (fun x i => i = 4 * time_until_symbol_r (x[@Fin.F1])).
   Proof.
     eapply TerminatesIn_monotone.
     - cbn -[M1]. eapply While_Terminates.
@@ -207,34 +222,31 @@ Section move_to_symbol.
           -- cbn. eauto.
         * cbn. eauto.
       + unfold M1. unfold MATCH; cbn [projT1]; cbn [projT2]. destruct (f e) eqn:E.
-        * cbn. rewrite E. cbn. replace 5 with (3 + S 1) by omega.
+        * cbn. rewrite E. cbn. replace 4 with (2 + S 1) by omega.
           eapply term_false. eapply Match_Terminates''.
           -- cbn. rewrite E. cbn. eauto.
           -- cbn. eauto.
           -- cbn. eauto.
         * revert l e E. induction l0 as [ | r rs IH]; intros ls e E.
-          -- simpl. rewrite E. cbn. replace 10 with (4 + S 5) by omega. eapply term_true.
+          -- simpl. rewrite E. cbn. replace 8 with (3 + S 4) by omega. eapply term_true.
              ++ simpl. cbn. rewrite E. cbn. eauto.
              ++ simpl. eauto.
              ++ simpl. eapply term_false.
                 ** cbn. eauto.
                 ** cbn. eauto.
           -- simpl time_until_symbol_r. rewrite E.
-             assert (5 * S (if f r then 1 else S (time_until_symbol_list rs)) =
-                     4 + (S (if f r then 5 else 5 + 5 * (time_until_symbol_list rs)))) as ->.
-             {
-               destruct (f r); simpl; omega.
-             }
+             assert (4 * S (if f r then 1 else S (time_until_symbol_list rs)) =
+                     3 + (S (if f r then 4 else 4 + 4 * (time_until_symbol_list rs)))) as ->
+                 by (destruct (f r); simpl; omega).
              eapply term_true.
              ++ cbn. rewrite E. cbn. eauto.
              ++ cbn. eauto.
              ++ destruct (f r) eqn:E2.
-                ** replace 5 with (4 + S 0) by omega. eapply term_false.
+                ** replace 4 with (3 + S 0) by omega. eapply term_false.
                    --- cbn. rewrite E2. cbn. eauto.
                    --- cbn. eauto.
                 ** specialize (IH (e :: ls) r E2). cbn -[mult] in *. rewrite E2 in *.
-                   replace (S (S (S (S (S (5 * time_until_symbol_list rs)))))) with (5 * S (time_until_symbol_list rs)) by omega.
-                   apply IH.
+                   now replace (S (S (S (S (4 * time_until_symbol_list rs))))) with (4 * S (time_until_symbol_list rs)) by omega.
   Qed.
 
 
@@ -242,7 +254,7 @@ Section move_to_symbol.
     MoveToSymbol R ⊨ MoveToSymbol_Rel R.
   Proof.
     eapply WRealise_to_Realise.
-    - cbn. eapply TerminatesIn_TerminatesAlways; auto. eapply move_to_symbol_R_term. eauto.
+    - cbn. eapply TerminatesIn_TerminatesAlways; auto. eapply MoveToSymbol_R_Term. eauto.
     - apply MoveToSymbol_WRealise. tauto.
   Qed.
 
