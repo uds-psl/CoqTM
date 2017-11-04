@@ -31,7 +31,8 @@ TM/IsoTrans.v
 
 TM/Code/Code.v
 TM/Code/CodeTM.v
-TM/Code/BoolTM.v
+# TM/Code/BoolTM.v
 # TM/Code/FinTM.v
 
 TM/Compound/MoveToSymbol.v
+TM/Compound/FindSymbol.v

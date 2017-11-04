@@ -11,7 +11,7 @@ Section move_to_symbol.
   Definition M1 D : { M : mTM sig 1 & states M -> bool * bool } :=
     MATCH (TEST_CHAR f)
           (fun b => match b with
-                 | Some false => Move sig D ;; mono_Nop sig (true, false) (* Not found yet: move on and continue *)
+                 | Some false => Move sig D (true, false) (* Not found yet: move on and continue *)
                  | Some true => mono_Nop sig (false, true) (* Found: stop *)
                  | None => mono_Nop sig (false, false) (* Reached end of tape: stop *)
                  end).
@@ -68,30 +68,25 @@ Section move_to_symbol.
       instantiate (1 := fun o => match o with Some true => _ | Some false => _ | None => _ end).
       intros [ [ | ] | ].
       + eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
-      + eapply Realise_WRealise. eapply Seq_Realise; eapply RealiseIn_Realise. eapply Move_Sem. eapply mono_Nop_Sem.
+      + eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Move_Sem.
       + eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
     - intros tin (bout, tout). cbn in bout. intros H. hnf in *. destruct H as (t1&H1&f'&t2&(H2&H3)&H4). hnf in *.
       induction H1 as [x | x y z IH1 IH2 IH3].
       + destruct f'.
         * destruct H3 as (s&H3&H3'). subst. destruct (f s) eqn:E; hnf in *.
           -- destruct H4 as (H4&H4'). hnf in *. subst. inv H4. cbn. erewrite to_symbol_r_current_Some; eauto. now rewrite H2.
-          -- destruct H4 as ((b2&t3)&H4&H4'). hnf in *. destruct b2 eqn:E2; hnf in *.
-             ++ destruct H4 as (H41&c&H42). destruct H4' as (H4&->); hnf in *. congruence.
-             ++ destruct H4 as (H41&H42); hnf in *. destruct H4' as (H4&->); hnf in *. congruence.
+          -- destruct H4 as (H4&_). congruence.
         * hnf in *. destruct H4 as (H4&->); hnf in *. inv H4. rewrite <- H2. now erewrite to_symbol_r_current_None; eauto.
       + hnf in *. rewrite H2 in *. clear H2.
         destruct IH1 as (b1&ob&t&(H1&H1')&H1''). hnf in *. rewrite H1 in *; clear H1. destruct ob as [ [ ] | ]; hnf in *.
         * destruct H1' as (s&H1&H1'). hnf in *. destruct H1'' as (H1''&->). hnf in *. congruence.
-        * destruct H1' as (s&H1&H2). destruct H1'' as ((q&t3)&H5&H6). hnf in *. destruct H6 as (H6&H7). hnf in *. subst. inv H6. 
-          specialize (IH3 eq_refl). destruct q; hnf in *.
-          -- destruct H5 as (H5&s'&H6). hnf in *.
-             destruct f'.
-             ++ destruct H3 as (s''&H3&H3'); subst. rewrite IH3; [clear IH3 | eauto]. destruct (f s''); hnf in *.
-                ** destruct H4 as (H4&->). hnf in *. inv H4. rewrite H1 in H6. inv H6. erewrite (to_symbol_r_move_false H1); eauto.
-                ** destruct H4 as ((f2, t3)&H4&H7). hnf in *. destruct H7 as (H7&H8). hnf in *. congruence.
-             ++ specialize (IH3 H3). rewrite IH3. hnf in *. destruct H4 as (H4&->). hnf in *. inv H4.
-                rewrite H5. symmetry. eapply (to_symbol_r_move_false H1); eauto.
-          -- destruct H5 as (H5&->). congruence.
+        * destruct H1' as (s&H1&H2). destruct H1'' as (H1'''&H''). inv H1'''. hnf in *.
+          specialize (IH3 eq_refl). destruct f'.
+          -- destruct H3 as (s''&H3&H3'); subst. rewrite IH3; [clear IH3 | eauto]. destruct (f s''); hnf in *.
+             ++ destruct H4 as (H4&->). hnf in *. inv H4. erewrite (to_symbol_r_move_false H1); eauto.
+             ++ destruct H4 as (H4&_). congruence.
+          -- rewrite H'' in *. hnf in *. destruct H4 as (H4&->). inv H4.
+             symmetry. erewrite (to_symbol_r_move_false H1); eauto. rewrite IH3; eauto. congruence.
         * destruct H1'' as (H1''&->). hnf in *. congruence.
   Qed.
 
@@ -264,6 +259,5 @@ Section move_to_symbol.
       + eapply move_to_symbol_r_Realise.
     - hnf. intros t (y&t') H. hnf in *. destruct_tapes. cbn in *. now eapply to_symbol_mirror'.
   Admitted.
-
 
 End move_to_symbol.

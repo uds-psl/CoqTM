@@ -76,6 +76,7 @@ Section Write.
 
   Variable sig : finType.
   Variable c : sig.
+  Variable (F : finType) (f : F).
 
   Definition Write_TM : mTM sig 1.
   Proof.
@@ -89,9 +90,11 @@ Section Write.
     - apply id.
   Defined.
   
-  Definition Write := (Write_TM; fun _ => tt).
+  Definition Write := (Write_TM; fun _ => f).
 
-  Definition Write_R := Mk_R_p (F := FinType (EqType unit)) (ignoreParam (fun t t' => t' = midtape (left t) c (right t))).
+  Definition Write_R :=
+    Mk_R_p (F := F)
+           (fun t '(y, t') => y = f /\ t' = midtape (left t) c (right t)).
 
   Lemma Write_Sem :
     Write ⊨c(1) Write_R.
@@ -105,31 +108,27 @@ Section Move.
 
   Variable sig : finType.
   Variable D : TM.move.
+  Variable (F : finType) (f : F).
 
-  Definition m_start : threeStates := Fin.F1.
-  Definition m_true : threeStates := Fin.FS (Fin.F1).
-  Definition m_false : threeStates := Fin.FS (Fin.FS (Fin.F1)).
-
-  Definition move_trans : threeStates -> option sig -> threeStates * (option sig * move) :=
-    fun s p => match p with None => (m_false, (None, TM.N)) | Some c => (m_true, (None, D)) end.
+  Definition move_trans : bool -> option sig -> bool * (option sig * move) := fun _ _ => (true, (None, D)).
   
   Definition Move_TM : mTM sig 1 :=
-    Mk_Mono_TM move_trans m_start (fun x => negb (Fin.eqb x m_start)).
+    Mk_Mono_TM move_trans false (fun q => q).
 
-  Definition Move := (Move_TM; (fun x : threeStates => Fin.eqb x m_true)).
+  Definition Move := (Move_TM; (fun x => f)).
+
+  Definition isLeftOf  (t : tape sig) := match t with leftof  _ _ =>  True | _ => False end.
+  Definition isRightOf (t : tape sig) := match t with rightof _ _ => True  | _ => False end.
+  Definition isNiltape (t : tape sig) := match t with niltape _ =>   True  | _ => False end.
   
-  Definition Move_R := Mk_R_p
-    (if? (fun (t t' : tape sig) => t' = tape_move_mono t (None, D) /\ exists c, current t = Some c)
-       ! ( (fun t t' => current t = None)) ∩ @IdR _ ).
-
+  Definition Move_R :=
+    Mk_R_p (F := F)
+           (fun t '(y, t') => y = f /\ t' = tape_move (sig := sig) t D).
+  
   Lemma Move_Sem :
     Move ⊨c(1) Move_R.
   Proof.
-    unfold Mk_R_p, Move_R. hnf. intros tapes. destruct_tapes. cbn in *.
-    unfold Move_TM, Move, step, m_start, m_true, m_false in *. cbn in *.
-    destruct (current h) eqn:E; cbn in *.
-    - exists (mk_mconfig m_true (tape_move_multi [| h |] [|(None, D)|])). cbn in *. repeat split; hnf; eauto.
-    - exists (mk_mconfig m_false [| h |]). cbn in *. repeat split; hnf; eauto.
+    unfold Mk_R_p, Move_R. hnf. intros tapes. destruct_tapes. cbn in *. eauto.
   Qed.
 
 End Move.
@@ -210,7 +209,7 @@ Section Mono_Nop.
 
   Definition mono_Nop := (mono_nop; fun _ => f).
 
-  Definition mono_Nop_R := (↑ (=f) ⊗ (@IdR (tapes sig 1))).
+  Definition mono_Nop_R := (fun (t : tapes sig 1) '(y, t') => y = f /\ t = t').
 
   Lemma mono_Nop_Sem: mono_Nop ⊨c(0) mono_Nop_R.
   Proof.
