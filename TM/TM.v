@@ -316,6 +316,14 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     intros HwR HR t.  destruct (HR t) as (outc & ?). exists outc. firstorder.
   Qed.
 
+  Lemma RealiseIn_Terminates n (F : finType) (pM : { M : mTM n & (states M -> F) }) R (k : nat) :
+    pM ⊨c(k) R -> projT1 pM ⇓ (fun t j => j >= k).
+  Proof.
+    intros H1 t j H2. specialize (H1 t) as (outc&H1&_). exists outc.
+    unfold loopM in *. apply loop_ge with (k1 := k); assumption.
+  Qed.
+
+
   (** ** Canonical relations *)
 (*
   Definition R_mTM :=

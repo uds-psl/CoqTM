@@ -7,8 +7,6 @@ Section move_to_symbol.
   Variable sig : finType.
   Variable f : sig -> bool.
 
-  Print Mono.
-
   Definition M1 D : { M : mTM sig 1 & states M -> bool * bool } :=
     MATCH (TEST_CHAR f)
           (fun b => match b with
@@ -96,74 +94,81 @@ Section move_to_symbol.
         * destruct H1'' as (H1''&->). hnf in *. congruence.
   Qed.
 
-  Fixpoint time_symbol_list l1 l2 :=
-    match (l2,l1) with
-    | ([],[]) => 1
-    | ([], c :: l) => 1
-    | (c :: l, l1) => 1 + if f c then 0 else 1 + time_symbol_list (c :: l1) l
+  Fixpoint time_until_symbol_list (ls : list sig) :=
+    match ls with
+    | nil => 1
+    | c :: ls => if f c then 1 else 1 + time_until_symbol_list ls
     end.
-
-  Fixpoint time_until_symbol t :=
+  
+  Fixpoint time_until_symbol_r (t : tape sig) :=
     match t with
-    | niltape _ => 1
-    | leftof c r => 1
-    | rightof c r => 1
-    | midtape l1 c l2 => time_symbol_list l1 (c :: l2)
+    | niltape _ => 2
+    | leftof c r => 2
+    | rightof c r => 2
+    | midtape l1 c l2 => time_until_symbol_list (c :: l2)
     end.
 
-  (*
-  Lemma m1_term_cannonical : { T : tapes sig 1 -> nat -> Type & projT1 (M1 R) ⇓ T }.
-  Proof.
-    eexists. cbn. eapply Match_Terminates.
-    instantiate (1 := fun o => match o with Some true => _ | Some false => _ | None => _ end). cbn.
-    intros [ [ | ] | ]; cbn.
-    - eapply 
-
-  Lemma move_to_sym_r_term_cannonical : { T : tapes sig 1 -> nat -> Type & projT1 (move_to_symbol R) ⇓ T }.
-  Proof.
-    eexists. cbn. eapply While_Terminates. Unshelve. shelve.
-    cbn. eapply Match_Terminates.
 
   Lemma move_to_symbol_r_term :
-    projT1 (move_to_symbol R) ⇓ (fun x i => i >= 3 * time_until_symbol (x[@Fin.F1])).
+    projT1 (move_to_symbol R) ⇓ (fun x i => i = 5 * time_until_symbol_r (x[@Fin.F1])).
   Proof.
     eapply TerminatesIn_monotone.
     - cbn -[M1]. eapply While_Terminates.
-      Unshelve. shelve. cbn.
-      pose proof (Match_Terminates (*T__f := fun o => match o with Some true => _ | Some false => _ | None => _ end*)) as L.
-      specialize (L 1 sig (FinType (EqType (bool)))).
-
-    
-    TMcorrect.
-    - unfold MoveR.
-      eapply functionalOn_lift.
-      hnf.
-      intros ? ? ? ([] & ? ) ([] & ?) ? ?; firstorder congruence.
-    - intros. intuition. unfold liftT in H.
-      destruct (get_at is_a_tape x) eqn:E.
-      + cbn in *. exists x, false, i. firstorder. left. rewrite E. firstorder. 
-      + cbn in *. exists x, false, i. firstorder. left. rewrite E. firstorder. 
-      + cbn in *. exists x, false, i. firstorder. left. rewrite E. firstorder. 
-      + cbn in *. destruct (f e) eqn:E2.
-        * exists x, false, i. firstorder. right. rewrite E. firstorder. 
-        * exists (tape_move_multi x (do_on_tape is_a_tape (None, TM.R))). exists true. exists 3.
-          { split. split.
-            * simpl_TM. now rewrite E. 
-            * intuition. simpl_TM.
-            * simpl_TM.
-              unfold liftT.
-              rewrite !get_at_tape_move_multi.
-              simpl_TM.
-              rewrite !E. simpl_TM. cbn. instantiate (1 := 0). cbn.
-              destruct l0; cbn in *; omega. 
-          }
-  Qed.
-  *)
-
+    - intros t k ->. destruct_tapes. destruct h.
+      + unfold M1. econstructor; unfold MATCH; cbn [projT1]; cbn [projT2].
+        * eapply Match_Terminates''.
+          -- cbn. eauto.
+          -- cbn. eauto.
+        * cbn. eauto.
+      + unfold M1. econstructor; unfold MATCH; cbn [projT1]; cbn [projT2].
+        * eapply Match_Terminates''.
+          -- cbn. eauto.
+          -- cbn. eauto.
+        * cbn. eauto.
+      + unfold M1. econstructor; unfold MATCH; cbn [projT1]; cbn [projT2].
+        * eapply Match_Terminates''.
+          -- cbn. eauto.
+          -- cbn. eauto.
+        * cbn. eauto.
+      + unfold M1. unfold MATCH; cbn [projT1]; cbn [projT2]. destruct (f e) eqn:E.
+        * cbn. rewrite E. cbn. replace 5 with (3 + S 1) by omega.
+          eapply term_false. eapply Match_Terminates''.
+          -- cbn. rewrite E. cbn. eauto.
+          -- cbn. eauto.
+          -- cbn. eauto.
+        * revert l e E. induction l0 as [ | r rs IH]; intros ls e E.
+          -- simpl. rewrite E. cbn. replace 10 with (4 + S 5) by omega. eapply term_true.
+             ++ simpl. cbn. rewrite E. cbn. eauto.
+             ++ simpl. eauto.
+             ++ simpl. eapply term_false.
+                ** cbn. eauto.
+                ** cbn. eauto.
+          -- simpl time_until_symbol_r. rewrite E.
+             assert (5 * S (if f r then 1 else S (time_until_symbol_list rs)) =
+                     4 + (S (if f r then 5 else 5 + 5 * (time_until_symbol_list rs)))) as ->.
+             {
+               destruct (f r); simpl; omega.
+             }
+             eapply term_true.
+             ++ cbn. rewrite E. cbn. eauto.
+             ++ cbn. eauto.
+             ++ destruct (f r) eqn:E2.
+                ** replace 5 with (4 + S 0) by omega. eapply term_false.
+                   --- cbn. rewrite E2. cbn. eauto.
+                   --- cbn. eauto.
+                ** specialize (IH (e :: ls) r E2). cbn in *. rewrite E2 in *.
+                   replace (S (S (S (S (S (time_until_symbol_list rs + (time_until_symbol_list rs + (time_until_symbol_list rs + (time_until_symbol_list rs + (time_until_symbol_list rs + 0))))))))))
+                     with (S (time_until_symbol_list rs) + (S (time_until_symbol_list rs) + (S (time_until_symbol_list rs) + (S (time_until_symbol_list rs) + (S (time_until_symbol_list rs) + 0)))))
+                          by omega.
+                   apply IH.
   
+Qed.
 
-  (* TODO: Move to left *)
-  (* Idee: Tape-Reversierung *)
+                               (* TODO: Make this proof faster, by inserting counters in WhileTerm *)
+                               (* It can also be made faster by replacing the read machine by a machine that reads and terminates in the right state. *)
+                               (* TODO: Move to left *)
+                               (* Idea: Tape-Reversierung *)
+
   
   Fixpoint to_symbol_list_l l1 l2 {struct l2} :=
     match (l2,l1) with

@@ -275,6 +275,14 @@ Section Match.
     intros H1 H2. hnf. exists (lift_confR conf2). hnf. eapply Match_merge; eauto.
   Qed.
 
+  Lemma Match_Terminates'' t conf1 k1 conf2 k2 :
+    M1 ↓↓ (t, k1, conf1) ->
+    projT1 (pMf (p1 (cstate conf1))) ↓↓ (ctapes conf1, k2, conf2) ->
+    Match ↓↓ (t, k1 + S k2, lift_confR conf2).
+  Proof.
+    intros H1 H2. hnf. eapply Match_merge; eauto.
+  Qed.
+
   Lemma Match_RealiseIn (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) (k1 k2 : nat) :
     pM1 ⊨c(k1) R1 ->
     (forall f : F, pMf f ⊨c(k2) R2 f) ->
