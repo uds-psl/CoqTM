@@ -234,27 +234,31 @@ Section Match.
 
   Section Match_Terminates.
 
-    Variable (T : (tapes sig n) -> nat -> Type).
-    Variable (T__f : forall x : F, (tapes sig n) -> nat -> Type).
+    Inductive Match_Terminates_Rel (t : tapes sig n) (k'' : nat) : Prop :=
+      Build_Match_Terminates_Rel
+        (term_k term_k' : nat)
+        (term_In : term_k + term_k' < k'')
+        (term_midconf : mconfig sig (states (projT1 pM1)) n)
+        (term_t1 : projT1 pM1 ↓↓ (t, term_k, term_midconf))
+        (term_endconf : mconfig _ _ _)
+        (term_m2 : projT1 (pMf (p1 (cstate term_midconf))) ↓↓ (ctapes term_midconf, term_k', term_endconf)) :
+        Match_Terminates_Rel t k''.
 
-    Hypothesis (Term : projT1 pM1 ⇓ T).
-    Hypothesis (Term__f : forall f : F, projT1 (pMf f) ⇓ T__f f).
-
-    Record Match_Terminates_Rel (t : tapes sig n) (k'' : nat) : Type :=
+    (* Record Match_Terminates_Rel (t : tapes sig n) (k'' : nat) : Prop :=
       {
         term_k : nat;
         term_k' : nat;
         term_In : term_k + term_k' < k'';
-        term_m1 : T t term_k;
-        term_m2 : T__f (p1 (cstate (proj1_sig (Term term_m1)))) (ctapes (proj1_sig (Term term_m1))) term_k';
-      }.
+        term_midconf : mconfig sig (states (projT1 pM1)) n;
+        term_t1 : projT1 pM1 ↓↓ (t, term_k, term_midconf);
+        term_endconf : mconfig _ _ _;
+        term_m2 : projT1 (pMf (p1 (cstate term_midconf))) ↓↓ (ctapes term_midconf, term_k', term_endconf);
+      }. *)
 
     Lemma Match_Terminates :
       Match ⇓ Match_Terminates_Rel.
     Proof.
-      hnf. intros t k'' [k k' H1 H2 H3].
-      destruct (Term H2) as (conf&H). cbn in H3.
-      destruct (Term__f H3) as (conf'&H').
+      hnf. intros t k'' [k k' H1 conf H2 conf' H3].
       exists (lift_confR conf').
       enough (loopM (k + (1 + k')) (initc Match t) = Some (lift_confR conf')).
       { unfold loopM. apply loop_ge with (k1 := k + (1 + k')). omega. assumption. }
@@ -264,11 +268,11 @@ Section Match.
   End Match_Terminates.
 
   Lemma Match_Terminates' t conf1 k1 conf2 k2 :
-    M1 ↓↓ (t, (conf1, k1)) ->
-    projT1 (pMf (p1 (cstate conf1))) ↓↓ (ctapes conf1, (conf2, k2)) ->
-    Match ↓ t.
+    M1 ↓↓ (t, k1, conf1) ->
+    projT1 (pMf (p1 (cstate conf1))) ↓↓ (ctapes conf1, k2, conf2) ->
+    Match ↓ (t, k1 + S k2).
   Proof.
-    intros H1 H2. hnf. exists (k1 + S k2), (lift_confR conf2). hnf. eapply Match_merge; eauto.
+    intros H1 H2. hnf. exists (lift_confR conf2). hnf. eapply Match_merge; eauto.
   Qed.
 
   Lemma Match_RealiseIn (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) (k1 k2 : nat) :

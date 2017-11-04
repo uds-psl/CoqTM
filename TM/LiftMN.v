@@ -36,9 +36,9 @@ Section lift_gen.
 
   Variable (sig : finType).
   Variable (M1 : mTM sig m).
-  Variable T : (tapes sig m) -> nat -> Type.
+  Variable T : (tapes sig m) -> nat -> Prop.
 
-  Definition liftT_gen_eq : (tapes sig n) -> nat -> Type := fun t k => T (reorder indices t) k.
+  Definition liftT_gen_eq : (tapes sig n) -> nat -> Prop := fun t k => T (reorder indices t) k.
   
 End lift_gen.
 

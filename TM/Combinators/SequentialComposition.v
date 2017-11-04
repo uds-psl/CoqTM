@@ -26,36 +26,40 @@ Section Composition.
   Qed.
 
   Lemma Seq_Terminates' t conf1 k1 conf2 k2 :
-    (projT1 pM1) ↓↓ (t, (conf1, k1)) ->
-    projT1 pM2 ↓↓ (ctapes conf1, (conf2, k2)) ->
-    (projT1 Seq) ↓ t.
+    (projT1 pM1) ↓↓ (t, k1, conf1) ->
+    projT1 pM2 ↓↓ (ctapes conf1, k2, conf2) ->
+    (projT1 Seq) ↓ (t, k1 + S k2).
   Proof.
     intros H1 H2. eapply Match_Terminates'; eauto.
   Qed.
 
   Section Seq_Terminates.
 
-    Variable (T1 : (tapes sig n) -> nat -> Type).
-    Variable (T2 : (tapes sig n) -> nat -> Type).
+    Inductive Seq_Terminates_Rel (t : tapes sig n) (k'' : nat) : Prop :=
+      Build_Seq_Terminates_Rel
+        (term_k1 term_k2 : nat)
+        (term_In : term_k1 + term_k2 < k'')
+        (term_midconf : mconfig sig (states (projT1 pM1)) n)
+        (term_t1 : projT1 pM1 ↓↓ (t, term_k1, term_midconf))
+        (term_endconf : mconfig _ _ _)
+        (term_m2 : projT1 pM2 ↓↓ (ctapes term_midconf, term_k2, term_endconf)) :
+        Seq_Terminates_Rel t k''.
 
-    Hypothesis (Term1 : projT1 pM1 ⇓ T1).
-    Hypothesis (Term2 : projT1 pM2 ⇓ T2).
-
-    Record Seq_Terminates_Rel (t : tapes sig n) (k'' : nat) : Type :=
+    (* Record Seq_Terminates_Rel (t : tapes sig n) (k'' : nat) : Type :=
       {
         term_k : nat;
         term_k' : nat;
         term_In : term_k + term_k' < k'';
         term_m1 : T1 t term_k;
         term_m2 : T2 (ctapes (proj1_sig (Term1 term_m1))) term_k';
-      }.
+      }. *)
 
     Lemma Seq_Terminates :
       projT1 Seq ⇓ Seq_Terminates_Rel.
     Proof.
       unfold Seq, MATCH. cbn.
       eapply TerminatesIn_monotone.
-      - apply Match_Terminates. instantiate (1 := fun _ => T2). auto. Unshelve. apply T1. apply Term1.
+      - apply Match_Terminates.
       - intros t k''. intros [k k' H1 H2 H3]. econstructor; eauto.
     Qed.
 

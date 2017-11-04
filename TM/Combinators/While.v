@@ -138,26 +138,32 @@ Section While.
 
   Section WhileTerm.
 
-    Variable T : Rel (tapes sig n) nat.
-    Hypothesis Term : projT1 pM ⇓ T.
-    Inductive WhileTerm : (tapes sig n) -> nat -> Type :=
-    | term_false (i : nat) (t1 : tapes sig n) (p : T t1 i) (f : F) :
-        projT2 pM (cstate (proj1_sig (Term p))) = (false, f) ->
-        WhileTerm t1 i
-    | term_true (i j : nat) (t1 : tapes sig n) (p : T t1 i) (f : F) :
-        projT2 pM (cstate (proj1_sig (Term p))) = (true, f) ->
-        WhileTerm (ctapes (proj1_sig (Term p))) j ->
-        WhileTerm t1 (i + (1 + j)).
+    Inductive WhileTerm : (tapes sig n) -> nat -> Prop :=
+    | term_false
+        (t : tapes sig n)
+        (i : nat)
+        (endconf : mconfig sig (states (projT1 pM)) n)
+        (f : F) :
+        projT1 pM ↓↓ (t, i, endconf) ->
+        projT2 pM (cstate endconf) = (false, f) ->
+        WhileTerm t i
+    | term_true
+        (t : tapes sig n)
+        (i j : nat)
+        (midconf : mconfig sig (states (projT1 pM)) n)
+        (f : F) :
+        projT1 pM ↓↓ (t, i, midconf) ->
+        projT2 pM (cstate midconf) = (true, f) ->
+        WhileTerm (ctapes midconf) j ->
+        WhileTerm t (i + S j).
 
     Lemma While_Terminates :
          While ⇓ WhileTerm.
     Proof.
       hnf. intros t1 k H.
-      induction H as [i t1 p H1 f | i j t1 p f H1 H2 IH].
-      - hnf in Term.
-        destruct (Term p) as (conf'&H) eqn:E. exists conf'. eapply While_false_merge; eauto.
-      - destruct (Term p) as (conf'&H) eqn:E. cbn in *.
-        destruct IH as (confIH&IH). exists confIH. eapply While_true_merge; eauto.
+      induction H as [t i endconf H1 H2 | t i j midconf H1 H2 H3 H4 IH].
+      - exists endconf. eapply While_false_merge; eauto.
+      - destruct IH as (confIH&IH). exists confIH. eapply While_true_merge; eauto.
     Qed.
 
   End WhileTerm.

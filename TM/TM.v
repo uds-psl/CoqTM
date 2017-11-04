@@ -233,29 +233,29 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     now rewrite (loop_functional H1 H2) in *.
   Qed.
 
-  Definition TerminatesInto n (M : mTM n) : (tapes _) * (mconfig (states M) n * nat) -> Prop :=
-    fun '(input, (outc, k)) => loopM k (initc M input) = Some outc.
+  Definition TerminatesInto n (M : mTM n) : (tapes _ * nat * mconfig (states M) n) -> Prop :=
+    fun '(input, k, outc) => loopM k (initc M input) = Some outc.
   Notation "M '↓↓' T" := (@TerminatesInto _ M T) (no associativity, at level 60, format "M  '↓↓'  T").
   Arguments TerminatesInto {_} _ _.
 
-  Definition Terminates n (M : mTM n) : tapes n -> Prop :=
-    fun tapes => exists (k : nat) (c : mconfig (states M) n), TerminatesInto M (tapes, (c, k)).
+  Definition Terminates n (M : mTM n) : tapes n * nat -> Prop :=
+    fun '(tapes, k) => exists (c : mconfig (states M) n), TerminatesInto M (tapes, k, c).
   Notation "M '↓' t" := (Terminates M t) (no associativity, at level 60, format "M  '↓'  t").
 
-  Definition TerminatesAlways {n : nat} (M : mTM n) : Prop := forall t : tapes n, M ↓ t.
-  Notation "M ⇓⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓⇓'").
-
-  Definition TerminatesIn {n : nat} (M : mTM n) (T : (tapes n) -> nat -> Type) :=
-    forall t1 k, T t1 k -> { conf | loopM k (initc M t1) = Some conf }.
+  Definition TerminatesIn {n : nat} (M : mTM n) (T : Rel (tapes n) nat) :=
+    forall t1 k, T t1 k -> exists conf, loopM k (initc M t1) = Some conf.
   Arguments TerminatesIn { _ } _.
   Notation "M ⇓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '⇓'  T").
 
-  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : (tapes _) -> _ -> Type) :
+  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : Rel (tapes _) _) :
     M ⇓ T1 -> (forall x y, T2 x y -> T1 x y) -> M ⇓ T2.
   Proof.
     intros H1 H2. firstorder.
   Qed.
 
+  Definition TerminatesAlways {n : nat} (M : mTM n) : Prop := forall t : tapes n, exists k, M ↓ (t, k).
+  Notation "M ⇓⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓⇓'").
+  
   Lemma TerminatesIn_TerminatesAlways {n : nat} {F : finType} (M : mTM n) (T : Rel (tapes _) _) :
     M ⇓ T -> (forall t : tapes _, exists x, T t x) -> M ⇓⇓.
   Proof.
