@@ -1,237 +1,126 @@
-Require Import Prelim TM Code.
-Require Import Combinators.SequentialComposition.
+Require Import TM.Prelim TM.TM TM.Code.Code.
+Require Import TM.Combinators.SequentialComposition.
 Require Import TM.Relations.
 
-Section Tape_Local.
+Section Fix_Sig.
+  
   Variable (sig : finType).
 
-  Definition tape_local (t : tape sig) : list sig :=
-    match t with
-    | niltape _ => nil
-    | leftof a l => nil
-    | rightof _ _ => nil
-    | midtape _ a l => a :: l
-    end.
+  Section Tape_Encodes.
 
-  Lemma tape_local_current_cons (x : sig) (xs : list sig) (t : tape sig) :
-    tape_local t = x :: xs -> current t = Some x.
-  Proof. destruct t eqn:E; cbn; congruence. Qed.
+    Variable (X : Type) (cX : codeable sig X).
 
-  Lemma tape_local_right (x : sig) (xs : list sig) (t : tape sig) :
-    tape_local t = x :: xs -> right t = xs.
-  Proof. destruct t eqn:E; cbn; congruence. Qed.
+    (* Extend sig with a start end a end symbol *)
+    Definition sig' : finType := FinType(EqType((sig + bool))) % type.
 
-  Lemma tape_local_iff (t : tape sig) (xs : list sig) :
-    (tape_local t = xs /\ xs <> nil) <-> (exists x xs', xs = x :: xs' /\ current t = Some x /\ right t = xs').
-  Proof.
-    split.
-    - intros (H1&H2). destruct t eqn:E; cbn in *; try congruence. eauto.
-    - intros (x&xs'&->&H1&<-). split. destruct t eqn:E; cbn in *; congruence. discriminate.
-  Qed.
+    Definition START : bool := false.
+    Definition STOP  : bool := true.
 
-  Lemma tape_local_nil (t : tape sig) :
-    tape_local t = nil <-> current t = None.
-  Proof.
-    destruct t; cbn; intuition; auto; congruence.
-  Qed.
+    Instance codeX : codeable sig' X := Encode_Map cX (inl_inj sig bool).
+    Instance codeS : codeable sig' bool := Encode_Map Encode_Bool (inr_inj sig bool).
 
-  Lemma tape_local_move_right (t : tape sig) (x : sig) (xs : list sig) :
-    tape_local t = x :: xs -> tape_local (tape_move_right t) = xs.
-  Proof.
-    intro H. destruct t eqn:E; cbn in *; try congruence.
-    inv H. destruct xs; cbn; auto.
-  Qed.
+    Definition tape_encodes (t : tape sig') (x : X) : Prop :=
+      exists r1 r2 : list sig,
+        tapeToList t = map inl r1 ++ encode START ++ encode x ++ encode STOP ++ map inl r2.
 
-End Tape_Local.
+    Lemma tape_encodes_injective (t : tape sig') (x1 x2 : X) :
+      tape_encodes t x1 -> tape_encodes t x2 -> x1 = x2.
+    Proof.
+      intros (r1&r2&H2) (s1&s2&H1). rewrite H2 in H1; clear H2. cbn in H1.
+      pose proof (map_map_app_eq_None_None (inj := inl_inj sig bool)) as L1.
+      specialize (L1 r1 s1 (inr START) (inr START) _ _ eq_refl eq_refl H1) as (_&_&L).
+      cbn in *. now apply (encode_injective (codeable := codeX)) in L as (L&_).
+    Qed.
 
-Section Tape_Encodes.
+  End Tape_Encodes.
 
-  Variable (sig : finType) (X : Type) (cX : codeable sig X).
 
-  Definition tape_encodes_locally_rest (t : tape sig) (x : X) (rest : list sig) : Prop :=
-    tape_local t = encode x ++ rest.
+  Section Computes.
+    Variable n_tapes : nat.
+    Variable (i j : Fin.t n_tapes).
+    Variable (X Y : Type) (cX : codeable sig X) (cY : codeable sig Y).
+    Variable F : finType.
 
-  Definition tape_encodes_locally (t : tape sig) (x : X) : Prop :=
-    exists rest, tape_encodes_locally_rest t x rest.
-  
-  Definition tape_encodes_global_rest (t : tape sig) (x : X) (rest : list sig) : Prop :=
-    exists rest, tapeToList t = encode x ++ rest.
-
-  Definition tape_encodes_global (t : tape sig) (x : X) : Prop :=
-    exists rest, tape_encodes_global_rest t x rest.
-  
-End Tape_Encodes.
-
-Hint Unfold tape_encodes_locally tape_encodes_locally_rest tape_encodes_global tape_encodes_global_rest.
-
-(*
-(* TODO *)
-(* Set X and cX as implict and maximally inserted *)
-Arguments tape_encodes_locally {_} {_}.
-Arguments tape_encodes_locally_rest {_} {_}.
-Arguments tape_encodes_global {_} {_}.
-Arguments tape_encodes_global_rest {_} {_}.
-*)
-
-Section Computes.
-  Variable n_tapes : nat.
-  Variable (i j : Fin.t n_tapes).
-  Variable (sig : finType).
-  Variable (X Y : Type) (cX : codeable sig X) (cY : codeable sig Y).
-  Variable f : X -> Y.
-  Variable F : finType.
-
-  Definition computes_locally_R : relation (tapes sig n_tapes) :=
-    fun tin tout =>
-      forall (x : X),
-        tape_encodes_locally _ ( tin[@i]) x ->
-        tape_encodes_locally _ (tout[@j]) (f x).
-
-  Definition computes_locally_R_p : Rel (tapes sig n_tapes) (F * tapes sig n_tapes) :=
-    ignoreParam (computes_locally_R).
-
-    Definition computes_global_R : relation (tapes sig n_tapes) :=
-        fun tin tout =>
+    Definition Computes (f : X -> Y) : relation (tapes sig' n_tapes) :=
+      fun tin tout =>
         forall (x : X),
-            tape_encodes_global _ ( tin[@i]) x ->
-            tape_encodes_global _ (tout[@j]) (f x).
+          tape_encodes _ ( tin[@i]) x ->
+          tape_encodes _ (tout[@j]) (f x).
 
-    Definition computes_global_R_p : Rel (tapes sig n_tapes) (F * tapes sig n_tapes) :=
-        ignoreParam (computes_global_R).
+    Definition Computes_Rel (f : X -> Y) : Rel (tapes sig' n_tapes) (F * tapes sig' n_tapes) :=
+      ignoreParam (Computes f).
 
-End Computes.
-Hint Unfold computes_locally_R computes_locally_R computes_locally_R_p computes_global_R computes_global_R_p.
+    Lemma Computes_ext (f f' : X -> Y) :
+      (forall x, f x = f' x) -> Computes f =2 Computes f'.
+    Proof.
+      intros H. split.
+      - intros t t' H1. hnf in *. intros x. specialize (H1 x). rewrite (H x) in H1. eauto.
+      - intros t t' H1. hnf in *. intros x. specialize (H1 x). rewrite (H x). eauto.
+    Qed.
 
-Section Computes_Composes.
-  Variable sig : finType.
-  Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
-  Variable (f : X -> Y) (g : Y -> Z).
-  Variable (n_tapes : nat).
-  Variable (i1 i2 i3 : Fin.t n_tapes).
-  Variable (F1 F2 : finType).
-  Variable (pM : {M : mTM sig n_tapes & states M -> F1}).
-  Variable (pN : {N : mTM sig n_tapes & states N -> F2}).
-
-  Lemma compose_computes_WRealise (iin iout : Fin.t n_tapes) :
-    pM ⊫ computes_locally_R_p (F := F1) i1 i2 _ _ f ->
-    pN ⊫ computes_locally_R_p (F := F2) i2 i3 _ _ g ->
-    (pM ;; pN) ⊫ computes_locally_R_p (F := F2) i1 i3 _ _ (fun x => g (f x)).
-  Proof.
-    intros H1 H2.
-    pose proof (SequentialComposition.Seq_WRealise H1 H2) as HComp.
-    hnf. intros intape i outc HLoop.
-    hnf. intros x Hx. cbn in outc.
-    specialize (HComp intape i outc HLoop).
-    unfold rcomp in HComp.
-    destruct HComp as ((exectape_p&exectape)&HComp&HComp'); cbn in HComp, HComp'.
-    unfold computes_locally_R in *.
-    apply HComp'. apply HComp. assumption.
-  Qed.
-
-  Lemma compose_computes_RealiseIn (iin iout : Fin.t (S n_tapes)) (k1 k2 : nat) :
-    pM ⊨c(k1) computes_locally_R_p (F := F1) i1 i2 _ _ f ->
-    pN ⊨c(k2) computes_locally_R_p (F := F2) i2 i3 _ _ g ->
-    (pM ;; pN) ⊨c(1+k1+k2) computes_locally_R_p (F := F2) i1 i3 _ _ (fun x => g (f x)).
-  Proof.
-    intros H1 H2.
-    pose proof (SequentialComposition.Seq_RealiseIn H1 H2) as HComp.
-    intros intape.
-    specialize (HComp intape) as (outtape&HLoop&HComp).
-    unfold computes_locally_R_p in HComp. cbn in HComp.
-    unfold rcomp in HComp.
-    destruct HComp as ((exectape_p&exectape)&HComp&HComp'); cbn in HComp, HComp'.
-    unfold computes_locally_R in *. clear exectape_p.
-    exists outtape. split.
-    - apply HLoop.
-    - cbn. hnf. intros x Hx. apply HComp'. apply HComp. apply Hx.
-  Qed.
-
-End Computes_Composes.
+  End Computes.
 
 
-Section Computes2.
-  Variable n_tapes : nat.
-  Variable (sig : finType).
-  Variable (i j k : Fin.t n_tapes).
-  Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
-  Variable f : X * Y -> Z.
-  Variable F : finType.
+  Section Computes_Composes.
+    Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
+    Variable (f : X -> Y) (g : Y -> Z).
+    Variable (n_tapes : nat).
+    Variable (i1 i2 i3 : Fin.t n_tapes).
+    Variable (F1 F2 : finType).
+    Variable (pM : {M : mTM sig' n_tapes & states M -> F1}).
+    Variable (pN : {N : mTM sig' n_tapes & states N -> F2}).
 
-  Definition computes2_locally_R : relation (tapes sig n_tapes) :=
-    fun tin tout =>
-      forall (x : X) (y : Y),
-        tape_encodes_locally cX ( tin[@i]) x ->
-        tape_encodes_locally cY ( tin[@j]) y ->
-        tape_encodes_locally cZ (tout[@k]) (f (x, y)).
+    Lemma compose_Computes_Realise (iin iout : Fin.t n_tapes) :
+      pM ⊨ Computes_Rel (F := F1) i1 i2 _ _ f ->
+      pN ⊨ Computes_Rel (F := F2) i2 i3 _ _ g ->
+      (pM ;; pN) ⊨ Computes_Rel (F := F2) i1 i3 _ _ (fun x => g (f x)).
+    Proof.
+      intros H1 H2. eapply Realise_monotone.
+      - cbn. eapply Seq_Realise; eauto.
+      - intros tx (tam, tz) H. hnf in H. destruct H as ((tam'&ty)&H&H'). hnf in H. hnf in H, H'. hnf. intros x Hx. auto.
+    Qed.
 
-  Definition computes2_locally_R_p : Rel (tapes sig n_tapes) (F * tapes sig n_tapes) :=
-    ignoreParam (computes2_locally_R).
+    Lemma compose_Computes_WRealise (iin iout : Fin.t n_tapes) :
+      pM ⊫ Computes_Rel (F := F1) i1 i2 _ _ f ->
+      pN ⊫ Computes_Rel (F := F2) i2 i3 _ _ g ->
+      (pM ;; pN) ⊫ Computes_Rel (F := F2) i1 i3 _ _ (fun x => g (f x)).
+    Proof.
+      intros H1 H2. eapply WRealise_monotone.
+      - cbn. eapply Seq_WRealise; eauto.
+      - intros tx (tam, tz) H. hnf in H. destruct H as ((tam'&ty)&H&H'). hnf in H. hnf in H, H'. hnf. intros x Hx. auto.
+    Qed.
+      
+    Lemma compose_computes_RealiseIn (iin iout : Fin.t (S n_tapes)) (k1 k2 : nat) :
+      pM ⊨c(k1) Computes_Rel (F := F1) i1 i2 _ _ f ->
+      pN ⊨c(k2) Computes_Rel (F := F2) i2 i3 _ _ g ->
+      (pM ;; pN) ⊨c(k1 + S k2) Computes_Rel (F := F2) i1 i3 _ _ (fun x => g (f x)).
+    Proof.
+      intros H1 H2. eapply RealiseIn_monotone.
+      - cbn. eapply Seq_RealiseIn; eauto.
+      - omega.
+      - intros tx (tam, tz) H. hnf in H. destruct H as ((tam'&ty)&H&H'). hnf in H. hnf in H, H'. hnf. intros x Hx. auto.
+    Qed.
 
-  Definition computes2_global_R : relation (tapes sig n_tapes) :=
-    fun tin tout =>
-      forall (x : X) (y : Y),
-        tape_encodes_global cX ( tin[@i]) x ->
-        tape_encodes_global cY ( tin[@j]) y ->
-        tape_encodes_global cZ (tout[@j]) (f (x, y)).
+  End Computes_Composes.
 
-  Definition computes2_global_R_p : Rel (tapes sig n_tapes) (F * tapes sig n_tapes) :=
-    ignoreParam (computes2_global_R).
 
-End Computes2.
+  Section Computes2.
+    Variable n_tapes : nat.
+    Variable (i j k : Fin.t n_tapes).
+    Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
+    Variable f : X -> Y -> Z.
+    Variable F : finType.
 
-(* Copy the current data to the second tape and the first tape reamains locally the same (same rest). *)
-Section Copy_Stay.
-  Variable n_tapes : nat.
-  Variable (i j : Fin.t n_tapes).
-  Variable (sig : finType).
-  Variable (X : Type) (cX : codeable sig X).
-  Variable F : finType.
+    Definition Computes2 : relation (tapes sig' n_tapes) :=
+      fun tin tout =>
+        forall (x : X) (y : Y),
+          tape_encodes _ ( tin[@i]) x ->
+          tape_encodes _ ( tin[@j]) y ->
+          tape_encodes _ (tout[@k]) (f x y).
 
-  Definition stay_locally_R1 : Rel (tape sig) (tape sig) :=
-    fun tp1 tp2 =>
-      forall (x : X) rest,
-        tape_encodes_locally_rest cX tp1 x rest ->
-        tape_encodes_locally_rest cX tp2 x rest.
+    Definition Computes2_Rel : Rel (tapes sig' n_tapes) (F * tapes sig' n_tapes) :=
+      ignoreParam (Computes2).
 
-  Definition stay_locally_R :=
-    fun tps1 tps2 => stay_locally_R1 (tps1[@i]) (tps2[@i]).
+  End Computes2.
 
-  Definition stay_locally_R_p : Rel (tapes sig n_tapes) (F * tapes sig n_tapes) :=
-    ignoreParam stay_locally_R.
-
-  Lemma stay_locally_R_computes_id :
-    stay_locally_R <<=2 computes_locally_R i i _ _ (@id X).
-  Proof.
-    unfold stay_locally_R, stay_locally_R1,
-    computes_locally_R, tape_encodes_locally, tape_encodes_global_rest.
-    firstorder.
-  Qed.
-
-End Copy_Stay.
-Hint Unfold stay_locally_R1 stay_locally_R stay_locally_R stay_locally_R_p.
-
-(* Copy the current data to the second tape and stop after the word on the first tape *)
-Section Copy_Move.
-  Variable n_tapes : nat.
-  Variable (i j : Fin.t n_tapes).
-  Variable (sig : finType).
-  Variable (X : Type) (cX : codeable sig X).
-  Variable F : finType.
-
-  Definition skip_locally_R1 : Rel (tape sig) (tape sig) :=
-    fun tp1 tp2 =>
-      forall (x : X) rest,
-        tape_encodes_locally_rest _ tp1 x rest ->
-        tape_local tp2 = rest.
-
-  Definition skip_locally_R :=
-    fun tps1 tps2 => skip_locally_R1 (tps1[@i]) (tps2[@i]).
-
-  Definition copy_Move_locally_R : Rel (tapes sig n_tapes) (tapes sig n_tapes) :=
-    skip_locally_R ∩ computes_locally_R i j _ _ (@id X).
-
-  Definition copy_Move_locally_R_p : Rel (tapes sig n_tapes) (F * tapes sig n_tapes) :=
-    ignoreParam copy_Move_locally_R.
-
-End Copy_Move.
-Hint Unfold skip_locally_R skip_locally_R1 copy_Move_locally_R copy_Move_locally_R_p.
+End Fix_Sig.
