@@ -56,6 +56,13 @@ Proof.
     + now rewrite IHn.
 Qed.
 
+Lemma loop_ext A f f' p p' (a : A) k :
+  (forall a, p a = false -> f a = f' a) ->
+  (forall a, p a = p' a) ->
+  loop k f p a = loop k f' p a.
+Proof.
+  intros H. revert a. induction k; intros a; cbn; auto. destruct (p a) eqn:E; auto. rewrite H; auto.
+Qed.
 
 Lemma loop_ge A f p (a c : A) k1 k2 : k2 >= k1 -> loop k1 f p a = Some c -> loop k2 f p a = Some c.
 Proof.

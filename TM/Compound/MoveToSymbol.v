@@ -1,6 +1,7 @@
 Require Import TM.Prelim.
 Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Match TM.Combinators.While TM.Combinators.SequentialComposition.
+Require Import TM.IsoTrans.
 
 Section move_to_symbol.
   
@@ -109,6 +110,8 @@ Section move_to_symbol.
     end.
 
 
+  (* TODO: Make this proof/excution faster, by inserting counters in WhileTerm *)
+  (* It can also be made faster by replacing the read machine by a machine that reads and terminates in the right state. *)
   Lemma move_to_symbol_r_term :
     projT1 (move_to_symbol R) ⇓ (fun x i => i = 5 * time_until_symbol_r (x[@Fin.F1])).
   Proof.
@@ -156,20 +159,25 @@ Section move_to_symbol.
                 ** replace 5 with (4 + S 0) by omega. eapply term_false.
                    --- cbn. rewrite E2. cbn. eauto.
                    --- cbn. eauto.
-                ** specialize (IH (e :: ls) r E2). cbn in *. rewrite E2 in *.
-                   replace (S (S (S (S (S (time_until_symbol_list rs + (time_until_symbol_list rs + (time_until_symbol_list rs + (time_until_symbol_list rs + (time_until_symbol_list rs + 0))))))))))
-                     with (S (time_until_symbol_list rs) + (S (time_until_symbol_list rs) + (S (time_until_symbol_list rs) + (S (time_until_symbol_list rs) + (S (time_until_symbol_list rs) + 0)))))
-                          by omega.
+                ** specialize (IH (e :: ls) r E2). cbn -[mult] in *. rewrite E2 in *.
+                   replace (S (S (S (S (S (5 * time_until_symbol_list rs)))))) with (5 * S (time_until_symbol_list rs)) by omega.
                    apply IH.
-  
-Qed.
+  Qed.
 
-                               (* TODO: Make this proof faster, by inserting counters in WhileTerm *)
-                               (* It can also be made faster by replacing the read machine by a machine that reads and terminates in the right state. *)
-                               (* TODO: Move to left *)
-                               (* Idea: Tape-Reversierung *)
 
+  Lemma move_to_symbol_r_Realise : 
+    move_to_symbol R ⊨ R_move_to_symbol_r.
+  Proof.
+    eapply WRealise_to_Realise.
+    - cbn. eapply TerminatesIn_TerminatesAlways; auto. eapply move_to_symbol_r_term. eauto.
+    - apply move_to_symbol_r_WRealise.
+  Qed.
+
+
+  (* Move to left *)
+  (* Idea: Reverse tape and reduce to the move-to-right version *)
   
+
   Fixpoint to_symbol_list_l l1 l2 {struct l2} :=
     match (l2,l1) with
     | ([],[]) => (false, niltape _)
@@ -186,31 +194,22 @@ Qed.
     | midtape l1 c l2 => to_symbol_list_l l2 (c :: l1)
     end.
 
-  Lemma to_symbol_list_l_in_iff l1 l2 :
-    (exists s, s el l2 /\ f s = true) <-> (exists t', to_symbol_list_l l1 l2 = (true, t')).
+  Lemma to_symbol_mirror t :
+    to_symbol_l t = (fst (to_symbol_r (mirror_tape t)), mirror_tape (snd (to_symbol_r (mirror_tape t)))).
   Proof.
-    split; revert l1; induction l2; intros; cbn in *.
-    - destruct H as (s&H&H'). auto.
-    - destruct H as (s&[->|H]&H').
-      + rewrite H'. eauto.
-      + destruct (IHl2 (a :: l1)) as (t'&Ht'); eauto. destruct (f a); eauto.
-    - destruct H as (t'&H). destruct l1; congruence.
-    - destruct H as (t'&H). destruct (f a) eqn:E.
-      + inv H. eauto.
-      + destruct (IHl2 (a :: l1)) as (s&IH&IH'); eauto.
+    destruct t; cbn; try congruence. destruct (f e) eqn:E; cbn; try congruence.
+    revert l0 e E. induction l as [ |r rs IH]; intros ls e E; cbn in *; auto. destruct (f r) eqn:E2; cbn; auto.
   Qed.
-
-  Lemma to_symbol_l_false t t' :
-    to_symbol_l t = (false, t') ->
-    forall s, current t = Some s \/ ((exists s', current t = Some s') /\ s el left t) -> f s = false.
-  Proof.
-    revert t'. intros H. destruct t eqn:E; cbn in *; intros; firstorder; (intuition; try congruence).
-    - inv H1. destruct f eqn:E; auto. congruence.
-    - inv H1. 
-  Abort.
 
   Definition R_move_to_symbol_l : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
     Mk_R_p (fun t t' => t' = to_symbol_l t).
+
+  Lemma move_to_symbol_l_Realise : 
+    move_to_symbol L ⊨ R_move_to_symbol_l.
+  Proof.
+    hnf. intros input. pose proof (move_to_symbol_r_Realise input) as (outc&k&H1&H2).
+    destruct outc as (q&t). cbn in q, t. destruct q eqn:E.
+  Qed.
 
 
 End move_to_symbol.
