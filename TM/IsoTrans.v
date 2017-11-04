@@ -228,4 +228,20 @@ Section MirrorTM.
     - cbn. rewrite mirror_tapes_involution. now rewrite <- param_f_comp.
   Qed.
 
+  Lemma Mirror_RealiseIn (R : Rel _ (F * _)) (k : nat) :
+    pM1 ⊨c(k) R -> pM2 ⊨c(k) Mirror_R R.
+  Proof.
+    intros H. hnf. intros t1. hnf in H. specialize (H (mirror_tapes t1)) as (outc&H&H1).
+    exists (mlift'_m outc). unfold loopM in H. split.
+    - eapply (loop_lift (lift := mlift'_m) (hlift := mhlift') (g := liftstep2)) in H; intros.
+      + unfold mhlift', mlift'_m in *. cbn in *. rewrite start_f_comp in H. rewrite <- H.
+        rewrite mirror_tapes_involution. eapply loop_ext; firstorder.
+      + unfold mhlift, mlift_m. cbn. apply halt_f_comp.
+      + unfold liftstep2, mlift'_m, mlift_m. cbn. rewrite !mirror_tapes_involution.
+        rewrite !inv1. rewrite step_mirrored1; auto. f_equal.
+        * f_equal. f_equal. rewrite <- step_mirrored1; firstorder.
+        * f_equal. f_equal. rewrite <- step_mirrored1; firstorder.
+    - cbn. rewrite mirror_tapes_involution. now rewrite <- param_f_comp.
+  Qed.
+
 End MirrorTM.

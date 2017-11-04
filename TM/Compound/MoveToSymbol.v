@@ -174,7 +174,8 @@ Section move_to_symbol.
   Qed.
 
 
-  (* Move to left *)
+  (** Move to left *)
+
   (* Idea: Reverse tape and reduce to the move-to-right version *)
   
 
@@ -201,15 +202,68 @@ Section move_to_symbol.
     revert l0 e E. induction l as [ |r rs IH]; intros ls e E; cbn in *; auto. destruct (f r) eqn:E2; cbn; auto.
   Qed.
 
+  Lemma to_symbol_mirror' b t t' :
+    (b, mirror_tape t') = to_symbol_r (mirror_tape t) ->
+    (b, t') = to_symbol_l t.
+  Proof.
+  Admitted.
+
+
+    
   Definition R_move_to_symbol_l : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
     Mk_R_p (fun t t' => t' = to_symbol_l t).
+
+  Lemma mirror_tape_current (t : tape sig) :
+    current (mirror_tape t) = current t.
+  Proof. destruct t; cbn; congruence. Qed.
 
   Lemma move_to_symbol_l_Realise : 
     move_to_symbol L ⊨ R_move_to_symbol_l.
   Proof.
-    hnf. intros input. pose proof (move_to_symbol_r_Realise input) as (outc&k&H1&H2).
-    destruct outc as (q&t). cbn in q, t. destruct q eqn:E.
-  Qed.
+    eapply Realise_monotone.
+    - eapply Mirror_Realise. Unshelve. Focus 9.
+      {
+        intros [H | (y&H)].
+        - apply (inl H).
+        - cbn in y. apply inr; exists y. destruct y as [ [ | ] | ] eqn:E2; cbn in *.
+          + constructor.
+          + apply H.
+          + constructor.
+      } all: shelve. Focus 9.
+      {
+        intros s. cbn in s. cbn. destruct s as [ s | [ y s ] ]; [apply inl|apply inr].
+        - apply s.
+        - exists y. destruct y as [ [ | ] | ]; cbn in *.
+          + constructor.
+          + apply s.
+          + constructor.
+      }
+      all: shelve. Unshelve.
+      + split; hnf. intros [ | [ [ [ ] | ] ] ]; hnf in *; cbn; repeat f_equal; try destruct e; auto.
+        intros [ | [ ] ]; repeat f_equal. hnf in x. destruct x as [ [ ] | ]; hnf in e; try destruct e; cbn; auto.
+      + split; hnf.
+      + intros [ | [ [ [ ] | ] ] ]; hnf in *; cbn; repeat f_equal; try destruct e; auto.
+      + destruct_tapes.
+        intros [q t] Hx. cbn in *. destruct q as [ | (y&q) ]; cbn in *; unfold mlift_m, mlift'_m in *.
+        * dependent destruction t0; cbn.
+          { destruct_tapes. cbn. rewrite mirror_tape_current. cbn. f_equal. cbn. f_equal.
+             now erewrite mirror_tape_involution. }
+          dependent destruction t0; cbn.
+          { destruct_tapes. cbn. rewrite mirror_tape_involution. reflexivity. }
+          dependent destruction t0; cbn.
+          { destruct_tapes. cbn. rewrite mirror_tape_involution. reflexivity. }
+          { destruct_tapes. cbn. rewrite mirror_tape_involution. reflexivity. }
+        * destruct y as [ [ | ] | ]; cbn.
+          -- destruct q. destruct_tapes. cbn. rewrite mirror_tape_involution. reflexivity.
+          -- destruct q as [ | ].
+             ++ destruct_tapes. cbn. admit.
+             ++ admit.
+          -- destruct_tapes. cbn. now rewrite mirror_tape_involution.
+      + admit.
+      + admit.
+      + eapply move_to_symbol_r_Realise.
+    - hnf. intros t (y&t') H. hnf in *. destruct_tapes. cbn in *. now eapply to_symbol_mirror'.
+  Admitted.
 
 
 End move_to_symbol.

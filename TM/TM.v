@@ -256,7 +256,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Definition TerminatesAlways {n : nat} (M : mTM n) : Prop := forall t : tapes n, exists k, M ↓ (t, k).
   Notation "M ⇓⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓⇓'").
   
-  Lemma TerminatesIn_TerminatesAlways {n : nat} {F : finType} (M : mTM n) (T : Rel (tapes _) _) :
+  Lemma TerminatesIn_TerminatesAlways {n : nat} (M : mTM n) (T : Rel (tapes _) _) :
     M ⇓ T -> (forall t : tapes _, exists x, T t x) -> M ⇓⇓.
   Proof.
     intros H. intros H1. hnf. intros t. specialize (H1 t) as (k&H1). hnf in H.
