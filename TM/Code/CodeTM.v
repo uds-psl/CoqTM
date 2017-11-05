@@ -46,6 +46,14 @@ Section Tape_Local.
     inv H. destruct xs; cbn; auto.
   Qed.
 
+  Lemma tape_left_move_right (t : tape sig) (x : sig) :
+    current t = Some x -> left (tape_move_right t) = x :: left t.
+  Proof. intros H. destruct t; cbn in *; try congruence. inv H. destruct l0; cbn; reflexivity. Qed.
+
+  Lemma tape_right_move_left (t : tape sig) (x : sig) :
+    current t = Some x -> right (tape_move_left t) = x :: right t.
+  Proof. intros H. destruct t; cbn in *; try congruence. inv H. destruct l; cbn; reflexivity. Qed.
+
 End Tape_Local.
 
 
@@ -186,16 +194,14 @@ Section Fix_Sig.
 
     Variable (X : Type) (cX : codeable sig X).
 
-    Definition isStart := fun b : sig' => match b with inr true => true | _ => false end.
-
     Definition TapeInit : { M : mTM sig' 1 & states M -> unit } :=
-      FindSymbol isStart ;; Move _ R tt.
+      FindUniqueSymbol (inr START) ;; Move _ R tt.
 
     Definition TapeInit_Rel : Rel (tapes sig' 1) (unit * tapes sig' 1) :=
       Mk_R_p (fun t '(_, t') =>
                 forall r1 r2 (x : X),
                   tape_encodes_r _ t x r1 r2 ->
-                  left t' = inr START :: map inl r1 /\
+                  left t' = inr START :: rev (map inl r1) /\
                   tape_local t' = encode (codeable := codeX _) x ++ [inr STOP] ++ map inl r2
              ).
 
@@ -203,12 +209,32 @@ Section Fix_Sig.
     Proof.
       eapply Realise_monotone.
       - unfold TapeInit. eapply Seq_Realise.
-        + eapply FindSymbol_Realise.
+        + eapply FindUniqueSymbol_Realise.
         + eapply RealiseIn_Realise. eapply Move_Sem.
-      - hnf. intros tin ((), tout). intros H. hnf in H. destruct H as ((t,y)&H1&H2&H3). hnf in *. intros r1 r2 x Hx. rewrite H3 in *; clear H3; subst.
-    Admitted.
+      - hnf. intros tin ((), tout). intros H. hnf in H. destruct H as ((t,y)&H1&_&H2). hnf in *. intros r1 r2 x Hx.
+        destruct_tapes. cbn in *. rewrite H2. clear h0 H2. hnf in Hx. destruct t.
+        + assert (count (tapeToList h) (inr START) = 1) as L; [ | specialize (H1 L); clear L].
+          {
+            rewrite Hx. cbn.
+            enough (count (map inl r1) (inr START) = 0 /\
+                    count (map inl (encode x)) (inr START) = 0 /\
+                    count (map inl r2) (inr START) = 0) as (L1&L2&L3); [ | repeat split].
+            - rewrite <- countSplit. cbn. rewrite L1. cbn. rewrite <- countSplit. cbn. rewrite L2. cbn. rewrite L3. reflexivity.
+            - apply notInZero. intros H. cbn in H. apply in_map_iff in H. destruct H as (y&H&_). congruence.
+            - apply notInZero. intros H. cbn in H. apply in_map_iff in H. destruct H as (y&H&_). congruence.
+            - apply notInZero. intros H. cbn in H. apply in_map_iff in H. destruct H as (y&H&_). congruence.
+          }
+          cbn in *. specialize (H1 (rev (map inl r1)) (map inl (encode x) ++ inr STOP :: map inl r2)).
+          rewrite rev_involutive in H1. specialize (H1 Hx). rewrite H1.
+          erewrite tape_local_move_right; split; eauto. erewrite tape_left_move_right; cbn; eauto.
+        + exfalso. cbn in *. cbn in *. unfold sig', finType_CS in *. rewrite Hx in H1.
+          enough (count
+                    (map inl r1 ++
+                         inr START :: map inl (encode x) ++ inr STOP :: map inl r2)
+                    (inr START) > 0) by omega.
+          apply countApp.
+    Qed.
     
-
   End InitTape1.
   
 
