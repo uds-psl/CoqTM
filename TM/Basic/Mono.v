@@ -162,38 +162,36 @@ Section test_null.
   Definition Test_null := ( test_null ; fun x : threeStates => Fin.eqb x tc_true).
 
 End test_null.
+*)
 
 Section read_char.
 
-  Variable tapes_no : nat.
   Variable sig : finType.
-  
-  Variable on_tape : nat.
-  Hypothesis is_a_tape : on_tape < S tapes_no.
-  
   Definition rc_states : finType := FinType (EqType ((bool + sig)%type)).
 
-  Definition read_char : mTM sig tapes_no :=
-    one_tape is_a_tape (fun _ sym => match sym with None => (inl false, (None, TM.N)) | Some c => (inr c, (None,TM.N)) end) (inl true) (fun s => match s with inl true => false | _ => true end).
+  Definition read_char : mTM sig 1 :=
+    Mk_Mono_TM
+      (fun _ sym =>
+         match sym with
+         | None => (inl false, (None, TM.N))
+         | Some c => (inr c, (None,TM.N))
+         end)
+      (inl true) (fun s => match s with inl true => false | _ => true end).
 
   Definition read_char_R :=
-    (fun (t : tape sig) '(s,t') => s = current t) ∩ ignoreParam (@IdR _).
+    Mk_R_p (fun (t : tape sig) '(s,t') => s = current t) ∩ ignoreParam (@IdR _).
 
   Definition Read_char := (read_char; fun s : rc_states => match s with inl _ => None | inr s => Some s end).
 
   Lemma read_char_sem :
-    Read_char ⊨(1) ⇑[is_a_tape] read_char_R.
+    Read_char ⊨c(1) read_char_R.
   Proof.
-    intros t.
-    destruct (current (get_at is_a_tape t)) eqn:E.
-    - exists (mk_mconfig (inr e) t).
-      simpl_TM. rewrite E. simpl_TM.
-    - exists (mk_mconfig (inl false) t).
-      simpl_TM. rewrite E. simpl_TM.
+    intros t. destruct_tapes. cbn. destruct (current h) eqn:E.
+    - exists (mk_mconfig (inr e) [|h|]). unfold step. cbn. rewrite E. cbn. repeat (try split; auto; hnf).
+    - exists (mk_mconfig (inl false) [|h|]). unfold step. cbn. rewrite E. cbn. repeat (try split; auto; hnf).
   Qed.
 
 End read_char.
-*)
 
 Section Mono_Nop.
 
