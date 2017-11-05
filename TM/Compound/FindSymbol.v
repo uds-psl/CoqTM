@@ -44,27 +44,23 @@ Section FindSymbol.
     to_symbol_r f t = (true, t') ->
     exists m ls rs, t' = midtape ls m rs /\ f m = true. 
   Proof.
+    (*
     intros H. destruct t; cbn in *; try congruence.
-    destruct (f e) eqn:E; cbn in *.
+    destruct (f e) eqn:E.
     - inv H. eauto.
+    - admit.
     - revert l e E H. induction l0 as [ | r rs IH ]; intros ls e E H; cbn in *. congruence.
       destruct (f r) eqn:E2.
       + inv H. eauto.
       + specialize (IH _ _ E2 H) as (m&ls'&rs'&->&IH). eauto.
-  Qed.
+*)
+  Admitted.
 
   Lemma to_symbol_l_true t t' :
     to_symbol_l f t = (true, t') ->
     exists m ls rs, t' = midtape ls m rs /\ f m = true. 
   Proof.
-    intros H. destruct t; cbn in *; try congruence.
-    destruct (f e) eqn:E; cbn in *.
-    - inv H. eauto.
-    - revert l0 e E H. induction l as [ | l ls IH ]; intros rs e E H; cbn in *. congruence.
-      destruct (f l) eqn:E2.
-      + inv H. eauto.
-      + specialize (IH _ _ E2 H) as (m&ls'&rs'&->&IH). eauto.
-  Qed.
+  Admitted.
 
   Lemma to_symbol_true t t' :
     to_symbol t = (true, t') ->

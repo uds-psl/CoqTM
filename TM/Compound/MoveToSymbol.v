@@ -1,7 +1,10 @@
 Require Import TM.Prelim.
 Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Match TM.Combinators.While TM.Combinators.SequentialComposition.
-Require Import TM.IsoTrans.
+(* Require Import TM.IsoTrans. (* tape_mirror, this shoud probably be moved elsewhere *) *)
+Require Import TM.Compound.Peek.
+
+Ltac deq x := let H := fresh in destruct (Dec (x = x)) as [? | H]; [ | now contradiction H].
 
 Section move_to_symbol.
   
@@ -9,11 +12,16 @@ Section move_to_symbol.
   Variable f : sig -> bool.
 
   Definition M1 D : { M : mTM sig 1 & states M -> bool * bool } :=
-    MATCH (TEST_CHAR f)
+    MATCH (Peek f)
           (fun b => match b with
-                 | Some false => Move sig D (true, false) (* Not found yet: move on and continue *)
-                 | Some true => mono_Nop sig (false, true) (* Found: stop *)
-                 | None => mono_Nop sig (false, false) (* Reached end of tape: stop *)
+                 | inl false => Move sig D (true, false) (* Not found yet: move on and continue *)
+                 | inl true => mono_Nop sig (false, true) (* Found: stop *)
+                 | inr D' => if Dec (D'=D) || Dec (D'=N) then
+                              (* Reached the other end of the tape or the tape is empty: stop *)
+                              mono_Nop sig (false, false)
+                            else
+                              (* Continue *)
+                              mono_Nop sig (true, false)
                  end).
 
 
@@ -31,22 +39,15 @@ Section move_to_symbol.
   Fixpoint to_symbol_r t :=
     match t with
     | niltape _ => (false, niltape _)
-    | leftof c r => (false, leftof c r)
+    | leftof c r => to_symbol_list_r [] (c :: r) (* first move R *)
     | rightof c r => (false, rightof c r)
     | midtape l1 c l2 => to_symbol_list_r l1 (c :: l2)
     end.
-
 
   Lemma to_symbol_r_current_Some t s :
     f s = true -> current t = Some s -> to_symbol_r t = (true, t).
   Proof.
     intros. destruct t; cbn in *; try congruence. inv H0. now rewrite H.
-  Qed.
-
-  Lemma to_symbol_r_current_None t :
-    current t = None -> to_symbol_r t = (false, t).
-  Proof.
-    intros. destruct t; cbn in *; try congruence.
   Qed.
 
   Lemma to_symbol_r_move_false t t' s :
@@ -68,28 +69,25 @@ Section move_to_symbol.
     match t with
     | niltape _ => (false, niltape _)
     | leftof c r => (false, leftof c r)
-    | rightof c r => (false, rightof c r)
+    | rightof c r => to_symbol_list_l [] (c :: r) (* first move L *)
     | midtape l1 c l2 => to_symbol_list_l l2 (c :: l1)
     end.
 
+  (*
   Lemma to_symbol_mirror t x :
     x = to_symbol_r (mirror_tape t) ->
     to_symbol_l t = (fst x, mirror_tape (snd x)).
   Proof.
     intros ->. destruct t; cbn; try congruence. destruct (f e) eqn:E; cbn; try congruence.
-    revert l0 e E. induction l as [ |r rs IH]; intros ls e E; cbn in *; auto. destruct (f r) eqn:E2; cbn; auto.
+    - admit.
+    - revert l0 e E. induction l as [ |r rs IH]; intros ls e E; cbn in *; auto. destruct (f r) eqn:E2; cbn; auto.
   Qed.
+  *)
 
   Lemma to_symbol_l_current_Some t s :
     f s = true -> current t = Some s -> to_symbol_l t = (true, t).
   Proof.
     intros. destruct t; cbn in *; try congruence. inv H0. now rewrite H.
-  Qed.
-
-  Lemma to_symbol_l_current_None t :
-    current t = None -> to_symbol_l t = (false, t).
-  Proof.
-    intros. destruct t; cbn in *; try congruence.
   Qed.
 
   Lemma to_symbol_l_move_false t t' s :
@@ -119,14 +117,6 @@ Section move_to_symbol.
     - apply to_symbol_r_current_Some.
   Qed.
 
-  Lemma to_symbol_current_None D t :
-    D = L \/ D = R -> current t = None -> toSymbol D t = (false, t).
-  Proof.
-    destruct 1 as [-> | ->]; cbn.
-    - apply to_symbol_l_current_None.
-    - apply to_symbol_r_current_None.
-  Qed.
-
   Lemma to_symbol_move_false D t t' s :
     D = L \/ D = R -> current t = Some s -> f s = false -> t' = tape_move t D -> toSymbol D t = toSymbol D t'.
   Proof.
@@ -135,6 +125,159 @@ Section move_to_symbol.
     - apply to_symbol_r_move_false.
   Qed.
     
+  (* TODO: This proof should be monstly automatised *)
+  Lemma MoveToSymbol_R_WRealise :
+     MoveToSymbol R ⊫ MoveToSymbol_Rel R.
+  Proof.
+    intros HD. eapply WRealise_monotone.
+    {
+      eapply While_WRealise. unfold M1. eapply Match_WRealise.
+      eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Peek_RealisesIn.
+      instantiate (1 := (fun o => match o with
+                               | inl true => _
+                               | inl false => _
+                               | inr L => _ | inr _ => _
+                               end)).
+      intros r. cbn in r. destruct r as [ [ | ] | D' ] eqn:E.
+      + eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
+      + eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Move_Sem.
+      + destruct D'; cbn; eapply Realise_WRealise, RealiseIn_Realise, mono_Nop_Sem.
+    }
+    {
+      intros tin (bout, tout). cbn in bout. intros H. hnf in *. destruct H as (t1&H1&P&t2&(H2&H3)&H4). hnf in *.
+      induction H1 as [x | x y z IH1 IH2 IH3].
+      - destruct P as [ [ | ] | ] eqn:Ep.
+        + hnf in *. destruct H4 as (H4&->). inv H4. rewrite H2 in *. clear x H2.
+          destruct (tout[@Fin.F1]) eqn:E; try congruence. inv H3.
+          cbn. rewrite <- H0; auto.
+        + hnf in *. destruct H4 as (H4&->). congruence.
+        + {
+            destruct (x[@Fin.F1]); inv H3; cbn in *; destruct H4 as (H4&->); inv H4; cbn; auto.
+            - rewrite <- H2. auto.
+            - rewrite <- H2. auto.
+          }
+      - rewrite H2 in *. clear z H2 IH2.
+        hnf in *. destruct IH1 as (b1&P'&t3&(->&IH1)&IH2); cbn in *; hnf in *.
+        specialize (IH3 eq_refl).
+
+        destruct (t2[@Fin.F1]) eqn:E1; subst; hnf in *; try (destruct H4 as (H4&->); inv H4); subst.
+        + specialize (IH3 eq_refl) as (IH3&IH4). rewrite E1 in *. cbn in *.
+          {
+            destruct (t3[@Fin.F1]) eqn:E2; subst; hnf in *; try (destruct IH2 as (IH2&->); inv IH2).
+            - cbn. destruct (f e); cbn.
+
+
+              rewrite E1, IH4 in *.
+          }
+          
+          
+          admit. 
+        + admit.
+        + admit.
+    }
+  Admitted.
+    
+
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+
 
   (* TODO: This proof should be monstly automatised *)
   Lemma MoveToSymbol_WRealise D :
@@ -142,33 +285,68 @@ Section move_to_symbol.
   Proof.
     intros HD. eapply WRealise_monotone.
     - eapply While_WRealise. unfold M1. eapply Match_WRealise.
-      eapply Realise_WRealise. eapply RealiseIn_Realise. eapply test_chr_Sem.
-      instantiate (1 := fun o => match o with Some true => _ | Some false => _ | None => _ end).
-      intros [ [ | ] | ].
+      eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Peek_RealisesIn.
+      instantiate (1 := (fun o => match o with
+                               | inl true => _
+                               | inl false => _
+                               | inr D' => if Dec (D' = D) || Dec (D' = N) then _ else _
+                               end)).
+      intros r. cbn in r. destruct r as [ [ | ] | D' ] eqn:E.
       + eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
       + eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Move_Sem.
-      + eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
-    - intros tin (bout, tout). cbn in bout. intros H. hnf in *. destruct H as (t1&H1&f'&t2&(H2&H3)&H4). hnf in *.
+      + {
+          decide (D' = D) as [ -> | ].
+          - cbn. eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
+          - cbn. decide (D' = N).
+            + cbn. eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
+            + cbn. eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
+        }
+    - intros tin (bout, tout). cbn in bout. intros H. hnf in *. destruct H as (t1&H1&P&t2&(H2&H3)&H4). hnf in *.
       induction H1 as [x | x y z IH1 IH2 IH3].
-      + destruct f'.
-        * destruct H3 as (s&H3&H3'). subst. destruct (f s) eqn:E; hnf in *.
-          -- destruct H4 as (H4&H4'). hnf in *. subst. inv H4. cbn. erewrite to_symbol_current_Some; eauto. now rewrite H2.
-          -- destruct H4 as (H4&_). congruence.
-        * hnf in *. destruct H4 as (H4&->); hnf in *. inv H4. rewrite <- H2. now erewrite to_symbol_current_None; eauto.
-      + hnf in *. rewrite H2 in *. clear H2.
-        destruct IH1 as (b1&ob&t&(H1&H1')&H1''). hnf in *. rewrite H1 in *; clear H1. destruct ob as [ [ ] | ]; hnf in *.
-        * destruct H1' as (s&H1&H1'). hnf in *. destruct H1'' as (H1''&->). hnf in *. congruence.
-        * destruct H1' as (s&H1&H2). destruct H1'' as (H1'''&H''). inv H1'''. hnf in *.
-          specialize (IH3 eq_refl). destruct f'.
-          -- destruct H3 as (s''&H3&H3'); subst.
-             destruct IH3 as [IH3 IH3']; eauto. rewrite IH3. destruct (f s''); hnf in *.
-             ++ destruct H4 as (H4&->). hnf in *. inv H4. erewrite (to_symbol_move_false HD H1); eauto.
-                split; auto. rewrite <- IH3. cbn in *. rewrite <- IH3'. rewrite H''. apply tapeToList_move.
-             ++ destruct H4 as (H4&_). congruence.
-          -- rewrite H'' in *. hnf in *. destruct H4 as (H4&->). inv H4. specialize (IH3 H3) as (IH3&IH3'). split.
-             ++ symmetry. erewrite (to_symbol_move_false HD H1); eauto.
-             ++ rewrite <- IH3'. apply tapeToList_move.
-        * destruct H1'' as (H1''&->). hnf in *. congruence.
+      + destruct P as [ [ | ] | ] eqn:Ep.
+        * hnf in *. destruct H4 as (H4&->). inv H4. rewrite H2 in *. clear x H2.
+          destruct (tout[@Fin.F1]) eqn:E; try congruence. inv H3.
+          cbn. destruct HD as [-> | ->]; cbn; rewrite <- H0; auto.
+        * hnf in *. destruct H4 as (H4&->). congruence.
+        * {
+            decide (m = D) as [-> | D1]; cbn in *.
+            - destruct H4 as (H4&->). inv H4. destruct (x[@Fin.F1]); cbn in *; try congruence.
+              + inv H3. cbn in *. rewrite <- H2. auto.
+              + inv H3. rewrite <- H2. cbn. auto.
+              + inv H3. rewrite <- H2. cbn. auto.
+            - decide (m = N) as [-> | D2]; cbn in *.
+              + destruct H4 as (H4&->). inv H4. destruct (x[@Fin.F1]); cbn in *; try congruence. inv H3. rewrite <- H2.
+                destruct HD as [-> | ->]; cbn; auto.
+              + destruct H4 as (H4&->). congruence.
+          }
+      + hnf in *. rewrite H2 in *. specialize (IH3 eq_refl). clear z H2 IH2.
+        destruct IH1 as (b1&ob&t&(->&H1')&H1''). hnf in *. cbn in *.
+
+        (* (* Mache das später *) *)
+        destruct (t[@Fin.F1]) eqn:E; hnf in *; subst.
+        * deq N; cbn in *. destruct HD as [-> | ->]; cbn in *; destruct H1'' as (?&?); congruence.
+        * destruct HD as [-> | ->].
+          -- deq L. cbn in *. destruct H1'' as (?&?); congruence.
+          -- cbn in *. destruct H1'' as (H&->). inv H.
+             {
+               destruct (t2[@Fin.F1]); cbn in *; subst.
+               - deq N. cbn in *. destruct H4 as (H4&->). inv H4. specialize (IH3 eq_refl) as (IH1&IH2).
+                 admit.
+               - admit.
+               - admit.
+               - admit.
+             }
+        * cbn in *. destruct HD as [-> | ->]; cbn in *.
+          -- destruct H1'' as (H&H'). inv H. admit.
+          -- cbn in *. destruct H1'' as (H&->). inv H.
+        * {
+            destruct (f e) eqn:E2; cbn in *.
+            - destruct H1'' as (H1&H1'). congruence.
+            - destruct H1'' as (H1&H1'). inv H1. rewrite H1' in *. clear y H1'.
+              destruct (t2[@Fin.F1]) eqn:E3; subst; cbn in *.
+              + specialize (IH3 eq_refl) as (IH1&IH2). rewrite IH1.
+          }
+          
   Qed.
 
   Fixpoint time_until_symbol_list (ls : list sig) :=
@@ -180,7 +358,7 @@ Section move_to_symbol.
   Fixpoint time_until_symbol_r (t : tape sig) :=
     match t with
     | niltape _ => 2
-    | leftof c r => 2
+    | leftof c r => 1 + time_until_symbol_list (c :: r)
     | rightof c r => 2
     | midtape l1 c l2 => time_until_symbol_list (c :: l2)
     end.
@@ -189,7 +367,7 @@ Section move_to_symbol.
     match t with
     | niltape _ => 2
     | leftof c r => 2
-    | rightof c r => 2
+    | rightof c r => 1 + time_until_symbol_list (c :: r)
     | midtape l1 c l2 => time_until_symbol_list (c :: l1)
     end.
 
@@ -204,8 +382,9 @@ Section move_to_symbol.
   (* TODO: Make this proof/excution faster, by inserting counters in WhileTerm *)
   (* It can also be made faster by replacing the read machine by a machine that reads and terminates in the right state. *)
   Lemma MoveToSymbol_R_Term :
-    projT1 (MoveToSymbol R) ⇓ (fun x i => i = 4 * time_until_symbol_r (x[@Fin.F1])).
+    projT1 (MoveToSymbol R) ⇓ (fun x i => i = 11 * time_until_symbol_r (x[@Fin.F1])).
   Proof.
+    (*
     eapply TerminatesIn_monotone.
     - cbn -[M1]. eapply While_Terminates.
     - intros t k ->. destruct_tapes. destruct h.
@@ -250,7 +429,8 @@ Section move_to_symbol.
                    --- cbn. eauto.
                 ** specialize (IH (e :: ls) r E2). cbn -[mult] in *. rewrite E2 in *.
                    now replace (S (S (S (S (4 * time_until_symbol_list rs))))) with (4 * S (time_until_symbol_list rs)) by omega.
-  Qed.
+*)
+  Admitted.
 
 
   Lemma MoveToSymbol_R_Realise : 
