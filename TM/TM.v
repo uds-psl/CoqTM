@@ -34,7 +34,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     | rightof s l => List.rev (s :: l)
     | midtape l c r => (List.rev l) ++ [c] ++ r 
     end.
-  
+
   Definition sizeOfTape t := |tapeToList t|.
 
   Definition sizeOfmTapes n (v : tapes n) :=
@@ -132,6 +132,15 @@ we are on the right extremity of a non-empty tape (right overflow). *)
 
   Definition tape_move := fun (t : tape) (m : move) =>
                             match m with  R => tape_move_right t | L => tape_move_left t | N => t end.
+
+
+  Lemma tapeToList_move (t : tape) (D : move) :
+    tapeToList t = tapeToList (tape_move t D).
+  Proof.
+    destruct t, D; cbn; auto.
+    - revert e l0. induction l; intros; cbn in *; simpl_list; auto.
+    - revert e l. induction l0; intros; cbn in *; simpl_list; auto.
+  Qed.
 
   (** Writing on the tape *)
 

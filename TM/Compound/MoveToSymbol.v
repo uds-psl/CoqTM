@@ -109,7 +109,7 @@ Section move_to_symbol.
     end.
   
   Definition MoveToSymbol_Rel D : Rel _ (bool * _) :=
-    Mk_R_p (fun t t' => t' = toSymbol D t).
+    Mk_R_p (fun t t' => t' = toSymbol D t /\ tapeToList t = tapeToList (snd t')).
 
   Lemma to_symbol_current_Some D t s :
     D = L \/ D = R -> f s = true -> current t = Some s -> toSymbol D t = (true, t).
@@ -160,11 +160,14 @@ Section move_to_symbol.
         * destruct H1' as (s&H1&H1'). hnf in *. destruct H1'' as (H1''&->). hnf in *. congruence.
         * destruct H1' as (s&H1&H2). destruct H1'' as (H1'''&H''). inv H1'''. hnf in *.
           specialize (IH3 eq_refl). destruct f'.
-          -- destruct H3 as (s''&H3&H3'); subst. rewrite IH3; [clear IH3 | eauto]. destruct (f s''); hnf in *.
+          -- destruct H3 as (s''&H3&H3'); subst.
+             destruct IH3 as [IH3 IH3']; eauto. rewrite IH3. destruct (f s''); hnf in *.
              ++ destruct H4 as (H4&->). hnf in *. inv H4. erewrite (to_symbol_move_false HD H1); eauto.
+                split; auto. rewrite <- IH3. cbn in *. rewrite <- IH3'. rewrite H''. apply tapeToList_move.
              ++ destruct H4 as (H4&_). congruence.
-          -- rewrite H'' in *. hnf in *. destruct H4 as (H4&->). inv H4.
-             symmetry. erewrite (to_symbol_move_false HD H1); eauto. rewrite IH3; eauto. congruence.
+          -- rewrite H'' in *. hnf in *. destruct H4 as (H4&->). inv H4. specialize (IH3 H3) as (IH3&IH3'). split.
+             ++ symmetry. erewrite (to_symbol_move_false HD H1); eauto.
+             ++ rewrite <- IH3'. apply tapeToList_move.
         * destruct H1'' as (H1''&->). hnf in *. congruence.
   Qed.
 
