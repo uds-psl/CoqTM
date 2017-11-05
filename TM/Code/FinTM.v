@@ -2,181 +2,44 @@ Require Import TM.Prelim TM.TM TM.Code.Code TM.Code.CodeTM.
 Require Import TM.Basic.Mono.
 Require Import TM.Combinators.SequentialComposition TM.Combinators.Match.
 
-Open Scope vector_scope.
+Section FinTM1.
+  Variable sig : finType.
+  Variable f : sig -> sig.
 
-(* Compute the [n]th (encoded as a [nat] on tape 1) value of a sequence [it f n x] and
- * terminate in state [inr (it f n x)]. *)
-Section Fin_Seq_TM.
+  Let cX := Encode_Finite sig.
+  Let codeX := codeX cX.
+  Let sig' := sig' sig.
 
-  Variable X : finType.
-  Variable f : X -> X.
-  Variable start : X.
+  Definition UnaryFinTM : { M : mTM sig' 1 & states M -> unit } :=
+    TapeInit sig ;;
+             MATCH (Read_char _)
+             (fun r1 =>
+                match r1 with
+                | Some (inl r1') => Write (inl (f r1')) tt
+                | _ => mono_Nop _ tt
+                end).
   
-  Lemma it_S (n : nat) (x : X) :
-    it f n (f x) = f (it f n x).
-  Proof. induction n; cbn; congruence. Qed.
-
-  (* (inl start) is the initial state,
-   * (inl _) are the internal states,
-   * (inr _) are the final states, that stand for the corresponding decoding. *)
-  Definition fin_seq_states := FinType (EqType (X + X))%type.
-
-  Definition fin_seq_TM_trans_mono :
-    fin_seq_states -> option Bool_Fin -> fin_seq_states * (option Bool_Fin * move).
+  Lemma UnaryFinTM_Computes :
+    UnaryFinTM ⊨ Computes_Rel Fin.F1 Fin.F1 cX cX f.
   Proof.
-    intros q. destruct q as [x | y] eqn:E.
-    - (* inl x *)
-      intros [ [ | ] | ].
-      + (* Some true *)
-        apply (inl (f x), (None, R)). (* continue *)
-      + (* Some false *)
-        apply (inr x, (None, R)). (* terminate *)
-      + (* None *)
-       apply (inl x, (None, N)). (* unexpected end of tape -> diverge *)
-    - (* inr y *)
-      intros _. apply (inr y, (None, N)). (* terminal state *)
-  Defined.
-
-  Definition fin_seq_fin : fin_seq_states -> bool.
-  Proof.
-    destruct 1 as [ _ | _ ]; [apply false | apply true].
-  Defined.
+    eapply Realise_monotone.
+    - unfold UnaryFinTM. eapply Seq_Realise.
+      + eapply TapeInit_Realise with (X := sig) (cX := cX).
+      + eapply Match_Realise.
+        * eapply RealiseIn_Realise. eapply read_char_sem.
+        * instantiate (1 := fun r1 => match r1 with Some (inl r1') => _ | _ => _ end).
+          intros y. cbn in y. destruct y as [ [ | ] | ]; cbn in *.
+          -- eapply RealiseIn_Realise. eapply Write_Sem.
+          -- eapply RealiseIn_Realise. eapply mono_Nop_Sem.
+          -- eapply RealiseIn_Realise. eapply mono_Nop_Sem.
+    - hnf. intros tin (yout, tout). intros H. hnf in H. destruct H as ((y1&t1)&H1&H2). hnf in *.
+      destruct H2 as (r1&t2&(He1&He2)&H3); hnf in *; subst. intros x (r1&r2&EncX). specialize (H1 _ _ _ EncX) as (H1&H2).
+      cbn in *. pose proof tape_local_current_cons H2 as H2'. destruct_tapes. cbn in *. rewrite H2' in H3. hnf in H3.
+      destruct H3 as (_&H3). cbn in *. subst. destruct yout, y1.
+      unfold sig', CodeTM.sig', finType_CS in *. cbn in *. hnf in EncX.
+      rewrite H1. hnf. do 2 eexists. hnf. cbn. simpl_list.
+      instantiate (1 := r2). instantiate (1 := r1). f_equal. cbn. f_equal. f_equal. 
+      erewrite tape_local_right; eauto.
+  Qed.
   
-  Definition Fin_Seq_TM : mTM Bool_Fin 1.
-  Proof.
-    apply Mk_Mono_TM with (states := fin_seq_states).
-    - apply fin_seq_TM_trans_mono.
-    - apply (inl start).
-    - apply fin_seq_fin.
-  Defined.
-
-  Definition Fin_Seq : { M : mTM Bool_Fin 1 & states M -> option X }.
-  Proof.
-    exists Fin_Seq_TM. intros [ _ | x ]; [apply None | apply (Some x)].
-  Defined.
-
-  Lemma Fin_Seq_terminates_in_Strong :
-    forall (tape1 : tape Bool_Fin) (rest : list Bool_Fin) (i : nat)
-      (x : X),
-      tape_local tape1 = encode (codeable := Encode_Nat) i ++ rest ->
-      exists tape2, tape_local tape2 = rest /\
-               loopM (M := Fin_Seq_TM) (S i) (mk_mconfig (inl x) [|tape1|]) =
-               Some (mk_mconfig (inr (it f i x)) [|tape2|]).
-  Proof.
-    intros tape1 rest i. revert tape1 rest. induction i; intros; cbn in *.
-    - unfold step at 1. cbn.
-      replace (current tape1) with (Some false); [ | erewrite tape_local_current_cons; now eauto]. cbn.
-      unfold step at 1. cbn.
-      replace (current tape1) with (Some false); [ | erewrite tape_local_current_cons; now eauto]. cbn.
-      exists (tape_move_right tape1). split; auto. erewrite tape_local_move_right; eauto.
-    - assert (current tape1 = Some true) as H' by (erewrite tape_local_current_cons; eauto).
-      assert (tape_local (tape_move_right tape1) = encode i ++ rest) as H'' by (erewrite tape_local_move_right; eauto). clear H.
-      unfold step at 1. cbn. rewrite !H'.
-      unfold it. cbn.
-      unfold step at 2. unfold step at 2. cbn. rewrite !H'. cbn.
-      unfold step at 2. cbn. rewrite !H'. cbn.
-
-      (* current (tape_move_right tape1) must not be None *)
-      destruct (current (tape_move_right tape1)) eqn:E1.
-      + destruct e eqn:E2; cbn in *.
-        * edestruct (IHi (tape_move_right tape1) rest (f x)) as (tape2&IHi'&IHi'').
-          eapply H''. cbn in *.
-          unfold step at 2. cbn. rewrite H'. cbn.
-          unfold step at 2 in IHi''. cbn in IHi''. rewrite E1 in IHi''. cbn in IHi''.
-          eexists tape2. split; auto. cbn in *.
-          now rewrite it_S in IHi''.
-        * edestruct (IHi (tape_move_right tape1) rest (f x)) as (tape2&IHi'&IHi'').
-          eapply H''. cbn in *.
-          unfold step at 2. cbn. rewrite H'. cbn.
-          unfold step at 2 in IHi''. cbn in IHi''. rewrite E1 in IHi''. cbn in IHi''.
-          eexists tape2. split; auto. cbn in *.
-          now rewrite it_S in IHi''.
-      + exfalso. destruct i; cbn in *.
-        * eapply tape_local_current_cons in H''. enough (None = Some false) by discriminate. rewrite <- E1. auto.
-        * eapply tape_local_current_cons in H''. enough (None = Some  true) by discriminate. rewrite <- E1. auto.
-  Qed.
-
-  Lemma Fin_Seq_terminates_in :
-    Fin_Seq_TM ↓ (fun tapes1 i => exists k, tape_encodes_locally _ (tapes1[@Fin.F1]) k /\ i = S k).
-  Proof.
-    hnf. intros tapes ? (k&(rest&H1)&->). destruct_tapes. cbn in *. hnf in *.
-    destruct (@Fin_Seq_terminates_in_Strong h rest k start) as (?&?&?); eauto.
-  Qed.
-
-  Definition Fin_Seq_R_p : Rel (tapes Bool_Fin 1) (option X * tapes Bool_Fin 1) :=
-    ignoreParam (@skip_locally_R 1 Fin.F1 _ nat _) ∩
-                (fun tps1 '(ox, _) => forall n, tape_encodes_locally _ (tps1[@Fin.F1]) n -> ox = Some (it f n start)).
-
-  Lemma Fin_Seq_WRealise : Fin_Seq ⊫ Fin_Seq_R_p.
-    hnf. intros. destruct_tapes. cbn in *. split; hnf in *.
-    - intros x rest HEnc.
-      pose proof @Fin_Seq_terminates_in_Strong h rest _ start HEnc as (tape2&H1&H2).
-      unfold loopM in *. pose proof (loop_functional H H2) as ->. cbn. auto.
-    - intros x (rest&HEnc).
-      pose proof @Fin_Seq_terminates_in_Strong h rest _ start HEnc as (tape2&H1&H2).
-      unfold loopM in *. pose proof (loop_functional H H2) as ->. cbn. auto.
-  Qed.
-
-End Fin_Seq_TM.
-
-
-
-(* TODO: Instanciate the above TM witch FinStep and Fin.F1 *)
-Section FinMod.
-
-  Definition modstep (n : nat) : nat -> nat :=
-    fun m => if m =? n then 0 else S m.
-
-  Lemma modstep_le (n m : nat) : m < S n -> modstep n m < S n.
-  Proof.
-    intros H. revert m H. unfold modstep. induction n; cbn in *; intros m H.
-    - assert (m = 0) as -> by omega. cbn. omega.
-    - destruct (m =? S n) eqn:E.
-      + apply Nat.eqb_eq in E as ->. omega.
-      + enough (m <> S n) by omega.
-        intros ->. enough (S n =? S n = true) by congruence. apply Nat.eqb_eq. auto.
-  Qed.
-
-  Definition FinStep (n : nat) : Fin.t (S n) -> Fin.t (S n).
-  Proof.
-    intros x. destruct (Fin.to_nat x).
-    apply (Fin.of_nat_lt (modstep_le l)).
-  Defined.
-
-  Lemma fin_next_correct_S (n : nat) (x : Fin.t (S n)) :
-    proj1_sig (Fin.to_nat x) < n ->
-    proj1_sig (Fin.to_nat (FinStep x)) = S (proj1_sig (Fin.to_nat x)).
-  Proof.
-    Set Printing Coercions.
-    intros H. unfold FinStep.
-    destruct (Fin.to_nat x). cbn in *.
-    rewrite Fin.to_nat_of_nat. cbn in *.
-    unfold modstep. destruct (x0 =? n) eqn:E; auto.
-    apply Nat.eqb_eq in E.
-    subst. omega.
-    Unset Printing Coercions.
-  Qed.
-
-  Lemma fin_next_correct_n (n : nat) (x : Fin.t (S n)) :
-    proj1_sig (Fin.to_nat x) >= n ->
-    proj1_sig (Fin.to_nat (FinStep x)) = 0.
-  Proof.
-    Set Printing Coercions.
-    intros H. unfold FinStep.
-    destruct (Fin.to_nat x). cbn in *.
-    rewrite Fin.to_nat_of_nat. cbn in *.
-    unfold modstep. destruct (x0 =? n) eqn:E; auto.
-    assert (x0 = n) by omega.
-    apply Nat.eqb_eq in H0. exfalso. congruence.
-    Unset Printing Coercions.
-  Qed.
-
-  (*
-  Compute it (FinStep (n := 2)) 0 (Fin.F1).
-  Compute it (FinStep (n := 2)) 1 (Fin.F1).
-  Compute it (FinStep (n := 2)) 2 (Fin.F1).
-  Compute it (FinStep (n := 2)) 3 (Fin.F1).
-  *)
-
-  Definition FinMod (n : nat) := Fin_Seq (@FinStep n) Fin.F1.
-End FinMod.
+End FinTM1.

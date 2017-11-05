@@ -32,7 +32,7 @@ TM/IsoTrans.v
 TM/Code/Code.v
 TM/Code/CodeTM.v
 # TM/Code/BoolTM.v
-# TM/Code/FinTM.v
+TM/Code/FinTM.v
 
 TM/Compound/Peek.v
 TM/Compound/MoveToSymbol.v
