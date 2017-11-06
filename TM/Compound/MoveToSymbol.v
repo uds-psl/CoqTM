@@ -66,7 +66,7 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
   Lemma tape_move_niltape (t : tape sig) (D : move) : tape_move t D = niltape _ -> t = niltape _.
   Proof. destruct t, D; cbn; intros; try congruence. destruct l; congruence. destruct l0; congruence. Qed.
 
-  Lemma moveToSymbol_nitape_R t : moveToSymbol_R t = niltape _ -> t = niltape _.
+  Lemma moveToSymbol_niltape_R t : moveToSymbol_R t = niltape _ -> t = niltape _.
   Proof.
     intros H. remember (niltape sig) as N. functional induction moveToSymbol_R t; subst; try congruence.
     - specialize (IHt0 H). destruct rs; cbn in *; congruence.
@@ -76,7 +76,7 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
 
   
   Definition MoveToSymbol_R_Rel : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
-    Mk_R_p ((if? (fun t t' => exists s, current t' = Some s /\ f s)
+    Mk_R_p ((if? (fun t t' => exists s, current t' = Some s /\ f s = true)
                ! (fun t t' => current t' = None)) ∩ ignoreParam (fun t t' => moveToSymbol_R t = t')).
 
   Lemma MoveToSymbol_R_WRealise :
@@ -118,7 +118,7 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
           destruct (t2[@Fin.F1]) eqn:E1; subst; hnf in *; try (destruct H4 as (H4&->); inv H4); subst.
           + {
               specialize (IH3 eq_refl) as (IH3&IH4). rewrite E1 in *. inv IH4. 
-              cbn. apply moveToSymbol_nitape_R in H0. rewrite H0 in *. cbn. split; auto.
+              cbn. apply moveToSymbol_niltape_R in H0. rewrite H0 in *. cbn. split; auto.
               destruct P'; subst; cbn in *; auto.
               - destruct b; hnf in *; destruct IH2 as (IH2'&IH2); inv IH2'. rewrite H0 in *.
                 symmetry in IH2. apply tape_move_niltape in IH2. rewrite IH2 in *. cbn. reflexivity.
@@ -271,7 +271,7 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
     - pose proof (tapeToList_move (rightof l ls) L). cbn [tape_move] in H. rewrite <- H in IHt0. congruence.
   Qed.
 
-  Lemma moveToSymbol_nitape_L t : moveToSymbol_L t = niltape _ -> t = niltape _.
+  Lemma moveToSymbol_niltape_L t : moveToSymbol_L t = niltape _ -> t = niltape _.
   Proof.
     intros H. remember (niltape sig) as N. functional induction moveToSymbol_L t; subst; try congruence.
     - specialize (IHt0 H). destruct ls; cbn in *; congruence.
@@ -279,7 +279,7 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
   Qed.
 
   Definition MoveToSymbol_L_Rel : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
-    Mk_R_p ((if? (fun t t' => exists s, current t' = Some s /\ f s)
+    Mk_R_p ((if? (fun t t' => exists s, current t' = Some s /\ f s = true)
                ! (fun t t' => current t' = None)) ∩ ignoreParam (fun t t' => moveToSymbol_L t = t')).
 
   Lemma MoveToSymbol_L_Realise : 

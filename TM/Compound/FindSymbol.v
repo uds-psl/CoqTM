@@ -14,13 +14,16 @@ Section FindSymbol.
        (mono_Nop _ true)
        (Move _ R tt ;; MoveToSymbol f R).
 
-  Definition to_symbol t :=
-    match to_symbol_l f t with
-    | (true,  t') => (true, t')
-    | (false, t') => to_symbol_r f (tape_move_mono t' (None, R))
+  Definition moveToSymbol t :=
+    match moveToSymbol_L f t with
+    | midtape ls m rs as t' => t'
+    | t' => moveToSymbol_R f t'
     end.
 
-  Definition FindSymbol_Rel := Mk_R_p (fun t t' => t' = to_symbol t /\ tapeToList t = tapeToList (snd t')).
+
+  Definition FindSymbol_Rel : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
+    Mk_R_p ((if? (fun t t' => exists s, current t' = Some s /\ f s = true)
+               ! (fun t t' => current t' = None)) ∩ ignoreParam (fun t t' => moveToSymbol t = t')).
 
   Lemma FindSymbol_Realise :
     FindSymbol ⊨ FindSymbol_Rel.
@@ -34,12 +37,26 @@ Section FindSymbol.
         * eapply MoveToSymbol_R_Realise.
     - hnf. intros tin (yout, tout). intros H. hnf in H.
       destruct H as [H | H]; hnf in *.
-      + destruct H as (t1&H1&->&->). unfold to_symbol. cbn in H1. destruct H1 as (H1&H2). now rewrite <- H1.
+      + destruct H as (t1&H1&->&->). unfold moveToSymbol. cbn in H1. destruct H1 as (H1&H2).
+        hnf in *. destruct H1 as (s&H1&H1'). split; hnf; eauto. rewrite H2.
+        destruct (tout[@Fin.F1]); cbn; auto. cbn in *. congruence.
       + destruct H as(t1&(H1&H1')&((b&t2)&H2&H3&H4)); hnf in *. destruct b. destruct H2 as (_&H2).
-        unfold to_symbol. cbn in H1. rewrite <- H1. cbn. rewrite H2 in *; clear H2. destruct_tapes. cbn in *. split; auto.
-        rewrite <- H4. rewrite H1'. cbn. apply (@tapeToList_move _ _ R).
+        unfold moveToSymbol. cbn in H1. rewrite <- H1. cbn. rewrite H2 in *; clear H2. destruct_tapes. cbn in *.
+        destruct yout; hnf in *.
+        * destruct H3 as (s&H3&H3'). split; eauto. destruct h0 eqn:E; cbn in *; inv H3.
+          destruct (moveToSymbol_L f h) eqn:E2; cbn in *; try congruence.
+          rewrite moveToSymbol_R_equation in H4.
+          destruct (f e) eqn:E3; inv H4.
+          -- rewrite moveToSymbol_R_equation. cbn. now rewrite moveToSymbol_R_equation, H3'.
+          -- rewrite moveToSymbol_R_equation. cbn. rewrite moveToSymbol_R_equation, E3. cbn. reflexivity.
+        * subst. destruct (moveToSymbol_L f h) eqn:E1; cbn in *; inv H1; auto.
+          rewrite moveToSymbol_R_equation in *. destruct (f e) eqn:E2; cbn in *; try congruence; split; auto.
+          rewrite moveToSymbol_R_equation. cbn. rewrite moveToSymbol_R_equation, E2. cbn. auto.
   Qed.
 
+  (* TODO *)
+
+  (*
   Lemma to_symbol_r_true t t' :
     to_symbol_r f t = (true, t') ->
     exists m ls rs, t' = midtape ls m rs /\ f m = true. 
@@ -112,6 +129,7 @@ Section FindSymbol.
         * cbn. rewrite E3. auto.
         * cbn. rewrite E3. auto.
   Admitted.
+*)
 
 End FindSymbol.
 
@@ -135,6 +153,7 @@ Section FindUniqueSymbol.
            ! (fun t _ => count (tapeToList t) x = 0)
       ).
 
+  (*
   Lemma found r1 r2 s1 s2 :
     count (rev r1 ++ x :: r2) x = 1 -> rev r1 ++ x :: r2 = rev s1 ++ x :: s2 ->
     r1 = s1 /\ r2 = s2.
@@ -143,18 +162,14 @@ Section FindUniqueSymbol.
     - decide (x = x) as [ | ?]; try tauto. inv H1. destruct s2; cbn in *.
       + inv H2. destruct s1; cbn in *. inv H1. auto.
   Admitted.
+*)
+
 
   Lemma FindUniqueSymbol_Realise : FindUniqueSymbol ⊨ FindUniqueSymbol_Rel.
   Proof.
     eapply Realise_monotone.
     - unfold FindUniqueSymbol. eapply FindSymbol_Realise.
     - hnf. intros tin (bout&tout) (H1&H2). hnf in *. destruct bout.
-      + intros U r1 r2 H3. hnf in *. symmetry in H1. eapply to_symbol_true in H1 as (m&s1&s2&H&H').
-        decide (m = x) as [->| ]; cbn in *; try congruence. clear H'.
-        rewrite H in H2. cbn in *. rewrite H. clear tout H.
-        rewrite H3 in H2, U. clear H3. clear tin. cbn in U.
-        now pose proof (@found _ _ _ _ U H2) as [-> ->].
-      + eapply notInZero. intros H3.
   Admitted.
 
 End FindUniqueSymbol.
