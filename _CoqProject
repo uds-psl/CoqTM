@@ -1,39 +1,43 @@
 -R . "FormalComplexity"
 -Q ../base-library "Shared"
  -I "../smpl/src"
+ # FIXME: smpl does not work currently
 
 -install none
 COQDOCFLAGS = "--charset utf-8 -s --parse-comments --with-header ./website/resources/header.html --with-footer ./website/resources/footer.html --index indexpage"
 
+# Basics
 TM/Prelim.v
 TM/Relations.v
 TM/TM.v
+TM/Retract.v
 
-TM/Basic/Nop.v
-TM/Basic/Mono.v
-TM/Basic/WriteString.v
-# TM/Basic/Multi.v
-
+# Programming combinators
 TM/Combinators/Combinators.v
 TM/Combinators/Match.v
 TM/Combinators/SequentialComposition.v
 TM/Combinators/If.v
 TM/Combinators/While.v
 
-# Nie wieder:
-# TM/Compound.v
-
-# TM/Injection.v
-TM/Retract.v
+# TM Transformations
 TM/LiftMN.v
 TM/LiftSigmaTau.v
-TM/IsoTrans.v
+TM/Mirror.v
 
+# Encoding
 TM/Code/Code.v
 TM/Code/CodeTM.v
 # TM/Code/BoolTM.v
 TM/Code/FinTM.v
 
+# Basic Machines
+TM/Basic/Nop.v
+TM/Basic/Mono.v
+TM/Basic/WriteString.v
+# TM/Basic/Multi.v
+
+# Compound Machines
+# TM/Compound.v
 TM/Compound/Peek.v
 TM/Compound/MoveToSymbol.v
 TM/Compound/FindSymbol.v
