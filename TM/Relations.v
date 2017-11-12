@@ -47,6 +47,9 @@ Definition finite_rel_union (X Y : Type) (F : Type) (R : F -> Rel X Y) : Rel X Y
 
 Notation "'⋃_' f R" := (finite_rel_union (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋃_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
 
+Definition functionalOn X Y Z (T : Rel X Y) (R : Rel X Z) :=
+  forall x i, T x i -> forall z1 z2, R x z1 -> R x z2 -> z1 = z2.
+
 Definition ignoreFirst X Y (R : Y -> Prop) : Rel X Y  := fun x y => R y.
 Notation "'↑' R" := (ignoreFirst R) (at level 40, format "'↑' R").
 

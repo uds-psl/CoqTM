@@ -27,65 +27,28 @@ Section Composition.
     - hnf. intros H2 (f& t). intros ([ | ]& (y & H3&H3')). left. hnf. eauto. right. hnf. eauto.
   Qed.
 
-  Lemma If_Terminates_True' t conf1 k1 conf2 k2 :
-    (projT1 pM1) ↓↓ (t, k1, conf1) ->
-    projT2 pM1 (cstate conf1) = true ->
-    (projT1 pM2) ↓↓ (ctapes conf1, k2, conf2) ->
-    (projT1 If) ↓ (t, k1 + S k2).
+
+  Lemma If_terminatesIn (R1 : Rel _ (bool * _)) T1 T2 T3 :
+    functionalOn T1 R1 ->
+    pM1 ⊫ R1 ->
+    projT1 pM1 ↓ T1 ->
+    projT1 pM2 ↓ T2 ->
+    projT1 pM3 ↓ T3 ->
+    projT1 If ↓ (fun (t : tapes sig n) (i : nat) =>
+            exists (i1 i2 : nat) (b : bool) (y : tapes sig n),
+              i > i1 + i2 /\
+              (R1 t (b, y) /\ b = true /\ T1 t i1 /\ T2 y i2 \/
+                                                  R1 t (b, y) /\ b = false /\ T1 t i1 /\ T3 y i2)).
   Proof.
-    intros H1 H2 H3.
-    pose proof @Match_Terminates' n sig (FinType (EqType bool)) pM1 F2 (fun b => if b then pM2 else pM3) t conf1 k1 as L.
-    cbn in L. rewrite H2 in L. specialize (L conf2 k2 ). unfold If, MATCH. cbn [projT1]. eapply L; eauto.
-  Qed.
-    
-  Lemma If_Terminates_False' t conf1 k1 conf2 k2 :
-    (projT1 pM1) ↓↓ (t, k1, conf1) ->
-    projT2 pM1 (cstate conf1) = false ->
-    (projT1 pM3) ↓↓ (ctapes conf1, k2, conf2) ->
-    (projT1 If) ↓ (t, k1 + S k2).
-  Proof.
-    intros H1 H2 H3.
-    pose proof @Match_Terminates' n sig (FinType (EqType bool)) pM1 F2 (fun b => if b then pM2 else pM3) t conf1 k1 as L.
-    cbn in L. rewrite H2 in L. specialize (L conf2 k2 ). unfold If, MATCH. cbn [projT1]. eapply L; eauto.
+    intros. eapply TerminatesIn_monotone.
+    - eapply (Match_TerminatesIn (R1 := R1) (T := fun b => if b then T2 else T3) ); eauto.
+      now destruct f.
+    - intros t i (i1 & i2 & b & y & Hi & [(? & ? & ? & ?) | (? & ? & ? & ?)]); cbv -[plus];
+        repeat eexists; eauto;
+          destruct b; eauto.
   Qed.
 
-  
-  Section If_Terminates.
 
-    Inductive If_Terminates_Rel (t : tapes sig n) (k'' : nat) : Prop :=
-    | If_Terminates_True
-        (k k' : nat) (In : k + k' < k'')
-        (midconf   : mconfig sig (states (projT1 pM1)) n)
-        (exec1     : projT1 pM1 ↓↓ (t, k, midconf))
-        (exec1True : projT2 pM1 (cstate midconf) = true)
-        (endconf   : mconfig sig (states (projT1 pM2)) n)
-        (exec1     :  projT1 pM2 ↓↓ (ctapes midconf, k', endconf)) :
-           If_Terminates_Rel t k''
-    | If_Terminates_False
-        (k k' : nat) (In : k + k' < k'')
-        (midconf   : mconfig sig (states (projT1 pM1)) n)
-        (exec1     : projT1 pM1 ↓↓ (t, k, midconf))
-        (exec1True : projT2 pM1 (cstate midconf) = false)
-        (endconf   : mconfig sig (states (projT1 pM3)) n)
-        (exec2     : projT1 pM3 ↓↓ (ctapes midconf, k', endconf)) :
-           If_Terminates_Rel t k''.
-                                                
-    Lemma If_Terminates :
-      projT1 If ⇓ If_Terminates_Rel.
-    Proof.
-      intros t k''. intros [k k' H1 midconf H2 H3 endconf H4 | k k' H1 midconf H2 H3 endconf H4].
-      - pose proof @Match_Terminates' n sig (FinType (EqType bool)) pM1 F2 (fun b => if b then pM2 else pM3) t midconf as L.
-        cbn in L. rewrite H3 in L. specialize (L k endconf k' H2 H4). hnf in *.
-        destruct L as (econf'&H5). hnf in H5. exists econf'. unfold If. unfold MATCH. cbn in *.
-        unfold loopM in *. eapply loop_ge with (k1 := k + S k'). omega. assumption.
-      - pose proof @Match_Terminates' n sig (FinType (EqType bool)) pM1 F2 (fun b => if b then pM2 else pM3) t midconf as L.
-        cbn in L. rewrite H3 in L. specialize (L k endconf k' H2 H4). hnf in *.
-        destruct L as (econf'&H5). hnf in H5. exists econf'. unfold If. unfold MATCH. cbn in *.
-        unfold loopM in *. eapply loop_ge with (k1 := k + S k'). omega. assumption.
-    Qed.
-
-  End If_Terminates.
-  
   Lemma If_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) k1 k2 k3:
     pM1 ⊨c(k1) R1 ->
     pM2 ⊨c(k2) R2 ->

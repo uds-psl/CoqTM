@@ -242,56 +242,23 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     now rewrite (loop_functional H1 H2) in *.
   Qed.
 
-  Definition TerminatesInto n (M : mTM n) : (tapes _ * nat * mconfig (states M) n) -> Prop :=
-    fun '(input, k, outc) => loopM k (initc M input) = Some outc.
-  Notation "M '↓↓' T" := (@TerminatesInto _ M T) (no associativity, at level 60, format "M  '↓↓'  T").
-  Arguments TerminatesInto {_} _ _.
-
-  Definition Terminates n (M : mTM n) : tapes n * nat -> Prop :=
-    fun '(tapes, k) => exists (c : mconfig (states M) n), TerminatesInto M (tapes, k, c).
-  Notation "M '↓' t" := (Terminates M t) (no associativity, at level 60, format "M  '↓'  t").
-
   Definition TerminatesIn {n : nat} (M : mTM n) (T : Rel (tapes n) nat) :=
-    forall t1 k, T t1 k -> exists conf, loopM k (initc M t1) = Some conf.
+    forall tin k, T tin k -> exists conf, loopM k (initc M tin) = Some conf.
   Arguments TerminatesIn { _ } _.
-  Notation "M ⇓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '⇓'  T").
+  Notation "M ↓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '↓'  T").
 
   Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : Rel (tapes _) _) :
-    M ⇓ T1 -> (forall x y, T2 x y -> T1 x y) -> M ⇓ T2.
+    M ↓ T1 -> (forall x y, T2 x y -> T1 x y) -> M ↓ T2.
   Proof.
     intros H1 H2. firstorder.
   Qed.
 
-  Definition TerminatesAlways {n : nat} (M : mTM n) : Prop := forall t : tapes n, exists k, M ↓ (t, k).
-  Notation "M ⇓⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓⇓'").
-  
-  Lemma TerminatesIn_TerminatesAlways {n : nat} (M : mTM n) (T : Rel (tapes _) _) :
-    M ⇓ T -> (forall t : tapes _, exists x, T t x) -> M ⇓⇓.
+  Lemma WRealise_to_Realise n (F : finType) (pM : { M : mTM n & (states M -> F) }) R T :
+    projT1 pM ↓ T ->
+    (forall t, exists k, T t k) ->
+    pM ⊫ R -> pM ⊨ R.
   Proof.
-    intros H. intros H1. hnf. intros t. specialize (H1 t) as (k&H1). hnf in H.
-    specialize (H t k H1). firstorder.
-  Qed.
-  
-  Lemma WRealise_to_Realise n (F : finType) (pM : { M : mTM n & (states M -> F) }) R :
-    projT1 pM ⇓⇓ -> pM ⊫ R -> pM ⊨ R.
-  Proof.
-    intros H1 H2. intros input. specialize (H1 input) as (k&c&?). eauto.
-  Qed.
-
-  Lemma Realise_TerminatesAlways n (F : finType) (pM : { M : mTM n & (states M -> F) }) R :
-    pM ⊨ R -> projT1 pM ⇓⇓.
-  Proof.
-    intros H. intros t. specialize (H t) as (outc&k&H&H'). firstorder.
-  Qed.
-
-  Lemma Realise_iff n (F : finType) (pM : { M : mTM n & (states M -> F) }) R :
-    projT1 pM ⇓⇓ /\ pM ⊫ R <-> pM ⊨ R.
-  Proof.
-    split.
-    - intros (H1&H2). now eapply WRealise_to_Realise.
-    - intros H. split.
-      + now eapply Realise_TerminatesAlways.
-      + now eapply Realise_WRealise.
+    intros H1 H2 H3. intros input. hnf in *. specialize (H2 input) as (k&Hk). specialize (H1 _ _ Hk) as (oconf&HL). eauto.
   Qed.
 
   Definition RealiseIn n (F : finType) (pM : { M : mTM n & (states M -> F) }) R (k : nat) :=
@@ -312,6 +279,24 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     - unfold loopM. eapply loop_ge; eauto. intuition.
     - intuition.
   Qed.
+
+  Fact Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
+    pM ⊫ R /\ projT1 pM ↓ (fun _ i => i >= k) <-> pM ⊨c(k) R.
+  Proof.
+    split.
+    - intros (HR & Ht) t. edestruct (Ht t k). cbn; omega. eauto.
+    - intros H.
+      split.
+      + intros t i cout Hc.
+        destruct (H t) as (? & ? & ?).
+        cutrewrite (cout = x).
+        eassumption.
+        eapply loop_functional; eauto.
+      + intros t i Hi.
+        edestruct (H t) as (? & ? & ?). 
+        exists x. eapply loop_ge; eauto.
+  Qed.
+
   
   Fact RealiseIn_changeP n (M:mTM n) (F : finType) (f f' : states M -> F) (R : Rel (tapes _) (F * tapes _)) k :
     RealiseIn (M; f) R k -> (forall s, f s = f' s) -> RealiseIn (M ; f') R k.
@@ -324,14 +309,6 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Proof.
     intros HwR HR t.  destruct (HR t) as (outc & ?). exists outc. firstorder.
   Qed.
-
-  Lemma RealiseIn_Terminates n (F : finType) (pM : { M : mTM n & (states M -> F) }) R (k : nat) :
-    pM ⊨c(k) R -> projT1 pM ⇓ (fun t j => j >= k).
-  Proof.
-    intros H1 t j H2. specialize (H1 t) as (outc&H1&_). exists outc.
-    unfold loopM in *. apply loop_ge with (k1 := k); assumption.
-  Qed.
-
 
   (** ** Canonical relations *)
 (*
@@ -356,7 +333,6 @@ End Fix_Sigma.
 (* Arguments Realise {sig} {n} M {F} f R : clear implicits. *)
 (* Arguments WRealise {sig n F} pM R : clear implicits. *)
 (* Arguments RealiseIn {sig n F} pM R k : clear implicits. *)
-Arguments TerminatesInto {_} {_} _ _.
 Arguments TerminatesIn {_} {_} _.
 
 Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
@@ -366,10 +342,7 @@ Notation "M '⊨' R" := (Realise M R) (no associativity, at level 60, format "M 
 Notation "M '⊨(' f ')' R" := ((M;f) ⊫ R) (no associativity, at level 60, format "M  '⊨(' f ')'  R").
 Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
 Notation "M '⊨c(' f ',' k ')' R" := (RealiseIn (M; f) R k) (no associativity, at level 45, format "M  '⊨c(' f ',' k ')'  R").
-Notation "M '↓↓' T" := (TerminatesInto M T) (no associativity, at level 60, format "M  '↓↓'  T").
-Notation "M '↓' t" := (Terminates M t) (no associativity, at level 60, format "M  '↓'  t").
-Notation "M ⇓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '⇓'  T").
-Notation "M ⇓⇓" := (TerminatesAlways M) (no associativity, at level 30, format "M  '⇓⇓'").
+Notation "M '↓' t" := (TerminatesIn M t) (no associativity, at level 60, format "M  '↓'  t").
 
 (* Destruct a vector of tapes of known size *)
 Ltac destruct_tapes := unfold tapes in *; destruct_vector.

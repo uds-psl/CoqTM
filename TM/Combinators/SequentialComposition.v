@@ -25,45 +25,19 @@ Section Composition.
     firstorder.
   Qed.
 
-  Lemma Seq_Terminates' t conf1 k1 conf2 k2 :
-    (projT1 pM1) ↓↓ (t, k1, conf1) ->
-    projT1 pM2 ↓↓ (ctapes conf1, k2, conf2) ->
-    (projT1 Seq) ↓ (t, k1 + S k2).
+  Lemma Seq_terminatesIn (R1 : Rel _ (F * _)) T1 T2:
+    functionalOn T1 R1 ->
+    pM1 ⊫ R1 ->
+    projT1 pM1 ↓(T1) ->
+    projT1 pM2 ↓(T2) ->
+    projT1 Seq ↓(fun (x : tapes sig n) (i : nat) =>
+            exists (j k : nat) (y : tapes sig n) (f : F),
+              R1 x (f, y) /\ T1 x j /\ T2 y k /\ j + k < i).
   Proof.
-    intros H1 H2. eapply Match_Terminates'; eauto.
+    intros.
+    eapply TerminatesIn_monotone. eapply (Match_TerminatesIn (R1 := R1) (T := fun _ => T2) ); eauto.
+    intros ? ? (? & ? & ? & ? & ? & ? & ? & ?). eexists _, _, _, _. eauto.
   Qed.
-
-  Section Seq_Terminates.
-
-    Inductive Seq_Terminates_Rel (t : tapes sig n) (k'' : nat) : Prop :=
-      Build_Seq_Terminates_Rel
-        (term_k1 term_k2 : nat)
-        (term_In : term_k1 + term_k2 < k'')
-        (term_midconf : mconfig sig (states (projT1 pM1)) n)
-        (term_t1 : projT1 pM1 ↓↓ (t, term_k1, term_midconf))
-        (term_endconf : mconfig _ _ _)
-        (term_m2 : projT1 pM2 ↓↓ (ctapes term_midconf, term_k2, term_endconf)) :
-        Seq_Terminates_Rel t k''.
-
-    (* Record Seq_Terminates_Rel (t : tapes sig n) (k'' : nat) : Type :=
-      {
-        term_k : nat;
-        term_k' : nat;
-        term_In : term_k + term_k' < k'';
-        term_m1 : T1 t term_k;
-        term_m2 : T2 (ctapes (proj1_sig (Term1 term_m1))) term_k';
-      }. *)
-
-    Lemma Seq_Terminates :
-      projT1 Seq ⇓ Seq_Terminates_Rel.
-    Proof.
-      unfold Seq, MATCH. cbn.
-      eapply TerminatesIn_monotone.
-      - apply Match_Terminates.
-      - intros t k''. intros [k k' H1 H2 H3]. econstructor; eauto.
-    Qed.
-
-  End Seq_Terminates.
 
   Lemma Seq_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) k1 k2:
     pM1 ⊨c(k1) R1 ->

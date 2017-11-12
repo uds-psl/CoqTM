@@ -227,74 +227,43 @@ Section Match.
     unfold WRealise in HR1.
     eapply HR1 in Eq1.
     eapply HR2 in Eq2.
-    eexists _, _. split. eapply Eq1.
-    eapply Eq2.
+    eexists _, _. split. eapply Eq1. eapply Eq2.
   Qed.
 
 
-  Section Match_Terminates.
-
-    Inductive Match_Terminates_Rel (t : tapes sig n) (k'' : nat) : Prop :=
-      Build_Match_Terminates_Rel
-        (term_k term_k' : nat)
-        (term_In : term_k + term_k' < k'')
-        (term_midconf : mconfig sig (states (projT1 pM1)) n)
-        (term_t1 : projT1 pM1 ↓↓ (t, term_k, term_midconf))
-        (term_endconf : mconfig _ _ _)
-        (term_m2 : projT1 (pMf (p1 (cstate term_midconf))) ↓↓ (ctapes term_midconf, term_k', term_endconf)) :
-        Match_Terminates_Rel t k''.
-
-    (* Record Match_Terminates_Rel (t : tapes sig n) (k'' : nat) : Prop :=
-      {
-        term_k : nat;
-        term_k' : nat;
-        term_In : term_k + term_k' < k'';
-        term_midconf : mconfig sig (states (projT1 pM1)) n;
-        term_t1 : projT1 pM1 ↓↓ (t, term_k, term_midconf);
-        term_endconf : mconfig _ _ _;
-        term_m2 : projT1 (pMf (p1 (cstate term_midconf))) ↓↓ (ctapes term_midconf, term_k', term_endconf);
-      }. *)
-
-    Lemma Match_Terminates :
-      Match ⇓ Match_Terminates_Rel.
-    Proof.
-      hnf. intros t k'' [k k' H1 conf H2 conf' H3].
-      exists (lift_confR conf').
-      enough (loopM (k + (1 + k')) (initc Match t) = Some (lift_confR conf')).
-      { unfold loopM. apply loop_ge with (k1 := k + (1 + k')). omega. assumption. }
-      eapply Match_merge; eauto.
-    Qed.
-
-  End Match_Terminates.
-
-  Lemma Match_Terminates' t conf1 k1 conf2 k2 :
-    M1 ↓↓ (t, k1, conf1) ->
-    projT1 (pMf (p1 (cstate conf1))) ↓↓ (ctapes conf1, k2, conf2) ->
-    Match ↓ (t, k1 + S k2).
-  Proof.
-    intros H1 H2. hnf. exists (lift_confR conf2). hnf. eapply Match_merge; eauto.
-  Qed.
-
-  Lemma Match_Terminates'' t conf1 k1 conf2 k2 :
-    M1 ↓↓ (t, k1, conf1) ->
-    projT1 (pMf (p1 (cstate conf1))) ↓↓ (ctapes conf1, k2, conf2) ->
-    Match ↓↓ (t, k1 + S k2, lift_confR conf2).
-  Proof.
-    intros H1 H2. hnf. eapply Match_merge; eauto.
-  Qed.
-
-  Lemma Match_RealiseIn (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) (k1 k2 : nat) :
-    pM1 ⊨c(k1) R1 ->
-    (forall f : F, pMf f ⊨c(k2) R2 f) ->
+  Lemma Match_RealiseIn
+        (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) k1 k2:
+    projT1 pM1 ⊨c(projT2 pM1, k1) R1 ->
+    (forall f : F, Mf f ⊨c(projT2 (pMf f), k2) R2 f) ->
     MATCH ⊨c(1 + k1 + k2) (⋃_f (R1 |_ f) ∘ R2 f).
   Proof.
     intros HR1 HR2 t.
-    edestruct (HR1 t) as (c' & ? & ?).
-    edestruct (HR2 (projT2 pM1 (cstate c')) (ctapes c')) as (outc & ? & ?).
+    specialize (HR1 t) as (c' & ? & ?).
+    specialize (HR2 (projT2 pM1 (cstate c')) (ctapes c')) as (outc & ? & ?).
     exists (lift_confR outc). split.
-    -  unfold loopM. eapply loop_ge with (k1:=k1+(1+k2)). omega. eapply Match_merge; eauto.
-    - hnf. firstorder.      
+    -  unfold loopM. eapply loop_ge with (k1:=k1+(1+k2)). omega.
+       now eapply Match_merge.
+    - cbn. firstorder.      
   Qed.
+
+
+  Lemma Match_TerminatesIn (R1 : Rel _ (F * _)) T1 T :
+    functionalOn T1 R1 ->
+    pM1 ⊫ R1 ->
+    M1 ↓(T1) ->
+    (forall f : F, Mf f ↓(T f)) ->
+    projT1 MATCH ↓(⋃_f (fun (x : tapes sig n) (i : nat) => exists (j k : nat) (y : tapes sig n),
+                     R1 x (f, y) /\ T1 x j /\ T f y k /\ j + k < i)).
+  Proof.
+    intros Func Real1 Term1 Term2 t i (f & j & k & y & ? & Term_t1 & Term_T & ?).
+    specialize (Term1 _ _ Term_t1) as [t'' ?].
+    specialize (Term2 f _ _ Term_T) as [outc ?].
+    exists (lift_confR outc).
+    unfold loopM. eapply loop_ge with (k1:=j+(1+k)). omega.
+    pose proof Func _ _ Term_t1 _ _ H (Real1 _ _ _ H1) as Heq. inv Heq.
+    now apply Match_merge.
+  Qed.
+
 
   Lemma Match_Realise (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) :
     pM1 ⊨ R1 ->

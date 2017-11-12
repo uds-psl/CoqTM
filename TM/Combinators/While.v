@@ -1,4 +1,5 @@
-Require Export TM Nop.
+(* FIXME: TM.Basic.Nop is deprecated *)
+Require Export TM.TM TM.Basic.Nop.
 Require Import Shared.FiniteTypes.DepPairs EqdepFacts.
 
 Section While.
@@ -135,38 +136,33 @@ Section While.
       apply HR in Eq1. cbn in Eq1. cbn. rewrite px0. cbn. auto. rewrite px0 in Eq1. auto.
   Qed.
 
+  Lemma While_terminatesIn (R : Rel _ (bool * F * _)) (T T': Rel _ nat):
+    pM ⊫ R ->
+    projT1 pM ↓(T) ->
+    functionalOn T' R -> 
+    (forall (x : tapes sig n) (i:nat),
+        T' x i -> exists (x':tapes _ _) (b:bool) (f:F) i1,
+          R x (b,f,x') /\ T x i1 /\ if b then exists i2, T' x' i2 /\ i1+1+i2<=i else i1 <= i)->
+    While ↓(T').
+  Proof.
+    intros HR Term_M Func Hyp.
+    intros t i. revert t. apply complete_induction with (x:=i); clear i; intros i IH t T't.
+    destruct (Hyp _ _ T't) as (t'& b&f1&i1&Rx&Tx&H).
+    destruct b.
+    - destruct H as (i2&T't'&Leq).
+      apply IH in T't' as (oenc & Eq);[ |omega].
+      exists oenc.
+      apply Term_M in Tx as (oenc1 & Eq1).
+      apply (loop_ge (k1:=i1 + (1 + i2)));[omega| ].
+      specialize (HR _ _ _ Eq1). specialize (Func _ _ T't _ _ HR Rx). inv Func.
+      now eapply (While_true_merge Eq1 (f := f1)).
+    - apply Term_M in Tx as [oenc Eq].
+      exists oenc.
+      eapply While_false_merge with (f := f1). eapply loop_ge;[ |exact Eq]. omega.
+      specialize (HR _ _ _ Eq).
+      specialize (Func _ _ T't _ _ HR Rx). now inv Func.
+  Qed.
 
-  Section WhileTerm.
-
-    Inductive WhileTerm : (tapes sig n) -> nat -> Prop :=
-    | term_false
-        (t : tapes sig n)
-        (i : nat)
-        (endconf : mconfig sig (states (projT1 pM)) n)
-        (f : F) :
-        projT1 pM ↓↓ (t, i, endconf) ->
-        projT2 pM (cstate endconf) = (false, f) ->
-        WhileTerm t i
-    | term_true
-        (t : tapes sig n)
-        (i j : nat)
-        (midconf : mconfig sig (states (projT1 pM)) n)
-        (f : F) :
-        projT1 pM ↓↓ (t, i, midconf) ->
-        projT2 pM (cstate midconf) = (true, f) ->
-        WhileTerm (ctapes midconf) j ->
-        WhileTerm t (i + S j).
-
-    Lemma While_Terminates :
-         While ⇓ WhileTerm.
-    Proof.
-      hnf. intros t1 k H.
-      induction H as [t i endconf H1 H2 | t i j midconf H1 H2 H3 H4 IH].
-      - exists endconf. eapply While_false_merge; eauto.
-      - destruct IH as (confIH&IH). exists confIH. eapply While_true_merge; eauto.
-    Qed.
-
-  End WhileTerm.
 
 End While.
 (* Arguments While {n} {sig} M _. *)

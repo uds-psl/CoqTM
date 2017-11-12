@@ -1,4 +1,4 @@
-Require Import Prelim Relations TM Shared.Tactics.AutoIndTac.
+Require Import TM.Prelim TM.Relations TM.TM.
 
 Inductive dupfree X : forall n, Vector.t X n -> Prop :=
   dupfreeVN : dupfree (@Vector.nil X)
@@ -458,8 +458,8 @@ Section LiftNM.
   Qed.
 
   Lemma Inject_Terminates T :
-    projT1 pM ⇓ T ->
-    projT1 Inject ⇓ liftT_gen_eq I T.
+    projT1 pM ↓ T ->
+    projT1 Inject ↓ liftT_gen_eq I T.
   Proof.
     intros H initTapes k Term. hnf in *.
     specialize (H (reorder I initTapes) k Term) as (outc&H).
