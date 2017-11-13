@@ -180,9 +180,59 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
 
   (* TODO: Make this proof/excution faster, by inserting counters in WhileTerm *)
   (* It can also be made faster by replacing the read machine by a machine that reads and terminates in the right state. *)
-  Lemma MoveToSymbol_R_Term :
+  Lemma MoveToSymbol_R_TerminatesIn :
     projT1 (MoveToSymbol_R) ↓ (fun x i => i = 11 * time_until_symbol_r (x[@Fin.F1])).
   Proof.
+    unfold MoveToSymbol_R. simpl projT1.
+    eapply While_terminatesIn.
+    {
+      unfold M_R. eapply Match_WRealise.
+      eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Peek_RealisesIn.
+      instantiate (1 := (fun o => match o with
+                               | inl true => _
+                               | inl false => _
+                               | inr L => _ | inr _ => _
+                               end)).
+      intros r. cbn in r. destruct r as [ [ | ] | D' ] eqn:E.
+      + eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
+      + eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Move_Sem.
+      + destruct D'; cbn; eapply Realise_WRealise, RealiseIn_Realise, mono_Nop_Sem.
+    }
+    {
+      unfold M_R. simpl. eapply Match_TerminatesIn. shelve.
+      - eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Peek_RealisesIn.
+      - eapply Realise_total. eapply Peek_RealisesIn.
+      - instantiate (1 := (fun o => match o with
+                               | inl true => _
+                               | inl false => _
+                               | inr L => _ | inr _ => _
+                               end)).
+        intros r. cbn in r. destruct r as [ [ | ] | D' ] eqn:E.
+        + eapply Realise_total. eapply mono_Nop_Sem.
+        + eapply Realise_total. eapply Move_Sem.
+        + destruct D'; eapply Realise_total; eapply mono_Nop_Sem.
+          Unshelve.
+          {
+            (* TODO: Automatisation !!!! *)
+            hnf. unfold Peek_Rel, Mk_R_p. intros.
+            destruct z1, z2. destruct H0 as (H0&H0'). destruct H1 as (H1&H1').
+            destruct_tapes. hnf in *. cbn in *. subst. destruct h1; congruence.
+          }
+    }
+    {
+      (* TODO: Automatisation !!!! *)
+      hnf. admit.
+    }
+    {
+      intros ? ? ?. hnf. destruct_tapes. hnf in *.
+      exists ([| moveToSymbol_R h |]). unfold finType_CS. admit.
+    }
+    
+    
+    
+      
+    
+    
     (*
     eapply TerminatesIn_monotone.
     - cbn -[M1]. eapply While_Terminates.
@@ -236,7 +286,7 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
     MoveToSymbol_R ⊨ MoveToSymbol_R_Rel.
   Proof.
     eapply WRealise_to_Realise.
-    - cbn. eapply MoveToSymbol_R_Term.
+    - cbn. eapply MoveToSymbol_R_TerminatesIn.
     - firstorder. eexists. eauto.
     - eapply MoveToSymbol_R_WRealise.
   Qed.

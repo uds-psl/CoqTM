@@ -252,7 +252,7 @@ Section Match.
     pM1 ⊫ R1 ->
     M1 ↓(T1) ->
     (forall f : F, Mf f ↓(T f)) ->
-    projT1 MATCH ↓(⋃_f (fun (x : tapes sig n) (i : nat) => exists (j k : nat) (y : tapes sig n),
+    Match ↓(⋃_f (fun (x : tapes sig n) (i : nat) => exists (j k : nat) (y : tapes sig n),
                      R1 x (f, y) /\ T1 x j /\ T f y k /\ j + k < i)).
   Proof.
     intros Func Real1 Term1 Term2 t i (f & j & k & y & ? & Term_t1 & Term_T & ?).
