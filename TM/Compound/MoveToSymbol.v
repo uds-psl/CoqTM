@@ -1,8 +1,8 @@
 Require Import TM.Prelim.
 Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Match TM.Combinators.While TM.Combinators.SequentialComposition.
-(* Require Import TM.IsoTrans. (* tape_mirror, this shoud probably be moved elsewhere *) *)
 Require Import TM.Compound.Peek.
+Require Import TM.Mirror.
 
 Require Import FunInd.
 Require Import Recdef.
@@ -14,23 +14,22 @@ Section move_to_symbol.
   Variable sig : finType.
   Variable f : sig -> bool.
 
-  Definition M1 D : { M : mTM sig 1 & states M -> bool * bool } :=
+  Definition M_R : { M : mTM sig 1 & states M -> bool * bool } :=
     MATCH (Peek f)
           (fun b => match b with
-                 | inl false => Move sig D (true, false) (* Not found yet: move on and continue *)
+                 | inl false => Move sig R (true, false) (* Not found yet: move on and continue *)
                  | inl true => mono_Nop sig (false, true) (* Found: stop *)
-                 | inr D' => if Dec (D'=D) || Dec (D'=N) then
-                              (* Reached the other end of the tape or the tape is empty: stop *)
-                              mono_Nop sig (false, false)
-                            else
-                              (* Continue *)
-                              mono_Nop sig (true, false)
+                 | inr L =>
+                   (* Continue *)
+                   mono_Nop sig (true, false)
+                 | inr _ =>
+                   (* Reached the other end of the tape or the tape is empty: stop *)
+                   mono_Nop sig (false, false)
                  end).
-
 
   (* Returns true if symbol was found, false otherwise *)
   (* It stops and returns false if the pointer gets off the tape. *)
-  Definition MoveToSymbol D : { M : mTM sig 1 & states M -> bool } := WHILE (M1 D).
+  Definition MoveToSymbol_R : { M : mTM sig 1 & states M -> bool } := WHILE (M_R).
 
   Definition rlength (t : tape sig) :=
     match t with
@@ -80,11 +79,11 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
                ! (fun t t' => current t' = None)) ∩ ignoreParam (fun t t' => moveToSymbol_R t = t')).
 
   Lemma MoveToSymbol_R_WRealise :
-     MoveToSymbol R ⊫ MoveToSymbol_R_Rel.
+     MoveToSymbol_R ⊫ MoveToSymbol_R_Rel.
   Proof.
     intros HD. eapply WRealise_monotone.
     {
-      eapply While_WRealise. unfold M1. eapply Match_WRealise.
+      eapply While_WRealise. unfold M_R. eapply Match_WRealise.
       eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Peek_RealisesIn.
       instantiate (1 := (fun o => match o with
                                | inl true => _
@@ -182,7 +181,7 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
   (* TODO: Make this proof/excution faster, by inserting counters in WhileTerm *)
   (* It can also be made faster by replacing the read machine by a machine that reads and terminates in the right state. *)
   Lemma MoveToSymbol_R_Term :
-    projT1 (MoveToSymbol R) ⇓ (fun x i => i = 11 * time_until_symbol_r (x[@Fin.F1])).
+    projT1 (MoveToSymbol_R) ↓ (fun x i => i = 11 * time_until_symbol_r (x[@Fin.F1])).
   Proof.
     (*
     eapply TerminatesIn_monotone.
@@ -234,11 +233,12 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
 
 
   Lemma MoveToSymbol_R_Realise : 
-    MoveToSymbol R ⊨ MoveToSymbol_R_Rel.
+    MoveToSymbol_R ⊨ MoveToSymbol_R_Rel.
   Proof.
     eapply WRealise_to_Realise.
-    - cbn. eapply TerminatesIn_TerminatesAlways; auto. eapply MoveToSymbol_R_Term. eauto.
-    - apply MoveToSymbol_R_WRealise.
+    - cbn. eapply MoveToSymbol_R_Term.
+    - firstorder. eexists. eauto.
+    - eapply MoveToSymbol_R_WRealise.
   Qed.
 
 
@@ -264,27 +264,35 @@ Compute moveToSymbol_R (fun b => b) (leftof false [false; false; true; false]).
     all: (intros; try now (cbn; omega)). destruct ls; cbn; omega.
   Defined.
 
-  Lemma moveToSymbol_tapeToList_L t : tapeToList t = tapeToList (moveToSymbol_L t).
+  Lemma moveToSymbol_mirror t t' :
+    moveToSymbol_R (mirror_tape t) = mirror_tape t' -> moveToSymbol_L t = t'.
   Proof.
-    functional induction moveToSymbol_L t; try reflexivity.
-    - pose proof (tapeToList_move (midtape ls m rs) L). cbn [tape_move] in H. rewrite <- H in IHt0. congruence.
-    - pose proof (tapeToList_move (rightof l ls) L). cbn [tape_move] in H. rewrite <- H in IHt0. congruence.
+    functional induction moveToSymbol_L t; intros H; cbn in *; try reflexivity;
+      try rewrite moveToSymbol_R_equation in H; cbn; auto.
+    - destruct t'; cbn in *; congruence.
+    - destruct t'; cbn in *; try apply moveToSymbol_niltape_R in H; try congruence.
+    - destruct t'; cbn in *; try apply moveToSymbol_niltape_R in H; try rewrite e0 in H; congruence.
+    - rewrite e0 in H. cbn in H. apply IHt0. destruct ls; cbn; auto.
   Qed.
 
-  Lemma moveToSymbol_niltape_L t : moveToSymbol_L t = niltape _ -> t = niltape _.
-  Proof.
-    intros H. remember (niltape sig) as N. functional induction moveToSymbol_L t; subst; try congruence.
-    - specialize (IHt0 H). destruct ls; cbn in *; congruence.
-    - specialize (IHt0 H). destruct ls; cbn in *; congruence.
-  Qed.
 
   Definition MoveToSymbol_L_Rel : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
     Mk_R_p ((if? (fun t t' => exists s, current t' = Some s /\ f s = true)
                ! (fun t t' => current t' = None)) ∩ ignoreParam (fun t t' => moveToSymbol_L t = t')).
 
-  Lemma MoveToSymbol_L_Realise : 
-    MoveToSymbol L ⊨ MoveToSymbol_L_Rel.
+
+  Definition MoveToSymbol_L := Mirror MoveToSymbol_R.
+
+  (* TODO: Reduce Termination, from termination of MoveTosymbol_R *)
+  Lemma MoveToSymbol_L_WRealise :
+    MoveToSymbol_L ⊫ MoveToSymbol_L_Rel.
   Proof.
-  Admitted.
+    eapply WRealise_monotone.
+    - eapply Mirror_WRealise. eapply MoveToSymbol_R_WRealise.
+    - intros tin (y&tout) H. hnf in *. destruct_tapes; cbn in *. destruct H as (H1&H2); hnf in *.
+      split; hnf.
+      + now rewrite mirror_tape_current in H1.
+      + clear H1. now apply moveToSymbol_mirror.
+  Qed.
 
 End move_to_symbol.
