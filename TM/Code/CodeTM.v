@@ -3,7 +3,6 @@ Require Import TM.Combinators.SequentialComposition.
 Require Import TM.Relations.
 
 Require Import TM.Basic.Mono.
-Require Import TM.Compound.FindSymbol.
 
 Section Tape_Local.
 
@@ -76,7 +75,7 @@ Section Fix_Sig.
     Instance codeS : codeable sig' bool := Encode_Map Encode_Bool (inr_inj sig bool).
 
     Definition tape_encodes_r (t : tape sig') (x : X) (r1 r2 : list sig) :=
-      tapeToList t = map inl r1 ++ encode START ++ encode x ++ encode STOP ++ map inl r2.
+      left t = encode START ++ map inl r1 /\ tape_local t = encode x ++ encode STOP ++ map inl r2.
 
     Definition tape_encodes (t : tape sig') (x : X) : Prop :=
       exists r1 r2 : list sig, tape_encodes_r t x r1 r2.
@@ -84,11 +83,11 @@ Section Fix_Sig.
     Lemma tape_encodes_r_injective (t : tape sig') (x1 x2 : X) (r1 r2 s1 s2 : list sig) :
       tape_encodes_r t x1 r1 r2 -> tape_encodes_r t x2 s1 s2 -> x1 = x2 /\ r1 = s1 /\ r2 = s2.
     Proof.
-      intros H2 H1. hnf in H1, H2. rewrite H2 in H1; clear H2. cbn in H1.
-      pose proof (map_map_app_eq_None_None (inj := inl_inj sig bool)) as L1.
-      specialize (L1 r1 s1 (inr START) (inr START) _ _ eq_refl eq_refl H1) as (L1&L2&L3).
-      cbn in *. apply (encode_injective (codeable := codeX)) in L3 as (->&L4). inv L4; rename H0 into L4.
-      apply map_injective in L1 as ->. apply map_injective in L4 as ->. tauto. all: firstorder congruence.
+      intros (H2&H2') (H1&H1'). rewrite H2 in H1; clear H2. rewrite H2' in H1'. clear H2'. cbn in *.
+      apply (encode_map_injective (inj := inl_inj _ _)) in H1' as (->&H1').
+      inv H1. inv H1'.
+      apply map_injective in H0 as ->. apply map_injective in H1 as ->.
+      all: firstorder congruence.
     Qed.
 
     Lemma tape_encodes_injective (t : tape sig') (x1 x2 : X) :
@@ -188,54 +187,5 @@ Section Fix_Sig.
 
   End Computes2.
 
-
-  (* Move the pointer to the start of the encoding *)
-  Section InitTape1.
-
-    Variable (X : Type) (cX : codeable sig X).
-
-    Definition TapeInit : { M : mTM sig' 1 & states M -> unit } :=
-      FindUniqueSymbol (inr START) ;; Move _ R tt.
-
-    Definition TapeInit_Rel : Rel (tapes sig' 1) (unit * tapes sig' 1) :=
-      Mk_R_p (fun t '(_, t') =>
-                forall r1 r2 (x : X),
-                  tape_encodes_r _ t x r1 r2 ->
-                  left t' = inr START :: rev (map inl r1) /\
-                  tape_local t' = encode (codeable := codeX _) x ++ [inr STOP] ++ map inl r2
-             ).
-
-    Lemma TapeInit_Realise : TapeInit ⊨ TapeInit_Rel.
-    Proof.
-      eapply Realise_monotone.
-      - unfold TapeInit. eapply Seq_Realise.
-        + eapply FindUniqueSymbol_Realise.
-        + eapply RealiseIn_Realise. eapply Move_Sem.
-      - hnf. intros tin ((), tout). intros H. hnf in H. destruct H as ((t,y)&H1&_&H2). hnf in *. intros r1 r2 x Hx.
-        destruct_tapes. cbn in *. rewrite H2. clear h0 H2. hnf in Hx. destruct t.
-        + assert (count (tapeToList h) (inr START) = 1) as L; [ | specialize (H1 L); clear L].
-          {
-            rewrite Hx. cbn.
-            enough (count (map inl r1) (inr START) = 0 /\
-                    count (map inl (encode x)) (inr START) = 0 /\
-                    count (map inl r2) (inr START) = 0) as (L1&L2&L3); [ | repeat split].
-            - rewrite <- countSplit. cbn. rewrite L1. cbn. rewrite <- countSplit. cbn. rewrite L2. cbn. rewrite L3. reflexivity.
-            - apply notInZero. intros H. cbn in H. apply in_map_iff in H. destruct H as (y&H&_). congruence.
-            - apply notInZero. intros H. cbn in H. apply in_map_iff in H. destruct H as (y&H&_). congruence.
-            - apply notInZero. intros H. cbn in H. apply in_map_iff in H. destruct H as (y&H&_). congruence.
-          }
-          cbn in *. specialize (H1 (rev (map inl r1)) (map inl (encode x) ++ inr STOP :: map inl r2)).
-          rewrite rev_involutive in H1. specialize (H1 Hx). rewrite H1.
-          erewrite tape_local_move_right; split; eauto. erewrite tape_left_move_right; cbn; eauto.
-        + exfalso. cbn in *. cbn in *. unfold sig', finType_CS in *. rewrite Hx in H1.
-          enough (count
-                    (map inl r1 ++
-                         inr START :: map inl (encode x) ++ inr STOP :: map inl r2)
-                    (inr START) > 0) by omega.
-          apply countApp.
-    Qed.
-    
-  End InitTape1.
-  
 
 End Fix_Sig.
