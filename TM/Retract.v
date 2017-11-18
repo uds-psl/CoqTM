@@ -96,7 +96,7 @@ Section Useful_Inversions.
       Qed.
 
     End Inverse_Comp.
-  
+    
     Instance inverse_symmetric (f : A -> B) (g : B -> A) :
       inverse f g ->
       inverse g f.
@@ -164,6 +164,31 @@ Section Useful_Inversions.
     Proof. unfold inverse_sum_Empty_set_f, inverse_sum_Empty_set_g. hnf. split; hnf. now intros [ a | [] ]. tauto. Qed.
 
   End Inverse_Sum_Empty_set.
+
+  Section Inverse_Option_unit.
+
+    Definition inverse_option_unit_f : option A -> A + unit :=
+      fun x =>
+        match x with
+        | Some y => inl y
+        | None => inr tt
+        end.
+
+    Definition inverse_option_unit_g : A + unit -> option A :=
+      fun y =>
+        match y with
+        | inl a => Some a
+        | inr _ => None
+        end.
+
+    Instance inverse_option_unit : inverse inverse_option_unit_f inverse_option_unit_g.
+    Proof.
+      unfold inverse_option_unit_f, inverse_option_unit_g. hnf. split; hnf.
+      - intros [ a | ]; reflexivity.
+      - intros [ a | [ ] ]; reflexivity.
+    Qed.
+
+  End Inverse_Option_unit.
   
 End Useful_Inversions.
 
@@ -173,6 +198,7 @@ Hint Resolve inverse_symmetric     : inj.
 Hint Resolve inverse_sum_Empty_set : inj.
 Hint Resolve inverse_sum_swap      : inj.
 Hint Resolve inverse_symmetric     : inj.
+Hint Resolve inverse_option_unit   : inj.
 
 
 Section Retract.
