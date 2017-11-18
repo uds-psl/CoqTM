@@ -1,9 +1,15 @@
 Require Import Shared.Base.
 
-Ltac simpl_inj := repeat (eauto with inj; autorewrite with inj).
+(*
+ * This tactic tries to prove derived injectivity or (tight) retracts
+*)
 
-Tactic Notation "simpl_inj" "in" ident(H) := repeat (eauto with inj; autorewrite with inj in H).
-Tactic Notation "simpl_inj" "in" "*" := repeat (eauto with inj; autorewrite with inj in *).
+(*
+Ltac auto_inj := repeat (eauto with inj; autorewrite with inj).
+*)
+
+Tactic Notation "auto_inj" := repeat (eauto with inj).
+Tactic Notation "auto_inj" integer(k) := repeat (eauto k with inj).
 
 Section Injection.
 
@@ -17,11 +23,11 @@ Section Injection.
 End Injection.
 
 Hint Unfold injective : inj.
-Hint Rewrite inj_injective using now simpl_inj : inj.
 
-Hint Extern 5 => match goal with
-                | [ H : ?t ?x = ?t ?y |- _] => eapply inj_injective in H; [ subst | now eauto]
-                end : inj.
+Ltac inj_subst :=
+  match goal with
+  | [ H : ?t ?x = ?t ?y |- _] => eapply inj_injective in H; [ subst | now auto_inj]
+  end.
 
 Instance injection_id (X : Type) : injective (@id X) := ltac:(unfold id; firstorder).
 
@@ -40,13 +46,12 @@ Section Map_Injective.
   Variable (sig tau : Type) (t : sig -> tau).
   Hypothesis t_injective : injective t.
 
-  Lemma map_injective :
+  Instance map_injective :
     injective (map t).
   Proof.
     hnf. intros xs. induction xs; intros ys H; cbn in *.
     - erewrite map_eq_nil; eauto.
-    - destruct ys; cbn in *; inv H. simpl_inj in H1.
-      eapply inj_injective in H1; eauto. subst. f_equal. auto.
+    - destruct ys; cbn in *; inv H. inj_subst. f_equal. auto.
   Qed.
 
 End Map_Injective.
@@ -74,9 +79,13 @@ Section Retract.
   Qed.
 End Retract.
 
-Hint Unfold retract            : inj.
 Hint Resolve retract_g_adjoint : inj.
-Hint Rewrite retract_g_adjoint using now simpl_inj : inj.
+
+Ltac retract_adjoint :=
+  match goal with
+  | [   |- context [ ?g (?f ?X) ]     ] => rewrite retract_g_adjoint;      [ | now auto_inj]
+  | [ H : context [ ?g (?f ?X) ] |- _ ] => rewrite retract_g_adjoint in H; [ | now auto_inj]
+  end.
 
 Section TightRetract.
 
@@ -101,12 +110,10 @@ Section TightRetract.
     
 End TightRetract.
 
-Hint Unfold tight_retract        : inj.
+Hint Unfold tight_retract         : inj.
 Hint Resolve tight_retract_strong : inj.
 Hint Resolve tretract_g_inv       : inj.
 Hint Resolve tretract_g_inv'      : inj.
-Hint Rewrite tretract_g_adjoint using now simpl_inj : inj.
-
 
 Section Retract_Compose.
   Variable (X Y Z : Type).
@@ -124,7 +131,7 @@ Section Retract_Compose.
   Instance retract_compose (retr1 : retract f1 g1) (retr2 : retract f2 g2) :
     retract retract_comp_f retract_comp_g.
   Proof.
-    hnf. unfold retract_comp_f, retract_comp_g. intros x. rewrite retract_g_adjoint; eauto.
+    hnf. unfold retract_comp_f, retract_comp_g. intros x. retract_adjoint. rewrite retract_g_adjoint; eauto.
   Qed.
 
   Instance tretract_compose (retr1 : tight_retract f1 g1) (retr2 : tight_retract f2 g2) :
@@ -207,7 +214,7 @@ Section Usefull_Retracts.
       retract f2 g2 ->
       retract retract_sum_f retract_sum_g.
     Proof.
-      intros H1 H2. intros [a|b]; hnf; cbn; now simpl_inj.
+      intros H1 H2. intros [a|b]; hnf; cbn; retract_adjoint; auto.
     Qed.
 
     Instance tretract_sum :
@@ -217,7 +224,7 @@ Section Usefull_Retracts.
     Proof.
       intros H1 H [a|b] [c|d]; hnf; cbn;
         (split; [intros H3; f_equal; first [destruct (g1 _) eqn:E | destruct (g2 _) eqn:E];
-                 inv H3; simpl_inj | intros H3; inv H3; simpl_inj]).
+                 inv H3; repeat retract_adjoint; auto_inj | intros H3; inv H3; try retract_adjoint; auto_inj ]).
     Qed.
 
   End RetractSum.
@@ -231,12 +238,11 @@ Hint Resolve retract_inl       : inj.
 Hint Resolve retract_inr       : inj.
 Hint Resolve tretract_sum      : inj.
 
-
 Section Injection_Corollaries.
   Variable A B : Type.
   
-  Instance injective_inl : injective (@inl A B) := ltac:(now simpl_inj).
-  Instance injective_inr : injective (@inr A B) := ltac:(now simpl_inj).
+  Instance injective_inl : injective (@inl A B) := ltac:(now auto_inj).
+  Instance injective_inr : injective (@inr A B) := ltac:(now auto_inj).
   
 End Injection_Corollaries.
 
