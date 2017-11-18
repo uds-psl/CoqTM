@@ -2,7 +2,8 @@ Require Export Shared.FiniteTypes.FinTypes Shared.FiniteTypes.BasicFinTypes Shar
 Require Export Shared.Extra Shared.Base.
 Require Export Program.Equality.
 
-(* Declare ML Module "smpl". *)
+Require Export smpl.Smpl.
+
 
 (* Instance fin_eq_dec (A: finType) : eq_dec A. *)
 (* Proof. *)
