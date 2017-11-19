@@ -160,7 +160,7 @@ Section Useful_Inversions.
 
     Definition inverse_sum_Empty_set_g : A -> A + Empty_set := inl.
     
-    Instance inverse_sum_Empty_set : inverse inverse_sum_Empty_set_f inverse_sum_Empty_set_g.
+    Global Instance inverse_sum_Empty_set : inverse inverse_sum_Empty_set_f inverse_sum_Empty_set_g.
     Proof. unfold inverse_sum_Empty_set_f, inverse_sum_Empty_set_g. hnf. split; hnf. now intros [ a | [] ]. tauto. Qed.
 
   End Inverse_Sum_Empty_set.
@@ -181,7 +181,7 @@ Section Useful_Inversions.
         | inr _ => None
         end.
 
-    Instance inverse_option_unit : inverse inverse_option_unit_f inverse_option_unit_g.
+    Global Instance inverse_option_unit : inverse inverse_option_unit_f inverse_option_unit_g.
     Proof.
       unfold inverse_option_unit_f, inverse_option_unit_g. hnf. split; hnf.
       - intros [ a | ]; reflexivity.
@@ -189,7 +189,21 @@ Section Useful_Inversions.
     Qed.
 
   End Inverse_Option_unit.
+
+  Section Inverse_involutive.
+    Variable f : A -> A.
+    Hypothesis f_inv : forall a, f (f a) = a.
+
+    Global Instance inverse_involutive : inverse f f.
+    Proof. hnf. split; hnf; auto. Qed.
+
+  End Inverse_involutive.
   
+  Definition swap (X Y : Type) : X * Y -> Y * X := fun '(a,b) => (b, a).
+
+  Global Instance inverse_swap : inverse (@swap A B) (@swap B A).
+  Proof. unfold swap. hnf. split; hnf; intros [x y]; reflexivity. Qed.
+
 End Useful_Inversions.
 
 Hint Resolve inverse_comp          : inj.
@@ -199,6 +213,8 @@ Hint Resolve inverse_sum_Empty_set : inj.
 Hint Resolve inverse_sum_swap      : inj.
 Hint Resolve inverse_symmetric     : inj.
 Hint Resolve inverse_option_unit   : inj.
+Hint Resolve inverse_involutive    : inj.
+Hint Resolve inverse_swap          : inj.
 
 
 Section Retract.
@@ -394,6 +410,34 @@ Hint Resolve retract_inl       : inj.
 Hint Resolve retract_inr       : inj.
 Hint Resolve tretract_sum      : inj.
 
+Section RetractCons.
+
+  Variable A : eqType.
+  Variable a : A.
+
+  Definition retract_cons_g : list A -> option (list A) :=
+    fun xs =>
+      match xs with
+      | x :: xs' => if Dec (x = a) then Some xs' else None
+      | nil => None
+      end.
+  
+  Instance retract_cons : tight_retract (cons a) retract_cons_g.
+  Proof.
+    unfold retract_cons_g. hnf. intros xs ys. split.
+    - destruct ys; intros H; inv H. decide (e = a); now inv H1.
+    - intros ->. decide (a = a); tauto.
+  Qed.
+
+  Variable B : Type.
+  Definition retract_pair_g : A * B -> option B :=
+    fun '(x, b) => if Dec (a = x) then Some b else None.
+
+  Instance retract_pair : tight_retract (pair a) retract_pair_g.
+  Proof. unfold retract_pair_g. hnf. intros b (x&y). decide (a = x); firstorder congruence. Qed.
+
+End RetractCons.
+Hint Resolve retract_cons.
 
 Section Injection.
 
