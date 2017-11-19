@@ -14,7 +14,30 @@ Section MapTape.
   Defined.
 
   Definition mapTapes {n : nat} : Vector.t (tape tau) n -> Vector.t (tape sig) n := Vector.map mapTape.
+
+  (* Correctness of mapTape *)
+
+  Lemma mapTape_current t :
+    current (mapTape t) =
+    match (current t) with
+    | Some m => Some (g m)
+    | None => None
+    end.
+  Proof. destruct t; cbn; reflexivity. Qed.
+
+  Lemma mapTape_left t :
+    left (mapTape t) = map g (left t).
+  Proof. destruct t; cbn; reflexivity. Qed.
+
+  Lemma mapTape_right t :
+    right (mapTape t) = map g (right t).
+  Proof. destruct t; cbn; reflexivity. Qed.
+  
 End MapTape.
+
+Hint Rewrite mapTape_current : tape.
+Hint Rewrite mapTape_left    : tape.
+Hint Rewrite mapTape_right   : tape.
 
 Section SujectTape.
   Variable sig tau : finType.

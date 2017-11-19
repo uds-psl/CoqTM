@@ -376,3 +376,18 @@ Notation "'let' 'try' x ':=' a 'in' res" := (let_try a (fun x => res)) (at level
 Ltac des_try e:=
   let eq_try := fresh "eq_try" in
   destruct e eqn: eq_try;[ |cbn in *;congruence].
+
+(* Show the non-dependent hypothesis of a hypothesis that is a implication and specialize it *)
+Tactic Notation "spec_assert" hyp(H) :=
+  let H' := fresh in
+  match type of H with
+  | ?A -> _ =>
+    assert A as H'; [ | specialize (H H'); clear H']
+  end.
+
+Tactic Notation "spec_assert" hyp(H) "by" tactic(T) :=
+  let H' := fresh in
+  match type of H with
+  | ?A -> _ =>
+    assert A as H' by T; specialize (H H'); clear H'
+  end.

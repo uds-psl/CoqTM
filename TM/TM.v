@@ -6,8 +6,6 @@
 Require Export Prelim Relations.
 Require Import Vector.
 
-(** Basic stuff that should go somewhere else *)
-
 Section Fix_Sigma.
 
   Variable sig : finType.
@@ -135,12 +133,13 @@ we are on the right extremity of a non-empty tape (right overflow). *)
 
 
   Lemma tapeToList_move (t : tape) (D : move) :
-    tapeToList t = tapeToList (tape_move t D).
+    tapeToList (tape_move t D) = tapeToList t.
   Proof.
     destruct t, D; cbn; auto.
     - revert e l0. induction l; intros; cbn in *; simpl_list; auto.
     - revert e l. induction l0; intros; cbn in *; simpl_list; auto.
   Qed.
+
 
   (** Writing on the tape *)
 
@@ -207,8 +206,8 @@ we are on the right extremity of a non-empty tape (right overflow). *)
 
   (** *** Basic Properties *)
 
-  Fact WRealise_monotone n (M:mTM n) (F : finType) (f : states M -> F) (R1 R2 : Rel (tapes _) (F * tapes _)) :
-    WRealise (M; f) R1 -> R1 <<=2 R2 -> WRealise (M ; f) R2.
+  Fact WRealise_monotone n (F : finType) (pM : { M : mTM n & states M -> F }) (R1 R2 : Rel (tapes _) (F * tapes _)) :
+    pM ⊫ R1 -> R1 <<=2 R2 -> pM ⊫ R2.
   Proof.
     unfold WRealise. eauto. 
   Qed.
@@ -346,3 +345,12 @@ Notation "M '↓' t" := (TerminatesIn M t) (no associativity, at level 60, forma
 
 (* Destruct a vector of tapes of known size *)
 Ltac destruct_tapes := unfold tapes in *; destruct_vector.
+
+(* Simplification Database for tapes *)
+Create HintDb tape.
+
+Tactic Notation "simpl_tape" := autorewrite with tape.
+Tactic Notation "simpl_tape" "in" hyp(H) := autorewrite with tape in H.
+Tactic Notation "simpl_tape" "in" "*" := autorewrite with tape in *.
+
+Hint Rewrite tapeToList_move : tape.
