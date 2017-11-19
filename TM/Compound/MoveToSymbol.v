@@ -52,9 +52,7 @@ Section move_to_symbol.
 
   Lemma moveToSymbol_tapeToList_R t : tapeToList t = tapeToList (moveToSymbol_R t).
   Proof.
-    functional induction moveToSymbol_R t; try reflexivity.
-    - pose proof (tapeToList_move (midtape ls m rs) R). cbn [tape_move] in H. rewrite <- H in IHt0. congruence.
-    - pose proof (tapeToList_move (leftof r rs) R). cbn [tape_move] in H. rewrite <- H in IHt0. congruence.
+    functional induction moveToSymbol_R t; try reflexivity; simpl_tape in *; congruence.
   Qed.
 
 (* (* Test *)
