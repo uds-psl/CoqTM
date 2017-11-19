@@ -323,17 +323,15 @@ Section Usefull_Retracts.
 
   Instance retract_option : tight_retract (@Some A) id := ltac:(now auto_inj).
 
-  Definition retract_inl_f := @inl A B.
   Definition retract_inl_g := fun z : A + B => match z with inl x => Some x | inr _ => None end.
 
-  Instance retract_inl : tight_retract retract_inl_f retract_inl_g.
-  Proof. hnf. intros x z. unfold retract_inl_f, retract_inl_g. destruct z; firstorder congruence. Qed.
+  Instance retract_inl : tight_retract inl retract_inl_g.
+  Proof. hnf. intros x z. unfold retract_inl_g. destruct z; firstorder congruence. Qed.
 
-  Definition retract_inr_f := @inr A B.
   Definition retract_inr_g := fun z : A + B => match z with inr x => Some x | inl _ => None end.
 
-  Instance retract_inr : tight_retract retract_inr_f retract_inr_g.
-  Proof. hnf. intros x z. unfold retract_inr_f, retract_inr_g. destruct z; firstorder congruence. Qed.
+  Instance retract_inr : tight_retract inr retract_inr_g.
+  Proof. hnf. intros x z. unfold retract_inr_g. destruct z; firstorder congruence. Qed.
 
   Definition retract_empty_f : Empty_set -> A := fun x : Empty_set => match x with end.
   Definition retract_empty_g : A -> option Empty_set := fun y => None.

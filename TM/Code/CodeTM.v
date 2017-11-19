@@ -1,8 +1,8 @@
 Require Import TM.Prelim TM.TM TM.Code.Code.
 Require Import TM.Combinators.SequentialComposition.
 Require Import TM.Relations.
-
-Require Import TM.Basic.Mono.
+Require Export TM.Retract.
+Require Import TM.LiftSigmaTau.
 
 Section Tape_Local.
 
@@ -71,8 +71,8 @@ Section Fix_Sig.
     Definition START : bool := false.
     Definition STOP  : bool := true.
 
-    Instance codeX : codeable sig' X := Encode_Map cX (inl_inj sig bool).
-    Instance codeS : codeable sig' bool := Encode_Map Encode_Bool (inr_inj sig bool).
+    Instance codeX : codeable sig' X := Encode_Map cX          (@retract_inl sig bool).
+    Instance codeS : codeable sig' bool := Encode_Map Encode_Bool (@retract_inr sig bool).
 
     Definition tape_encodes_r (t : tape sig') (x : X) (r1 r2 : list sig) :=
       left t = encode START ++ map inl r1 /\ tape_local t = encode x ++ encode STOP ++ map inl r2.
@@ -84,10 +84,10 @@ Section Fix_Sig.
       tape_encodes_r t x1 r1 r2 -> tape_encodes_r t x2 s1 s2 -> x1 = x2 /\ r1 = s1 /\ r2 = s2.
     Proof.
       intros (H2&H2') (H1&H1'). rewrite H2 in H1; clear H2. rewrite H2' in H1'. clear H2'. cbn in *.
-      apply (encode_map_injective (inj := inl_inj _ _)) in H1' as (->&H1').
+      eapply (encode_map_injective) in H1' as (->&H1').
       inv H1. inv H1'.
       apply map_injective in H0 as ->. apply map_injective in H1 as ->.
-      all: firstorder congruence.
+      tauto. 1-2: auto_inj. eapply retract_inl.
     Qed.
 
     Lemma tape_encodes_injective (t : tape sig') (x1 x2 : X) :
@@ -167,7 +167,6 @@ Section Fix_Sig.
 
   End Computes_Composes.
 
-
   Section Computes2.
     Variable n_tapes : nat.
     Variable (i j k : Fin.t n_tapes).
@@ -186,6 +185,5 @@ Section Fix_Sig.
       ignoreParam (Computes2).
 
   End Computes2.
-
 
 End Fix_Sig.
