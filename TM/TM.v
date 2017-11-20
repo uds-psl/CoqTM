@@ -131,6 +131,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Definition tape_move := fun (t : tape) (m : move) =>
                             match m with  R => tape_move_right t | L => tape_move_left t | N => t end.
 
+  (* Rewriting Lemmas *)
 
   Lemma tapeToList_move (t : tape) (D : move) :
     tapeToList (tape_move t D) = tapeToList t.
@@ -139,6 +140,15 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     - revert e l0. induction l; intros; cbn in *; simpl_list; auto.
     - revert e l. induction l0; intros; cbn in *; simpl_list; auto.
   Qed.
+
+  Lemma tapeToList_move_R (t : tape) :
+    tapeToList (tape_move_right t) = tapeToList t.
+  Proof. apply (tapeToList_move t R). Qed.
+
+  Lemma tapeToList_move_L (t : tape) :
+    tapeToList (tape_move_left t) = tapeToList t.
+  Proof. apply (tapeToList_move t L). Qed.
+
 
 
   (** Writing on the tape *)
@@ -354,3 +364,5 @@ Tactic Notation "simpl_tape" "in" hyp(H) := autorewrite with tape in H.
 Tactic Notation "simpl_tape" "in" "*" := autorewrite with tape in *.
 
 Hint Rewrite tapeToList_move : tape.
+Hint Rewrite tapeToList_move_R : tape.
+Hint Rewrite tapeToList_move_L : tape.
