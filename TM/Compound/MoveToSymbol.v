@@ -53,15 +53,17 @@ Section move_to_symbol.
               )
            ).
 
-  Tactic Notation "CertificateMyProgram" "before" tactic(T1) "after" tactic(T2) :=
+  (* Simplifies the goal without makeing any decissions *)
+  Tactic Notation "TMSimp" tactic(T) :=
     repeat progress
            (
              hnf in *;
              cbn in *;
              intros;
+             subst;
              destruct_tapes;
              simpl_tape in *;
-             try T1;
+             try T;
              match goal with
              | [ H : _ ::: _ = [||]  |- _ ] => inv H
              | [ H : [||] = _ ::: _ |- _ ] => inv H
@@ -76,23 +78,47 @@ Section move_to_symbol.
              | [ H : Some _ = None   |- _ ] => inv H
 
              | [ H : _ /\ _ |- _] => destruct H
-             | [ H : _ \/ _ |- _] => destruct H
              | [ H : ex ?P |- _] => destruct H
-             | [   |- _ /\ _    ] => split
-             | [ x : option _ |- _ ] => destruct x
-             | [ x : bool        |- _ ] => destruct x
              | [ x : _ * _    |- _ ] => destruct x
 
-             | [ H : context [ match ?x with _ => _ end ] |- _ ] => let E := fresh "E" in destruct x eqn:E
-             | [   |- context [ match ?x with _ => _ end ]     ] => let E := fresh "E" in destruct x eqn:E
-               
-             | _ => T2
+             | [ H1: ?X = _, H2: context [ ?X ] |- _ ] => rewrite H1 in H2
+             | [ H1: ?X = _    |- context [ ?X ]     ] => rewrite H1
+
+             | [   |- _ /\ _    ] => split
+             | _ => idtac
              end
            ).
 
-  Tactic Notation "CertificateMyProgram" := CertificateMyProgram before (idtac) after (idtac).
-  Tactic Notation "CertificateMyProgram" "after" tactic(T2) := CertificateMyProgram before (idtac) after (T2).
-  Tactic Notation "CertificateMyProgram" "before" tactic(T1) := CertificateMyProgram before (T1) after (idtac).
+  Tactic Notation "TMBranche" :=
+    (
+      match goal with
+      | [ H : context [ match ?x with _ => _ end ] |- _ ] => let E := fresh "E" in destruct x eqn:E
+      | [   |- context [ match ?x with _ => _ end ]     ] => let E := fresh "E" in destruct x eqn:E
+      | [ H : _ \/ _ |- _] => destruct H
+      | [ IH : ?P -> ?Q |- _] =>
+        match type of P with
+        | Prop => spec_assert IH; [ clear IH | ]
+        end
+
+      | [ x : bool        |- _ ] => destruct x
+      | [ x : option _ |- _ ] => destruct x
+
+      | [   |- ex ?P    ] => eexists
+      | [ H : _ \/ _ |- _] => destruct H
+      end
+    ).
+
+  Tactic Notation "TMSolve" int_or_var(k) :=
+    eauto k;
+    try congruence.
+
+  Tactic Notation "TMSimp" := TMSimp idtac.
+  Tactic Notation "TMCrush" tactic(T) :=
+    repeat progress
+           (
+             TMSimp T;
+             try TMBranche
+           ).
 
   Lemma M1_RealiseIn :
     M1 ⊨c(3) M1_Rel.
@@ -107,8 +133,13 @@ Section move_to_symbol.
         + eapply Move_Sem.
       - eapply mono_Nop_Sem.
     }
-    (cbn; omega).
-    unfold M1_Rel, M1_Fun. CertificateMyProgram after (now eauto 6).
+    {
+      (cbn; omega).
+    }
+    {
+      unfold M1_Rel, M1_Fun.
+      TMCrush idtac; TMSolve 6.
+    }
   Qed.
 
   (*
@@ -209,80 +240,26 @@ Section move_to_symbol.
         intros [ [ | ] | ]. all: eapply Realise_WRealise. all: eapply RealiseIn_Realise. all: eapply mono_Nop_Sem.
     }
     {
+
       hnf. intros tin (y1&tout) H. hnf in *. destruct H as (t1&H&H2). hnf in *.
       induction H as [x | x y z IH1 _ IH2].
       {
-        destruct H2 as (f2&H2). hnf in *. destruct H2 as (y&H2). hnf in *. destruct H2 as (H2&H3). hnf in *.
-        repeat (intuition; hnf in *; subst).
-        all: inv H0.
-        all: try destruct H2 as (s&H2&H2'). all: hnf in *. all: intuition.
-        all: destruct_tapes; cbn in *.
-        - erewrite M1_Fun_M2_true; eauto.
-        - left. split; auto. eexists. split; eauto. destruct h0; cbn in *; inv H2. rewrite H2'. cbn. reflexivity.
-        - destruct h0; cbn in *; rewrite M2_Fun_equation; auto. destruct (f e); auto. cbn. rewrite M2_Fun_equation.
-          destruct l0; cbn in *; subst; auto. cbn in *. congruence.
+        TMCrush idtac; TMSolve 6.
+        all: repeat progress (unfold M1_Fun, M1_Rel, M2_Rel, Mk_R_p in *).
+        all: try rewrite M2_Fun_equation; auto.
+        all: TMCrush idtac; TMSolve 6.
+        now rewrite M2_Fun_equation.
       }
       {
-        Time CertificateMyProgram before
-             (
-               idtac "Before";
-                 repeat progress (unfold M1_Rel, M2_Rel, Mk_R_p);
-                 intuition; try congruence;
-                   match goal with
-                   | [ H : star _ _ _ |- _ ] =>
-                     idtac H;
-                       let x := fresh "x" in
-                       let y := fresh "y" in
-                       let z := fresh "z" in
-                       let IH1 := fresh "IH1" in
-                       let IH2 := fresh "IH2" in
-                       induction H as [x | x y z IH1 _ IH2]
-                   | _ => idtac
-                   end
-             )
-             after
-             (
-               idtac "After";
-                 eauto 6
-             ); eauto 6.
-
-        - rewrite H5. eapply M2_M1_false; eauto.
-        - eapply M2_M1_false; eauto.
-
+        Time TMCrush idtac; TMSolve 6.
+        all:
+          try now
+              (
+                rewrite M2_Fun_equation; TMSimp; auto
+              ).
+        all: erewrite <- M2_M1_false; eauto.
       }
     }
-
-    (*
-    {
-      Time CertificateMyProgram before
-           (
-             idtac "Before";
-               repeat progress (unfold M1_Rel, M2_Rel, Mk_R_p);
-               intuition; try congruence;
-                 match goal with
-                 | [ H : star _ _ _ |- _ ] =>
-                   idtac H;
-                     let x := fresh "x" in
-                     let y := fresh "y" in
-                     let z := fresh "z" in
-                     let IH1 := fresh "IH1" in
-                     let IH2 := fresh "IH2" in
-                     induction H as [x | x y z IH1 _ IH2]
-                 | _ => idtac
-                 end
-           )
-           after
-           (
-             idtac "After";
-               eauto 6
-           ); eauto 6.
-      - admit.
-      - admit.
-      - left. split; auto. eexists; split; eauto. rewrite <- H3. f_equal. destruct h2; cbn in *; simpl_tape in *; try congruence.
-        inv H3. rewrite H4. auto.
-
-
-    } *)
   Qed.
 
 
@@ -367,13 +344,11 @@ Section move_to_symbol.
         1-2: eapply Seq_WRealise; [eapply Realise_WRealise; eapply RealiseIn_Realise; eapply Move_Sem | eapply M2_WRealise].
     }
     {
-      CertificateMyProgram; eauto; subst.
+      Time TMCrush idtac; TMSolve 6.
       - erewrite M1_true; eauto.
       - erewrite MoveToSymbol_true, M1_true; eauto.
-      - unfold MoveToSymbol_Fun.
-        destruct h; cbn; try rewrite M2_Fun_equation at 1; auto; cbn in *. inv H2. admit. admit. admit.
-      - destruct h; cbn in *; try congruence. inv H2. rewrite H3. unfold MoveToSymbol_Fun. cbn. rewrite H3 in *.
-        destruct l0; cbn in *; auto. destruct (f e); cbn. rewrite M2_Fun_equation. admit. admit.
+      - admit.
+      - admit.
       - admit.
       - admit.
     }
