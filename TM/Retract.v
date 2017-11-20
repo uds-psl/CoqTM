@@ -25,12 +25,20 @@ Section Bijection.
   Definition Inverse : inverse := I.
   Definition Inverse_left  : left_inverse  := ltac:(now apply I).
   Definition Inverse_right : right_inverse := ltac:(now apply I).
+
 End Bijection.
 
 (* With the help of the Inverse* functions, the inversion proof should be automaticly infered *)
 Arguments Inverse       { X } { Y } f g { I }.
 Arguments Inverse_left  { X } { Y } f g { I }.
 Arguments Inverse_right { X } { Y } f g { I }.
+
+Class Inversion (X Y : Type) :=
+  {
+    Inv_f : X -> Y;
+    Inv_g : Y -> X;
+    Inv_inv :> inverse Inv_f Inv_g;
+  }.
 
 (* Replace [ f (g x) ] with [ x ], etc. *)
 Ltac inverse :=
@@ -241,6 +249,13 @@ End Retract.
 
 Hint Resolve retract_g_adjoint : inj.
 
+Class Retract (X Y : Type) :=
+  {
+    Retr_f : X -> Y;
+    Retr_g : Y -> option X;
+    Retr_adj :> retract Retr_f Retr_g;
+  }.
+
 Ltac retract_adjoint :=
   match goal with
   | [   |- context [ ?g (?f ?X) ]     ] => rewrite retract_g_adjoint;      [ | now auto_inj]
@@ -274,6 +289,14 @@ Hint Unfold tight_retract         : inj.
 Hint Resolve tight_retract_strong : inj.
 Hint Resolve tretract_g_inv       : inj.
 Hint Resolve tretract_g_inv'      : inj.
+
+Class TRetract (X Y : Type) :=
+  {
+    TRetr_f : X -> Y;
+    TRetr_g : Y -> option X;
+    TRetr_inv :> tight_retract TRetr_f TRetr_g;
+  }.
+
 
 Section Retract_Compose.
   Variable (X Y Z : Type).
@@ -450,6 +473,12 @@ Section Injection.
 
 End Injection.
 
+Class Injection (X Y : Type) :=
+  {
+    Inj_f : X -> Y;
+    Inj_inj :> injective  Inj_f;
+  }.
+
 Ltac inj_subst :=
   match goal with
   | [ H : ?t ?x = ?t ?y |- _] => eapply inj_injective in H; [ subst | now auto_inj]
@@ -467,6 +496,8 @@ Section Injection_Compose.
   Instance compose_inj_injective : injective compose_inj := ltac:(firstorder).
 
 End Injection_Compose.
+
+
 
 
 Section Map_Injective.
