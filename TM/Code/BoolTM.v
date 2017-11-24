@@ -1,302 +1,178 @@
-Require Import TM.Prelim TM.TM TM.Code.Code TM.Code.CodeTM.
-Require Import TM.Combinators.SequentialComposition TM.Basic.Mono.
+(* This file is a case-study.  All machines here are instances of UnaryFinTM or DualFinTM. *)
 
-Open Scope vector_scope.
+Require Import TM.Code.CodeTM TM.Code.FinTM.
+Require Import TM.LiftMN TM.LiftSigmaTau.
+Require Import TM.Combinators.SequentialComposition.
+Require Import TM.Code.ChangeAlphabet.
 
-(* Read boolean from tape 1, negate it and write it back to tape 1 *)
-Section Neg_TM.
+(* First we derive ID and NOT and AND from FinTM *)
+Section ID.
+  (* Note that Nop does this as well *)
+  Definition ID := UnaryFinTM (@id bool).
 
-  Variable (F : finType) (def : Bool_Fin -> F).
-
-  Definition bool_neg_TM_trans :
-    Bool_Fin * (Vector.t (option Bool_Fin) 1) ->
-    Bool_Fin * (Vector.t (option Bool_Fin * move) 1).
+  Lemma ID_Computes :
+    ID ⊨c(3) Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool).
   Proof.
-    intros ([ | ], rd).
-    - constructor. apply true. constructor. apply (None, N). constructor.
-    - destruct (rd[@Fin.F1]) as [[ | ] | ].
-      + (* Some true  *) constructor. apply true. constructor. apply (Some false, N). constructor.
-      + (* Some false *) constructor. apply true. constructor. apply (Some true,  N). constructor.
-      + (* None       *) constructor. apply true. constructor. apply (None,       N). constructor.
+    eapply RealiseIn_monotone.
+    - eapply UnaryFinTM_Computes.
+    - omega.
+    - intros tin (yout&tout) H. auto.
+  Qed.
+End ID.
+
+Section NOT.
+  (* Note that Nop does this as well *)
+  Definition NOT := UnaryFinTM (negb).
+
+  Lemma NOT_Computes :
+    NOT ⊨c(3) Computes_Rel Fin.F1 Fin.F1 _ _ (negb).
+  Proof.
+    eapply RealiseIn_monotone.
+    - eapply UnaryFinTM_Computes.
+    - omega.
+    - intros tin (yout&tout) H. auto.
+  Qed.
+End NOT.
+
+Section AND.
+  Definition AND := DualFinTM andb.
+
+  Lemma AND_Computes :
+    AND ⊨c(5)
+        Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool) ∩
+        Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _  andb.
+  Proof.
+    eapply RealiseIn_monotone.
+    - eapply DualFinTM_Computes.
+    - omega.
+    - intros tin (yout&tout) H. auto.
+  Qed.
+End AND.
+
+
+(* Now we use the Sigma-Tau-Lift, we can build another version of ID *)
+Section ID'.
+
+  (* First we define the retract between [ bool ] and [ bool ], by using the involution [ negb ] *)
+  Let retr : TRetract bool bool.
+  Proof.
+    econstructor. eapply inversion_retract. eapply inverse_involutive. eapply negb_involutive.
   Defined.
 
-  Definition bool_neg_TM : mTM Bool_Fin 1.
-  Proof.
-    split with (states := Bool_Fin).
-    - apply bool_neg_TM_trans.
-    - apply false.
-    - apply id.
-  Defined.
+  (* We have to give a default value, even if the retract is an inversion *)
+  Definition ID' := ChangeAlphabet (@TRetr_inv _ _ retr) false ID.
 
-  Definition bool_neg_mTM : { M : mTM Bool_Fin 1 & states M -> F} := (bool_neg_TM; def).
+  (*
+  Compute (@TRetr_f _ _ retr true).
+  Compute (@TRetr_f _ _ retr false).
+  Compute (@TRetr_g _ _ retr true).
+  Compute (@TRetr_g _ _ retr false).
+   *)
 
-  Lemma bool_neg_TM_onestep (inittapes : tapes Bool_Fin 1) :
-    cstate (step (M := bool_neg_TM) (initc bool_neg_TM inittapes)) = true.
+  Lemma ID'_Computes :
+    ID' ⊫ Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool).
   Proof.
-    destruct_tapes.
-    unfold initc, step, bool_neg_TM in *. cbn in *.
-    destruct (current h); cbn; auto. destruct e; cbn; auto.
-  Qed.
-
-  Lemma bool_neg_TM_computes_sem :
-    bool_neg_mTM ⊫ computes_locally_R_p (F := F) Fin.F1 Fin.F1 _ _ negb.
-  Proof.
-    hnf. intros inittapes i (b, outt) HLoop. cbn in *.
-    assert (i >= 1).
-    {
-      destruct i; cbn in *; try discriminate. cbn in *. omega.
-    }
-    pose proof loop_fulfills_p HLoop as H_Stop. cbn in *. destruct b; auto.
-    unfold loopM in *.
-    erewrite (loop_ge (k1 := 1) (k2 := i)) in HLoop. Focus 2. omega. Focus 2.
-    cbn. unfold id. unfold bool_neg_TM. cbn. rewrite bool_neg_TM_onestep. reflexivity. inv HLoop.
-    hnf. intros x (rest1&E1).
-    unfold initc, step, bool_neg_TM in *. cbn in *.
-    destruct_tapes.
-    hnf in *. unfold tape_encodes_locally_rest in *.
-    destruct x; cbn in *;
-      erewrite !tape_local_current_cons in H1; eauto; cbn in *; inv H1; cbn in *; now eauto.
-  Qed.
-
-  Lemma bool_neg_TM_computes_terminates_in :
-    bool_neg_TM ⇓ (fun _ => fun t => t = 1).
-  Proof.
-    hnf. intros inittape i ->. cbn. unfold id. rewrite bool_neg_TM_onestep. eauto.
-  Qed.
-
-  Lemma bool_neq_TM_computes_total :
-    bool_neg_mTM ⊨c(1) computes_locally_R_p (F := F) Fin.F1 Fin.F1 _ _ negb.
-  Proof.
-    hnf. intros inittape.
-    destruct_tapes. cbn in *.
-    rewrite bool_neg_TM_onestep. econstructor. split. cbn. eauto.
-    hnf. intros x.
-    unfold tape_encodes_locally, tape_encodes_locally_rest in *. intros (tape&bl). cbn in *.
-    destruct x; cbn in *; exists tape;
-      cbn; unfold bool_neg_TM, step; cbn;
-        erewrite tape_local_current_cons; eauto; cbn; f_equal; eapply tape_local_right; eauto.
+    eapply WRealise_monotone.
+    - unfold ID'.
+      apply (ChangeAlphabet_Computes2 (func := @id bool)). intros; cbn; eauto.
+      eapply Realise_WRealise. eapply RealiseIn_Realise. eapply ID_Computes.
+    - intros tin (yout&tout) H. hnf in *. intros x HEnc. specialize (H (negb x)).
+      unfold id in H.
+      spec_assert H.
+      {
+        cbn. destruct x; cbn; cbv [ Encode_Map ]; hnf; cbn; eauto.
+      }
+      destruct x; cbn in H; cbv [ Encode_Map ] in H; hnf in *;
+        (destruct H as (r1&r2&H1&H2); exists r1, r2; hnf in H1, H2; cbn in H1, H2; hnf; split; cbn; auto).
   Qed.
   
-End Neg_TM.
+End ID'.
 
 
-(* Copy boolean from tape 1 to tape 2. *)
-Section Copy.
+(* Because [ negb ] is involutive, we can concatinate to [ NOT ] machines and get another [ ID ] machine. *)
+Section NOT_NOT.
 
-  Variable (F : finType) (def : Bool_Fin -> F).
+  Definition NOT_NOT := NOT ;; NOT.
 
-  Definition bool_copy_TM_trans :
-    Bool_Fin * (Vector.t (option Bool_Fin) 2) ->
-    Bool_Fin * (Vector.t (option Bool_Fin * move) 2).
+  Lemma NOT_NOT_Computes :
+    NOT_NOT ⊨c(7) Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool).
   Proof.
-    intros ([ | ], rd).
-    - apply (true, [| (None, N); (None, N)|]).
-    - destruct (rd[@Fin.F1]) as [ | ].
-      + (* Some *) apply (true, [| (None, N); (Some e, N)|]).
-      + (* None *) apply (true, [| (None, N); (None, N)|]).
-  Defined.
-
-  Definition bool_copy_TM : mTM Bool_Fin 2.
-  Proof.
-    split with (states := Bool_Fin).
-    - apply bool_copy_TM_trans.
-    - apply false.
-    - apply id.
-  Defined.
-
-  Definition bool_copy_mTM : { M : mTM Bool_Fin 2 & states M -> F} := (bool_copy_TM; def).
-
-  Lemma bool_copy_TM_onestep (inittapes : tapes Bool_Fin 2) :
-    cstate (step (M := bool_copy_TM) (initc bool_copy_TM inittapes)) = true.
-  Proof.
-    unfold initc, step, bool_neg_TM in *. destruct_tapes. cbn in *. destruct (current h); cbn; auto.
-  Qed.
-
-  Lemma bool_copy_TM_computes_sem :
-    bool_copy_mTM ⊫
-             (computes_locally_R_p (F := F) Fin.F1 (Fin.FS Fin.F1) _ _ (@id bool)) ∩
-             (stay_locally_R_p (X := Bool_Fin) (F := F) Fin.F1 _).
-  Proof.
-    hnf. intros inittapes i (b, outt) HLoop. cbn in *.
-    assert (i >= 1).
-    {
-      destruct i; cbn in *; try discriminate. cbn in *. omega.
-    }
-    pose proof loop_fulfills_p HLoop as H_Stop. cbn in *. destruct b; auto.
-    unfold loopM in *.
-    erewrite (loop_ge (k1 := 1) (k2 := i)) in HLoop. Focus 2. omega. Focus 2.
-    cbn. unfold id. unfold bool_neg_TM. cbn. rewrite bool_copy_TM_onestep. reflexivity. inv HLoop.
-    unfold initc, step, bool_neg_TM in *. cbn in *.
-    destruct_tapes.
-    unfold computes_locally_R_p, computes_locally_R, tape_encodes_locally, tape_encodes_locally_rest in *.
-    split; cbn.
-    - hnf. intros x (rest1&E1).
-      hnf.
-      destruct x; cbn in *;
-        (erewrite !tape_local_current_cons in H1; eauto); cbn in *; inv H1; cbn in *; now eauto.
-    - hnf. intros x. intros rest1 E1. hnf in *.
-      destruct x; cbn in *;
-        (erewrite !tape_local_current_cons in H1; eauto); cbn in *; inv H1; cbn in *; eauto.
-  Qed.
-
-  Lemma bool_copy_TM_computes_terminates_in :
-    bool_copy_TM ⇓ (fun _ => fun t => t = 1).
-  Proof.
-    hnf. intros inittape i ->. cbn. unfold id. rewrite bool_copy_TM_onestep. eauto.
-  Qed.
-
-  Lemma bool_copy_TM_computes_total :
-    bool_copy_mTM ⊨c(1)
-             (computes_locally_R_p (F := F) Fin.F1 (Fin.FS Fin.F1) _ _ (@id bool)) ∩
-             (stay_locally_R_p (X := Bool_Fin) (F := F) Fin.F1 _).
-  Proof.
-    hnf. intros inittapes.
-    destruct_tapes; cbn in *.
-    unfold id. rewrite bool_copy_TM_onestep. econstructor. split. eauto.
-    eapply bool_copy_TM_computes_sem. instantiate (1 := 1). cbn. now rewrite bool_copy_TM_onestep.
-  Qed.
-
-End Copy.
-
-
-Section Dual.
-
-  Variable (F : finType) (def : Bool_Fin -> F).
-  Variable (f : bool * bool -> bool).
-
-  Definition bool_dual_TM_trans :
-    Bool_Fin * (Vector.t (option Bool_Fin) 2) ->
-    Bool_Fin * (Vector.t (option Bool_Fin * move) 2).
-  Proof.
-    intros ([ | ], rd).
-    - apply (true, [| (None, N); (None, N)|]).
-    - destruct (rd[@Fin.F1])          as [ b1 | ]; [ | apply (true, [| (None, N); (None, N)|])].
-      destruct (rd[@(Fin.FS Fin.F1)]) as [ b2 | ]; [ | apply (true, [| (None, N); (None, N)|])].
-      apply (true, [| (Some (f (b1, b2)), N); (None, N) |]).
-  Defined.
-
-  Definition bool_dual_TM : mTM Bool_Fin 2.
-  Proof.
-    split with (states := Bool_Fin).
-    - apply bool_dual_TM_trans.
-    - apply false.
-    - apply id.
-  Defined.
-
-  Definition bool_dual_mTM : { M : mTM Bool_Fin 2 & states M -> F} := (bool_dual_TM; def).
-
-  Lemma bool_dual_TM_onestep (inittapes : tapes Bool_Fin 2) :
-    cstate (step (M := bool_dual_TM) (initc bool_dual_TM inittapes)) = true.
-  Proof.
-    unfold initc, step, bool_dual_TM in *. destruct_tapes. cbn in *.
-    (destruct (current _); cbn; auto); (destruct (current _); cbn; auto).
-  Qed.
-
-  Lemma bool_dual_TM_computes_sem :
-    bool_dual_mTM ⊫
-             (stay_locally_R_p (F := F) (Fin.FS Fin.F1) _) ∩
-             computes2_locally_R_p (F := F) Fin.F1 (Fin.FS Fin.F1) Fin.F1 _ _ _ f.
-  Proof.
-    hnf. intros inittapes i (b, outt) HLoop. cbn in *.
-    assert (i >= 1).
-    {
-      destruct i; cbn in *; try discriminate. cbn in *. omega.
-    }
-    pose proof loop_fulfills_p HLoop as H_Stop. cbn in *. destruct b; auto.
-    unfold id, loopM in *.
-    erewrite (loop_ge (k1 := 1) (k2 := i)) in HLoop. Focus 2. omega. Focus 2.
-    cbn. unfold id. unfold bool_dual_TM. cbn. rewrite bool_dual_TM_onestep. reflexivity. inv HLoop.
-    destruct_tapes; cbn in *.
-    split; cbn; hnf.
-    - intros x. intros rest1 E1. hnf in *.
-      unfold initc, step, bool_neg_TM in *. cbn in *. hnf in *.
-      destruct (current h), x;
-        (
-          unfold encode_sum, encode_unit, tape_local; cbn in *;
-          repeat (erewrite tape_local_current_cons in H1; eauto);
-          cbn in *; inv H1; eauto
-        ).
-    - hnf. intros x y (rest1&E1) (rest2&E2).
-      unfold initc, step, bool_neg_TM in *. cbn in *. hnf in *.
-      destruct x, y;
-        (
-          cbn in *;
-          repeat (erewrite tape_local_current_cons in H1; eauto);
-          cbn in *; inv H1;
-          unfold encode_sum, encode_unit, tape_local; cbn in *;
-          destruct (f (_, _)); now (eexists; cbn; eauto)
-        ).
-  Qed.
-
-  Lemma bool_dual_TM_computes_terminates_in :
-    bool_dual_TM ⇓ (fun _ => fun t => t = 1).
-  Proof.
-    hnf. intros inittape i ->. cbn. unfold id. rewrite bool_dual_TM_onestep. eauto.
-  Qed.
-
-  Lemma bool_dual_TM_computes_total :
-    bool_dual_mTM ⊨c(1)
-             (stay_locally_R_p (F := F) (Fin.FS Fin.F1) _) ∩
-             computes2_locally_R_p (F := F) Fin.F1 (Fin.FS Fin.F1) Fin.F1 _ _ _ f.
-  Proof.
-    hnf. intros inittapes. destruct_tapes. cbn in *.
-    unfold id. rewrite bool_dual_TM_onestep. econstructor. split. eauto.
-    eapply bool_dual_TM_computes_sem. instantiate (1 := 1). cbn. now rewrite bool_dual_TM_onestep.
+    eapply RealiseIn_monotone.
+    - eapply (compose_computes_RealiseIn (f := negb) (g := negb)). apply Fin.F1. apply Fin.F1. 1-2: eapply NOT_Computes.
+    - cbn. omega.
+    - hnf. intros tin (yout&tout) H. hnf in *. intros x Cx. specialize (H x Cx). now rewrite negb_involutive in H. 
   Qed.
   
-End Dual.
-
-Require Import TM.Basic.Mono.
-Require Import LiftMN.
-
-Section CopyMove.
-
-  Variable (F : finType) (def : Bool_Fin -> F).
-
-  Local Definition Move_at_1 := Inject (n := 2) (Move Bool_Fin R) [| Fin.F1 |] .
-  Definition bool_copy_move_mTM := (bool_copy_mTM def ;; Move_at_1).
+End NOT_NOT.
 
 
-  (* TODO: Make dupfree and In computeable *)
-  Local Lemma dupfree : dupfree [| Fin.F1 (n := 1) |].
-  Proof. constructor. inversion 1. constructor. Qed.
+(* Using [ NOT ], [ AND ], and the DeMorgan law, we construct an [ OR ] machine. *)
+Section DeMorgan.
 
-  Local Lemma Inj_1_helper : ~ Vector.In (Fin.FS (Fin.F1 (n := 0))) [|Fin.F1 |].
+  (* We use this equality *)
+  Lemma deMorgan (b1 b2 : bool) :
+    orb b1 b2 = negb (andb (negb b1) (negb b2)).
+  Proof. destruct b1, b2; cbn; reflexivity. Qed.
+
+  (* First we run [ NOT ] on tape 1 and 2. *)
+  Definition NOT2 := UnaryParallelTM negb negb.
+
+  Lemma NOT2_Computes :
+    NOT2 ⊨c(7)
+         Computes_Rel (F := FinType (EqType unit)) (Fin.F1       ) (Fin.F1       ) _ _ negb ∩
+         Computes_Rel (F := FinType (EqType unit)) (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ negb.
   Proof.
-    inversion 1; subst.
-    apply EqdepFacts.eq_sigT_iff_eq_dep in H3. induction H3. inv H.
-    apply EqdepFacts.eq_sigT_iff_eq_dep in H4. induction H4. destruct_vector. inv H3.
+    eapply RealiseIn_monotone.
+    - eapply UnaryParallelTM_Computes.
+    - cbn. omega.
+    - hnf. auto.
   Qed.
+        
+  (* Then we run [ AND ]. The result will be stored on tape 2.
+   * After that we run [ NOT ] on this tape. *)
+  Definition OR :=
+    NOT2 ;; AND ;; Inject NOT [|Fin.FS Fin.F1|].
 
-  Lemma bool_copy_move_TM_Sem :
-    bool_copy_move_mTM ⊨c(3) copy_Move_locally_R_p (X := Bool_Fin) (F := Bool_Fin) Fin.F1 (Fin.FS Fin.F1) _.
+  Lemma OR_Computes :
+    OR ⊨c(17) Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ orb.
   Proof.
-    eapply RealiseIn_monotone with (k1 := 3); try omega.
-    - replace 3 with (1+1+1) by reflexivity. eapply Seq_RealiseIn.
-      + eapply bool_copy_TM_computes_total.
-      + eapply Inject_RealisesIn. apply dupfree. apply Move_Sem.
-    - intros intapes (fstate, ftapes). destruct_tapes. cbn. intros ((f, fstate')&(H1&H2)&H3&H4). hnf in *. split.
-      + intros x rest henc. hnf in *. cbn in *. clear H4.
-        assert (tape_encodes_locally Encode_Bool h x) as lh1 by (eexists; apply henc).
-        specialize (H1 _ lh1). clear lh1. hnf in H1.
-        destruct fstate; cbn in *.
-        * destruct H3 as (->&H3).
-          destruct x; cbn in henc.
-          -- erewrite tape_local_move_right; eauto. specialize (H2 true rest henc).  hnf in H2. cbn in H2. eauto.
-          -- erewrite tape_local_move_right; eauto. specialize (H2 false rest henc). hnf in H2. cbn in H2. eauto.
-        * hnf in H3. destruct H3 as (H3&<-).
-          destruct x; cbn in henc.
-          -- specialize (H2 true rest henc).  hnf in H2. cbn in H2. clear henc. exfalso.
-             enough (current fstate'[@Fin.F1] = Some true) by congruence.
-             eapply tape_local_current_cons; eauto.
-          -- specialize (H2 false rest henc). hnf in H2. cbn in H2. clear henc. exfalso.
-             enough (current fstate'[@Fin.F1] = Some false) by congruence.
-             eapply tape_local_current_cons; eauto.
-      + intros x HEnc. cbn in *. hnf in *. destruct HEnc as (rest&HEnc).
-        assert (tape_encodes_locally _ h x) as L1 by eauto. specialize (H1 _ L1). clear L1. (* XXX *)
-        specialize (H2 _ _ HEnc).
-        pose proof Inj_1_helper as L1.
-        specialize (H4 (Fin.FS Fin.F1) L1). cbn in *. subst. eauto.
+    eapply RealiseIn_monotone.
+    {
+      unfold OR. eapply Seq_RealiseIn; [ | eapply Seq_RealiseIn].
+      - apply NOT2_Computes.
+      - apply AND_Computes.
+      - apply Inject_RealisesIn. vector_dupfree. apply NOT_Computes.
+    }
+    {
+      cbn. omega.
+    }
+    {
+      hnf. intros tin (yout&tout) H1. hnf in *.
+      destruct H1 as ((()&t1)&(H1&H2)&(()&t2)&(H3&H4)&H5&H6); hnf in *. intros x y HE1 HE2. destruct_tapes.
+      specialize (H6 Fin.F1 ltac:(vector_not_in)). subst. cbn in *.
+      specialize (H1 x HE1). specialize (H2 y HE2). subst. rewrite deMorgan. auto.
+    }
   Qed.
   
-End CopyMove.
+End DeMorgan.
+
+(* Finally, we employ commutativity of [ andb ].  We swap the tapes 1 and 2 using the M-N-Lift. *)
+Section AndComm.
+
+  Definition AND' := Inject AND [| Fin.FS Fin.F1 (n := 1); Fin.F1 |].
+
+  Lemma AND'_Computes :
+    AND' ⊨c(5)
+         Computes_Rel (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ (@id bool) ∩
+         Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) Fin.F1 _ _ _  andb.
+  Proof.
+    eapply RealiseIn_monotone.
+    - unfold AND'. eapply Inject_RealisesIn. vector_dupfree. eapply AND_Computes.
+    - omega.
+    - intros tin (yout&tout) H; hnf in *.
+      destruct H as ((H1&H2)&_); hnf in *. destruct_tapes; cbn in *. split; cbn in *.
+      + intros x HE1. cbn in *. eapply H1. auto.
+      + intros x y HE1 HE2. specialize (H1 y HE2). specialize (H2 _ _ HE2 HE1). rewrite andb_comm. auto.
+  Qed.
+
+End AndComm.

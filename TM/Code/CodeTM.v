@@ -123,14 +123,50 @@ Section Fix_Sig.
     Definition Computes_Rel (f : X -> Y) : Rel (tapes sig' n_tapes) (F * tapes sig' n_tapes) :=
       ignoreParam (Computes f).
 
-    Lemma Computes_ext (f f' : X -> Y) :
-      (forall x, f x = f' x) -> Computes f =2 Computes f'.
-    Proof.
-      intros H. split.
-      - intros t t' H1. hnf in *. intros x. specialize (H1 x). rewrite (H x) in H1. eauto.
-      - intros t t' H1. hnf in *. intros x. specialize (H1 x). rewrite (H x). eauto.
-    Qed.
+    Section Computes_Ext.
 
+      Variable (f f' : X -> Y).
+      Hypothesis (ext : forall x, f x = f' x).
+
+      Lemma Computes_ext  :
+        Computes f =2 Computes f'.
+      Proof.
+        split.
+        - intros t t' H1. hnf in *. intros x. specialize (H1 x). rewrite (ext x) in H1. eauto.
+        - intros t t' H1. hnf in *. intros x. specialize (H1 x). rewrite (ext x). eauto.
+      Qed.
+
+      Variable pM : { M : mTM sig' n_tapes & states M -> F }.
+
+      Lemma Computes_Ext_WRealise :
+        pM ⊫ Computes_Rel f' ->
+        pM ⊫ Computes_Rel f.
+      Proof.
+        intros H. eapply WRealise_monotone.
+        - eapply H.
+        - hnf. intros tin (yout&tout) C. intros x e. specialize (C x e). rewrite ext. auto.
+      Qed.
+
+      Lemma Computes_Ext_Realise :
+        pM ⊨ Computes_Rel f' ->
+        pM ⊨ Computes_Rel f.
+      Proof.
+        intros H. eapply Realise_monotone.
+        - eapply H.
+        - hnf. intros tin (yout&tout) C. intros x e. specialize (C x e). rewrite ext. auto.
+      Qed.
+
+      Lemma Computes_Ext_RealiseIn (k : nat) :
+        pM ⊨c(k) Computes_Rel f' ->
+        pM ⊨c(k) Computes_Rel f.
+      Proof.
+        intros H. eapply RealiseIn_monotone.
+        - eapply H.
+        - omega.
+        - hnf. intros tin (yout&tout) C. intros x e. specialize (C x e). rewrite ext. auto.
+      Qed.
+
+    End Computes_Ext.
   End Computes.
 
 
@@ -175,6 +211,7 @@ Section Fix_Sig.
     Qed.
 
   End Computes_Composes.
+  
 
   Section Computes2.
     Variable n_tapes : nat.
@@ -194,5 +231,9 @@ Section Fix_Sig.
       ignoreParam (Computes2).
 
   End Computes2.
+
+  Section Computes_To_Computes2.
+
+  End Computes_To_Computes2.
 
 End Fix_Sig.

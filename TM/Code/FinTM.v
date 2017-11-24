@@ -1,6 +1,6 @@
 Require Import TM.Prelim TM.TM TM.Code.Code TM.Code.CodeTM.
 Require Import TM.Basic.Mono TM.Basic.Nop.
-Require Import TM.Combinators.Match.
+Require Import TM.Combinators.Match TM.Combinators.SequentialComposition.
 Require Import TM.LiftMN.
 
 Section FinTM1.
@@ -63,7 +63,9 @@ Section FinTM2.
              end).
   
   Lemma DualFinTM_Computes :
-    DualFinTM ⊨c(5) Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ f.
+    DualFinTM ⊨c(5)
+              Computes_Rel Fin.F1 Fin.F1 _ _ (@id sig) ∩
+              Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ f.
   Proof.
     eapply RealiseIn_monotone.
     {
@@ -81,14 +83,63 @@ Section FinTM2.
     {
       intros tapein (yout, tapeout) H. hnf in *.
       destruct H as (y1&t1&((H1&H2)&H3)&H4); hnf in *. subst.
-      intros x y C1 C2. destruct_tapes. cbn -[Vector.nth] in *. inv H2. cbn in H4, C1, C2. cbn.
-      destruct C1 as (r1&r2&C1&C1'). destruct C2 as (r1'&r2'&C2&C2'). cbn in C1, C2, C1', C2'.
-      erewrite tape_local_current_cons in H4; eauto.
       specialize (H3 (Fin.FS Fin.F1) ltac:(vector_not_in)). subst; cbn in *.
-      hnf in H4. cbn in H4. destruct H4 as (H4&H5). hnf in *. subst.
-      specialize (H5 Fin.F1 ltac:(vector_not_in)). cbn in *. subst.
-      specialize (H4 y ltac:(repeat (hnf; econstructor; cbn); eauto)). eauto.
+      destruct_tapes. cbn in *. inv H2; subst. split; hnf.
+      {
+        hnf. intros x. destruct_tapes. cbn. intros C1. destruct C1 as (r1&r2&C1&C1'). cbn in *.
+        erewrite tape_local_current_cons in H4; eauto. cbn in *. hnf in H4. destruct H4 as (H4&H5). hnf in H4, H5.
+        specialize (H5 Fin.F1 ltac:(vector_not_in)). cbn in H5. subst. repeat (hnf; econstructor; cbn); eauto.
+      }
+      {
+        intros x y C1 C2. cbn in *.
+        destruct C1 as (r1&r2&C1&C1'). destruct C2 as (r1'&r2'&C2&C2'). cbn in C1, C2, C1', C2'.
+        erewrite tape_local_current_cons in H4; eauto.
+        hnf in H4. cbn in H4. destruct H4 as (H4&H5). hnf in *. subst.
+        specialize (H5 Fin.F1 ltac:(vector_not_in)). cbn in *. subst.
+        specialize (H4 y ltac:(repeat (hnf; econstructor; cbn); eauto)). eauto.
+      }
     }
   Qed.
   
 End FinTM2.
+
+
+Section FinTM2'.
+  Variable sig : finType.
+  Variable (f1 f2 : sig -> sig).
+
+  Definition UnaryParallelTM := 
+    Inject (UnaryFinTM f1) [|Fin.F1 (n := 1) |] ;;
+    Inject (UnaryFinTM f2) [|Fin.FS Fin.F1   |].
+
+  Lemma UnaryParallelTM_Computes :
+    UnaryParallelTM ⊨c(7)
+         Computes_Rel (F := FinType (EqType unit)) (Fin.F1       ) (Fin.F1       ) _ _ f1 ∩
+         Computes_Rel (F := FinType (EqType unit)) (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ f2.
+  Proof.
+    eapply RealiseIn_monotone.
+    {
+      unfold UnaryParallelTM. eapply Seq_RealiseIn.
+      all: (eapply Inject_RealisesIn; [ vector_dupfree | eapply UnaryFinTM_Computes ]).
+    }
+    {
+      cbn. omega.
+    }
+    {
+      hnf. intros tin (yout&tout) H. hnf in *.
+      destruct H as ((() & t') & (H1 & H2) & H3 & H4). hnf in H1, H2, H3, H4. destruct_tapes.
+      split.
+      {
+        hnf. intros x HE1.
+        specialize (H2 (Fin.FS Fin.F1) ltac:(vector_not_in)). specialize (H4 (Fin.F1) ltac:(vector_not_in)).
+        cbn in *. subst. specialize (H1 _ HE1). congruence.
+      }
+      {
+        hnf. intros y HE2.
+        specialize (H2 (Fin.FS Fin.F1) ltac:(vector_not_in)). specialize (H4 (Fin.F1) ltac:(vector_not_in)).
+        cbn in *. subst. specialize (H3 _ HE2). congruence.
+      }
+    }
+  Qed.
+
+End FinTM2'.
