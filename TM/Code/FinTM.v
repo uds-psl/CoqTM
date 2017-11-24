@@ -1,16 +1,13 @@
 Require Import TM.Prelim TM.TM TM.Code.Code TM.Code.CodeTM.
-Require Import TM.Basic.Mono.
-Require Import TM.Combinators.SequentialComposition TM.Combinators.Match.
+Require Import TM.Basic.Mono TM.Basic.Nop.
+Require Import TM.Combinators.Match.
+Require Import TM.LiftMN.
 
 Section FinTM1.
   Variable sig : finType.
   Variable f : sig -> sig.
 
-  Let cX := Encode_Finite sig.
-  Let codeX := codeX cX.
-  Let sig' := sig' sig.
-
-  Definition UnaryFinTM : { M : mTM sig' 1 & states M -> unit } :=
+  Definition UnaryFinTM : { M : mTM (sig' sig) 1 & states M -> unit } :=
     MATCH (Read_char _)
           (fun r1 =>
              match r1 with
@@ -19,7 +16,7 @@ Section FinTM1.
              end).
   
   Lemma UnaryFinTM_Computes :
-    UnaryFinTM ⊨c(3) Computes_Rel Fin.F1 Fin.F1 cX cX f.
+    UnaryFinTM ⊨c(3) Computes_Rel Fin.F1 Fin.F1 _ _ f.
   Proof.
     eapply RealiseIn_monotone.
     - unfold UnaryFinTM. eapply Match_RealiseIn.
@@ -43,3 +40,55 @@ Section FinTM1.
   Qed.
   
 End FinTM1.
+
+Section FinTM2.
+  Variable sig : finType.
+  Variable f : sig -> sig -> sig.
+
+  Definition ReadAt1 : { M : mTM (sig' sig) 2 & states M -> option (sig' sig) } :=
+    Inject (Read_char _) [| Fin.F1 |].
+
+  Definition Nop2 : { M : mTM (sig' sig) 2 & states M -> FinType (EqType unit) } := Nop 2 _ tt.
+
+  Definition UnaryFinTM2 : sig -> { M : mTM (sig' sig) 2 & states M -> unit } :=
+    fun s : sig =>
+      Inject (UnaryFinTM (f s)) [| Fin.FS (Fin.F1) |].
+
+  Definition DualFinTM : { M : mTM (sig' sig) 2 & states M -> unit } :=
+    MATCH (ReadAt1)
+          (fun r1 =>
+             match r1 with
+             | Some (inl r1') => UnaryFinTM2 r1'
+             | _ => Nop2
+             end).
+  
+  Lemma DualFinTM_Computes :
+    DualFinTM ⊨c(5) Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ f.
+  Proof.
+    eapply RealiseIn_monotone.
+    {
+      unfold DualFinTM. eapply Match_RealiseIn.
+      - unfold ReadAt1. cbn. eapply Inject_RealisesIn. vector_dupfree. eapply read_char_sem.
+      - instantiate (2 := fun r1 => match r1 with Some (inl r1') => _ | _ => _ end).
+        intros y. cbn in y. destruct y as [ [ | ] | ]; cbn in *.
+        + unfold UnaryFinTM2. eapply Inject_RealisesIn. vector_dupfree. eapply UnaryFinTM_Computes.
+        + eapply RealiseIn_monotone'. eapply Nop_total. omega.
+        + eapply RealiseIn_monotone'. eapply Nop_total. omega.
+    }
+    {
+      cbn. omega.
+    }
+    {
+      intros tapein (yout, tapeout) H. hnf in *.
+      destruct H as (y1&t1&((H1&H2)&H3)&H4); hnf in *. subst.
+      intros x y C1 C2. destruct_tapes. cbn -[Vector.nth] in *. inv H2. cbn in H4, C1, C2. cbn.
+      destruct C1 as (r1&r2&C1&C1'). destruct C2 as (r1'&r2'&C2&C2'). cbn in C1, C2, C1', C2'.
+      erewrite tape_local_current_cons in H4; eauto.
+      specialize (H3 (Fin.FS Fin.F1) ltac:(vector_not_in)). subst; cbn in *.
+      hnf in H4. cbn in H4. destruct H4 as (H4&H5). hnf in *. subst.
+      specialize (H5 Fin.F1 ltac:(vector_not_in)). cbn in *. subst.
+      specialize (H4 y ltac:(repeat (hnf; econstructor; cbn); eauto)). eauto.
+    }
+  Qed.
+  
+End FinTM2.

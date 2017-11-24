@@ -289,6 +289,12 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     - intuition.
   Qed.
 
+  Fact RealiseIn_monotone' n (F : finType) (pM : { M : mTM n & (states M -> F) }) (R1 : Rel (tapes _) (F * tapes _)) k1 k2 :
+    pM ⊨c(k1) R1 -> k1 <= k2 -> pM ⊨c(k2) R1.
+  Proof.
+    intros H1 H2. eapply RealiseIn_monotone. eapply H1. assumption. firstorder.
+  Qed.
+  
   Fact Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
     pM ⊫ R /\ projT1 pM ↓ (fun _ i => i >= k) <-> pM ⊨c(k) R.
   Proof.
