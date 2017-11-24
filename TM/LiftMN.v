@@ -1,10 +1,5 @@
 Require Import TM.Prelim TM.Relations TM.TM.
 
-Inductive dupfree X : forall n, Vector.t X n -> Prop :=
-  dupfreeVN : dupfree (@Vector.nil X)
-| dupfreeVC n (x : X) (V : Vector.t X n) : ~ Vector.In x V -> dupfree V -> (dupfree (x ::: V))%vector_scope.
-
-
 Definition reorder m n Z (indices : Vector.t (Fin.t n) m) (V : Vector.t Z n) : Vector.t Z m :=
   Vector.map (Vector.nth V) indices.
 

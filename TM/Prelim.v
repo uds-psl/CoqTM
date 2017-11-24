@@ -421,3 +421,43 @@ Tactic Notation "spec_assert" hyp(H) "by" tactic(T) :=
   | ?A -> _ =>
     assert A as H' by T; specialize (H H'); clear H'
   end.
+
+
+(* Dupfree vector *)
+
+Open Scope vector_scope.
+
+Inductive dupfree X : forall n, Vector.t X n -> Prop :=
+  dupfreeVN :
+    dupfree (@Vector.nil X)
+| dupfreeVC n (x : X) (V : Vector.t X n) :
+    ~ Vector.In x V -> dupfree V -> dupfree (x ::: V).
+
+Ltac vector_not_in_step :=
+  match goal with
+  | _ => progress destruct_vector
+  | [ H: Vector.In ?X ?Y |- False ] => inv H
+  | [ H: existT ?X1 ?Y1 ?Z1 = existT ?X2 ?Y2 ?Z2 |- False] =>
+    apply EqdepFacts.eq_sigT_iff_eq_dep in H; inv H; clear H
+  end.
+
+Ltac vector_not_in := intro; repeat vector_not_in_step.
+
+Goal ~ Vector.In 10 [|1;2;4|].
+Proof.
+  vector_not_in.
+Qed.
+
+Ltac vector_dupfree :=
+  match goal with
+  | [ |- dupfree (Vector.nil _) ] =>
+    constructor
+  | [ |- dupfree (?a ::: ?bs)%vector_scope ] =>
+    constructor; [vector_not_in | vector_dupfree]
+  end.
+
+Goal dupfree [| 4; 8; 15; 16; 23; 42 |].
+Proof. vector_dupfree. Qed.
+
+Goal dupfree [| Fin.F1 (n := 1) |].
+Proof. vector_dupfree. Qed.
