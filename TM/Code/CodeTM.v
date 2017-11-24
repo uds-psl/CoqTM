@@ -1,4 +1,4 @@
-Require Import TM.Prelim TM.TM TM.Code.Code.
+Require Export TM.Prelim TM.TM TM.Code.Code.
 Require Import TM.Combinators.SequentialComposition.
 Require Import TM.Relations.
 Require Export TM.Retract.
@@ -86,20 +86,17 @@ Section Fix_Sig.
     Instance codeX : codeable sig' X := Encode_Map cX          (@retract_inl sig bool).
     Instance codeS : codeable sig' bool := Encode_Map Encode_Bool (@retract_inr sig bool).
 
-    Definition tape_encodes_r (t : tape sig') (x : X) (r1 r2 : list sig) :=
-      left t = encode START ++ map inl r1 /\ tape_local t = encode x ++ encode STOP ++ map inl r2.
+    Definition tape_encodes_r (t : tape sig') (x : X) (r1 r2 : list sig') :=
+      left t = encode START ++ r1 /\ tape_local t = encode x ++ encode STOP ++ r2.
 
     Definition tape_encodes (t : tape sig') (x : X) : Prop :=
-      exists r1 r2 : list sig, tape_encodes_r t x r1 r2.
+      exists r1 r2 : list sig', tape_encodes_r t x r1 r2.
 
-    Lemma tape_encodes_r_injective (t : tape sig') (x1 x2 : X) (r1 r2 s1 s2 : list sig) :
+    Lemma tape_encodes_r_injective (t : tape sig') (x1 x2 : X) (r1 r2 s1 s2 : list sig') :
       tape_encodes_r t x1 r1 r2 -> tape_encodes_r t x2 s1 s2 -> x1 = x2 /\ r1 = s1 /\ r2 = s2.
     Proof.
       intros (H2&H2') (H1&H1'). rewrite H2 in H1; clear H2. rewrite H2' in H1'. clear H2'. cbn in *.
-      eapply (encode_map_injective) in H1' as (->&H1').
-      inv H1. inv H1'.
-      apply map_injective in H0 as ->. apply map_injective in H1 as ->.
-      tauto. 1-2: auto_inj. eapply retract_inl.
+      eapply encode_map_injective in H1' as (->&H2). inv H1. inv H2. tauto. eapply retract_inl.
     Qed.
 
     Lemma tape_encodes_injective (t : tape sig') (x1 x2 : X) :
@@ -199,224 +196,3 @@ Section Fix_Sig.
   End Computes2.
 
 End Fix_Sig.
-
-Section Map_Dep.
-
-  Inductive In' (X : Type) (x : X) : list X -> Type :=
-  | In'_found xs   : In' x (x :: xs)
-  | In'_skip x' xs : In' x xs -> In' x (x' :: xs).
-  Hint Constructors In'.
-
-  Lemma In'_dec (X : eqType) : forall (x : X) (xs : list X), ( In' x xs ) + ( In' x xs -> Empty_set ).
-  Proof.
-    intros x xs. revert x. induction xs as [ | s str IH ]; intros.
-    - right. intros H. inv H.
-    - decide (x = s) as [ -> | D].
-      + left. constructor 1.
-      + specialize (IH x) as [ IH | IH ].
-        * left. constructor 2. assumption.
-        * right. intros H. inv H; tauto.
-  Qed.
-
-  Lemma map_ext_in' :
-    forall (A B : Type)(f g:A->B) l, (forall a, In' a l -> f a = g a) -> map f l = map g l.
-  Proof.
-    induction l; simpl; auto.
-    intros; rewrite H by intuition; rewrite IHl; eauto using In'.
-  Qed.
-
-  Fixpoint map_dep (A B : Type) (l : list A) (f : forall a, In' a l -> B) { struct l } : list B.
-  Proof.
-    destruct l as [ | l ls ].
-    - apply nil.
-    - pose proof map_dep A B ls.
-      spec_assert X.
-      + intros a Ha. eapply f. constructor 2. apply Ha.
-      + apply cons. eapply f. constructor 1. apply X.
-  Defined.
-  
-  Lemma map_dep_ext (A B : Type) (l : list A) (f g : forall a, In' a l -> B) :
-    (forall (a : A) (Ha : In' a l), f _ Ha = g _ Ha) ->
-    map_dep (l := l) f = map_dep (l := l) g.
-  Proof.
-    revert f g. induction l as [ | l ls IH ]; cbn; intros; f_equal; auto.
-  Qed.
-
-  Lemma map_dep_nondep (A B : Type) (l : list A) (f : A -> B) :
-    map_dep (l := l) (fun a _ => f a) = map f l.
-  Proof.
-    revert f. induction l as [ | l ls IH ]; cbn; intros.
-    - reflexivity.
-    - f_equal. rewrite IH. cbn. apply map_ext. auto.
-  Qed.
-
-  Lemma map_map_dep (A B C : Type) (l : list A) (f : forall b, In' b l -> B) (g : B -> C) :
-      map g (map_dep f) = map_dep (fun x H => g (f x H)).
-  Proof.
-    induction l; simpl; auto. rewrite IHl; auto.
-  Qed.
-
-End Map_Dep.
-
-    
-
-Section MapSplit.
-
-  Variable sig tau : finType.
-  Variable (f : sig -> tau) (g : tau -> option sig).
-  Hypothesis retr : tight_retract f g.
-  Variable def : sig.
-    
-  Fixpoint map_split (str : list tau) :
-    ({ x : list sig * tau * list tau |
-       let '(r1,t,r2) := x in str = map f r1 ++ t :: r2 /\ g t = None }) +
-    (forall t, In' t str -> { s | g t = Some s }).
-  Proof.
-    destruct str as [ | s str ]; cbn.
-    - right. intros t H. inv H.
-    - pose proof map_split str as [ (((r1&r2)&t)&->&IH) | IH ]; cbn in *.
-      + destruct (g s) eqn:E1.
-        * left. eexists (_,_,_); cbn. repeat split; eauto.
-          instantiate (2 := e :: r1). cbn. f_equal. eapply tretract_g_inv'; eauto.
-        * left. eexists (_,_,_); cbn. instantiate (4 := nil). cbn. eauto.
-      + destruct (g s) eqn:E1.
-        * right. intros t H. inv H; eauto.
-        * left. eexists (_,_,_). instantiate (4 := nil). cbn. split; f_equal; eauto.
-          (* instantiate (1 := map_dep (fun a H => proj1_sig (IH _ H))).
-          rewrite map_map_dep. erewrite map_dep_ext. erewrite map_dep_nondep. rewrite map_id. reflexivity.
-          intros a' Ha'. cbn. destruct (IH a' Ha') eqn:E'; cbn. symmetry. eapply tretract_g_inv'; eauto. *)
-  Defined.
-
-End MapSplit.
-
-Section Test.
-  (* Retract between [ move ] and [ move * move ], that just prepends N *)
-  Let sig := FinType(EqType(move)).
-  Let tau := FinType(EqType(move * move)).
-  Let f := pair (B := FinType(EqType(move))) N.
-  Let g := retract_pair_g (B := FinType(EqType(move))) N.
-  Instance retract_f_g : tight_retract f g.
-  Proof. unfold f, g. eapply retract_pair. Qed.
-
-  Let def : sig := N.
-  Compute f (R).
-  Compute f (L).
-  Compute g (R, L).
-  Compute g (N, L).
-  Compute g (N, R).
-
-  Let str : list (tau + bool) := [inl (N,R); inr START; inl (R,N); inr STOP].
-  Compute map (surject (retract_sum_g g Some) (inl def)) str.
-
-  (*
-  (* BUG: Derived function can't be Reseted. *)
-  Require Coq.derive.Derive.
-  Derive f'g' SuchThat (tight_retract (fst f'g') (snd f'g')) As retr'.
-  Proof.
-    instantiate (1 := sig' sig). instantiate (1 := sig' tau). cbn in *. subst f'g'.
-    instantiate (1 := ( _ , _ )). cbn. eapply tretract_sum; auto_inj.
-  Qed.
-
-  Check map_split retr' str.
-  *)
-
-End Test.
-
-Section Computes_Change_Alphabet.
-
-  Variable sig tau : finType.
-  Variable (f : sig -> tau) (g : tau -> option sig).
-  Hypothesis retr : tight_retract f g.
-  Variable def : sig.
-
-  Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y).
-  Variable (func : X -> Y).
-  Variable (n_tapes : nat).
-  Variable (i1 i2 : Fin.t n_tapes).
-  Variable (F : finType).
-  Variable (pM : {M : mTM (sig' sig) n_tapes & states M -> F}).
-
-  Local Instance cX' : codeable tau X.
-  Proof. eapply Encode_Map; eauto. Defined.
-
-  Local Instance cY' : codeable tau Y.
-  Proof. eapply Encode_Map; eauto. Defined.
-
-  (*
-  (* The following retract can be derived automatically. *)
-  Let f' := @retract_sum_f sig bool tau bool f (@id bool).
-  Let g' := @retract_sum_g sig bool tau bool g (@Some bool).
-  Local Instance retr' : tight_retract f' g'.
-  Proof. eapply tretract_sum; auto_inj. Qed.
-*)
-
-  Require Coq.derive.Derive.
-  Derive f'g' SuchThat (tight_retract (fst f'g') (snd f'g')) As retr'.
-  Proof.
-    instantiate (1 := sig' sig). instantiate (1 := sig' tau). cbn in *. subst f'g'.
-    instantiate (1 := ( _ , _ )). cbn. eapply tretract_sum; auto_inj.
-  Qed.
-  (*
-  Set Printing Implicit. Print f'g'.
-   *)
-  Notation "'f''" := (fst f'g').
-  Notation "'g''" := (snd f'g').
-
-
-  Definition LiftCodeTM : { M : mTM (sig' tau) n_tapes & states M -> F } :=
-    LiftSigmaTau.Lift pM (f') (g') (inl def).
-
-
-  Lemma LiftCodeTM_Computes :
-    pM ⊫ Computes_Rel i1 i2 cX cY func ->
-    LiftCodeTM ⊫ Computes_Rel i1 i2 cX' cY' func.
-  Proof.
-    intros H. eapply WRealise_monotone.
-    - unfold LiftCodeTM. eapply Lift_sem. apply tight_retract_strong. eapply retr'. eassumption.
-    - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc.
-      unfold surjectTapes in HComp.
-      revert HEnc. intros HEnc.
-      spec_assert HComp; [ | clear HEnc].
-      + hnf in HEnc. hnf. destruct HEnc as (r1&r2&HEnc1&HEnc2).
-        exists (map (surject g def) r1), (map (surject g def) r2). hnf. cbn.
-        unfold mapTapes. erewrite !Vector.nth_map; eauto. simpl_tape. split.
-        * rewrite HEnc1. cbn. f_equal.
-          rewrite !map_map. eapply map_ext. intros a. unfold surject. cbn. destruct (g a); reflexivity.
-        * rewrite HEnc2. cbn. simpl_list. rewrite !map_map. cbn. f_equal; [ | f_equal].
-          -- apply map_ext. intros a. unfold surject. cbn. retract_adjoint. reflexivity.
-          -- rewrite !map_map. apply map_ext. intros a. unfold surject. cbn. destruct (g a); reflexivity.
-      +
-
-        hnf in HComp. destruct HComp as (r1&r2&HComp1&HComp2). hnf in *.
-        unfold mapTapes in *.
-        repeat (
-            erewrite !Vector.nth_map in HComp1, HComp2; eauto; simpl_tape in *; cbn in *
-          ).
-        (* Wahrheit bis hierhin *)
-
-        (*
-        revert HComp1 HComp2. generalize (tout[@i2]) as out. clear tout. intros out HEnc1 HEnc2.
-        unfold tape_encodes_r. cbn in *.
-
-        destruct (left out) eqn:E1; cbn in *; try congruence.
-        unfold surject, retract_sum_g in HEnc1. destruct e; cbn in *.
-        * destruct (g e) eqn:E2; congruence.
-        * inv HEnc1.
-          unfold surject, retract_sum_g in HEnc2. cbn in *.
-          destruct (tape_local out) eqn:E2; cbn in *.
-          -- destruct (encode (func x)); cbn in *; congruence.
-          -- destruct e; cbn in *. destruct (g e) eqn:E3; cbn in *.
-             ++ eexists. eexists. split. f_equal. admit. rewrite map_map; cbn. admit.
-             ++ admit.
-             ++ admit.
-*)
-
-        (*
-        exists (map f r1), (map f r2). hnf in *. cbn in *. rewrite !map_map.
-        apply (@surject_retract_sum_g_cons (left tout[@i2]) START nil r1) in  HComp1 as ->.
-        apply surject_retract_sum_g_cons in HComp2 as ->. cbn.
-        rewrite !map_map. cbn. split; reflexivity.
-*)
-  Admitted.
-
-End Computes_Change_Alphabet.

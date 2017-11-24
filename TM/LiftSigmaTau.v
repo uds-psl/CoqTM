@@ -32,12 +32,27 @@ Section MapTape.
   Lemma mapTape_right t :
     right (mapTape t) = map g (right t).
   Proof. destruct t; cbn; reflexivity. Qed.
-  
+
 End MapTape.
 
 Hint Rewrite mapTape_current : tape.
 Hint Rewrite mapTape_left    : tape.
 Hint Rewrite mapTape_right   : tape.
+
+Lemma mapTape_mapTape (sig tau gamma : finType) (f : sig -> tau) (g : tau -> gamma) (t : tape sig) :
+  mapTape g (mapTape f t) = mapTape (fun x => g (f x)) t.
+Proof. destruct t; cbn; auto; simpl_tape; now rewrite !map_map. Qed.
+
+Lemma mapTape_ext (sig tau : finType) (f g : sig -> tau) (t : tape sig) :
+  (forall a, f a = g a) -> mapTape f t = mapTape g t.
+Proof. intros H. destruct t; cbn; auto; simpl_tape; rewrite H; f_equal; eapply map_ext; eauto. Qed.
+Hint Rewrite mapTape_mapTape : tape.
+
+Lemma mapTape_id (sig : finType) (t : tape sig) :
+  mapTape (fun x => x) t = t.
+Proof. destruct t; cbn; auto; f_equal; apply map_id. Qed.
+Hint Rewrite mapTape_id : tape.
+
 
 Section SujectTape.
   Variable sig tau : finType.
