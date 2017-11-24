@@ -207,13 +207,43 @@ Tactic Notation "dependent" "destruct" constr(V) :=
   | _ => fail "Wrong type"
   end.
 
+
+Lemma destruct_vector_nil (X : Type) :
+  forall v : Vector.t X 0, v = [||]%vector_scope.
+Proof.
+  intros H. dependent destruction H. reflexivity.
+Qed.
+
+Lemma destruct_vector_cons (X : Type) (n : nat) :
+  forall v : Vector.t X (S n), { h : X & { v' : Vector.t X n | v = h ::: v' }} % vector_scope.
+Proof.
+  intros H. dependent destruction H. eauto.
+Qed.
+
 (* Destruct a vector of known size *)
 Ltac destruct_vector :=
   repeat match goal with
-         | [ H : Vector.t ?X ?n |- _ ] => let IH := fresh "IH" H in
-                                        dependent induction H;
-                                        try clear IH
+         | [ v : Vector.t ?X 0 |- _ ] =>
+           let H  := fresh "Hvect" in
+           pose proof (@destruct_vector_nil X v) as H;
+           subst v
+         | [ v : Vector.t ?X (S ?n) |- _ ] =>
+           let h  := fresh "h" in
+           let v' := fresh "v'" in
+           let H  := fresh "Hvect" in
+           pose proof (@destruct_vector_cons X n v) as (h&v'&H);
+           subst v; rename v' into v
          end.
+
+Goal True. (* test *)
+Proof.
+  pose proof (([|1;2;3;4;5;6|]%vector_scope)) as v.
+  destruct_vector.
+  pose proof (([| [ 1;2;3] ; [ 4;5;6] |]%vector_scope)) as v'.
+  destruct_vector.
+  pose proof (([| [ 1;2;3] |]%vector_scope)) as v''.
+  destruct_vector.
+Abort.
 
 Section In_nth.
   Variable (A : Type) (n : nat).
