@@ -70,12 +70,13 @@ Section ID'.
    *)
 
   Lemma ID'_Computes :
-    ID' ⊫ Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool).
+    ID' ⊨c(3) Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool).
   Proof.
-    eapply WRealise_monotone.
+    eapply RealiseIn_monotone.
     - unfold ID'.
-      apply (ChangeAlphabet_Computes2 (func := @id bool)). intros; cbn; eauto.
-      eapply Realise_WRealise. eapply RealiseIn_Realise. eapply ID_Computes.
+      apply (ChangeAlphabet_Computes_RealiseIn (@TRetr_inv _ _ retr) false (@id bool)); cbn; eauto.
+      eapply ID_Computes.
+    - omega.
     - intros tin (yout&tout) H. hnf in *. intros x HEnc. specialize (H (negb x)).
       unfold id in H.
       spec_assert H.

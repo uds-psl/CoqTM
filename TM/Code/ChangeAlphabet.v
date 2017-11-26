@@ -128,7 +128,7 @@ Section MapCode.
 
   
   Lemma encodeTranslate_tau2 (x : X) (t : tape (sig' tau)) :
-    (~ def el encode x) ->
+    (~ def el encode x) \/ (forall t' : tau, exists s', g t' = Some s') ->
     tape_encodes _ (surjectTape t) x -> tape_encodes _ t x.
   Proof.
     intros HDef (r1&r2&H1&H2). hnf.
@@ -156,51 +156,21 @@ Section MapCode.
                eexists. split; eauto. unfold surject, retract_sum_g. destruct (g t'); auto.
              }
              inv LH1. unfold surject in LH2.
-             destruct (g t').
-             ++ eauto.
-             ++ exfalso. now eapply HDef.
+             destruct HDef as [HDef | HDef].
+             {
+               destruct (g t').
+               - eauto.
+               - exfalso; eauto.
+             }
+             {
+               pose proof (HDef t') as (s'&?). eauto.
+             }
           -- cbn. eauto.
       + enough (str3 = skipn (S (| encode x |)) (str1 ++ [ inr STOP ] ++ str3)) as L by assumption.
         rewrite app_assoc. rewrite skipn_app. reflexivity. simpl_list. cbn. rewrite Nat.add_1_r. f_equal.
         unfold surjectSymbols in L1. apply map_length_eq in L1. auto.
   Qed.
 
-
-  
-  Lemma encodeTranslate_tau2' (x : X) (t : tape (sig' tau)) :
-    (forall t' : tau, exists s', g t' = Some s') ->
-    tape_encodes _ (surjectTape t) x -> tape_encodes _ t x.
-  Proof.
-    intros HDef (r1&r2&H1&H2). hnf.
-    unfold surjectTape, LiftSigmaTau.surjectTape in *. simpl_tape in *. cbn in *.
-    
-    exists (skipn 1 (left t)). exists (skipn (S (| (encode x) |)) (tape_local t)). hnf. cbn -[skipn]. split; [clear H2 | clear H1].
-    - apply surject_cons in H1 as (s1&s2&H1&H2&H3). cbn in *. unfold surjectSymbols in *. unfold surject in *. cbn in *.
-      unfold retract_sum_g in H2. destruct s1. destruct (g e); inv H2. rewrite H1. congruence.
-    - apply surject_app in H2 as (str1&str2&->&L1&L2). apply surject_cons in L2 as (t'&str3&->&L3&L4).
-      rewrite map_map.
-      unfold surject, retract_sum_g in L3. destruct t'. destruct (g e); inv L3. inversion L3. rewrite H0 in *. clear H0 L3.
-      f_equal; [ | f_equal].
-      + apply (inject_surject (f := f')) in L1 as ->; cbn.
-        * unfold injectSymbols. cbn. unfold retract_sum_f. rewrite map_map. reflexivity.
-        * auto_inj.
-        * intros [t' | s] Hin.
-          -- unfold surjectSymbols in L1.
-             enough (exists s' : sig, g t' = Some s') as (s'&L5).
-             {
-               exists (inl s'). cbn. rewrite L5. reflexivity.
-             }
-             assert (exists x' : sig, inl x' = inl (B := bool) ((surject g def t')) /\ x' el (encode (codeable := enc_X) x)) as (x'&LH1&LH2).
-             {
-               eapply in_map_iff. rewrite <- L1. eapply in_map_iff.
-               eexists. split; eauto. unfold surject, retract_sum_g. destruct (g t'); auto.
-             }
-             inv LH1. unfold surject in LH2. pose proof (HDef t') as (s'&?). eauto.
-          -- cbn. eauto.
-      + enough (str3 = skipn (S (| encode x |)) (str1 ++ [ inr STOP ] ++ str3)) as L by assumption.
-        rewrite app_assoc. rewrite skipn_app. reflexivity. simpl_list. cbn. rewrite Nat.add_1_r. f_equal.
-        unfold surjectSymbols in L1. apply map_length_eq in L1. auto.
-  Qed.
 End MapCode.
 
 
@@ -227,30 +197,43 @@ Section Computes_Change_Alphabet.
   Definition ChangeAlphabet : { M : mTM (sig' tau) n_tapes & states M -> F } :=
     LiftSigmaTau.Lift pM (f') (g') (inl def).
 
-  Lemma ChangeAlphabet_Computes1 :
-    (forall x : X, ~ def el encode (sigma := sig) (func x)) ->
-    pM ⊫ Computes_Rel i1 i2 cX cY func ->
-    ChangeAlphabet ⊫ Computes_Rel i1 i2 _ _ func.
-  Proof.
-    intros HDef H. eapply WRealise_monotone.
-    - unfold ChangeAlphabet. eapply Lift_sem. apply tight_retract_strong. eapply retr'. eassumption.
-    - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
-      unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
-      apply encodeTranslate_tau1 with (def := def) in HEnc1.
-      specialize (HComp HEnc1) as HEnc2. eapply encodeTranslate_tau2; eauto.
-  Qed.
-
-  Lemma ChangeAlphabet_Computes2 :
+  Lemma ChangeAlphabet_Computes_WRealise :
+    (forall x : X, ~ def el encode (sigma := sig) (func x)) \/
     (forall t' : tau, exists s', g t' = Some s') ->
     pM ⊫ Computes_Rel i1 i2 cX cY func ->
     ChangeAlphabet ⊫ Computes_Rel i1 i2 _ _ func.
   Proof.
     intros HDef H. eapply WRealise_monotone.
-    - unfold ChangeAlphabet. eapply Lift_sem. apply tight_retract_strong. eapply retr'. eassumption.
+    - unfold ChangeAlphabet. eapply Lift_WRealise. apply tight_retract_strong. eapply retr'. eassumption.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
       apply encodeTranslate_tau1 with (def := def) in HEnc1.
-      specialize (HComp HEnc1) as HEnc2. eapply encodeTranslate_tau2'; eauto.
+      specialize (HComp HEnc1) as HEnc2. eapply encodeTranslate_tau2; eauto. destruct HDef; auto.
   Qed.
-  
+
+  Lemma ChangeAlphabet_Computes_RealiseIn (k : nat) :
+    (forall x : X, ~ def el encode (sigma := sig) (func x)) \/
+    (forall t' : tau, exists s', g t' = Some s') ->
+    pM ⊨c(k) Computes_Rel i1 i2 cX cY func ->
+    ChangeAlphabet ⊨c(k) Computes_Rel i1 i2 _ _ func.
+  Proof.
+    intros HDef H. eapply RealiseIn_monotone.
+    - unfold ChangeAlphabet. eapply Lift_RealiseIn. apply tight_retract_strong. eapply retr'. eassumption.
+    - omega.
+    - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
+      unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
+      apply encodeTranslate_tau1 with (def := def) in HEnc1.
+      specialize (HComp HEnc1) as HEnc2. eapply encodeTranslate_tau2; eauto. destruct HDef; auto.
+  Qed.
+
 End Computes_Change_Alphabet.
+
+Arguments ChangeAlphabet_Computes_WRealise
+          {sig} {tau} {f} {g} retr
+          def {X} {Y} {cX} {cY} func {n_tapes}
+          i1 i2 F pM.
+
+Arguments ChangeAlphabet_Computes_RealiseIn
+          {sig} {tau} {f} {g} retr
+          def {X} {Y} {cX} {cY} func {n_tapes}
+          i1 i2 F pM k.
