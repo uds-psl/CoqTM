@@ -33,11 +33,21 @@ Section MapTape.
     right (mapTape t) = map g (right t).
   Proof. destruct t; cbn; reflexivity. Qed.
 
+  Lemma mapTape_move_left t :
+    tape_move_left (mapTape t) = mapTape (tape_move_left t).
+  Proof. destruct t; cbn; auto. destruct l; cbn; auto. Qed.
+
+  Lemma mapTape_move_right t :
+    tape_move_right (mapTape t) = mapTape (tape_move_right t).
+  Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
+
 End MapTape.
 
-Hint Rewrite mapTape_current : tape.
-Hint Rewrite mapTape_left    : tape.
-Hint Rewrite mapTape_right   : tape.
+Hint Rewrite mapTape_current    : tape.
+Hint Rewrite mapTape_left       : tape.
+Hint Rewrite mapTape_right      : tape.
+Hint Rewrite mapTape_move_left  : tape.
+Hint Rewrite mapTape_move_right : tape.
 
 Lemma mapTape_mapTape (sig tau gamma : finType) (f : sig -> tau) (g : tau -> gamma) (t : tape sig) :
   mapTape g (mapTape f t) = mapTape (fun x => g (f x)) t.
@@ -79,7 +89,11 @@ Section lift_sigma_tau.
 
   Definition lift_sigma_tau_p (R : Rel (Vector.t (tape sig) n) (Z * Vector.t (tape sig) n)) :
     Rel (Vector.t (tape tau) n) (Z * Vector.t (tape tau) n) :=
-    fun x p => let (z,y) := p in R (surjectTapes g def x) (z, surjectTapes g def y).    
+    fun x '(z,y) => R (surjectTapes g def x) (z, surjectTapes g def y).    
+
+  Definition lift_sigma_tau_T (T : Rel (Vector.t (tape sig) n) nat) :
+    Rel (Vector.t (tape tau) n) nat :=
+    fun x k => T (surjectTapes g def x) k.    
 
 End lift_sigma_tau.
       
@@ -231,7 +245,7 @@ Section LiftSigmaTau.
   Qed.
 
 
-  Lemma Lift_sem (R : Rel (tapes sig n) (F * tapes sig n)) :
+  Lemma Lift_WRealise (R : Rel (tapes sig n) (F * tapes sig n)) :
     pMSig ⊫ R ->
     Lift ⊫ lift_sigma_tau_p g def R.
   Proof.
@@ -240,6 +254,78 @@ Section LiftSigmaTau.
     now apply (@sim_loop (initc liftM t) outc i).
   Qed.
 
-  (* TODO: Termination *)
+  Definition surjectConf : (mconfig tau (states liftM) n) -> (mconfig sig (states (projT1 pMSig)) n) :=
+    fun c => mk_mconfig (cstate c) (surjectTapes g def (ctapes c)).
+
+  Definition injectConf : (mconfig sig (states (projT1 pMSig)) n) -> (mconfig tau (states liftM) n) :=
+    fun c => mk_mconfig (cstate c) (injectTapes f (ctapes c)).
+
+  Lemma propagate_step (conf : (mconfig tau (states (projT1 pMSig)) n)) :
+    surjectConf (step (M := liftM) conf) = step (surjectConf conf).
+  Proof.
+    cbv [surjectConf]. cbv [step]. cbn.
+    replace (Vector.map
+                   (fun a : option tau =>
+                    match a with
+                    | Some a0 => Some (g' a0)
+                    | None => None
+                    end) (current_chars (ctapes conf))) with
+        (Vector.map (current (sig:=sig)) (surjectTapes g def (ctapes conf))).
+    - cbn. destruct (trans (cstate conf, Vector.map (current (sig:=sig)) (surjectTapes g def (ctapes conf)))) eqn:E1; cbn.
+      f_equal. unfold surjectTapes, mapTapes. apply Vector.eq_nth_iff. intros ? ? <-.
+      unfold tape_move_multi, tape_move_mono.
+      repeat first [erewrite !Vector.nth_map2; eauto | erewrite !Vector.nth_map; eauto].
+      cbv [surject]. cbn.
+      destruct (t[@p1]) eqn:E2; cbn. generalize ((ctapes conf)[@p1]) as t1. intros t1. cbn.
+      destruct o; cbn.
+      + destruct m; cbn; simpl_tape. destruct (left t1) eqn:E3; cbn.
+        * retract_adjoint. auto.
+        * f_equal. retract_adjoint. auto.
+        * destruct (right t1) eqn:E3; cbn.
+          -- retract_adjoint. cbn. auto.
+          -- retract_adjoint. auto.
+        * f_equal. now retract_adjoint.
+      + destruct m; cbn; simpl_tape; auto.
+    - eapply Vector.eq_nth_iff. intros ? ? <-. unfold current_chars, surjectTapes, mapTapes.
+      erewrite !Vector.nth_map; simpl_tape; eauto.
+  Qed.
+    
+
+  Lemma propagate_loop (k : nat) tin (conf : mconfig sig (states (projT1 pMSig)) n) :
+    loopM k (initc (projT1 pMSig) (surjectTapes g def tin)) = Some conf ->
+    exists oconf' : (mconfig tau (states liftM) n),
+      loopM k (initc liftM tin) = Some oconf'.
+  Proof.
+    unfold loopM.
+    enough (forall iconf : mconfig tau (states (projT1 pMSig)) n,
+               loop k (step (M:=projT1 pMSig)) (fun c : mconfig sig (states (projT1 pMSig)) n => halt (cstate c))
+                    (surjectConf iconf) = Some conf ->
+               exists oconf' : mconfig tau (states liftM) n,
+                 loop k (step (M:=liftM)) (fun c : mconfig tau (states liftM) n => halt (cstate c)) iconf = Some oconf')
+           by auto.
+    induction k as [ | k IH ]; intros iconf HLoop; cbn in *.
+    - destruct (halt _); inv HLoop. unfold injectConf. cbn. eauto.
+    - destruct (halt _) eqn:E1; eauto.
+      replace (step (surjectConf iconf)) with (surjectConf (step (M := liftM) iconf)) in HLoop.
+      + specialize (IH _ HLoop) as (oconf'&IH). eauto.
+      + apply propagate_step.
+  Qed.
+
+  Lemma Lift_TerminatesIn (T : Rel (tapes sig n) nat) :
+    projT1 pMSig ↓ T ->
+    liftM ↓ lift_sigma_tau_T g def T.
+  Proof.
+    intros H. hnf. intros tin k HTerm. hnf in HTerm, H. specialize (H _ _ HTerm) as (oconf&HLoop).
+    eapply propagate_loop; eauto.
+  Qed.
+
+  Lemma Lift_RealiseIn (R : Rel (tapes sig n) (F * tapes sig n)) (k : nat) :
+    pMSig ⊨c(k) R ->
+    Lift ⊨c(k) lift_sigma_tau_p g def R.
+  Proof.
+    intros [H1 H2] % Realise_total. eapply Realise_total. split; cbn in *.
+    - now eapply Lift_WRealise.
+    - eapply Lift_TerminatesIn in H2. auto.
+  Qed.
 
 End LiftSigmaTau.
