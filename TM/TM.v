@@ -327,23 +327,41 @@ we are on the right extremity of a non-empty tape (right overflow). *)
 
   (** ** Canonical relations *)
 
-(*
-   Definition R_mTM :=
-     fun n (M : mTM n) q t1 t2 =>
-       exists i outc, loopM (M := M) i (mk_mconfig q t1) = Some outc /\ t2 = (ctapes outc).
- 
-   Lemma Wrealise_R_mTM n (M:mTM  n) :
-     M ⊫ R_mTM (@start n M).
-   Proof.
-     firstorder.
-   Qed.
+  Section CanonicalRelation1.
+    Variable (n : nat).
+    Variable (F : finType).
+    Variable (pM : { M : mTM n & states  M -> F }).
 
-  Lemma R_mTM_to_R n (M:mTM n) R t1 t2 :
-    M ⊫ R -> R_mTM (@start n M) t1 t2 -> R t1 t2.
-  Proof.
-    firstorder subst. eauto.
-  Qed.
- *)
+    Definition R_canonical : Rel (tapes n) (F * tapes n) :=
+      fun t1 '(y, t2) =>
+        exists outc k, loopM (M := projT1 pM) k (initc (projT1 pM) t1) = Some outc /\
+                  ctapes outc = t2 /\ projT2 pM (cstate outc) = y.
+
+    Lemma WRealise_R_mTM :
+      pM ⊫ R_canonical.
+    Proof. hnf. firstorder eauto. Qed.
+
+    Lemma R_canonical_functional : functional R_canonical.
+    Proof.
+      hnf. intros x (y1&z1) (y2&z2) (c1&k1&H1&<-&H1') (c2&k2&H2&<-&H2').
+      pose proof loop_functional H1 H2 as ->. congruence.
+    Qed.
+
+  End CanonicalRelation1.
+
+  Section CanonicalRelation2.
+    Variable (n : nat).
+    Variable (M : mTM n).
+
+    Definition T_canonical : Rel (tapes n) nat :=
+      fun t k => exists outc, loopM (M := M) k (initc M t) = Some outc.
+
+    Lemma T_canonical_TerminatesIn :
+      M ↓ T_canonical.
+    Proof. firstorder. Qed.
+
+  End CanonicalRelation2.
+
 End Fix_Sigma.
 
 (* Arguments Realise {sig} {n} M {F} f R : clear implicits. *)
