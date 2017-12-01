@@ -10,7 +10,7 @@ COQDOCFLAGS = "--charset utf-8 -s --parse-comments --with-header ./website/resou
 TM/Prelim.v
 TM/Relations.v
 TM/TM.v
-TM/TMTac.v
+# TM/TMTac.v
 TM/Retract.v
 
 # Programming combinators

@@ -326,17 +326,18 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Qed.
 
   (** ** Canonical relations *)
-(*
-  Definition R_mTM :=
-    fun n (M : mTM n) q t1 t2 =>
-      exists i outc, loopM (M := M) i (mk_mconfig q t1) = Some outc /\ t2 = (ctapes outc).
 
-  Lemma Wrealise_R_mTM n (M:mTM  n) :
-    M ⊫ R_mTM (@start n M).
-  Proof.
-    firstorder.
-  Qed.
-  
+(*
+   Definition R_mTM :=
+     fun n (M : mTM n) q t1 t2 =>
+       exists i outc, loopM (M := M) i (mk_mconfig q t1) = Some outc /\ t2 = (ctapes outc).
+ 
+   Lemma Wrealise_R_mTM n (M:mTM  n) :
+     M ⊫ R_mTM (@start n M).
+   Proof.
+     firstorder.
+   Qed.
+
   Lemma R_mTM_to_R n (M:mTM n) R t1 t2 :
     M ⊫ R -> R_mTM (@start n M) t1 t2 -> R t1 t2.
   Proof.
@@ -372,3 +373,5 @@ Tactic Notation "simpl_tape" "in" "*" := autorewrite with tape in *.
 Hint Rewrite tapeToList_move : tape.
 Hint Rewrite tapeToList_move_R : tape.
 Hint Rewrite tapeToList_move_L : tape.
+
+Check tape_write.

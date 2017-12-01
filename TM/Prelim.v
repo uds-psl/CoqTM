@@ -13,12 +13,12 @@ Require Export smpl.Smpl.
 (* Definition graph_of := fun A B => fun (f:A -> B) => { p: A * B & f (fst p) = snd p}. *)
 (* Definition graph_enum := fun (A B : finType) => fun (f : A -> B) => filter (fun (p : A * B) => Dec (f (fst p) = snd p)) (elem (A (x) B)). *)
 
-Definition loop (A:Type) := fix l n (f:A -> A) (p : A -> bool) a {struct n}:=
-                              if p a then Some a  else
-                                match n with
-                                  O => None
-                                | S m => l m f p (f a)
-                                end.
+Fixpoint loop (A:Type) n (f:A -> A) (p : A -> bool) a {struct n}:=
+  if p a then Some a  else
+    match n with
+      O => None
+    | S m => loop m f p (f a)
+    end.
 
 Lemma loop_functional A n1 n2 f p (a : A) c1 c2 : loop n1 f p a = Some c1 -> loop n2 f p a = Some c2 -> c1 = c2.
 Proof.
@@ -38,7 +38,7 @@ Qed.
 
 Lemma loop_fulfills_p_0 A n f p (a : A) : p a = true -> loop n f p a = Some a.
 Proof.
-  revert a; induction n; intros; inv H; cbn; now rewrite H1.
+  intros. destruct n; cbn; now rewrite H.
 Qed.
 
 Fixpoint loop_informative (A : Type) (n : nat) (f : A -> A) (p : A -> bool) a : A + A :=
