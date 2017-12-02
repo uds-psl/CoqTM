@@ -87,27 +87,30 @@ Section Match.
   (*         | inr (existT _ f' s2) => p2 s2 *)
   (*         end. *)
 
-  Lemma Match_merge x (x0 : mconfig sig (states M1) n) x1 x2 t:
-    loopM x (initc M1 t) = Some x0 ->
-    loopM x1 (initc (Mf (p1 (cstate x0))) (ctapes x0)) = Some x2 ->
-    loopM (x + (1 + x1)) (initc Match t) = Some (lift_confR x2).
+  Lemma Match_merge (k1 k2 : nat)
+        (c1 : mconfig sig (states M1) n)
+        (c2 : mconfig sig (states (projT1 (pMf (p1 (cstate c1))))) n)
+        t:
+    loopM k1 (initc M1 t) = Some c1 ->
+    loopM k2 (initc (Mf (p1 (cstate c1))) (ctapes c1)) = Some c2 ->
+    loopM (k1 + (1 + k2)) (initc Match t) = Some (lift_confR c2).
   Proof.
     intros H H1.
     unfold loopM.
-    eapply (loop_merge (p := halt_liftL) (a2 := lift_confL x0)).
+    eapply (loop_merge (p := halt_liftL) (a2 := lift_confL c1)).
     - intros ? H3. cbn. unfold halt_liftL in H3. now destruct cstate.
     - unfold loopM in H. cbn.
       eapply loop_lift with (lift := lift_confL) (hlift := halt_liftL) in H; eauto.
-      + firstorder. rewrite step_seq_liftL; eauto.
-    - change (loop (1 + x1) (step (M:=Match)) (fun c : mconfig sig (states Match) n => halt (cstate c)) (lift_confL x0)) with (loop x1 (step (M:=Match)) (fun c : mconfig sig (states Match) n => halt (cstate c)) (step (lift_confL x0))).
-      pose (M2 := (Mf (p1 (cstate x0)))).
-      eapply loop_lift with (lift := @lift_confR (p1 (cstate x0))) (hlift := (fun x => halt (m := Match) (cstate x))) in H1;eauto.
-      + cutrewrite  (step (lift_confL x0) = (lift_confR (initc M2 (ctapes x0)))); eauto.
-        destruct x0. unfold lift_confL, lift_confR. unfold step.
+      + intuition. rewrite step_seq_liftL; eauto.
+    - change (loop (1 + k2) (step (M:=Match)) (fun c : mconfig sig (states Match) n => halt (cstate c)) (lift_confL c1)) with (loop k2 (step (M:=Match)) (fun c : mconfig sig (states Match) n => halt (cstate c)) (step (lift_confL c1))).
+      pose (M2 := (Mf (p1 (cstate c1)))).
+      eapply loop_lift with (lift := @lift_confR (p1 (cstate c1))) (hlift := (fun x => halt (m := Match) (cstate x))) in H1;eauto.
+      + cutrewrite  (step (lift_confL c1) = (lift_confR (initc M2 (ctapes c1)))); eauto.
+        destruct c1. unfold lift_confL, lift_confR. unfold step.
         cbn -[null_action tape_move_multi]. cutrewrite (halt cstate = true). f_equal.
         eapply tape_move_null_action. eapply loop_fulfills_p in H.
         cbn in H; destruct (halt cstate); auto.
-      + firstorder. now rewrite step_seq_liftR.
+      + intuition. now rewrite step_seq_liftR.
   Qed.
 
   Definition unlift_1 : mconfig sig (FinType (EqType (states M1 + { f : F & TM.states (Mf f) }))) n -> option (mconfig sig (states M1) n).
@@ -162,10 +165,10 @@ Section Match.
     unfold loopM in H.
     eapply loop_split in H.
     destruct H as (i1 & x1 & i2 & H1 & H2 & Hi).
-    eapply loop_unlift with (unlift := unlift_1)
-                              (f' := step (M := M1))
-                              (p' := fun c => halt (m := M1) (cstate c))
 
+    eapply loop_unlift with (unlift := unlift_1)
+                            (f := step (M := M1))
+                            (p := fun c => halt (m := M1) (cstate c))
       in H1 as (x' & Hx' & Hu).
     exists i1, x'.
     - unfold loopM at 1. rewrite Hx'.
@@ -178,13 +181,13 @@ Section Match.
                                         (repeatVector n (None, N)))) as x2.
       pose (M2 := (Mf (p1 e))).
       eapply loop_unlift with (unlift := unlift_2 (p1 e))
-                                (f' := step (M := M2))
-                                (p' := fun c => halt (m := M2) (cstate c))
-                                (p := fun c => halt (m := Match) (cstate c))
+                                (f := step (M := M2))
+                                (p := fun c => halt (m := M2) (cstate c))
+                                (p' := fun c => halt (m := Match) (cstate c))
         in H2 as (x'' & Hx'' & Hu').
       + exists i2. exists x''. intuition. eapply Hx''. omega. destruct x''. unfold lift_confR. cbn. destruct res. unfold unlift_2 in *. cbn in Hu'. destruct cstate0; inv Hu'. destruct s.  decide (p1 e = x); inv H1. reflexivity.
-      + intuition. exists (step (M := M2) a'). intuition. now eapply unlift_2_step.
-      + intuition. cbn. unfold halt. destruct a. unfold unlift_2 in H0.
+      + intuition. now eapply unlift_2_step.
+      + intuition. cbn. unfold halt. destruct b. cbn in *.
         destruct cstate. inv H0. inv H0. cbn. destruct s.  decide (p1 e = x); inv H3. reflexivity.
       + subst. cbn. assert (T := tape_move_null_action ctapes). cbn in T. unfold tape_move_multi in T.
         rewrite T. decide (p1 e = p1 e); try tauto.
@@ -192,9 +195,9 @@ Section Match.
         (* assert (p e = eqType_X ( type (@states sig n (Mf (p e))))). *)
         rewrite <- Eqdep_dec.eq_rect_eq_dec;[ |apply eqType_dec].
         reflexivity.
-    - intuition. exists (step (M := M1) a'). intuition. now eapply unlift_1_step.
+    - intuition. now eapply unlift_1_step.
     - intros. instantiate (1 := fun x => match cstate x with inl s => halt (m := M1) s | _ => true end).
-      cbn. unfold unlift_1 in H. destruct a. destruct cstate. inv H. reflexivity. inv H.
+      cbn. unfold unlift_1 in H. destruct b, cstate. inv H. reflexivity. inv H.
     - cbn. reflexivity.
     - intros. cbn in *. destruct cstate. reflexivity. inv H0.
   Qed.
@@ -223,6 +226,7 @@ Section Match.
     (forall f : F, pMf f ⊫ R2 f) -> MATCH ⊫ (⋃_f (R1 |_ f) ∘ R2 f).
   Proof.
     intros HR1 HR2 t1 i1 oenc2 eq.
+    hnf.
     apply Match_split in eq as (?&?&?&?&Eq1&Eq2&->&->).
     unfold WRealise in HR1.
     eapply HR1 in Eq1.
@@ -258,9 +262,9 @@ Section Match.
     intros Func Real1 Term1 Term2 t i (f & j & k & y & ? & Term_t1 & Term_T & ?).
     specialize (Term1 _ _ Term_t1) as [t'' ?].
     specialize (Term2 f _ _ Term_T) as [outc ?].
+    pose proof Func _ _ Term_t1 _ _ H (Real1 _ _ _ H1) as Heq. Search f. Search y. inv Heq.
     exists (lift_confR outc).
     unfold loopM. eapply loop_ge with (k1:=j+(1+k)). omega.
-    pose proof Func _ _ Term_t1 _ _ H (Real1 _ _ _ H1) as Heq. inv Heq.
     now apply Match_merge.
   Qed.
 
@@ -275,7 +279,7 @@ Section Match.
     specialize (Term2 (p1 (cstate outc')) (ctapes outc')) as (outc''&i&Term2&Term2').
     exists (lift_confR outc''), (j + S i). split.
     - eapply Match_merge; eauto.
-    - hnf. exists (p1 (cstate outc')). exists (ctapes outc'). repeat split; auto.
+    - hnf. exists (p1 (cstate outc')). exists (ctapes outc'). repeat split; hnf; trivial.
   Qed.
 
 End Match.

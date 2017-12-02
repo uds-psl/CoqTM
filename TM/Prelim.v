@@ -119,20 +119,20 @@ Proof.
     cbn. now rewrite Eq.
 Qed.
 
-Lemma loop_unlift X Y i f a p f' a' p' (unlift : X -> option Y) x:
-  (forall a a', unlift a = Some a' -> p' a' = false -> exists fa', unlift (f a) = Some fa' /\ fa' = f' a') ->
-  (forall a a', unlift a = Some a' -> p' a' = p a) ->
-  unlift a = Some a' -> 
-  loop i f p a = Some x ->
-  exists x', loop i f' p' a' = Some x' /\ Some x' = unlift x.
+Lemma loop_unlift A B f p f' p' (unlift : B -> option A):
+  (forall a b, unlift b = Some a -> p a = false -> unlift (f' b) = Some (f a)) ->
+  (forall a b, unlift b = Some a -> p a = p' b) ->
+  forall a b,
+  unlift b = Some a -> 
+  forall i x',
+  loop i f' p' b = Some x' ->
+  exists x, loop i f p a = Some x /\ Some x = unlift x'.
 Proof.
-  intros Hf Hp. revert a a'. induction i; intros a a' Ha Hl; cbn in *.
-  - destruct (p a) eqn:E; rewrite (Hp _ _ Ha) in *; inv Hl. rewrite E. eauto.
-  - destruct (p a) eqn:E; rewrite (Hp _ _ Ha) in *; inv Hl.
+  intros Hf Hp a b Ha i x'. revert a b Ha x'. induction i; intros a b Ha x' Hl; cbn in *.
+  - destruct (p' b) eqn:E; rewrite (Hp _ _ Ha) in *; inv Hl. rewrite E. eauto.
+  - destruct (p' b) eqn:E; rewrite (Hp _ _ Ha) in *; inv Hl.
     + rewrite E. eauto.
     + rewrite E. eapply IHi; eauto.
-      erewrite <- Hp in E; eauto. 
-      firstorder congruence.
 Qed.
 
 Section Fix_X.

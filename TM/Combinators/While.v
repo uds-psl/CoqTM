@@ -98,8 +98,8 @@ Section While.
     now intros ? ->. exact H'.
     apply loop_fulfills_p_0. unfold halt. cbn. rewrite px1.
     apply loop_fulfills_p in H'. now destruct halt.
-    intros ? ? H ?. inv H. eexists. split;[ |reflexivity].
-    cbn in H0. f_equal. unfold step at 2;cbn. rewrite H0. now rewrite andb_false_r.  reflexivity. 
+    intros ? ? H ?. inv H. all: auto.
+    cbn in H0. f_equal. unfold step at 2;cbn. rewrite H0. now rewrite andb_false_r.
   Qed.
 
 
