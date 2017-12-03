@@ -13,18 +13,26 @@ Section MirrorTM.
     | midtape ls m rs => midtape rs m ls
     end.
 
+  Lemma mirror_tape_left (t : tape sig) :
+    left (mirror_tape t) = right t.
+  Proof. now destruct t. Qed.
+
+  Lemma mirror_tape_right (t : tape sig) :
+    right (mirror_tape t) = left t.
+  Proof. now destruct t. Qed.
+
   Lemma mirror_tape_current (t : tape sig) :
     current (mirror_tape t) = current t.
   Proof. now destruct t. Qed.
+
+  Lemma mirror_tape_involution (t : tape sig) :
+    mirror_tape (mirror_tape t) = t.
+  Proof. destruct t; cbn; congruence. Qed.
 
   Lemma mirror_tape_injective (t1 t2 : tape sig) :
     mirror_tape t1 = mirror_tape t2 ->
     t1 = t2.
   Proof. destruct t1, t2; intros H; cbn in *; congruence. Qed.
-
-  Lemma mirror_tape_involution (t : tape sig) :
-    mirror_tape (mirror_tape t) = t.
-  Proof. destruct t; cbn; congruence. Qed.
 
   Definition mirror_tapes (t : tapes sig n) : tapes sig n := Vector.map mirror_tape t.
 
@@ -209,3 +217,9 @@ Section MirrorTM.
   Qed.
 
 End MirrorTM.
+
+Hint Rewrite mirror_tape_left : tape.
+Hint Rewrite mirror_tape_right : tape.
+Hint Rewrite mirror_tape_current : tape.
+Hint Rewrite mirror_tape_involution : tape.
+Hint Rewrite mirror_tapes_involution : tape.
