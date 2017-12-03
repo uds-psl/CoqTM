@@ -74,17 +74,17 @@ Section MapCode.
   Variable def : sig.
   Hypothesis retr : tight_retract f g.
 
-  Global Instance retr' : TRetract (sig' sig) (sig' tau).
+  Global Instance retr' : TRetract (sig^+) (tau^+).
   Proof. econstructor. eapply tretract_sum; auto_inj. Defined.
-  Notation "'f''" := (@TRetr_f (sig' sig) (sig' tau) retr').
-  Notation "'g''" := (@TRetr_g (sig' sig) (sig' tau) retr').
+  Notation "'f''" := (@TRetr_f (sig^+) (tau^+) retr').
+  Notation "'g''" := (@TRetr_g (sig^+) (tau^+) retr').
 
   Variable X : Type.
   Hypothesis enc_X : codeable sig X.
 
   (* Translation Functions *)
-  Definition injectTape : tape (sig' sig) -> tape (sig' tau) := LiftSigmaTau.mapTape f'.
-  Definition surjectTape : tape (sig' tau) -> tape (sig' sig) := LiftSigmaTau.surjectTape g' (inl def).
+  Definition injectTape : tape (sig^+) -> tape (tau^+) := LiftSigmaTau.mapTape f'.
+  Definition surjectTape : tape (tau^+) -> tape (sig^+) := LiftSigmaTau.surjectTape g' (inl def).
 
   (* The other direction does not hold *)
   Lemma surjectTape_injectTape t :
@@ -96,7 +96,7 @@ Section MapCode.
 
 
 
-  Lemma encodeTranslate_sig (x : X) (t : tape (sig' sig)) :
+  Lemma encodeTranslate_sig (x : X) (t : tape (sig^+)) :
     tape_encodes _ t x <-> tape_encodes _ (injectTape t) x.
   Proof.
     split; intros (r1&r2&H1&H2); hnf in *; cbn in *.
@@ -115,7 +115,7 @@ Section MapCode.
         f_equal. apply map_ext. intros a. cbn. unfold surject, retract_sum_g. retract_adjoint. reflexivity.
   Qed.
 
-  Lemma encodeTranslate_tau1 (x : X) (t : tape (sig' tau)) :
+  Lemma encodeTranslate_tau1 (x : X) (t : tape (tau^+)) :
     tape_encodes _ t x -> tape_encodes _ (surjectTape t) x.
   Proof.
     intros (r1&r2&H1&H2); hnf in *; cbn in *.
@@ -127,7 +127,7 @@ Section MapCode.
   Qed.
 
   
-  Lemma encodeTranslate_tau2 (x : X) (t : tape (sig' tau)) :
+  Lemma encodeTranslate_tau2 (x : X) (t : tape (tau^+)) :
     (~ def el encode x) \/ (forall t' : tau, exists s', g t' = Some s') ->
     tape_encodes _ (surjectTape t) x -> tape_encodes _ t x.
   Proof.
@@ -187,14 +187,14 @@ Section Computes_Change_Alphabet.
   Variable (n_tapes : nat).
   Variable (i1 i2 : Fin.t n_tapes).
   Variable (F : finType).
-  Variable (pM : {M : mTM (sig' sig) n_tapes & states M -> F}).
+  Variable (pM : {M : mTM (sig^+) n_tapes & states M -> F}).
 
   Let retr' := retr' retr. 
 
   Notation "'f''" := (@TRetr_f _ _ retr').
   Notation "'g''" := (@TRetr_g _ _ retr').
 
-  Definition ChangeAlphabet : { M : mTM (sig' tau) n_tapes & states M -> F } :=
+  Definition ChangeAlphabet : { M : mTM (tau^+) n_tapes & states M -> F } :=
     LiftSigmaTau.Lift pM (f') (g') (inl def).
 
   Lemma ChangeAlphabet_Computes_WRealise :

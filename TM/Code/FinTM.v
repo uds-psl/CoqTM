@@ -7,7 +7,7 @@ Section FinTM1.
   Variable sig : finType.
   Variable f : sig -> sig.
 
-  Definition UnaryFinTM : { M : mTM (sig' sig) 1 & states M -> unit } :=
+  Definition UnaryFinTM : { M : mTM (sig^+) 1 & states M -> unit } :=
     MATCH (Read_char _)
           (fun r1 =>
              match r1 with
@@ -45,16 +45,16 @@ Section FinTM2.
   Variable sig : finType.
   Variable f : sig -> sig -> sig.
 
-  Definition ReadAt1 : { M : mTM (sig' sig) 2 & states M -> option (sig' sig) } :=
+  Definition ReadAt1 : { M : mTM (sig^+) 2 & states M -> option (sig^+) } :=
     Inject (Read_char _) [| Fin.F1 |].
 
-  Definition Nop2 : { M : mTM (sig' sig) 2 & states M -> FinType (EqType unit) } := Nop 2 _ tt.
+  Definition Nop2 : { M : mTM (sig^+) 2 & states M -> FinType (EqType unit) } := Nop 2 _ tt.
 
-  Definition UnaryFinTM2 : sig -> { M : mTM (sig' sig) 2 & states M -> unit } :=
+  Definition UnaryFinTM2 : sig -> { M : mTM (sig^+) 2 & states M -> unit } :=
     fun s : sig =>
       Inject (UnaryFinTM (f s)) [| Fin.FS (Fin.F1) |].
 
-  Definition DualFinTM : { M : mTM (sig' sig) 2 & states M -> unit } :=
+  Definition DualFinTM : { M : mTM (sig^+) 2 & states M -> unit } :=
     MATCH (ReadAt1)
           (fun r1 =>
              match r1 with
