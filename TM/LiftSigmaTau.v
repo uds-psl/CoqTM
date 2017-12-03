@@ -89,14 +89,13 @@ Section lift_sigma_tau.
 
   Definition lift_sigma_tau_p (R : Rel (Vector.t (tape sig) n) (Z * Vector.t (tape sig) n)) :
     Rel (Vector.t (tape tau) n) (Z * Vector.t (tape tau) n) :=
-    fun x '(z,y) => R (surjectTapes g def x) (z, surjectTapes g def y).    
+    fun x '(z,y) => R (surjectTapes g def x) (z, surjectTapes g def y).
 
   Definition lift_sigma_tau_T (T : Rel (Vector.t (tape sig) n) nat) :
     Rel (Vector.t (tape tau) n) nat :=
-    fun x k => T (surjectTapes g def x) k.    
+    fun x k => T (surjectTapes g def x) k.
 
 End lift_sigma_tau.
-      
 
 Section InjectTape.
 
@@ -106,7 +105,6 @@ Section InjectTape.
   Definition injectTape := mapTape f.
   Definition injectTapes {n: nat} := mapTapes (n := n) f.
 End InjectTape.
-    
 
 Section InjectSurject.
   Variable sig tau : finType.
@@ -143,6 +141,11 @@ Section InjectSurject.
   
 End InjectSurject.
 
+Section TranslateAct.
+  Variable X Y : finType.
+  Definition map_act : (X -> Y) -> option X * move -> option Y * move := fun f => map_left (map_opt f).
+  Compute map_act.
+End TranslateAct.
 
 Section LiftSigmaTau.
   Variable sig tau : finType.
@@ -155,11 +158,11 @@ Section LiftSigmaTau.
   Variable def : sig.
   Definition g' : tau -> sig := surject g def.
 
+
   Definition lift_trans :=
     fun '(q, symm) =>
-      let (q', act) := trans (m := projT1 pMSig) (q, Vector.map (fun a => let try a' := a in Some (g' a')) symm) in
-      let act' := Vector.map (fun '(w, m) => (let try w' := w in Some (f w'), m)) act in
-      (q', act').
+      let (q', act) := trans (m := projT1 pMSig) (q, Vector.map (map_opt g') symm) in
+      (q', Vector.map (map_act f) act).
 
   Definition liftM : mTM tau n.
   Proof.
@@ -177,8 +180,7 @@ Section LiftSigmaTau.
     forall (tape : tape tau) (act : option sig * move),
       tape_move_mono (mapTape (surject g def) tape) act =
       mapTape (surject g def)
-              (tape_move_mono tape
-                              (let '(w, m) := act in (let try w' := w in Some (f w'), m))).
+              (tape_move_mono tape (map_act f act)).
   Proof.
     intros tape. intros (w,m).
     unfold tape_move_mono, tape_move, tape_write, surject. cbn.
@@ -200,16 +202,10 @@ Section LiftSigmaTau.
   Proof.
     intros H. cbn.
     destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2.
-    unfold step in *. cbn in *.
-    replace (fun a : option tau =>
-                match a with
-                | Some a0 => Some (g' a0)
-                | None => None
-                end) with (fun a : option tau => let try a' := a in Some (g' a')) in H by reflexivity.
-
+    cbv [step] in *. cbn -[map step] in *.
     destruct (trans
-                (state1, Vector.map (fun a : option tau => let try a' := a in Some (g' a'))
-                                    (Vector.map (current (sig:=tau)) tapes1))) as (q, act) eqn:E3.
+                (state1,
+                 Vector.map (map_opt g') (Vector.map (current (sig:=tau)) tapes1))) as (q, act) eqn:E3.
     inv H.
     destruct (trans (state1, Vector.map (current (sig:=sig)) (surjectTapes g def tapes1)))
       as (q', act') eqn:E4.
@@ -218,12 +214,6 @@ Section LiftSigmaTau.
       inv X. f_equal.
       unfold surjectTapes, mapTapes. apply Vector.eq_nth_iff. intros p ? <-.
       erewrite !Vector.nth_map, !Vector.nth_map2, !Vector.nth_map; eauto.
-      (* again, stick to notations *)
-      change (tape_move_mono (mapTape (surject g def) tapes1[@p]) act'[@p] =
-              mapTape (surject g def)
-                      (tape_move_mono tapes1[@p]
-                                      (let '(w, m) := act'[@p] in (let try w' := w in Some (f w'), m)))).
-      (* generalize (act'[@p]) as act. generalize (tapes1[@p]) as tape. *)
       apply surject_step.
     }
     rewrite <- E3, <- E4. do 2 f_equal.
@@ -264,12 +254,7 @@ Section LiftSigmaTau.
     surjectConf (step (M := liftM) conf) = step (surjectConf conf).
   Proof.
     cbv [surjectConf]. cbv [step]. cbn.
-    replace (Vector.map
-                   (fun a : option tau =>
-                    match a with
-                    | Some a0 => Some (g' a0)
-                    | None => None
-                    end) (current_chars (ctapes conf))) with
+    replace (Vector.map (map_opt g') (current_chars (ctapes conf))) with
         (Vector.map (current (sig:=sig)) (surjectTapes g def (ctapes conf))).
     - cbn. destruct (trans (cstate conf, Vector.map (current (sig:=sig)) (surjectTapes g def (ctapes conf)))) eqn:E1; cbn.
       f_equal. unfold surjectTapes, mapTapes. apply Vector.eq_nth_iff. intros ? ? <-.
@@ -287,9 +272,8 @@ Section LiftSigmaTau.
         * f_equal. now retract_adjoint.
       + destruct m; cbn; simpl_tape; auto.
     - eapply Vector.eq_nth_iff. intros ? ? <-. unfold current_chars, surjectTapes, mapTapes.
-      erewrite !Vector.nth_map; simpl_tape; eauto.
+      erewrite !Vector.nth_map; simpl_tape; eauto. reflexivity.
   Qed.
-    
 
   Lemma propagate_loop (k : nat) tin (conf : mconfig sig (states (projT1 pMSig)) n) :
     loopM k (initc (projT1 pMSig) (surjectTapes g def tin)) = Some conf ->

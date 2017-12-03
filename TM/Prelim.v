@@ -392,20 +392,33 @@ Proof.
   apply IHi. contradict H. cbn. now rewrite !H.
 Qed.
 
+(* Apply functions in typles, options, etc. *)
+Section Translate.
+  Variable X Y Z : Type.
+  Definition map_opt : (X -> Y) -> option X -> option Y :=
+    fun f a =>
+      match a with
+      | Some x => Some (f x)
+      | None => None
+      end.
 
-Definition let_try A B (o:option A) (f: A -> option B) :=
-  match o with
-    Some a => f a
-  | None => None
-  end.
+  Definition map_inl : (X -> Y) -> X + Z -> Y + Z :=
+    fun f a =>
+      match a with
+      | inl x => inl (f x)
+      | inr y => inr y
+      end.
 
-Arguments let_try {_ _} /_ _.
+  Definition map_inr : (Y -> Z) -> X + Y -> X + Z :=
+    fun f a =>
+      match a with
+      | inl y => inl y
+      | inr x => inr (f x)
+      end.
 
-Notation "'let' 'try' x ':=' a 'in' res" := (let_try a (fun x => res)) (at level 200).
-
-Ltac des_try e:=
-  let eq_try := fresh "eq_try" in
-  destruct e eqn: eq_try;[ |cbn in *;congruence].
+  Definition map_left  : (X -> Z) -> X * Y -> Z * Y := fun f '(x,y) => (f x, y).
+  Definition map_right : (Y -> Z) -> X * Y -> X * Z := fun f '(x,y) => (x, f y).
+End Translate.
 
 (* Show the non-dependent hypothesis of a hypothesis that is a implication and specialize it *)
 Tactic Notation "spec_assert" hyp(H) :=
