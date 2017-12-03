@@ -136,33 +136,49 @@ Section While.
       apply HR in Eq1. cbn in Eq1. cbn. rewrite px0. cbn. auto. rewrite px0 in Eq1. auto.
   Qed.
 
-  Lemma While_terminatesIn (R : Rel _ (bool * F * _)) (T T': Rel _ nat):
-    pM ⊫ R ->
-    projT1 pM ↓(T) ->
-    functionalOn T' R -> 
-    (forall (x : tapes sig n) (i:nat),
-        T' x i -> exists (x':tapes _ _) (b:bool) (f:F) i1,
-          R x (b,f,x') /\ T x i1 /\ if b then exists i2, T' x' i2 /\ i1+1+i2<=i else i1 <= i)->
-    While ↓(T').
-  Proof.
-    intros HR Term_M Func Hyp.
-    intros t i. revert t. apply complete_induction with (x:=i); clear i; intros i IH t T't.
-    destruct (Hyp _ _ T't) as (t'& b&f1&i1&Rx&Tx&H).
-    destruct b.
-    - destruct H as (i2&T't'&Leq).
-      apply IH in T't' as (oenc & Eq);[ |omega].
-      exists oenc.
-      apply Term_M in Tx as (oenc1 & Eq1).
-      apply (loop_ge (k1:=i1 + (1 + i2)));[omega| ].
-      specialize (HR _ _ _ Eq1). specialize (Func _ _ T't _ _ HR Rx). inv Func.
-      now eapply (While_true_merge Eq1 (f := f1)).
-    - apply Term_M in Tx as [oenc Eq].
-      exists oenc.
-      eapply While_false_merge with (f := f1). eapply loop_ge;[ |exact Eq]. omega.
-      specialize (HR _ _ _ Eq).
-      specialize (Func _ _ T't _ _ HR Rx). now inv Func.
-  Qed.
+  Section While_terminatesIn.
+    Variable (R : Rel (tapes sig n) (bool * F * tapes sig n)).
+    Variable (T : Rel (tapes sig n) nat).
 
+    Inductive WhileT : Rel (tapes sig n) nat :=
+    | WhileT_Stop t1 k1 t2 y k2 :
+        R t1 (false, y, t2) -> T t1 k1 -> k1 <= k2 -> WhileT t1 k2
+    | WhileT_Loop t1 k1 y t2 k2 k3 :
+        R t1 (true, y, t2) -> T t1 k1 ->
+        WhileT t2 k2 ->
+        k1 + k2 < k3 ->
+        WhileT t1 k3.
+
+    Lemma WhileT_functionalOn :
+      functionalOn T R ->
+      functionalOn WhileT R.
+    Proof.
+      intros H. hnf in *. intros x k H1. induction H1; intros; eauto.
+    Qed.
+
+    Lemma While_terminatesIn :
+      pM ⊫ R ->
+      projT1 pM ↓(T) ->
+      functionalOn T R ->
+      While ↓ WhileT.
+    Proof.
+      intros HR Term_M Func.
+      intros t i. revert t. apply complete_induction with (x:=i); clear i; intros i IH t T't.
+      destruct T't as [ t1 k1 t2 y k2 R1 T1 Hk | l1 k1 y t2 k2 k3 R1 T1 HW Hk ].
+      - hnf in Term_M. specialize (Term_M _ _ T1) as (oenc&Eq).
+        specialize (HR _ _ _ Eq).
+        specialize (Func _ _ T1 _ _ HR R1). inv Func.
+        exists oenc. eapply While_false_merge; cbn; eauto.
+        unfold loopM. eapply loop_ge; eauto.
+      - specialize (Term_M _ _ T1) as (oenc&Eq).
+        specialize (IH k2 ltac:(omega) _ HW) as (oenc2&Eq2).
+        specialize (HR _ _ _ Eq).
+        specialize (Func _ _ T1 _ _ HR R1). inv Func.
+        exists oenc2. unfold loopM. apply (loop_ge (k1:= k1 + (1 + k2)));[omega| ].
+        eapply While_true_merge; eauto.
+    Qed.
+
+  End While_terminatesIn.
 
 End While.
 (* Arguments While {n} {sig} M _. *)
