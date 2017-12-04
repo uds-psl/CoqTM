@@ -71,7 +71,7 @@
 \theoremstyle{nonumberplain}
 \theorembodyfont{\normalfont}
 \theoremsymbol{{\color{blue}\ensuremath{_\blacksquare}}}
-\newtheorem{proof}{Proof}
+\newtheorem{proof}{Proof.}
 
 %% Floats
 \setcounter{topnumber}{3}

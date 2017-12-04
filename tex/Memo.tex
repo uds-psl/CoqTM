@@ -9,6 +9,13 @@
 
 \usepackage{listings}
 \usepackage{parskip}
+\usepackage{tikz-cd} % for commutative diagrams
+
+% To get \VDash to work (three options)
+% \usepackage{fdsymbol} % other math-font
+% \usepackage{mathabx}  % other math-font
+\renewcommand{\vDash}{\models} \DeclareRobustCommand{\VDash}{\mathrel{|\mkern-2mu|}\joinrel \Relbar}
+
 
 % TikZ ist *kein* Zeichenprogramm.
 \usepackage{tikz}
@@ -31,10 +38,20 @@
 \newcommand{\pow}{\mathscr{P}}
 \newcommand{\wo}{\div}
 
+% Formating
+\newcommand{\txt}[1]{\text{#1}} % this disables spell-checking in my editor
+\newcommand{\MS}[1]{\textsf{#1}}
+
 % Lists
-\newcommand{\nil}{\M{nil}}
-\newcommand{\cons}{~ :: ~}
-\newcommand{\app}{~ ++ ~}
+\newcommand{\nil}{\MS{nil}}
+\newcommand{\cons}{\mathbin{::}}
+\newcommand{\rev}{\MS{rev}}
+
+% ++ operator:
+% Source: https://tex.stackexchange.com/questions/4194/how-to-typeset-haskell-operator-and-friends
+\newcommand\doubleplus{+\kern-1.3ex+\kern0.8ex}
+\newcommand\mdoubleplus{\ensuremath{\mathbin{+\mkern-10mu+}}}
+\newcommand{\app}{\mdoubleplus}
 
 \newcommand{\rew}{\Rightarrow}
 \newcommand{\trew}{\stackrel{\textrm{T}}\Rightarrow}
@@ -56,15 +73,14 @@
 \renewcommand{\to}{\rightarrow}
 
 % Types and constants
-\newcommand{\Opt}{\mathcal{O}}
-\newcommand{\Fin}{\mathbb{F}}
-\newcommand{\Bool}{\mathbb{B}}
-\newcommand{\Nat}{\mathbb{N}}
-\newcommand{\Prop}{\mathsf{Prop}}
-\newcommand{\Type}{\mathsf{Type}}
-\newcommand{\Unit}{\mathsf{Unit}}
-\renewcommand{\Prop}{\mathbb{P}}
-\newcommand{\List}{\mathcal{L}}
+\newcommand{\Option}{\MS{Option}}
+\newcommand{\Fin}{\MS{Fin}}
+\newcommand{\Bool}{\MS{Bool}}
+\newcommand{\Nat}{\MS{Nat}}
+\newcommand{\Prop}{\MS{Prop}}
+\newcommand{\Type}{\MS{Type}}
+\newcommand{\Unit}{\MS{Unit}}
+\newcommand{\List}{\MS{List}}
 \newcommand{\Some}[1]{\left\lfloor #1\right\rfloor}
 \renewcommand{\None}{\emptyset}
 \newcommand{\true}{\mathbf{true}}
@@ -74,30 +90,33 @@
 % Tapes
 \newcommand{\tape}[1]{[ #1 ]}
 \newcommand{\tapePointer}[1]{\; \underset{\uparrow}{#1} \;}
-\newcommand{\rev}{\txt{rev}}
-\newcommand{\Tape}{\txt{Tape}}
-\newcommand{\Tapes}[1]{\Tape^{#1}}
-\newcommand{\Tau}{T}
+\newcommand{\niltape}{\tape{\tapePointer{}}}
+\newcommand{\midtape}[3]{\tape{#1 ~ \tapePointer{#2} ~ #3}}
+\newcommand{\leftof}[2]{\tape{\tapePointer{} #1 ~ #2}}
+\newcommand{\rightof}[2]{\tape{#1 ~ #2 \tapePointer{}}}
 
-% Semantics
-\DeclareRobustCommand{\VDash}{\mathrel{||}\joinrel\Relbar}
+\newcommand{\Tape}{\MS{Tape}}
+\newcommand{\Tapes}[1]{\Tape^{#1}}
+\newcommand{\Move}{\MS{Move}}
+\newcommand{\Tau}{\Gamma}
 
 % Relations
 \newcommand{\IdR}{\mathit{IdR}}
-\newcommand{\rif}{~ \mathit{rif} ~}
+\newcommand{\rif}{\mathbin{\phi}}
 \newcommand{\at}[2][]{#1|_{#2}}
 \newcommand{\Rel}{\mathsf{Rel}}
 
-% Formating
-\newcommand{\txt}[1]{\text{#1}}
-\newcommand{\MS}[1]{\textsf{#1}}
-
 % ``Keywords'' in math
-\newcommand{\mwhile}[1]{\MS{while}}
-\newcommand{\mseq}{~;;~}
-\newcommand{\mif}[3]{\MS{if}~#1~\MS{then}~#2~\MS{else}~#3}
+\newcommand{\mwhile}[1]{\MS{While}}
+\newcommand{\mseq}{\mathbin{;}}
+\newcommand{\mif}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
 \newcommand{\mmatch}{\MS{match}}
-\newcommand{\mlet}[2]{\MS{let}~#1~\MS{in}~#2}
+\newcommand{\mlet}[2]{\MS{Let}~#1~\MS{In}~#2}
+
+% More constants and functions
+\DeclareMathOperator{\inl}{\ensuremath{\MS{inl}}}
+\DeclareMathOperator{\inr}{\ensuremath{\MS{inr}}}
+\DeclareMathOperator{\map}{\ensuremath{\MS{map}}}
 
 \begin{document}
 
@@ -109,43 +128,49 @@
 \begin{abstract}
   \noindent
 \end{abstract}
-
 Developing and verifying Turing machines can be a tedious task because they are very low level.  Turing machines can be completely unstructured: from
 any state execution could continue at any other state.  Furthermore Turing machines are not compositional:  Having two Turing machines $A$ and $B$ it
-is not trivial to compose a new machine $C$ that executes a copy of $B$ after the execution of a copy of $A$.  Control flow operations, like
+is not trivial to generate a new machine $C$ that executes a copy of $B$ after the execution of a copy of $A$.  Control flow operations, like
 composition, if then else and while are not available and have to be constructed and verified first to build more complex machines from simple
-machines.  Also it is not clear how to mix machines with different alphabets and numbers of tapes.
+machines.  Also it is not clear how to combine machines with different alphabets and numbers of tapes.
 
-To define specifications for Turing machines, we use relations over tape vectors.  Relations seem to be very natural for this task, since there are
-compositional.
+We follow Asperti et al. and define specifications for Turing machines using relations over tape vectors.  Relations have the benefit of being
+compositional.  For our Coq development we also carry over their definitions of multi-tape Turing machines from Matita.  We developed a library of
+verification methods and proof automation tactics.  Using this library we implement and verify the control flow operators \emph{Sequential
+Composition}, \emph{If Then Else}, \emph{While}, \emph{Match}.
 
-For our Coq development we carry over Asperti's \cite{Asperti} definitions of multi-tape Turing machines.  We have developed a library of verification
-methods and proof automation tactics.  Using this library we implement and verify the control flow operators \emph{sequential composition}, \emph{if
-then else}, \emph{while} and \emph{match}.
+Our goal is to use these techniques to build a Turing machine that simulates a variant of the $\lambda$-calculus or to build and verify a universal
+Turing machine.
 
-Our scratch goal is to use these techniques to build a Turing machine that simulates the $\lambda$-calculus or to build and verify a universal Turing
-machine.
+\section{Notations}
+In this memo, I use bold font to denote the constants: $\true$, $\false$, and $\unit$.  Types are written in sans-serif font and capitalized: $\Type$,
+$\Prop$, $\Rel(X, Y)$, $\Unit$, $\Bool$, $\Nat$, and $\Option$.  We use the infix operator $+$ to denote sum-types.  $\Some{\cdot}$ and $\None$ denote
+the values of the option type $\Option(\cdot)$.  For record types $R$, $x_{(\cdot)}$ denotes the projection function of the member $x$ of $R$.
+$(f, g) \from X \hookrightarrow Y$ denotes either a retract from $X$ to $Y$ and $f \from X \hookrightarrow Y$ a injection from $X$ to $Y$.
+Later we will also write $X \hookrightarrow Y$ to denote the canonical (tight) retract or injection from $X$ to $Y$, if we have defined it before and
+if it is clear weather we mean the retract or the injection.  (This is analogous in the Coq-development:  Since we use type-classes there, we often
+do not have to specify those functions since they can be inferred automatically.)  Set-notations are used to define relations.
 
 \section{Definition of multi-tape Turing machines}
 \label{sec:def}
 
 \begin{definition}[Multi-tape Turing machine]
   \label{def:mTM}
-  There are three possible movements:  $\text{Move} := \setOf{L, R, N}$.
-  A \emph{$n$-tape Turing machine} over a finite alphabet $\Sigma$ is a tuple $TM = (Q, \gamma, Q_0, Q_h)$ where
+  There are three possible movements:  $\MS{Move} := \setOf{L, R, N}$.
+  An \emph{$n$-tape Turing machine} over a finite alphabet $\Sigma$ is a record $TM = (Q, \gamma, s, h)$ where
   \begin{itemize}
     \item $Q$ is the finite type of states,
-    \item $\gamma \from Q \times (\Opt(\Sigma))^n \to Q \times (\Opt(\Sigma) \times Move)^n$ is the transition function that for every state and
+    \item $\gamma \from Q \times (\Option(\Sigma))^n \to Q \times (\Option(\Sigma) \times \MS{Move})^n$ is the transition function that for every state and
       vector of $n$ read symbols yields the new state and a vector of $n$ symbols to write and a direction to move,
-    \item $Q_0 \in Q$ is the start state,
-    \item $Q_h \from Q \to \Bool$ is the decidable subset of halting states.
+    \item $s:Q$ is the start state,
+    \item $h \from Q \to \Bool$ is the decidable subset of halting states.
   \end{itemize}
 \end{definition}
 
-We make no distinction between input and output tapes.  Note that the transition function has to yield successor state even on halting states.  It is
-usually convenient to make halting states loop in the transition function, because the execution is stopped anyways.  Also note that while we
-parameterized Definition \ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, we abstract from the states, as states are considered
-an ``internal'' property of Turing machines.
+We make no distinction between input and output tapes.  Note that the transition function has to yield a successor state even on halting states.  It
+is usually convenient to make halting states loop in the transition function, because the execution stopped anyway.  Also note that while we
+parameterized Definition \ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, but we abstract from the states, as states are
+considered an ``internal'' property of Turing machines.  Since $\gamma$ is a function, our machines behave deterministically.
 
 Now we want to define the semantics of multi-tape Turing machines.
 
@@ -156,122 +181,124 @@ following Definition we define tapes formally.
 
 \begin{definition}[Tape]
   \label{def:tape}
-  Let $\Sigma$ be a finite alphabet. A \emph{tape} over this alphabet is defined inductively:
-  \begin{alignat*}{2}
-    \emph{Tape} : \Type := \quad & \txt{niltape} \\
-                          | \quad & \txt{leftof}  ~ (r : \Sigma) ~ (R : \List(\Sigma)) \\
-                          | \quad & \txt{midtape} ~ (L : \List(\Sigma)) ~ (m : \Sigma) ~ (R : \List(\Sigma)) \\
-                          | \quad & \txt{rightof} ~ (l : \Sigma) ~ (L : \List(\Sigma)). \\
-  \end{alignat*}
+  Let $\Sigma$ be a finite alphabet.  A tape consists of a string and a position of a pointer, that can be either on the string or left or right off
+  the string.  Formally, a $\Sigma$-tape can be either
   \begin{itemize}
-    \item $\txt{niltape}$ stands for the empty tape.  We write it as $\tape{}$.
-    \item $\txt{leftof}  ~ r ~ R$ means that the pointer is outside on the left side of the non-empty string $r \cons R$.  We notate it as
-      $\tape{\tapePointer{} r ~ R}$.
-    \item $\txt{midtape} ~ (\rev(L)) ~ m ~ R$ stands for a non-empty tape where the pointer is $R$ and on the left side is $L$. The pointer points on
-      $m$.  We note this as $\tape{L \tapePointer{m} R}$.
-    \item $\txt{rightof} ~ l ~ (\rev(L))$ stands the for the non-empty tape where the pointer is on the right outmost position after the string
-      $L \app [l]$.  We notate this tape as $\tape{L ~ l \tapePointer{}}$.
+    \item the empty tape $\niltape$.
+    \item $\leftof{r}{R}$ where the pointer is outside on the left side of the non-empty string $r \cons R$.
+    \item $\midtape{L}{m}{R}$, the for non-empty tape where the pointer points on $m$ and is between $L$ and $R$.
+    \item $\rightof{L}{l}$, the non-empty tape where the pointer is on the right outmost position after the string $L \app [l]$.
   \end{itemize}
+
+
+  In the Coq-implementation, tapes are defined inductively:
+  \begin{alignat*}{2}
+    \emph{Tape}:\Type := \quad & \MS{niltape} \\
+                         | \quad & \MS{leftof}  ~ (r:\Sigma) ~ (R:\List(\Sigma)) \\
+                         | \quad & \MS{midtape} ~ (L:\List(\Sigma)) ~ (m:\Sigma) ~ (R:\List(\Sigma)) \\
+                         | \quad & \MS{rightof} ~ (l:\Sigma) ~ (L:\List(\Sigma)).
+  \end{alignat*}
+  Note, however, that the lists called $L$ are in reversed order.  For example $\MS{midtape}~(\rev(L))~m~R$ corresponds to the tape
+  $\midtape{L}{m}{R}$.
 \end{definition}
 
 Now we can define the \emph{configuration} of a multi-tape Turing machine.  It is captured by the current state and the vector of the $n$ tapes:
-
 \begin{definition}[Configuration]
   \label{def:config}
-  A \emph{configuration} of a $n$-tape Turing machine $TM = (Q, \gamma, Q_0, Q_h)$ over the alphabet $\Sigma$ is a tuple
-  $c \in \text{Tape}^n \times Q$.
+  A \emph{configuration} of an $n$-tape Turing machine $T$ over the alphabet $\Sigma$ is a record $c=(state:Q_M, tapes:\Tape(\Sigma)^n)$.
 \end{definition}
 
-First we define tape movement and how to write symbols on tapes.  Note that since the list of the left side of the pointer is saved in reversed order,
-so we do not have to execute \texttt{app} in the implementation.
-\begin{alignat*}{2}
-  move\_right&~(\tape{\tapePointer{} r~R})            &&:= \tape{\nil \tapePointer{r} R} \\
-  move\_right&~(\tape{L \tapePointer{m} \nil       }) &&:= \tape{L \app [m] \tapePointer{}} \\
-  move\_right&~(\tape{L \tapePointer{m} (r \cons R)}) &&:= \tape{L \app [m] \tapePointer{r} R} \\
-  move\_right&~(t)                                    &&:= t
+Now we define tape movement and how to write symbols on tapes.  Note that because in the implementation the list of the left side of the pointer is
+saved in reversed order, we do not have to execute \MS{app}.  \begin{alignat*}{2}
+  \MS{mv}_R&~(\leftof{r}{R}               &&:= \midtape{\nil}{r}{R} \\
+  \MS{mv}_R&~(\midtape{L}{m}{\nil})       &&:= \rightof{L}{m} \\
+  \MS{mv}_R&~(\midtape{L}{m}{r \cons R)}) &&:= \midtape{L \app [m]}{r}{R} \\
+  \MS{mv}_N&~(t)                          &&:= t
 \end{alignat*}
-The function $move\_left$ is defined analogously.  The function $move \from Tape \to Move \to Tape$ is a wrapper function that calls the corresponding
-move function.
+The function $\MS{mv}_L$ is defined analogously.
+To define the function $\MS{write} \from \Option(\Sigma) \to \Tape \to \Tape$, we first need functions
+$\MS{left},~\MS{right} \from \Tape \to \List(\Sigma)$
+that return the symbols to the left side of the pointer and respectively the symbols to the right of the pointer.
 \begin{alignat*}{2}
-  move~t&~L &&:= move\_left(t) \\
-  move~t&~R &&:= move\_right(t) \\
-  move~t&~N &&:= t
+  \MS{left} &~\niltape          &&:= \nil \\
+  \MS{left} &~\leftof{r}{R}     &&:= \nil \\
+  \MS{left} &~\midtape{L}{m}{R} &&:= L \\
+  \MS{left} &~\rightof{L}{l}    &&:= L \app [l] \\
+  \MS{right}&~\niltape          &&:= \nil \\
+  \MS{right}&~\leftof{r}{R}     &&:= r \cons R \\
+  \MS{right}&~\midtape{L}{m}{R} &&:= R \\
+  \MS{right}&~\rightof{L}{l}    &&:= \nil
 \end{alignat*}
-To define the function $write \from \Opt(\Sigma) \to Tape \to Tape$, we first need functions $left,~right \from Tape \to \List(\Sigma)$ that return
-the symbols to the left side of the pointer (in reversed order) and respectively the symbols to the right of the pointer.
-\begin{alignat*}{2}
-  left&~\tape{}                   &&:= \nil \\
-  left&~\tape{\tapePointer{} r~R}    &&:= \nil \\
-  left&~\tape{L \tapePointer{m} R}   &&:= L \\
-  left&~\tape{L~l \tapePointer{}}    &&:= l \cons L \\
-  right&~\tape{}                  &&:= \nil \\
-  right&~\tape{\tapePointer{} r~R}   &&:= r \cons R \\
-  right&~\tape{L \tapePointer{m} R}  &&:= R \\
-  right&~\tape{L~l \tapePointer{}}   &&:= \nil
-\end{alignat*}
-Now we can define $write$.  When we write $\None$, the tape remains unchanged.  But if we write $\Some w$, we get a $\txt{midtape}$, where the left
-and right symbols remain unchanged.
+Note that in the implementation $\MS{left}$ returns the same list but again in reserved order, so we do not have to execute $\MS{app}$.
+Now we can define $\MS{wr} \from \Tape \to \Option(\Move) \to \Tape$.
+When we write $\None$, the tape remains unchanged.
+But if we write $\Some a$, we get a $\MS{midtape}$, where the left and right symbols remain unchanged and $a$ is now in the middle.
 \begin{alignat*}{3}
-  write~&\None   &&~ t &&:= t \\
-  write~&\Some w &&~ t &&:= \tape{left(t) \tapePointer{w} right(t)}
+  \MS{wr}~t &~ \None   &&:= t \\
+  \MS{wr}~t &~ \Some a &&:= \midtape{\MS{left}(t)}{a}{\MS{right}(t)}
 \end{alignat*}
-To define the function $step \from Conf \to Conf$, we need to know the symbols on the tapes.  Therefore we define a function
-$current \from Tape \to \Opt(\Sigma)$.  It returns $\None$ if the pointer is not under a symbol, and $\Some s$ if the pointer is under the symbol $s$.
+To define the function $\MS{step} \from \MS{Conf} \to \MS{Conf}$, we need to know the symbols on the tapes.
+Therefore we define a function $\MS{current} \from Tape \to \Option(\Sigma)$.
+It returns $\None$ if the pointer is not under a symbol, and $\Some a$ if the pointer is under the symbol $a$.
 \begin{alignat*}{2}
-  current&~(\tape{L \tapePointer{m} R})&&:= \Some m \\
-  current&~\_                       &&:= \None
+  \MS{current}&~(\midtape{L}{m}{R})&&:= \Some m \\
+  \MS{current}&~\_                 &&:= \None
 \end{alignat*}
-We can state the correctness of the functions $write$, $current$, $left$ and $right$:
+We can state a correctness lemma of the function $\MS{write}$:
 \begin{lemma}[Write]
-  For all tapes $t$ and symbols $\sigma \in \Sigma$:
-  \begin{itemize}
-    \item $right(t)                     = right(write~\Some\sigma~t)$
-    \item $left(t)      \hspace{0.5em}  = left(write~\Some\sigma~t)$
-    \item $\Some\sigma  \hspace{1.9em}  = current(write~\Some\sigma~t)$
-\end{itemize}
+  \label{lem:write}
+  For all tapes $t$ and symbols $\sigma:\Sigma$:
+  % TODO: Align it, for example like in https://tex.stackexchange.com/questions/12771/mix-align-and-enumerate
+  \begin{enumerate}
+    \item $\MS{right}   (\MS{wr}~t~\Some\sigma) = \MS{right}(t)$
+    \item $\MS{left}    (\MS{wr}~t~\Some\sigma) = \MS{left} (t)$
+    \item $\MS{current} (\MS{wr}~t~\Some\sigma) = \Some\sigma$
+  \end{enumerate}
 \end{lemma}
 \begin{proof}
-  By case analysis over $t$.
+  All claims follow by case analysis over $t$.
 \end{proof}
-We can now define the function $step \from Conf \to Conf$.  A step consists of three phases.  First the machine reads all the currents symbols from
-the tapes.  It inserts this vector and the current state into $\gamma$.  After that each tape writes a symbol and moves its head into a direction.
+We can now define the function $\MS{step} \from \MS{Conf} \to \MS{Conf}$.  A step consists of three phases.  First the machine reads all the currents
+symbols from the tapes.  It inserts this vector and the current state into the transition function $\gamma_M$ of the machine $M$.  After that step,
+After that each tape writes a symbol and moves its head into a direction.  The machine ends up in a new step $q'$.
 \begin{alignat*}{2}
-  write\_move&~t~(w, m)   &~:=~& move~(write~t~w)~m \\
-  step       &~(tapes, q) &~:=~& \mlet{(act, q') := \gamma(current~tapes)}{ \\
-             &            &~  ~& (map_2~write\_move~tapes~act,~q')}
+  \MS{wr\_mv}&~t~(wr, D)     &~:=~& \MS{mv}_D (\MS{wr}~t~wr) \\
+  \MS{step}&~(\MS{tapes}, q) &~:=~& \mlet{(\MS{actions}, q') := \gamma_M(\MS{current}(\MS{tapes}))}{ \\
+           &                  &~  ~& (\MS{map}_2~\MS{wr\_mv}~\MS{tapes}~\MS{actions},~ q')}
 \end{alignat*}
-To define the execution of a machine, we first introduce an abstract \emph{loop} function of the type
-$loop \from \Nat \to (A \to A) \to (A \to \Bool) \to A \to \Opt(A)$, for some type $A$.
+To define the execution of a machine, we first introduce an abstract recursive \emph{loop} function of the type
+$\MS{loop} \from \Nat \to (A \to A) \to (A \to \Bool) \to A \to \Option(A)$, for every $A:\Type$:
 \begin{align*}
-  loop~n~f~h~s :=
+  \MS{loop}~n~f~h~s :=
   \begin{cases}
     \Some{s}              & h(s) = \true \\
     \None                 & h(s) = \false \land n = 0 \\
-    loop~(n-1)~f~h~(f s)  & h(s) = \false \land n > 0
+    \MS{loop}~(n-1)~f~h~(f s)  & h(s) = \false \land n > 0
   \end{cases}
 \end{align*}
 
-We can show some basic Lemmas about $loop$.
-\begin{fact}[Simple facts about $loop$]
-  \label{fact:loop}
-  Let $f \from A \to A$ be a step function and $h \from A \to \Bool$ be a halting function, $s \in A$, and $k, l \in \Nat$.  Then:
-  \begin{itemize}
-    \item If $k \le l$ and $loop~k~f~h~s = \Some x$, then $loop~l~f~h~s = \Some x$.
-    \item If $loop~k~f~h~s = \Some x$ and $loop~l~f~h~s = \Some y$, then $x = y$.
-    \item If $loop~k~f~h~s = \Some{x}$, then $h(x) = \true$.
-    \item If $h~s = \true$, then $loop~l~f~h~s = \Some{s}$.
-  \end{itemize}
-\end{fact}
+We can show some basic lemmas about $\MS{loop}$.
+\begin{lemma}[Simple facts about $\MS{loop}$]
+  \label{lem:loop}
+  Let $f \from A \to A$ be a step function and $h \from A \to \Bool$ be a halting function, $s:A$, and $k, l:\Nat$.  Then:
+  \begin{enumerate}
+    \item If $k \le l$ and $\MS{loop}~k~f~h~s = \Some x$, then $\MS{loop}~l~f~h~s = \Some x$.
+    \item If $\MS{loop}~k~f~h~s = \Some x$ and $\MS{loop}~l~f~h~s = \Some y$, then $x = y$.
+    \item If $\MS{loop}~k~f~h~s = \Some{x}$, then $h(x) = \true$.
+    \item If $h~s = \true$, then $\MS{loop}~l~f~h~s = \Some{s}$.
+  \end{enumerate}
+\end{lemma}
 \begin{proof}
-  All facts can be shown by induction on $k \in \Nat$.
+  Claims 1-3 follow by induction on $k:\Nat$ and claim 4 follows by definition.
 \end{proof}
 
-We now define the function $exec \from \Tapes{n} \to \Nat \to \Opt(Conf)$ that executes the $step$ functions $k$ times, given the vector of initial
-tapes.
+For a machine $M$, we define the function $\MS{exec} \from \Tapes{n} \to \Nat \to \Option(\MS{Conf})$ that executes the $\MS{step}$ functions $k$ times,
+given the initial tapes:
 \begin{alignat*}{3}
-  init\_state   &~tapes      &&:= (tapes, q_0) \\
-  halting\_state&~(tapes, q) &&:= q_h(q) \\
-  exec          &~tapes~k    &&:= loop~k~step~halting\_state~(init\_state~tapes)
+  \MS{init\_state}   &~\MS{tapes}      &&:= (\MS{tapes}, s_M) \\
+  \MS{halting\_state}&~(\MS{tapes}, q) &&:= h_M(q) \\
+  \MS{loopM}         &~\MS{initc}~k    &&:= \MS{loop}~k~\MS{step}~\MS{halting\_state}~\MS{initc} \\
+  \MS{exec}          &~\MS{tapes}      &&:= \MS{loopM} (\MS{init\_state}~\MS{tapes})
 \end{alignat*}
 
 
@@ -279,58 +306,66 @@ tapes.
 
 We use a library of basic relations that are useful for defining the relational specifications for our machines.
 
-First, we define the usual operations on relations: $\cap$, $\cup$, $\circ$ and the Kleene star $^*$.
-We denote the identity relation by $\IdR$.
+We define the usual operations on relations: $\cap$, $\cup$, $\circ$ and the identity relation.
+\begin{alignat*}{2}
+  R \cap  S &:= \setMap{(x, y)}{R~x~y \land S~x~y} \\
+  R \cup  S &:= \setMap{(x, y)}{R~x~y \lor  S~x~y} \\
+  R \circ S &:= \setMap{(x, z)}{\exists y,~ R~x~y \land S~y~z} \\
+  \MS{Id}   &:= \setOf{(x, x)}{}
+\end{alignat*}
+The Kleene star ${\cdot}^*$ is defined by induction:
 
-We will call relations of the form $R \subseteq X \times (Y \times X)$ \emph{parametrised} relations (where $Y$ is called the parameter type).
+$$\inferrule{ }{R^*~x~x} \qquad \inferrule{R~x~y \and R^*~y~z}{R^*~x~z}$$
+
+We will call relations of the form $R:\Rel~X~(Y \times X)$ \emph{parametrised} relations (where $Y$ is called the parameter type).
 
 We define some useful relations that operate on the parameter.
 
 \begin{definition}[Parameter introducing operators]
   \label{def:rel-param-op}
-  Let $X, Y, Z$ be types.  For a relation $R \subseteq X \times Z$ we define:
+  For a relation $R:\Rel~X~Z$ we define:
   \begin{alignat*}{3}
-    ignoreParam&~R &&:= \setMap{(x, (y, z))}{(x, z) \subseteq R} & \subseteq X \times (Y \times Z) \\
-    hideParam  &~R &&:= \setMap{((x, y), z)}{(x, z) \subseteq R} & \subseteq (X \times Y) \times Z
+    \Uparrow   R &:= \setMap{(x, (y, z))}{R ~ x ~ z} &&:\Rel~X            ~ (Y \times Z) \\
+    \Downarrow R &:= \setMap{((x, y), z)}{R ~ x ~ z} &&:\Rel~(X \times Y) ~ Z
   \end{alignat*}
 \end{definition}
 
 % \begin{definition}[Relational product]
 %   \label{def:rel-prod}
 %   Let $R \subseteq X \times Y$ and $S \subseteq X \times Z$ be relations.  Then we define the \emph{relational product} of $R$ and $S$:
-%   $$R \rtimes S := \setMap{(x, (y, z))}{(x, y) \in R \land (x, z) \in S}.$$
+%   $$R \rtimes S := \setMap{(x, (y, z))}{(x, y):R \land (x, z):S}.$$
 % \end{definition}
 
 \begin{definition}[Relational if]
   \label{def:rel-if}
-  Let $R_1, R_2 \subseteq X \times Y$.  We define the \emph{relational if} construct to parametrise relations over a boolean parameter:
-  $$R1 \rif R2 := \setMap{(x, (\true, y)}{(x, y) \in R_1} \cup \setMap{(x, (\false, y)}{(x, y) \in R_2}.$$
+  Let $R_1, R_2:\Rel~X~Y$.  We define the \emph{relational if} construct to parametrise relations over a boolean parameter:
+  $$R_1 \rif R_2 := \setMap{(x, (\true, y)}{R_1~x~y} \cup \setMap{(x, (\false, y)}{R_2~x~y}.$$
 \end{definition}
 
 \begin{definition}[Relational restriction]
   \label{def:rel-restr}
-  Let $R \subseteq X \times (Y \times Z)$ be a parametrised relation and $f \in Y$ a parameter.  We \emph{restrict} $R$ to the value $f$:
-  $$R\at{f} := \setMap{(x, z)}{(x, (f, z)) \in R}.$$
+  Let $R:\Rel~X~(Y \times Z)$ be a parametrised relation and $y:Y$ a parameter.  We \emph{restrict} $R$ to the value $f$:
+  $$R\at{y} := \setMap{(x, z)}{R~x~(y, z)}.$$
 \end{definition}
 
 We also define the relational union indexed by a type $F$:
 \begin{definition}[Relational union]
   \label{def:rel-union}
   Let $X, Y, F$ be types and $R \from F \to \Rel(X, Y)$ be a function from $F$ to relations over $X$ and $Y$.  Then we define
-  $$\bigcup_{f \in F}R~f := \setMap{(x, y)}{\exists f \in F,~(x, y) \in (R~f)}.$$
+  $$\bigcup_{y:F}R(y) := \setMap{(x, z)}{\exists y:F,(R~y)~x~z}.$$
 \end{definition}
 
 % We use the notation $\uparrow R$ to lift a unary relation $R \subseteq X$ to a binary relation $\uparrow R \subseteq Y \times X$ that ignores the
 % first parameter.
 
-We call two relations \emph{equivalent} ($\equiv$) if they are extensionally equal.
+If two relations $R$ and $S$ are extensionally equal, we write $R \equiv S$.
 
 All defined operators are proper in the sense that replacing arguments by equivalent relations produces equivalent results.
 
 Furthermore, relational restriction commutes with all operations, for instance:
 
 \begin{lemma}
-  For a boolean $b \in \Bool$ and two relations $R_1, R_2$:
+  For a boolean $b:\Bool$ and two relations $R_1, R_2$:
   $$(R_1 \rif R_2)\at{b} \equiv
   \begin{cases}
     R_1 & b = \true \\
@@ -338,67 +373,89 @@ Furthermore, relational restriction commutes with all operations, for instance:
   \end{cases} $$
 \end{lemma}
 \begin{proof}
-  By case analysis over $b \in \Bool$.
+  By case analysis over $b:\Bool$.
 \end{proof}
 
 
 
-\section{Verification of multi-tape Turing machines}
+\section{Correctness of multi-tape Turing machines}
 \label{sec:verification}
 
-We need a formalism how to define specifications for Turing machines.  Therefore, we follow \cite{Asperti} and use a relation-based approach.  We use
-relations of the form $R \in \Tapes{n} \times (F \times \Tapes{n})$ where $F$ is an arbitrary finite type and $n$ the number of tapes.  With $F$ we can
-abstract from the internal state in which the machine terminated.  For example, if $F = \Bool$, then we can give a partitioning of ``accepting'' and
-``rejecting'' states.  Preconditions and postconditions can simply be encoded within relations.  We have multiple definitions to formalise what it
-means for a Turing machine to \emph{realise} such a relation.
+We need a formalism how to define specifications for Turing machines.  Asperti et al. therefore use relations over vectors of tapes.  We extend this
+approach to parametrised relations over vectors of tapes where the additional parameter is a finite type that encodes the outcome of the execution.
+For example, if we choose $\Bool$ as the parameter type, then we can give a partitioning of ``accepting'' and ``rejecting'' states.  Preconditions and
+postconditions can simply be encoded within relations.
 
-\begin{definition}[Week realisation]
+To certify Turing machines, we separately show that they behave correctly and that they terminate.
+We introduce the following definitions to implement this concepts.
+
+Let $M$ be an $n$-tape Turing machine over a alphabet $\Sigma$ and $F$ be a finite type.
+Let $p \from Q_M \to F$ be a partitioning function.
+Let $R:\Rel~\Tapes{n}~(F \times \Tapes{n})$ and $T:\Rel~\Tapes{n}~\Nat$.
+
+\begin{definition}[Weak realisation]
   \label{def:wrealise}
-  Let $F$ be a finite type and $R \in \Tapes{n} \times (F \times \Tapes{n})$ be a parametrised relation.  Let $M$ be a $n$-tape Turing machines and
-  $p \from Q \to F$ be a partitioning function.  We say that $M$ \emph{(weakly) realises} the relation $R$ when for every $tapes_0 \in \Tapes{n}$
-  there exists a final configuration $c_{halt} = (tapes_{halt}, q_{halt})$ and a number of steps $k \in K$, such that
-  $(tapes_0, (p(q_{halt}), tapes_{halt}) \in R$.  We write $M \VDash_p R$ or $M \VDash R$ if the partitioning is clear.
+  We say that $M$ \emph{weakly realises} $R$ if for all initial tapes $t$, if $M$ terminates into a final configuration $c=(t', q')$, then
+  $R~t~(F~q', t')$.
+  We write $M \VDash_p R$ or $M \VDash R$ if $p$ is clear.
 \end{definition}
-
-We define the termination behaviour of a Turing machine.  Because we need to know in which class of states the machine terminated, we use a
-parametrised relation.
 
 \begin{definition}[Termination]
   \label{def:termination}
-  Let $T \in \Tapes{n} \times (F \times \Nat)$.  We say that a machine $M$ \emph{terminates in} $T$, if for every initial $tapes_0 \in \Tapes{n}$
-  there exists a configuration $c_{halt} = (tapes_{halt}, q_{halt})$ and a number $k \in \Nat$, such that $exec~tapes_0~k = \Some{c_{halt}}$ and
-  $(tapes_0, (p(q_{halt}), k)) \in T$.  We write $M \downarrow_p T$ or $M \downarrow T$ if the partitioning is clear.
+  We say that a machine $M$ \emph{terminates in} $T$, if for every initial tapes $t$ and numbers $k$ with $T~t~k$,
+  $M$ terminates into a configuration.
+  We write $M \downarrow T$.
 \end{definition}
 
 Finally, we define \emph{strong realisation}, which is a combination of termination an week realisation.
 
 \begin{definition}[Strong realisation]
   \label{def:realise}
-  Let $T \in \Tapes{n} \times (F \times \Tapes{n})$.  We say that a machine $M$ \emph{(strongly) realises} $R$, if for every initial
-  $tapes_0 \in \Tapes{n}$ there exists a configuration $c_{halt} = (tapes_{halt}, q_{halt})$ and a number $k \in \Nat$, such that
-  $exec~tapes_0~k = \Some{c_{halt}}$ and $(p(q_{halt}), tapes_{halt}) \in R$.  We write $M \vDash_{p} T$ or $M \vDash T$ if the partitioning is clear.
+  We say that $M$ (strongly) \emph{realises} $R$ if for all initial tapes $t$,
+  there is a final configuration $c=(t', q')$ and $R~t~(F~q', t')$.
+  We write $M \vDash_p R$ or $M \vDash R$ if $p$ is clear.
 \end{definition}
 
 The relation between weak and strong realisation and termination can be expressed by the following Lemma:
 
-\begin{lemma}[Termination and realisation]
-  \label{lem:realise-term}
-  For every relation $R \subseteq \Tapes{n} \times (F \times \Tapes{n})$ the following equivalence holds:
-  $$M \downarrow_p \setMap{(input,(y, k))}{\exists~output,~(input, (y, output)) \in R} \land M \VDash_p R \iff M \vDash_p R.$$
+\begin{lemma}[Weak to strong realisation]
+  \label{lem:wrealise-realise}
+  If $M \VDash R$, $M \downarrow T$, and $T$ surjective.  Then $M \vDash R$.
 \end{lemma}
-\begin{proof}
-  Follows with Fact \ref{fact:loop}.
-\end{proof}
 
 Because there are many Turing machines that terminate after a constant number of steps, we introduce the notion $M \vDash_p^k$ to denote that $M$
 strongly realises $R$ in $k$ steps.  The definition of this predicate is clear.
+
+We can define relations that every machine weakly realises and in that every machine terminates.
+
+\begin{lemma}[canonical relation]
+  \label{lem:canonical-relation}
+  $M$ weakly realises the \emph{canonical relation} that is defined by:
+  \begin{multline*}
+    R_{\MS{cn}} := \setMap{(t_1, (y, t_2))}{\\
+      \exists~k~outc,~ \MS{exec}~$M$~t~k = \Some{outc} \land \MS{ctapes}_outc = t_2 \land p(\MS{cstate}_c) = y}
+    \end{multline*}
+    Furthermore, $R_\MS{cn}$ is functional.
+\end{lemma}
+\begin{proof}
+  Weak realisation is trivial, functionality follows with functionality of $\MS{exec}$, see Lemma \ref{lem:loop}.
+\end{proof}
+
+Note that of $R$ is functional, this represents the determinism of the machine.
+
+\begin{lemma}[canonical termination relation]
+  \label{lem:canonical-term-relation}
+  $M$ terminates in the \emph{canonical termination relation} that is defined by:
+  $$T_{\MS{cn}} := \setMap{(t_1, k)}{ \exists~outc,~ \MS{exec}~M~t~k = \Some{outc} }$$
+  However, is is not clear, weather $T_{\MS{cn}}$ is surjective.
+\end{lemma}
 
 \section{Combinators}
 
 We need to make programming more \textit{structural} by introducing well-known operators from imperative structural programming languages, namely
 \emph{match}, \emph{if}, \emph{sequential composition} and \emph{while}.
 
-It is straightforward to define sequential composition and boolean if for Turing machines as seen in \cite{Asperti}.
+It is straightforward to define sequential composition and boolean if for Turing machines as seen in Asperti et al.
 However, we deviate from this route slightly by first defining a more general match-combinator, that allows us to do a case analysis over the outcome
 of an execution.
 
@@ -410,10 +467,10 @@ of an execution.
   \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.8cm]
     \begin{scope}
       % Machine M
-      \node[state]          (M init)                                    {$q_0$};
-      \node[state]          (M exit 1)  [right of=M init,yshift= 1.5cm] {$q_{h1}$};
-      \node[state]          (M exit 2)  [right of=M init,yshift= 0.0cm] {$q_{h2}$};
-      \node[state]          (M exit 3)  [right of=M init,yshift=-1.5cm] {$q_{h3}$};
+      \node[state]          (M init)                                    {$s$};
+      \node[state]          (M exit 1)  [right of=M init,yshift= 1.5cm] {$h_1$};
+      \node[state]          (M exit 2)  [right of=M init,yshift= 0.0cm] {$h_2$};
+      \node[state]          (M exit 3)  [right of=M init,yshift=-1.5cm] {$h_3$};
       \path (M init)
       edge[dotted] (M exit 1)
       edge[dotted] (M exit 2)
@@ -424,18 +481,18 @@ of an execution.
       % Match-Machines
       \begin{scope}[yshift=1.5cm]
         % Accepting match machine
-        \node[state]          (M 1 init)                                        {$q_1$};
-        \node[state, double]  (M 1 exit 1)  [right of=M 1 init, yshift= 0.75cm]{$q_{h11}$};
-        \node[state, double]  (M 1 exit 2)  [right of=M 1 init, yshift=-0.75cm] {$q_{h12}$};
+        \node[state]          (M 1 init)                                        {$s'$};
+        \node[state, double]  (M 1 exit 1)  [right of=M 1 init, yshift= 0.75cm] {$h'_1$};
+        \node[state, double]  (M 1 exit 2)  [right of=M 1 init, yshift=-0.75cm] {$h'_2$};
         \path (M 1 init)
         edge[dotted] (M 1 exit 1)
         edge[dotted] (M 1 exit 2);
       \end{scope}
       \begin{scope}[yshift=-1.5cm]
         % Accepting match machine
-        \node[state]          (M 2 init)                                        {$q_2$};
-        \node[state, double]  (M 2 exit 1)  [right of=M 2 init, yshift= 0.75cm] {$q_{h21}$};
-        \node[state, double]  (M 2 exit 2)  [right of=M 2 init, yshift=-0.75cm] {$q_{h22}$};
+        \node[state]          (M 2 init)                                        {$s''$};
+        \node[state, double]  (M 2 exit 1)  [right of=M 2 init, yshift= 0.75cm] {$h''_1$};
+        \node[state, double]  (M 2 exit 2)  [right of=M 2 init, yshift=-0.75cm] {$h''_2$};
         \path (M 2 init)
         edge[dotted] (M 2 exit 1)
         edge[dotted] (M 2 exit 2);
@@ -455,111 +512,243 @@ of an execution.
     \end{pgfonlayer}
   \end{tikzpicture}
 
-  \caption{Example for a match.  The left blue box stands for the initial machine.  After it reaches on of the terminal states $q_{h1}, \dots, q_{h3}$
-    it continues its execution either in the right top machine or in the right bottom case machine.  The halting states of the match machines are
-  exactly the halting states of the case-machines.}
+  \caption{Example for a $\MS{match}$.  The left blue box stands for the first machine.  After it reaches on of the terminal states
+    $s_1, \cdots, s_3$, it continues its execution either in the right top machine or in the right bottom case machine.
+  The halting states of the match machine are exactly the halting states of the case-machines.}
   \label{fig:match-example}
 \end{figure}
 
-The idea of the \emph{match} operator is, to first execute a machine, and -- depending of the outcome of the execution -- continue the execution with
+The idea of the \emph{match} operator is to first execute a machine and --- depending of the outcome of the execution --- continue the execution with
 another machine.  To define this operator, the parametrised relational approach is in particular useful here.  This idea is illustrated in Figure
 \ref{fig:match-example}.
 
-First we fix a machine $M$ with a partition function $p$ into a finite type $F$.
-We furthermore fix an $F$-indexed sequence of machines $M_f$ with partitions $p_f$ into another finite type $F'$.
-All machines must have the same alphabet ($\Sigma$) and number of tapes ($n$).
+First we fix an $n$-tape machine $M$ with a partition function $p$ into a finite type $F$.
+We furthermore fix an $F$-indexed sequence of $n$-tape machines $M'_y$ (where $y:F$) with partitions $p'_y$ into another finite type $F'$.
 
-The states of the machine are either states of $M$ or states of a machine $M_f$:
-$$Q_{match} := Q_M + \setMap{(f, q_f)}{f \in F \land q_f \in Q_f}.$$
-The initial state is $init_{match} := init_M$.  Now we define the new $\gamma_{match}$.
+The states of the machine are either states of $M$ or states of a machine $M'_y$.
+
+$$Q_{\MS{match}} := Q_M + \{ y:F ~\&~ Q_{ \left( M'_{y} \right) } \}$$
+
+The initial state is $s_{\MS{match}} := s_M$.  Now we define the new $\gamma_{\MS{match}}$.
 \begin{alignat*}{2}
-  \gamma_{match}(q \in Q_M, tapes) &:=
+  \gamma_{\MS{match}} (\inl q, \MS{tapes}) &:=
   \begin{cases}
-    \gamma_{M}(q, tapes) & h_M(q) = \false \\
-    (q_{0, p(q)}, (\None, N)^n) & h_M(q) = \true
+    \gamma_{M}(q, \MS{tapes})                                & h_M(q) = \false \\
+    \left( s_{\left(M'_{p(q)}\right)}, (\None, N)^n \right)  & h_M(q) = \true
   \end{cases} \\
-  \gamma_{match}(q \in Q_f, tapes) &:= \gamma_{M_f}(q, tapes)
+  \gamma_{\MS{match}} (\inr (y, q), \MS{tapes}) &:= \gamma_{\left({M'_y}\right)}(q, \MS{tapes})
 \end{alignat*}
+Informally:  If the machine is in a non-halting state of $M$, then it mimics the step of $M$.  If $\MS{match}$ is at a halting state $q$ of $M$, it
+inserts a operation that just goes to the start state of the corresponding machine $M'_{p(q)}$.  If the machine is in a state from $M'_y$ then it
+mimics the step from $M_y$.
 
 The halting states are exactly the halting states of each $M_f$:
-\begin{alignat*}{2}
-  h_{match}(q \in Q_M) &:= \false \\
-  h_{match}(q \in Q_f) &:= h_{M_f}(q)
+\begin{alignat*}{3}
+  h_{\MS{match}} && (\inl      q) &:= \false \\
+  h_{\MS{match}} && (\inr (y, q)) &:= h_{\left( M'_y \right)}q
 \end{alignat*}
 
 Now we want to specify the semantics of the match machine and give a quick overview about the verification.
 
 First we have to specify the partition function $p_{match} \from Q_{match} \to F'$:
-\begin{alignat*}{2}
-  p_{match}(q \in Q_M) &:= p_{p~q} (init_{p~q}) \\
-  p_{match}(q \in Q_f) &:= p_f(q)
+\begin{alignat*}{3}
+  p_{\MS{match}} && (\inl      q) &:= p'_{\left({p~q}\right)} \left( s_{ \left( M'_{ \left( p~q \right) } \right) } \right) \\
+  p_{\MS{match}} && (\inr (y, q)) &:= p'_y(q)
 \end{alignat*}
 Note that the machine can not halt in an inner state of $M$, thus the first case of the definition of $p_{match}$ is over-specified.
 
-Now we assume the correctness relation $R \subseteq \Tapes{n} \times (F \times \Tapes{n})$ of $M$ and a family of relations
-$R_f \subseteq \Tapes{n} \times (F' \times \Tapes{n})$ for each case-machine $M_f$.
+We have now defined all components of $\MS{match}$.
 
-We can show that if $M$ realises $R$ and each $M_f$ realises $R_r$ (either weekly or strongly), then $M_{match}$ realises
-$$R_{match} := \bigcup_{f \in F} (R \at f) \circ R_f.$$
-Note that this relation is a quite intuitive and a precise description of the behaviour of our defined operator:  First $M$ terminates into a state
-that corresponds to some $f$ and then executes the machine $M_f$.
+Now we proof the correctness of this operator.  We prove week correctness and termination separately.
+We generalised the idea of the correctness proofs from the sequence operator from Asperti et al.
+However, they could not define the $\MS{match}$ machine, because they do not use parametrised relations.
 
-The correctness proof is quiet tedious.  The key idea is to first abstract from machines and argue about $loop$.  We come up with the following
-lemmas:
+To proof the correctness of this operator, we first show four more facts about the abstract $\MS{loop}$ function.
 
-\begin{lemma}[Lift loop]
-  \label{lem:loop-lift}
-  Let $A, B$ be types and $k \in \Nat$, $lift \from A \to B, f \from A \to A$, $g \from B \to B$, $hlift \from B \to \Bool$ and $c_1, c_2 \in A$.
-  If $\forall~x \in X,~hlift (lift x) = h x)$ and $\forall x\in X,~ h~x = \false \rightarrow lift~(f~x) = g~(lift~x)$ and
-  $loop~k~f~h~c_1 = \Some{c_2}$, then $loop~k~g~hlift~(lift~c_1) = \Some{lift~c_2}$.
+\subsubsection{Weak correctness of $\MS{merge}$}
+
+Let $R:\Rel~{\Tapes{n}}~(F \times \Tapes{n})$ be a parametrised relation for $M$ and $R'_y:\Rel~\Tapes{n}~(F' \times \Tapes{n})$ be a family
+of relations for each case-machine $M'_y$.
+
+We can show that if $M$ realises $R$ and each $M'_y$ realises $R'_y$ weakly, then $\MS{match}$ realises
+$$R_\MS{match} := \bigcup_{y:F} (R \at y) \circ R'_y.$$
+Note that this relation is a quite intuitive and a precise description of the behaviour of our defined operator:  First a copy of $M$ runs and may
+terminates into a state that corresponds to some $y$ and then we run a copy of the machine $M_y$.
+
+To do this, we have to show that if $\MS{match}$ terminates into a state $c$, then $M$ terminates to some state $c_1$ and the corresponding machine
+$M'_y$ (where $y := p~\left( \MS{cstate}(c_1) \right)$), called \emph{continuation machine} of $c_1$, executes to a state $c_2$ that corresponds to
+$c$.
+
+We use two lemmas from Asperti et al.  The first tells us, informally, if $M'$ simulates $M$ and $M'$ terminates, then $M$ terminates in the
+corresponding state.
+
+\begin{lemma}[Unlift $\MS{loop}$]
+  \label{lem:loop-unlift}
+  Let $A$ be the abstract type for the simulated machine, $B$ the abstract type for the simulator machine.
+  We need step functions $f \from A \to A$, $g \from B \to B$ and halting functions $h \from A \to \Bool$, $h' \from B \to \Bool$.
+
+  Furthermore, let $\MS{unlift} \from B \to \Option A$ be a function that translates states simulated states to its original states, such that
+  $(\forall a: A,~b: B,~\MS{unlift}~b = \Some a \rightarrow p~a = \false \rightarrow \MS{unlift}~(f'~b) = \Some{f a})$
+  and
+  $\forall a: A,~b: B,~\MS{unlift}~b = \Some a \rightarrow p~a = p'~b$.
+
+  Let then $a:A$ and $b:B$, such that $\MS{unlift}~b = \Some{a}$.
+
+  Let $x':B$ and $k:\Nat$, such that $\MS{loop}~k~f'~p'~b = \Some{x'}$.
+
+  Then there exists an $x:A$, such that $\MS{loop}~k~f~p~a = \Some x = \MS{unlift}~x'$.
 \end{lemma}
+\begin{proof}
+  This can be shown per induction on $k:\Nat$.
+\end{proof}
+
+The second fact says informally, that if an execution consists of two parts, these execution can be separated.
+
+\begin{lemma}[Split $\MS{loop}$]
+  \label{lem:loop-split}
+  Let $A$ be a type, $f \from A \to A$ a step function, $p, q \from A \to \Bool$ halting functions, and $a_1, a_3:A$.
+
+  Suppose that $\forall a:A,~p~a = \false \rightarrow q~b = \false$ and $\MS{loop}~k~f~q~a_1 = \Some{a_3}$.
+
+  Then there exists a step counts $k_1, k_2$ and an intermediate value $a_2:A$, such that
+  $\MS{loop}~k_1~f~p~a_1 = \Some{a_2}$ and $\MS{loop}~k_2~f~q~a_2 = \Some{a_3}$, and $k = k_1 + k_2$.
+\end{lemma}
+
+With the help of Lemma \ref{lem:loop-unlift} and \ref{lem:loop-split}, we want to show the following Lemma.
+\begin{lemma}[Split $\MS{match}$]
+  \label{lem:match-split}
+  Let $k:\Nat$, $t:\Tapes{n}$, and $res:\MS{Conf}(\MS{match})$.
+  If $\MS{exec} \MS{match} t = \Some{res}$ then
+  there exists $k_1,k_2:\Nat$, a configuration $c_1$ of $M$ and a configuration $c_2s$ of the successor-machine of $c_1$,
+  such that $M$ terminates (with $t$ as initial tapes) in $k$ steps into $\Some{c_1}$ and the successor-machine of $c_1$ terminates (with the tapes of
+  $c_1$ as initial tapes) into $\Some{c_2}$ and $res$ corresponds to $c_2$.
+\end{lemma}
+\begin{proof}
+  We use \ref{lem:loop-unlift} twice and \ref{lem:loop-split} once.  Therefore, we need an $\MS{unlift}$ function for states of $M$ and a family of
+  $\MS{unflift}$ functions for states from the machines $M_y$.  The proof is very technical and we omit it here.
+\end{proof}
+
+\subsubsection{Termination of $\MS{match}$}
+
+The idea for termination is, that when $M$ terminates into a state $c_1$ the successor Machine $M_y$ terminates into $c_2$, then $\MS{match}$
+terminates into the lifted state of $c_2$.
+
+We show again two lemmas introduced by Asperti et al.
+The first fact make it precise what it means that $M'$ ``runs a copy of $M$''.
+
+
+\begin{figure}
+  \center
+  \begin{tikzcd}
+    \Some{c'_2} & \Some{c_2} \arrow[l, "\MS{lift}" above, red] \\
+    c' \arrow[u, "\MS{loop}~g~k", rightsquigarrow] & c \arrow[u, "\MS{loop}~f~k", rightsquigarrow, swap] \arrow[l, "\MS{lift}"] \\
+    c'_1 \arrow[u, "g"] & c_1 \arrow[u, "f"] \arrow[l, "\MS{lift}"]
+  \end{tikzcd}
+  \caption{The step-case of the proof of Lemma \ref{lem:loop-lift} where we assume $h(c_1) = \false$ and conclude $h'(\MS{lift}(c_1)) = \false$.
+  The inductive hypothesis gives us the red line.}
+  \label{fig:proof-loop-lift}
+\end{figure}
+\begin{lemma}[Lift $\MS{loop}$]
+  \label{lem:loop-lift}
+  Let $A$ be the abstract type for the simulated machine, $B$ the abstract type for the simulator machine.
+  We need step functions $f \from A \to A$, $g \from B \to B$ and halting functions $h \from A \to \Bool$, $h' \from B \to \Bool$.
+
+  Furthermore, let $\MS{lift} \from A \to B$ be a function that lifts state from $A$ to $B$ that is in every state compatible with the step function and
+  in halting states of $A$ compatible with the halting functions, i.e.
+  $\forall x:A,~h'~(\MS{lift}~x) = h~x$ and $\forall x:A,~h~x = \false \rightarrow \MS{lift}~(f~x) = g~(\MS{lift}~x)$.
+
+  Let $k:\Nat$ be a number of steps, and $c_1, c_2:A$ be abstract configurations.
+  If $\MS{loop}~k~f~h~c_1 = \Some{c_2}$, then $\MS{loop}~k~g~h'~(\MS{lift}~c_1) = \Some{\MS{lift}~c_2}$.
+\end{lemma}
+\begin{proof}
+  This can be proven by induction on $k:\Nat$.  The cases where $k=0$ or $h(c_1) = \true$ are trivial.
+  The remaining case is depicted in Figure \ref{fig:proof-loop-lift} as a commuting diagram.
+\end{proof}
+
+The next fact makes it precise what it means that ``an execution gets continued''.
 
 \begin{lemma}[Merge loop]
   \label{lem:loop-merge}
-  Let $A$ be a type, $f \from A \to A$ a step function, $p, q \from A \to \Bool$ halting functions, $k_1, k_2$ counts and $a_1, a_2, a_3 \in A$.
-  If $\forall~a \in A,~p~a = \false \rightarrow q~b = \false$, $loop~k_1~f~p~a_1 = \Some{a_2}$, and $loop~k_2~f~q~a_2 = \Some{a_3}$, then
-  $loop~(k_1 + k_2)~f~q~a_1 = \Some{a_3}$.
+  Let $A$ be the abstract state type and $h, h' \from A \to \Bool$ two halting functions.
+  Let $h$ and $h'$ correspond in non-halting states of $h$, i.e.  $\forall a:A,~h~a = \false \rightarrow h'~a = \false$.
+  Let $k_1, k_2:\Nat$ be step counts, and $a_1, a_2, a_3:A$ be configurations, such that
+  $\MS{loop}~k_1~f~h~a_1 = \Some{a_2}$, and $\MS{loop}~k_2~f~h'~a_2 = \Some{a_3}$.
+  Then $\MS{loop}~(k_1 + k_2)~f~h'~a_1 = \Some{a_3}$.
 \end{lemma}
+\begin{proof}
+  By induction on $k_1:\Nat$ with Lemma \ref{lem:loop}.
+\end{proof}
 
-\begin{lemma}[Split loop]
-  \label{lem:loop-split}
-  Let $A$ be a type, $f \from A \to A$ a step function, $p, q \from A \to \Bool$ halting functions, and $a_1, a_3 \in A$.
-  If $\forall~a \in A,~p~a = \false \rightarrow q~b = \false$ and $loop~k~f~q~a_1 = \Some{a_3}$, then there exists a step counts $k_1, k_2$ and an
-  intermediate value $a_2 \in A$, such that $loop~k_1~f~p~a_1 = \Some{a_2}$ and $loop~k_2~f~q~a_2 = \Some{a_3}$, and $k = k_1 + k_2$.
+% TODO: lift explizit angeben
+\begin{lemma}[Total $\MS{match}$]
+  \label{lem:match-merge}
+  Let $t:\Tapes{n}$ and $k_1, k_2:\Nat$.
+  Let $c_1$ be a configuration of $M$ and $c_2$ be a configuration of the successor machine of $c_1$.
+  If $\MS{exec}~M~t~k_1 = \Some{c_1}$ and $\MS{exec}~M_y~(\MS{ctapes}~c_1)~k_2 = \Some{c_2}$ (where $M_y$ is the successor machine of $c_1$), then
+  $\MS{exec}~\MS{match}~t~(1+k_1+k_2)$ is the configuration of $\MS{match}$ that corresponds to $c_2$.
 \end{lemma}
+\begin{proof}
+  Consequence of Lemmas \ref{lem:loop-lift} and \ref{lem:loop-merge}.  We omit the proof here since it is very technical.
+\end{proof}
 
-\begin{lemma}[Unlift loop]
-  Let $X, Y$ be types and $f \from X \to X$, $f' \from Y \to Y$ step functions, and $p \from X \to \Bool$, $q \from Y \to \Bool$ halting functions.
-  We assume $\forall~a,a' \in X,~unlift~a = \Some{a'} \rightarrow p'~a' = \false \rightarrow unlift~(f~a) = \Some{f' a'}$.
-  Furthermore we assume $\forall~a,a' \in A,~unlift~a = \Some{a'} \rightarrow p~a = p'~a'$.
-  If $unlift~a = \Some{a'}$ and $loop~i~f~p~a = \Some{x}$, then
-  there exists a $y' \in Y$, such that $loop~i~f'~p'~a' = \Some{y'} = unlift~x$.
-\end{lemma}
+An immediate consequence is the strong correctness of $\MS{loop}$.
 
-Using this lemmas we can prove the correctness statement for the $match$-machine:
-\begin{lemma}[Correctness of $match$]
-  If $M \vDash_p R$ and for each $f \in F$, $M_f \vDash_{p_f} R_r$, then
-  $$\mmatch~M~(M_f, p_f) \vDash \bigcup_{f \in F} (R \at f) \circ R_f.$$
+\begin{lemma}[Strong correctness of $\MS{loop}$]
+  \label{lem:match-realise}
+  If $M \vDash_p R$ (or $\vDash_p^{k_1}$ for some $k_1:\Nat$) and for each $y:F$, $M_y \vDash_{p'_y} R_r$ (or $\vDash_{p'_y}^{k_2}$ for some
+  $k_2:\Nat$), then
+  $$\mmatch~(M_f, p_f) \vDash \bigcup_{f:F} (R \at f) \circ R_f.$$
+  (or $\vDash^{(1+k_1+k+2)}$).
 \end{lemma}
+\begin{proof}
+  Both claims (strong realisation and realisation in constant time) are immediate consequences of Lemma \ref{lem:match-merge}.
+\end{proof}
+
+The claim for the relation $\downarrow$ is a bit more complicated to express.
+
+\begin{lemma}[Termination of $\MS{match}$]
+  \label{lem:match-terminates}
+  Let $T$ be a termination relation for $M$ and $T'_y$ a family of termination relation for each machine $M'_y$.
+  Let furthermore $R$ be a correctness relation for $M$ and $R$ be functional on $T$.
+  Let $M \downarrow T$ and $M'_y \downarrow T'_y$ for each $y:F$.
+  Then
+  \begin{multline*}
+    \MS{match} \downarrow
+    \bigcup_{y:F}
+    \setMap{(t:\Tapes{n}, k_3 :\Nat)}{\exists~k_1,k_2:\Nat,~\exists~t':\Tapes{n},~ \\
+    R~t~(y, t') \land T~t~k_1 \land T'_y~t'~k_2 \land k_1+k_2 < k_3}.
+  \end{multline*}
+\end{lemma}
+\begin{proof}
+  The claim is an immediate consequences of Lemma \ref{lem:match-merge}, also using \ref{lem:loop}.
+\end{proof}
+
+It seems strange that we need a correctness relation in this Lemma.  The reason is that we need to know the corresponding value of $F$, where $M$
+terminated, and this information is not encoded inside $\downarrow$.  However, to show the weak realisation of $\MS{match}$ we need to show the weak
+$M \vDash R$.  Therefore we could just use this $R$ and show that $R$ is functional on $T$.  $R$ and $T$ should always be defined in such way.
+Another possibility is to use the canonical relation.  We already know that it is functional, see Lemma \ref{lem:canonical-relation}.
+
+\subsubsection{Derivated operators}
 
 Now that we have a match combinator, sequential composition and boolean if can be reduced to it, by arguing that sequential composition is just a
 trivial matching from any states of $M_1$ to $M_2$, and a boolean if amounts to matching over a boolean value:
 
+
 \begin{definition}[Sequential composition]
   \label{def:seq}
-  Let $M_1, M_2$ be a $n$-tape machines over $\Sigma$ with the partitioning function $p_1 \from Q_1 \to F_1$ and $p_2 \from Q_2 \to F_2$,
+  Let $M_1, M_2$ be an $n$-tape machines over $\Sigma$ with the partitioning function $p_1 \from Q_1 \to F_1$ and $p_2 \from Q_2 \to F_2$,
   respectively.  Then we define the \emph{sequential composition} of $M_1$ and $M_2$:
   $$M_1 \mseq M_2 := \mmatch~(M_1, p_1)~(\lam y (M_2, p_2))$$
 \end{definition}
 
 \begin{corollary}[Correctness of sequential composition]
   \label{lem:seq}
-  If $M_1 \vDash R_1$ and $M_2 \vDash R_2$, then $M_1 \mseq M_2 \vDash R_1 \circ hideParam(R_2)$.
+  If $M_1 \vDash R_1$ and $M_2 \vDash R_2$, then $M_1 \mseq M_2 \vDash R_1 \circ \Downarrow R_2$.
 \end{corollary}
 
 \begin{definition}[Boolean if]
   \label{def:if}
-  Let $M_1, M_2, M_3$ be a $n$-tape Turing machines over $\Sigma$.
+  Let $M_1, M_2, M_3$ be an $n$-tape Turing machines over $\Sigma$.
   Let $p_1 \from Q_1 \to \Bool$ and $p_2 \from Q_2 \to F', p_3 \from Q_3 \to F'$ be partitioning functions.
   Then we define \emph{boolean if}:
   $$\mif{M_1}{M_2}{M_3} := match~(M_1, p_1) \left(\lam b \begin{cases} (M_2; p_2) & b = \true \\ (M_3; p_3) & b = \false \end{cases} \right)$$
@@ -600,52 +789,73 @@ trivial matching from any states of $M_1$ to $M_2$, and a boolean if amounts to 
   \label{fig:while-example}
 \end{figure}
 
-The \emph{while} operator implements a \emph{do-while-loop}.  The loop condition, however, is encoded through the boolean partition
+The $\MS{while}$ operator implements a \emph{do-while-loop}.  The loop condition, however, is encoded through the boolean partition
 function of the terminal states:  We insert transitions from the ``positive'' halting states.  This idea is depicted in Figure
-\ref{fig:while-example}.
+\ref{fig:while-example}.  We generalise the proofs and definitions from Asperti et al.
 
-We define the while-machine formally.  Let $M$ be a machine with a boolean partition function $p \from Q \to \Bool$.  The transition function is
-$$\gamma_{while} (q, tapes) :=
+We define the while-machine formally.  Let $M$ be a machine with a boolean partition function $p \from Q_M \to \Bool \times F$, where $F$ is an
+arbitrary finite type.  Then the transition function of $\MS{while}$ is
+$$\gamma_{\MS{while}} (q, \MS{tapes}) :=
   \begin{cases}
-    (q_0, (\None, N)^n)   & h(q) = \true \land p(q) = true \\
-    \gamma(q, tapes)      & \txt{else}
+    \bigl( q_0, (\None, N)^n \bigr) & h_M(q) = \true \land \#1(p~q) = \true \\
+    \gamma_M(q, \MS{tapes})           & \txt{else}
   \end{cases} $$
 The halting states are the ``negative'' halting states of $M$:
-$$halt_{while}(q) := halt_M(q) \land p(q) = \false.$$
+$$h_{\MS{while}}(q) = \true \iff h_M(q) = \true \land \#1(p~q) = \false.$$
 
-We can describe the semantics of the while-machine with help of the Kleene star:
+The partition function of $\MS{while}$ just returns the additional parameter of $p$:
+$$p_{\MS{while}}(q) := \#2(p~q).$$
 
-\begin{lemma}[Semantics of the while-machine]
-  If $M \vDash R$, then $\mwhile{M} \vDash_{\lam x \unit} \left(R \at \true \right)^* \circ ignoreParam \left(R \at \false \right)$.
+We now defined every component of $\MS{while}$.
+
+The semantics of $\MS{while}$ can be defined with help of the Kleene star:
+
+\begin{lemma}[Week correctness of $\MS{while}$]
+  \label{lem:while-wrealise}
+  If $M \VDash R$, then
+  $$ \MS{while} \VDash
+  \left( \bigcup_{y:F} R\at{(\true, y)} \right)^* \circ
+  \setMap{(t, (y, t'))}{R~t~(\false, t')}
+  $$
 \end{lemma}
 
-The correctness proof is similar to the correctness proof of the $\mmatch$ machine.
+The correctness proof is similar to the correctness proof of the $\mmatch$ machine.  We do an additional complete induction over the number of steps.
+
+However, we can not replace $\VDash$ with $\vDash$ in Lemma \ref{lem:while-wrealise}, because we do not know weather the loop will terminate.
+We need an additional lemma to prove that a $\MS{while}$ machine terminates.
+
+\begin{lemma}[Termination of $\MS{while}$]
+  \label{lem:while-term}
+  Let $M \VDash R$ and $M \downarrow T$.  We define $T_{\MS{while}}$ inductively:
+
+  $$ \inferrule{R~t_1~((\false, y), t_2) \and T~t_1~k_1 \and k_1 \le k_2}{T_{\MS{while}}~t_1~k_2} $$
+  $$ \inferrule{R~t_1~((\true,  y), t_2) \and T_{\MS{while}}~t_2~k_2 \and k_1 + k_2 < k_3}{T_{\MS{while}}~t_1~k_3} $$
+
+  Let $R$ be functional on $T$.  Then
+  \begin{enumerate}
+    \item $R$ is functional on $T_{\MS{while}}$.
+    \item $\MS{while} \downarrow T_{\MS{while}}$.
+  \end{enumerate}
+\end{lemma}
+\begin{proof}
+  Claim 1 follows by induction on $T_{\MS{while}}$.
+  Claim 2 follows by complete induction on the number of steps and case distinction on $T_{\MS{while}}$ with a similarly approach as the termination
+  proof of $\MS{match}$.
+\end{proof}
 
 \section{Machine transformations}
 \label{sec:transformations}
 
 Using the operators above, we can build and verify small machines with ease.  However, to compose machines, they have to agree in their alphabet and in
-their number of tapes.  Because this not always the case, we introduce new operators, that ``enlarge'' a given machine by either introducing new tapes
-or by ``translating'' alphabets.
+their number of tapes.  Because this is not always the case, we introduce new operators, that ``enlarge'' a given machine by either introducing new
+tapes or by ``translating'' alphabets.
 
-
-% FIXME: called n,m-lift in Coq.  This is *wrong*!
 
 \subsection{\texorpdfstring{$m,n$}{m,n}-lift}
+\label{sub:m-n}
 
-% TODO: Better graphic
 \begin{figure}
   \center
-  % \begin{tikzpicture}
-  %   % \draw[very thick] (0,1) -- (0,2);
-  %   % \draw[very thick] (3,3) -- (3,0);
-  %   \draw[<->] (0,2) -- (3,2);
-  %   \draw[<->] (0,1) -- (3,0);
-  %   % \foreach \y in {0,1}
-  %   %   \draw[yshift=-\y cm] (-2pt,2) -- (2pt,2) node[anchor=east] {$\y$};;
-  %   % \foreach \y in {0,1,2,3}
-  %   %   \draw[yshift=-\y cm] (3cm-2pt,3) -- (3cm+2pt,3) node[anchor=west] {$\y$};;
-  % \end{tikzpicture}
   \begin{tikzpicture}
     \begin{scope}
       \node(a0)[yshift=-0 cm]  {$0$};
@@ -668,69 +878,77 @@ or by ``translating'' alphabets.
     \path (b2) edge[-> ] (none);
     \path (b4) edge[-> ] (none);
   \end{tikzpicture}
-  \caption{An example for a retract between tape indexes, for $m=2$ and $m=4$.  The arrows from the left to the right correspond to the
-  function $f$. The function $g$ maps $1$ back to $\Some{0}$ and $3$ to $\Some{2}$, all other values are mapped to $\None$.}
+  \caption{An example for a retract between tape indexes, for $m=3$ and $n=5$.  The arrows from the left to the right correspond to the
+    function $f$. The function $g$ maps $0$ back to $\Some{1}$, $1$ to $\Some{0}$ and $3$ to $\Some{2}$; all other values are mapped to $\None$.
+  This retract is encoded as the vector $[1,0,3]$.}
   \label{fig:m-n-lift-example-mapping}
 \end{figure}
 
-The most of our machines do really only work on one or two tapes, but they have to be embedded into ``bigger'' machines with more tapes.  There are
-two possible routes to follow:  One way to solve this problem could be to define all these machines as $n$-tape machines and give them the
-tape-indexes on which the machine should operate.  We could also define those machines as e.g. two-tapes machines and then define an ``lift''
-operation that can automatically build an arbitrary big machine that only operates on two of its tapes and emulates the behaviour of the smaller
-machine.
+The most of our machines do really only work on one or two tapes, but they have to be embedded into machines with more tapes.  There are two possible
+routes to follow: One way to solve this problem could be to define all these machines as $n$-tape machines and give them the tape-indexes on which the
+machine should operate.  We could also define those machines as e.g. two-tapes machines and then define an ``lift'' operation that can automatically
+build an arbitrary big machine that only operates on two of its tapes and emulates the behaviour of the smaller machine.
 
 However, the first approach seems unsatisfying, because definition and verification of small Turing machines is easier.  We don't want to struggle
 every time with this, when we define a new machine.
 
-Therefore we have invented the $m,n$-lift. For $n \ge m$, given a $m$-tape Turing machine it yields a $n$-tape Turing machine that has exactly the
-same behaviour but ignores the other $n-m$ tapes.  The operator takes a retract from $m$-tape indexes to $n$-tape indexes.  This mapping has to be
-injective, because the behaviour of a tape can not be ``duplicated'', because tapes can behave different in different contexts.  We need the inversion
+Therefore we introduce the $m,n$-lift. For $n \ge m$, given a $m$-tape Turing machine it yields an $n$-tape Turing machine that has exactly the
+same behaviour but ignores $n-m$ of the tapes.  The operator takes a retract from $m$-tape indexes to $n$-tape indexes.  It has to be a retract and
+hence, because the behaviour of a tape can not be ``duplicated'', because tapes can behave different in different contexts.  We need the inversion
 function of the retract to translate the indexes back in the transition function $\gamma$.
+
+To encode this retract from $\Fin_m$ to $\Fin_n$, we use \emph{index vectors} of type $\Fin_n^m$, that must be duplicate free.  This encoding of the retract makes the implementation more convenient.
 
 For example, with $m=3$ and $n=5$ and we can  map the tape $0$ to the tape $1$, tape $1$ to tape $0$, and tape $2$ to tape $3$, as depicted in Figure
 \ref{fig:m-n-lift-example-mapping}.
 
-
-% XXX Coq code uses index vectors.  Are retracts better in practice?
-Let $M$ be a $m$-tape Turing machine over $\Sigma$.  Let $n \ge m$.  Let $(f, g) \from \Fin_m \hookrightarrow \Fin_n$ be a retract.
-
-For the definition and verification of the $m,n$-lift we need two functions:  First we need the polymorph function
-$inject \from X^m \to X^n \to X^n$, that inserts all values in the image of $f$ from $m$-vector into the $n$-vector:
-\begin{align*}
-  inject~xs~ys := tabulate \left(\lam i
-    \begin{cases}
-      xs[j]   & g(i) = \Some{j} \\
-      ys[i]   & g(i) = \None
-    \end{cases}
-  \right)
-\end{align*}
-The second function we need is $reorder \from X^n \to X^m$, that selects the values of the indexes in the image of $f$:
-$$reorder~ys := tabulate \left( \lam j ys[j] \right)$$
-
-The states, initial state, final states, the alphabet, and the state partitioning of the lift-machine are inherited from $M$.  Using these two
-functions we can define the transition function $\gamma$:
-\begin{alignat*}{3}
-  &\gamma (q, sym)  &~:=~& \mlet {(q', act) := \gamma_M(q, reorder~sym)}{\\
-  &                 &~  ~& (q',~inject~act~(\None, N)^n)}
+For the definition and verification of the $m,n$-lift we need two functions.
+First we need the dependent function
+$\MS{inject} \from \forall m, n:\Nat,~\Fin_n^m \to X^n \to X^m \to X^n$,
+that inserts all values in the image of $f$ from $m$-vector into the $n$-vector.  We define it per dependent recursion over the size $m$:
+\begin{alignat*}{6}
+  \MS{inject}&&~ 0         && ~ n &&~ \nil                &&~ \MS{def} &&~ \nil      &:= \MS{def} \\
+  \MS{inject}&&~ (\MS S~m) && ~ n &&~ [i :: \MS{index'}]  &&~ \MS{def} &&~ (v :: V') &:= \MS{replace}~(\MS{inject}~m~n~\MS{index'} V')~i~v
 \end{alignat*}
+
+Let $M$ be a $m$-tape Turing machine over $\Sigma$.  Let $n \ge m$ and let $\MS{indexes}:\Fin_n^m$ be an index vector.
+(We will from now on call the function $\MS{inject}$ implicitly with $\MS{indexes}$.)
+
+The second function we need is $\MS{reorder} \from X^n \to X^m$, that selects the values of the indexes in the image of $f$:
+$$\MS{reorder}~Z := \MS{map}~(\MS{nth}~Z)~\MS{indexes}.$$
+
+Using these two functions we can define the transition function $\gamma_{\MS{lift}}$:
+\begin{alignat*}{3}
+  &\gamma_{\MS{lift}} (q, \MS{sym})  &~:=~& \mlet {(q', \MS{act}) := \gamma_M(q, \MS{reorder}~\MS{sym})}{\\
+  &                                  &~  ~& (q',\MS{inject}~\MS{act}~(\None, N)^n)}
+\end{alignat*}
+
+The states, initial state, final states, the alphabet, and the state partitioning of the lift-machine are inherited from $M$.
+Thus, we have defined all components of the lift machine; from other chapters we will refer to it with $\MS{lift}~\MS{indexes}~M$.
 
 \begin{definition}[Relational $m,n$-lift]
   \label{def:m,n-rellift}
-  For $R \subseteq \Tapes{n} \times (F \times \Tapes{n})$
-  $$RLift_{m,n}(R) := \setMap{(input, (y, output))}{(reorder~input, (y, reorder~output)) \in R}$$
+  For $R : \Rel~\Tapes{n}~(F \times \Tapes{n})$:
+  \begin{multline*}
+    R_{\MS{lift}}(R) := \setMap{(\MS{input}, (y, \MS{output}))}{R~(\MS{reorder}~\MS{input})~(y,\MS{reorder}~\MS{output})} \cap \\
+    \Uparrow \setMap{(\MS{input},\MS{output})}{\forall j:\Fin_n, j \notin \MS{indexes} \rightarrow \MS{input}[j] = \MS{output}[j]}
+  \end{multline*}
+  For $T : \Rel~\Tapes{n}~\Nat$: $ T_{\MS{lift}}(T) := \setMap{(\MS{input}, k)}{T~(\MS{reorder}~\MS{input})~k} $.
 \end{definition}
 
 \begin{lemma}[Correctness of the $m,n$-lift]
   \label{lem:m,n-correctness}
-  Let $R \subseteq \Tapes{n} \times (F \times \Tapes{n})$ be a parametrised relation.  If $M \vDash R$, then $Lift_{m,n} \vDash RLift_{m.n}(R)$.
+  For correctness relations $R$ and termination relations $T$:
+  \begin{enumerate}
+    \item
+      If $M \VDash R$, then $\MS{lift} \VDash R_{\MS{lift}}(R)$.
+    \item
+      If $M \downarrow T$, then $\MS{lift} \downarrow T_{\MS{lift}}(T)$.
+  \end{enumerate}
 \end{lemma}
-\begin{proof}
-  This can be shown by induction, first over the number of steps, then over $m \in \Nat$.
-\end{proof}
 
-
-% XXX Termination not yet shown in Coq
-\subsection{\texorpdfstring{$\Sigma,\Tau$}{Sigma,Tau}-Lift}
+\subsection{\texorpdfstring{$\Sigma,\Tau$}{Sigma,Gamma}-Lift}
+\label{sub:sigma-gamma}
 
 \begin{figure}
   \center
@@ -759,78 +977,115 @@ functions we can define the transition function $\gamma$:
     \path (gamma) edge[<-, dotted] (e);
   \end{tikzpicture}
   \caption{An example for a retract plus default element between the alphabets $\Sigma = \setOf{\alpha, \beta, \gamma}$ and $\Tau =
-  \setOf{a,b,c,d,e}$.  The symbols $c$ and $e$, that are not in the image of $f$, are implicitly mapped to $\gamma$, the default element in $\Sigma$.}
-  \label{fig:sigma-tau-lift-example-mapping}
+    \setOf{a,b,c,d,e}$.  The symbols $c$ and $e$ are not in the image of $f$ and are implicitly mapped to $\gamma$, the chosen default element in
+  $\Sigma$.}
+\label{fig:sigma-tau-lift-example-mapping}
 \end{figure}
 
-Similarly to the $m,n$-Lift, the $\Sigma,\Tau$-Lift extends the alphabet of a Turing machine.  The operator gets a retract
-$(f,g) \from \Sigma \hookrightarrow \Tau$.  However we also have to give an symbol $default \in \Sigma$, for the symbols in $\Tau$ that can not be mapped back to
+Similarly to the $m,n$-Lift, the $\Sigma,\Tau$-Lift extends the alphabet of a Turing machine.  The operator gets a retract $(f,g) \from \Sigma
+\hookrightarrow \Tau$.  However we also have to give an symbol $\MS{default}:\Sigma$, for the symbols in $\Tau$ that can not be mapped back to
 $\Sigma$.  This idea is illustrated in Figure \ref{fig:sigma-tau-lift-example-mapping}.
 
-Let $M$ be a $n$-tape Turing machine over $\Sigma$.  The alphabet of the lift-machine $\Tau$.  The states, initial states, and the final states, and
-the partitioning are inherited from $M$.  To define the transition function, we have to define some functions again.  First need a function that
-applies a translation function to a tape:
-\begin{definition}[Map tapes]
-  We define the higher-order function
-  $map\_tape \from (\Tau \to \Sigma) \to \Tape_\Sigma \to \Tape_\Tau$
-  that applies $map$ to the symbols of a tape.
-  \begin{alignat*}{2}
-    map\_tape&~g~(\tape{})                  &&:= \tape{} \\
-    map\_tape&~g~(\tape{\tapePointer{} r~R})   &&:= \tape{\tapePointer{}~(g~r)~(map~g~R)} \\
-    map\_tape&~g~(\tape{L \tapePointer{m}~R})  &&:= \tape{(map~g~L) \tapePointer{(g~m)} (map~g~R)} \\
-    map\_tape&~g~(\tape{L~l \tapePointer{}})   &&:= \tape{(map~g~L)~(g~l) \tapePointer{}}
-  \end{alignat*}
-\end{definition}
+Let $M$ be an $n$-tape Turing machine over $\Sigma$.  The alphabet of the lift-machine is $\Tau$.  The states, initial states, the final states, and
+the partitioning are inherited from $M$.  To define the transition function of the list, we have to define some functions again.
 
-Now we need a helper function that translates actions:
-\begin{definition}[Translate action]
-  \label{def:translate-action}
-  Let $\Sigma$ and $\Tau$ be alphabets and $f \from \Sigma \to \Tau$ a translation function.  We define the function
-  $$translate\_act(w, m) \from \Opt(\Sigma) \times Move \to \Opt(\Tau) \times Move$$
-  \begin{align*}
-    translate\_act (w, m) :=
+There is a dependent function $\MS{map}_\Tape:\forall X, Y:\MS{finType},~(X \to Y) \to \Tape(X) \to \Tape(Y)$, that applies a function to a each symbol
+on of a tape and preserves the position of the pointer.  For convenience, we also introduce the functions $\MS{map}_\Option$ and $\MS{map}_\MS{Act}$:
+\begin{alignat*}{4}
+  \MS{map}_\Option &&~ f && a &:=
     \begin{cases}
-      (g(w'), m)  & w = \Some{w'} \\
-      (\None, m)  & w = \None
-    \end{cases}
-  \end{align*}
-\end{definition}
+      \Some{f~a'} & a = \Some{a'} \\
+      \None       & a = \None
+    \end{cases} \\
+    \MS{map}_\MS{left} &&~ f &&~ (a, b) &:= (\MS{map}_\Option~f~a, b)
+\end{alignat*}
 
-Then we can define the function $surject \from \Tau \to \Sigma$, that is $g$ extended by $default$:
+Then we can define the function $g' \from \Tau \to \Sigma$, that is $g$ extended by $\MS{default}$:
 \begin{align*}
-  surject~\tau :=
+  \MS{surject}~\tau :=
   \begin{cases}
-    s         & g~\tau = \Some{s} \\
-    default   & g~\tau = \None
+    s            & g~\tau = \Some{s} \\
+    \MS{default} & g~\tau = \None
   \end{cases}
 \end{align*}
 
-Furthermore we define $surject\_tape(tape) := map\_tape~surject~t$ and $surject\_tapes(tapes) := map~surject\_tape~tapes$.  Now we can finally define
-the transition function $\gamma$ of the $\Sigma,\Tau$-lift:
+Furthermore we define $\MS{surject\_tape}(tape) := \MS{map}_\Tape~\MS{surject}~t$ and
+$\MS{surject\_tapes}(\MS{tapes}) := \MS{map}~\MS{surject\_tape}~\MS{tapes}$.
+Now we can finally define the transition function $\gamma_\MS{lift}$ of the $\Sigma,\Tau$-lift:
 \begin{alignat*}{3}
-  &\gamma (q, sym)  &~:=~& \mlet {(q', acts) := \gamma_M(q, map~(translate\_act~surject)~sym)}{\\
-  &                 &~  ~& (q', map~(translate\_act~f)~acts)}
+  &\gamma_\MS{lift} (q, sym) &~:=~& \mlet {(q', acts) := \gamma_M(q, \map~(\map_\Option~\MS{surject})~sym)}{\\
+  &                          &~  ~& (q', \map~(\map_\MS{Act} f)~acts)}
 \end{alignat*}
 
-Now, that we have defined the $\Sigma,\Tau$-lift, we look at how we must transform the relation.
+Now, that we have defined all components the $\Sigma,\Tau$-lift, from other chapters we will refer to it with $\MS{lift}~(f,g)~M$.
+
 \begin{definition}[Relational $\Sigma,\Tau$-lift]
   \label{def:sigma,tau-rellift}
   For $R \subseteq \Tapes{n} \times (F \times \Tapes{n})$
-  $$RLift_{\Sigma,\Tau} := \setMap{(input, (y, output))}{(surject\_tapes~input, (y, surject\_tapes~output)) \in R}$$
+  $$R_\MS{lift}(R) := \setMap{\MS{input} (y, \MS{output})}{R~(\MS{surject\_tapes}~\MS{input})~(y, \MS{surject\_tapes~output})}$$
+  For $T : \Rel~\Tapes{n}~\Nat$:
+  $T_\MS{lift}(T) := \setMap{(\MS{input}, k)}{T (\MS{surject\_tapes}~\MS{input})~k}$
 \end{definition}
-
 \begin{lemma}[Correctness of the $\Sigma,\Tau$-lift]
-  \label{lem:sigma,tau-correctness}
-  Let $R \subseteq \Tapes{n} \times (F \times \Tapes{n})$ be a parametrised relation.  If $M \vDash R$, then
-  $Lift_{\Sigma,\Tau} \vDash RLift_{\Sigma, \Tau}(R)$.
+  \label{lem:sigma-tau}
+  For correctness relations $R$ and termination relations $T$:
+  \begin{enumerate}
+    \item
+      If $M \VDash R$, then $\MS{lift} \VDash R_{\MS{lift}}(R)$.
+    \item
+      If $M \downarrow T$, then $\MS{lift} \downarrow T_{\MS{lift}}(T)$.
+  \end{enumerate}
+\end{lemma}
+
+% TODO: Mirror-TM
+\subsection{Mirror machine}
+\label{sub:mirror}
+
+The two machine transformations we have seen, modify either the number of tapes or the content of the tapes, but don't modify actions.
+This operator swaps all the directions, if the original machine would move one pointer to the left, this machine would move that pointer to the right.
+
+This is in particular useful, for example, if we define and certify a machine, that moves its pointer to the right.  Then we don't want to repeat all
+definitions and proofs, just for a machine, that moves its pointer to the left.
+
+We first define a function, that mirrors a tape:
+\begin{alignat*}{3}
+  \MS{mirror}&~\niltape            &&:= \niltape \\
+  \MS{mirror}&~\leftof{r}{rs}      &&:= \rightof{\rev~rs}{r} \\
+  \MS{mirror}&~\rightof{ls}{l}     &&:= \leftof{l}{\rev~ls} \\
+  \MS{mirror}&~\midtape{ls}{m}{rs} &&:= \midtape{\rev~rs}{m}{\rev~ls}
+\end{alignat*}
+Note that this definition differs slightly from the definition in Coq, since we store the left lists already in reversed order.
+
+\begin{lemma}[Correctnes of $\MS{mirror}$]
+  \label{lem:mirror}
+  Let $t$ be a tapes over an alphabet.  Then
+  \begin{enumerate}
+    \item $\MS{left} (\MS{mirror}~t) = \MS{right}~t$ and $\MS{right}(\MS{mirror}~t) = \MS{left} ~t$.
+    \item $\MS{current}(\MS{mirror}~t) = \MS{current}~t$
+    \item $\MS{mirror}$ is involutive and injective.
+  \end{enumerate}
 \end{lemma}
 \begin{proof}
-  This can be shown by induction, first over the number of steps, then over $m \in \Nat$.
+  By case analysis over $t$.
 \end{proof}
+
+\section{Basic machines}
+
+% TODO Present basic machiens here:
+% TODO - Nop (1, n)
+% TODO - Write
+% TODO - Move
+% TODO - Read
+
+We introduce some basic $1$-tape classes machines (together with their partition functions) here, that are very helpful when composing greater
+machines.  They all do at most one simple step, for example write a symbol, or move the pointer.
+
+The simplest class of $1$-tape machines is $\MS{nop}~y$, that does nothing and terminates in its initial state.  However, the partition function
+returns $y$ for this state.
 
 \section{Compound machines}
 
-% TODO: Implement/present compound machines
+% TODO: present some compound machines
 TODO: Implement/present compound machines
 
 \subsection{Write string}
@@ -854,7 +1109,7 @@ We define encodable types as a type class parametrised by the alphabet.
   A type $X$ is \emph{encodable} in an alphabet $\Sigma$, if there exists an \emph{encoding function}
   $encode \from X \to \List(\Sigma)$ with the property:
   \begin{multline*}
-    \forall~v_1,v_2 \in X,~r_1,r_2 \in \List(\Sigma), \\
+    \forall v_1,v_2:X,~r_1,r_2:\List(\Sigma), \\
     encode(x) \app r_1 = encode(v_2) \app r_2 \Rightarrow
     v_1 = v_2 \land r_1 = r_2.
   \end{multline*}
@@ -862,16 +1117,16 @@ We define encodable types as a type class parametrised by the alphabet.
 Note that this property implies injectivity of the encoding function.  Because we can not make tapes smaller, the machine that interacts with encoded
 values must know where the string ends.  Therefore injectivity of the encoding function alone is not enough.
 
-Our Coq development provides a library of encoding functions for typical types, for example:  $\Unit$, $\bot$, $\Opt(X)$, $X+Y$, $X \times Y$, $\List(X)$
+Our Coq development provides a library of encoding functions for typical types, for example:  $\Unit$, $\bot$, $\Option(X)$, $X+Y$, $X \times Y$, $\List(X)$
 and $\Nat$.  Note that each type can be encoded on different alphabets.  For example we can encode every finite type $F$ to the alphabet $F$ itself.
 
 \begin{example}[Encoding basic types]
   \label{ex:bacic-code}
   $\Unit$ and $\bot$ are encoded on the empty alphabet, while every finite type $F$ encodes itself:
   \begin{alignat*}{3}
-    encode&_F    &&~(f \in F)         &&:= [f] \\
-    encode&_\bot &&~(devil \in \bot)  &&:= [] \\
-    encode&_\Unit&&~(\unit \in \Unit) &&:= [] \\
+    encode&_F    &&~(f:F)         &&:= [f] \\
+    encode&_\bot &&~(devil:\bot)  &&:= [] \\
+    encode&_\Unit&&~(\unit:\Unit) &&:= [] \\
   \end{alignat*}
 \end{example}
 
@@ -889,11 +1144,11 @@ To encode more complex types we need a mechanism to extend an alphabet.
   $$encode_{\Sigma \hookrightarrow \Tau}(x) := map~f~(encode~x).$$
   To show that this is a valid encoding function, it suffices to show the following lemma:
   \begin{multline*}
-    \forall~v_1,v_2 \in X,~\forall~r_1, r_2 \in \List(\Sigma),~\forall~R_1, R_2 \in \List(\Tau),\\
+    \forall v_1,v_2:X,~\forall r_1, r_2:\List(\Sigma),~\forall R_1, R_2:\List(\Tau),\\
     map~f~(encode~v_1 \app r_1) \app R_1 = map~(encode~v_2 \app r_2) \app R_2 \Rightarrow \\
     v_1 = v_1 \land map~f~r_1 \app R_1 = map~f~r_2 \app R_2.
   \end{multline*}
-  This can be shown by double-induction over $R_1, R_2 \in \List(\Tau)^2$.
+  This can be shown by double-induction over $R_1, R_2:\List(\Tau)$, using some lemmas.
 \end{proof}
 
 
@@ -904,7 +1159,7 @@ To encode more complex types we need a mechanism to extend an alphabet.
   \begin{alignat*}{2}
     encode_{\Sigma \hookrightarrow \Sigma + \Tau} &\from X \to \List(\Sigma + \Tau) \\
     encode_{\Tau   \hookrightarrow \Sigma + \Tau} &\from Y \to \List(\Sigma + \Tau) \\
-    encode_{\Sigma \hookrightarrow \Opt(\Sigma)}  &\from X \to \List(\Opt(\Sigma)) \\
+    encode_{\Sigma \hookrightarrow \Option(\Sigma)}  &\from X \to \List(\Option(\Sigma)) \\
     encode_{\Sigma + \bot \hookrightarrow \Sigma} &\from X \to \List(\Sigma).
   \end{alignat*}
 \end{corollary}
@@ -926,7 +1181,7 @@ Using Corollary \ref{lem:extend-alphabet} we can construct encoding functions fo
 We will now see how we can encode tuples.  If we have types $X$ and $Y$ that are encodable over the same alphabet $\Sigma$, it is easy:
 $$encode(x,y) := encode(x) \app encode(y).$$
 However, if we encode $X$ over $\Sigma$ and $\Tau$, we first have to map the alphabets to $\Sigma + \Tau$:
-$$encode(x,y) := encode_{\Sigma \hookrightarrow \Sigma + \Tau}(x) ++ encode_{\Tau \hookrightarrow \Sigma + \Tau}(y).$$
+$$encode(x,y) := encode_{\Sigma \hookrightarrow \Sigma + \Tau}(x) \app encode_{\Tau \hookrightarrow \Sigma + \Tau}(y).$$
 
 We want to reduce the encoding of $\Nat$ to the encoding of $\List(\Unit)$.
 \begin{lemma}[Code reducing]
@@ -939,69 +1194,61 @@ We want to reduce the encoding of $\Nat$ to the encoding of $\List(\Unit)$.
   Using lemma \ref{lem:code-reduce} we can derive following encoding functions:
   \begin{alignat*}{4}
     encode&_\Nat      &&\from \Nat    &&\to \List(\Bool) \\
-    encode&_{\Opt(X)} &&\from \Opt(X) &&\to \List(\Bool + \Sigma).
+    encode&_{\Option(X)} &&\from \Option(X) &&\to \List(\Bool + \Sigma).
   \end{alignat*}
 \end{corollary}
 
 
-\section{Approaching an interpreter}
+\section{Computing functions}
 
-Finally we want to define a notion that a Turing machine \emph{computes} a function.  Therefore we need a predicate $encodes \subseteq Tape \times X$
+Finally we want to define a notion that a Turing machine \emph{computes} a function.  Therefore we need a predicate $encodes : \Rel~\Tape~X$
 for an encodable type $X$.
 
 We have several possibilities to define such a predicate.  The first possibility is that the current string on the tape encodes the value:
-$$encodes(tape, x) := encode_X(x) = tape\_to\_string(tape).$$
+$$\MS{encodes}(tape, x) := \MS{encode}_X(x) = \MS{tape\_to\_string}(\MS{tape}).$$
 This is not a good definition: Since it is impossible to remove symbols from a tape, we can not ``decrease'' $x$ (that means that the encoding of
 $x$ gets smaller).
 
 To fix this problem, we can define the predicate in this way:
-$$encodes(tape, x) := \exists~rest,~encode_X(x) \app rest = tape\_to\_string(tape).$$
+$$\MS{encodes}(\MS{tape}, x) := \exists~\MS{rest},~\MS{encode}_X(x) \app \MS{rest} = \MS{tape\_to\_string}(\MS{tape}).$$
 However, one problem remains:  If a machine is supposed to only remove the first symbol of the encoding, it would have to shift the whole tape
 content.
 
-% XXX This has yet to be implemented.
-We can solve this issues by introducing a $\mathbf{start}$ and a $\mathbf{end}$ symbol (using Corollary \ref{lem:extend-alphabet}):
+We can solve this issues by introducing a \emph{start} and a \emph{end} symbol (using Corollary \ref{lem:extend-alphabet}), thus if $X$ is
+encodable over $\Sigma$, a tape of the \emph{extended alphabet} $\Sigma^+ := \Sigma + \Bool$ can encode a value of $X$:
 \begin{multline*}
-  encodes(tape,x) := \exists!~r_1,r_2,~\\
-  r_1 \app [\mathbf{start}] \app encode_{X \hookrightarrow X + \Bool}(x) \app [\mathbf{end}] \app r_2 = \\
-  tape\_to\_string(tape).
+  \MS{encodes}(\MS{tape},x) := \exists!~r_1, r_2 : \List(\Sigma^+),~\\
+  \MS{left}(\MS{tape}) = \inr \true \cons r_1 \land
+  \MS{local}(\MS{tape}) = (\MS{map} \inl)~(\MS{encode}_\Sigma(x)) \app \inr \false \cons r_2
 \end{multline*}
+$\MS{local}$ is a function that returns $\niltape$ if the tape is empty; and $c' \cons \MS{right}(t)$, if $\MS{current}(t) = \Some{c'}$.
 
 Now it is possible to define computation of a function:
 \begin{definition}[Computation of a function]
   \label{def:computes}
-  Let $X, Y$ be encodable types over $\Sigma$.  A machine $M$ \emph{computes} a function $f \from X \to Y$ on tape number $i < n$, if
-  $$M \vDash \setMap{(input, (y, output))}{\forall~x \in X,~ encodes(input[i], x) \Rightarrow encodes(output[i], f(x))}.$$
+  Let $X, Y$ be encodable types over $\Sigma$.  A machine $M$ \emph{computes} a function $f \from X \to Y$ from $i < n$ to $j < n$, if
+  $$M \VDash \setMap{(\MS{input}, (y, \MS{output}))}{\forall x:X,~ \MS{encodes}(\MS{input}[i], x) \rightarrow \MS{encodes}(\MS{output}[j], f(x))}.$$
 \end{definition}
 
-We can already show that functional computation is compositive:
+We can already show that functional computation is compositive, using sequencial composition:
 \begin{lemma}[Compose functions]
   \label{lem:computes-composes}
   Let $X, Y, Z$ be encodable types over $\Sigma$.  If $M_1$ and $M_2$ are $n$-tape Turing machines over $\Sigma$ and $M_1$ computes
-  $f \from X \to Y$ on tape number $i$ and $M_2$ computes $g \from Y \to Z$, then $M_1 \mseq M_2$ computes $f \circ g \from X \to Z$.
+  $f \from X \to Y$ from $i_1$ to $i_1$ and $M_2$ computes $g \from Y \to Z$ from $i_2$ to $i_3$,
+  then $M_1 \mseq M_2$ computes $f \circ g \from X \to Z$ from $i_1$ to $i_3$.
 \end{lemma}
 \begin{proof}
   Follows with the correctness statement of composition, see Lemma \ref{lem:seq}.
 \end{proof}
 
-Note that in Lemma \ref{lem:computes-composes} the two machines have to compute the functions on the same tape.  We can get rid of this restriction
-using the following Lemma:
-\begin{lemma}[Compute function on different tape]
-  If there exists a machine $M$ that computes a function $f$ on tape $i$ then there exists a machine that computes $f$ on any tape $j$.
-\end{lemma}
-\begin{proof}
-  Using the $n,m$-Lift we swap the tapes $i$ and $j$.
-\end{proof}
+Note that in Lemma \ref{lem:computes-composes} the two machines have to compute the functions on compatible tapes.
+We can get rid of this restriction using the the $n,m$-lift to swap tapes.
 
-% XXX This has yet to be implemented
-The next big milestone is to implement \emph{recursive functions}.  For example, if we want to implement a tail-recursive function over lists, the
-upper-most machine is an $while$.  Inside the while-loop we use the $match$-operator using the $read$ machine to check the first symbol, that is
-$\true$ for a non-empty list and $\false$ for $\nil$.  If the recursion terminates in one of these cases, the corresponding $case$-machine will
-terminate in a state that corresponds to $\false$.  Otherwise the wile-loop will be repeated.
+% upper-most machine is an $while$.  Inside the while-loop we use the $match$-operator using the $read$ machine to check the first symbol, that is
+% $\true$ for a non-empty list and $\false$ for $\nil$.  If the recursion terminates in one of these cases, the corresponding $case$-machine will
+% terminate in a state that corresponds to $\false$.  Otherwise the wile-loop will be repeated.
 
 \end{document}
-
-% TODO Profread
 
 %%% Local Variables:
 %%% mode: latex
