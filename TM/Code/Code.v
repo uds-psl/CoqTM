@@ -372,7 +372,7 @@ Section Encode_Cast.
 
 End Encode_Cast.
 
-Global Instance Encode_Option' (X : Type) (sig : finType) : codeable sig X -> codeable (FinType (EqType (sig + Empty_set + bool))) (option X).
+Lemma Encode_Option' (X : Type) (sig : finType) : codeable sig X -> codeable (FinType (EqType (sig + Empty_set + bool))) (option X).
 Proof.
   intros H. eapply Encode_Cast. eapply Encode_Sum.
   - apply H.
@@ -380,7 +380,7 @@ Proof.
   - now auto_inj.
     (* eapply retract_injective. eapply tight_retract_strong.
     eapply inversion_retract. eapply inverse_option_unit. *)
-Qed.
+Defined.
 
 (* Eleminate the Empty_set from above *)
 Global Instance Encode_Option (X : Type) (sig : finType) : codeable sig X -> codeable (FinType (EqType (sig + bool))) (option X).
@@ -390,7 +390,7 @@ Proof.
   eapply inverse_sum.
   - auto_inj. (* eapply inverse_sum_Empty_set. *)
   - auto_inj. (* apply inverse_id. *)
-Qed.
+Defined.
 
 
 Section Encode_Nat.
@@ -441,6 +441,10 @@ End Encode_Fin'.
 (** Test Playground *)
 
 (*
+Compute encode (Some true).
+Compute encode None.
+
+
 Compute encode false.
 Compute encode true.
 
