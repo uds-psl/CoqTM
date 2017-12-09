@@ -5,10 +5,10 @@ Require Import TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Combinators.SequentialComposition.
 Require Import TM.Code.ChangeAlphabet.
 Require Import TM.Retract.
+Require Import TM.Basic.Mono.
 
 (* First we derive ID and NOT and AND from FinTM *)
 Section ID.
-  (* Note that Nop does this as well *)
   Definition ID := UnaryFinTM (@id bool).
 
   Lemma ID_Computes :
@@ -19,6 +19,17 @@ Section ID.
     - omega.
     - intros tin (yout&tout) H. auto.
   Qed.
+
+  (* nop also computes id *)
+  Lemma NOP_Computes :
+    mono_Nop _ tt ⊨c(0) Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool).
+  Proof.
+    eapply RealiseIn_monotone.
+    - eapply mono_Nop_Sem.
+    - omega.
+    - intros tin (yout&tout) (->&->). intros b HEnc. cbv [id]. assumption.
+  Qed.
+  
 End ID.
 
 Section NOT.
