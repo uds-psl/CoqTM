@@ -1,5 +1,7 @@
 Require Import TM.Prelim TM.Relations TM.TM.
 
+(* TYPO: s/indices/indexes/g *)
+
 Definition reorder m n Z (indices : Vector.t (Fin.t n) m) (V : Vector.t Z n) : Vector.t Z m :=
   Vector.map (Vector.nth V) indices.
 
@@ -371,7 +373,7 @@ Section LiftNM.
     split.
     - apply (H (reorder I t) i (mk_mconfig (cstate outc) (reorder I (ctapes outc)))).
       pose proof (@sim_loop (initc injectM t) outc i) as Lemma. cbn in Lemma. now apply Lemma.
-    - hnf. intros k HI. unfold get_at.
+    - hnf. intros k HI. 
       pose proof (@sim_eq_loop (initc injectM t) outc i k HI) as Lemma. cbn in Lemma. now apply Lemma.
   Qed.
 

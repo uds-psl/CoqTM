@@ -58,8 +58,7 @@ Section MirrorTM.
   Lemma mirror_move_involution (D : move) : mirror_move (mirror_move D) = D.
   Proof. now destruct D. Qed.
 
-  Definition mirror_act : (option sig * move) -> (option sig * move) :=
-    fun '(w, m) => (w, mirror_move m).
+  Definition mirror_act : (option sig * move) -> (option sig * move) := map_right mirror_move.
 
   Definition mirror_acts : Vector.t (option sig * move) n -> Vector.t (option sig * move) n := Vector.map mirror_act.
 

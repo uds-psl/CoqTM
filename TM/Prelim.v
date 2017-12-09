@@ -1,4 +1,4 @@
-Require Export Shared.FiniteTypes.FinTypes Shared.FiniteTypes.BasicFinTypes Shared.FiniteTypes.CompoundFinTypes Shared.FiniteTypes.VectorFin  Shared.Tactics.AutoIndTac.
+Require Export Shared.FiniteTypes.FinTypes Shared.FiniteTypes.BasicFinTypes Shared.FiniteTypes.CompoundFinTypes Shared.FiniteTypes.VectorFin Shared.Tactics.AutoIndTac.
 Require Export Shared.Extra Shared.Base.
 Require Export Program.Equality.
 
@@ -273,111 +273,40 @@ Section tabulate_vec.
 
   Variable X : Type.
 
-  Fixpoint tabulate_vec' (n : nat) (f : Fin.t n -> X) {struct n} : Vector.t X n.
+  Fixpoint tabulate_vec (n : nat) (f : Fin.t n -> X) {struct n} : Vector.t X n.
   Proof.
     destruct n.
     - apply Vector.nil.
     - apply Vector.cons.
       + apply f, Fin.F1.
-      + apply tabulate_vec'. intros m. apply f, Fin.FS, m.
+      + apply tabulate_vec. intros m. apply f, Fin.FS, m.
   Defined.
 
-  Lemma nth_tabulate' n (f : Fin.t n -> X) (m : Fin.t n) :
-    Vector.nth (tabulate_vec' f) m = f m.
+  Lemma nth_tabulate n (f : Fin.t n -> X) (m : Fin.t n) :
+    Vector.nth (tabulate_vec f) m = f m.
   Proof.
     induction m.
     - cbn. reflexivity.
     - cbn. rewrite IHm. reflexivity.
   Qed.
   
-  Lemma in_tabulate' n (f : Fin.t n -> X) (x : X) :
-    In x (tabulate_vec' (n := n) f) -> exists i : Fin.t n, x = f i.
+  Lemma in_tabulate n (f : Fin.t n -> X) (x : X) :
+    In x (tabulate_vec (n := n) f) <-> exists i : Fin.t n, x = f i.
   Proof.
-    Require Import Program.Equality.
-    revert f x. induction n; intros f x H.
-    - cbn in *. inv H.
-    - cbn in *. dependent induction H.
-      + eauto.
-      + specialize (IHn (fun m => f (Fin.FS m)) _ H) as (i&IH). eauto.
-  Qed.
-  
-  Definition tabulate_vec (n : nat) (f : nat -> X) : Vector.t X n :=
-    @tabulate_vec' n (fun n => f (proj1_sig (Fin.to_nat n))).
-
-  Lemma nth_tabulate n (f : nat -> X) m (H : m < n) :
-    VectorDef.nth (tabulate_vec n f) (Fin.of_nat_lt H) = f m.
-  Proof.
-    unfold tabulate_vec. rewrite nth_tabulate'. f_equal.
-    symmetry. rewrite Fin.to_nat_of_nat. reflexivity.
-  Qed.
-
-  Lemma in_tabulate n (f : nat -> X) m (H : m < n) (x : X) :
-    In x (tabulate_vec n f) -> exists i : nat, i < n /\ x = f i.
-  Proof.
-    unfold tabulate_vec. intros H1.
-    pose proof (in_tabulate' H1). cbn in *.
-    destruct H0 as (i&Hi). exists (proj1_sig (Fin.to_nat i)). split; auto.
-    destruct (Fin.to_nat i); cbn; auto.
+    split.
+    {
+      revert f x. induction n; intros f x H.
+      - cbn in *. inv H.
+      - cbn in *. dependent induction H.
+        + eauto.
+        + specialize (IHn (fun m => f (Fin.FS m)) _ H) as (i&IH). eauto.
+    }
+    {
+      intros (i&Hi). induction i; cbn in *; subst; econstructor; eauto.
+    }
   Qed.
 
 End tabulate_vec.
-
-Section get_at.
-
-  Variable n : nat.
-  Variable m : nat.
-  Hypothesis itape : m < n.
-  
-  Definition get_at (X : Type) (V : Vector.t X n) : X := Vector.nth V (Fin.of_nat_lt itape).
-
-  Lemma get_at_map (X : Type) (Y : Type) (f : X -> Y) (t : Vector.t X n) :
-    get_at (Vector.map f t) = f (get_at t).
-  Proof.
-    now eapply Vector.nth_map.
-  Qed.
-  
-  Lemma get_at_tabulate X (f : nat -> X) :
-    get_at (tabulate_vec n f) = f m.
-  Proof.
-    unfold get_at. eapply nth_tabulate.
-  Qed.
-
-  Lemma get_at_nth X (t : Vector.t X n) x :
-    get_at t = x -> Vector.nth t (Fin.of_nat_lt itape) = x.
-  Proof.
-    intros H. unfold get_at in H. now rewrite H.
-  Qed.
-
-End get_at.
-
-Lemma get_at_eq_iff X n (t t' : Vector.t X n) : (forall m (itape : m < n) (itape' : m < n), get_at itape t = get_at itape' t') <-> t = t'.
-Proof.
-  split.
-  - intros H.
-    eapply VectorSpec.eq_nth_iff. intros. unfold get_at in H.
-    subst.
-    specialize (H (proj1_sig (Fin.to_nat p2)) (proj2_sig (Fin.to_nat p2)) (proj2_sig (Fin.to_nat p2))).
-    now rewrite Fin.of_nat_to_nat_inv in H.
-  - intros <- ? ? ?. unfold get_at.
-    eapply VectorSpec.eq_nth_iff. reflexivity.
-    eapply Fin.of_nat_ext.
-Qed.
-
-Lemma get_at_ext X n (t : Vector.t X n) m (itape : m < n) (itape' : m < n) :
-  get_at itape t = get_at itape' t.
-Proof.
-  unfold get_at.
-  eapply VectorSpec.eq_nth_iff.
-  reflexivity.
-  eapply Fin.of_nat_ext.
-Qed.  
-
-
-Lemma nth_map {A B} (f: A -> B) {n} v (p1 p2: Fin.t n) (eq: p1 = p2):
-  (map f v) [@ p1] = f (v [@ p2]).
-Proof.
-  subst p2; induction p1; dependent destruct v; now simpl.
-Qed.
 
 Lemma vec_replace_nth X x n (t : Vector.t X n) (i : Fin.t n) :
   x = Vector.nth (Vector.replace t i x) i.
@@ -391,6 +320,22 @@ Proof.
   revert j. induction i; dependent destruct t; dependent destruct j; simpl; try tauto.
   apply IHi. contradict H. cbn. now rewrite !H.
 Qed.
+
+Instance Fin_eq_dec n : eq_dec (Fin.t n).
+Proof.
+  intros; hnf.
+  destruct (Fin.eqb x y) eqn:E.
+  - left. now eapply Fin.eqb_eq.
+  - right. intros H. eapply Fin.eqb_eq in H. congruence.
+Defined.
+
+
+Ltac getFin i j := apply (Fin.of_nat_lt (ltac:(omega) : i < j)).
+Definition bool2nat := fun b : bool => if b then 1 else 0.
+Coercion bool2nat : bool >-> nat.
+
+
+
 
 (* Apply functions in typles, options, etc. *)
 Section Translate.
@@ -438,23 +383,36 @@ Tactic Notation "spec_assert" hyp(H) "by" tactic(T) :=
 
 (* Dupfree vector *)
 
-Open Scope vector_scope.
+Global Open Scope vector_scope.
 
 Inductive dupfree X : forall n, Vector.t X n -> Prop :=
   dupfreeVN :
     dupfree (@Vector.nil X)
 | dupfreeVC n (x : X) (V : Vector.t X n) :
     ~ Vector.In x V -> dupfree V -> dupfree (x ::: V).
+  
+
+Ltac existT_eq :=
+  match goal with
+  | [ H: existT ?X1 ?Y1 ?Z1 = existT ?X2 ?Y2 ?Z2 |- _] =>
+    apply EqdepFacts.eq_sigT_iff_eq_dep in H; inv H
+  end.
+
+Ltac existT_eq' :=
+  match goal with
+  | [ H: existT ?X1 ?Y1 ?Z1 = existT ?X2 ?Y2 ?Z2 |- _] =>
+    apply EqdepFacts.eq_sigT_iff_eq_dep in H; induction H
+  end.
+
 
 Ltac vector_not_in_step :=
   match goal with
   | _ => progress destruct_vector
-  | [ H: Vector.In ?X ?Y |- False ] => inv H
-  | [ H: existT ?X1 ?Y1 ?Z1 = existT ?X2 ?Y2 ?Z2 |- False] =>
-    apply EqdepFacts.eq_sigT_iff_eq_dep in H; inv H; clear H
+  | [ H: Vector.In ?X ?Y |- _ ] => inv H
+  | _ => existT_eq
   end.
 
-Ltac vector_not_in := intro; repeat vector_not_in_step.
+Ltac vector_not_in := repeat intro; repeat vector_not_in_step.
 
 Goal ~ Vector.In 10 [|1;2;4|].
 Proof.
@@ -474,3 +432,210 @@ Proof. vector_dupfree. Qed.
 
 Goal dupfree [| Fin.F1 (n := 1) |].
 Proof. vector_dupfree. Qed.
+
+Lemma dupfree_cons (X : Type) (n : nat) (x : X) (xs : Vector.t X n) :
+  dupfree (x ::: xs) -> dupfree xs /\ ~ In x xs.
+Proof.
+  intros H1. inv H1. now existT_eq'.
+Qed.
+
+Lemma dupfree_tabulate_functional (X : Type) (n : nat) (f : Fin.t n -> X) :
+  (forall x y, f x = f y -> x = y) ->
+  dupfree (tabulate_vec f).
+Proof.
+  intros H. revert f H. induction n; intros; cbn.
+  - constructor.
+  - constructor.
+    + intros (x & H2 % H) % in_tabulate. congruence.
+    + eapply IHn. now intros x y -> % H % Fin.FS_inj.
+Qed.
+
+Lemma In_cons (X : Type) (n : nat) (x y : X) (xs : Vector.t X n) :
+  In y (x ::: xs) -> x = y \/ In y xs.
+Proof.
+  intros H. inv H; existT_eq'; tauto.
+Qed.
+
+Lemma In_replace (X : Type) (n : nat) (xs : Vector.t X n) (i : Fin.t n) (x y : X) :
+  In y (replace xs i x) -> (x = y \/ In y xs).
+Proof.
+  revert i x y. induction xs; intros; cbn in *.
+  - inv i.
+  - dependent destruct i; cbn in *; apply In_cons in H as [-> | H]; auto; try now (right; constructor).
+    specialize (IHxs _ _ _ H) as [-> | IH]; [ now left | right; now constructor ].
+Qed.
+
+Lemma In_replace' (X : Type) (n : nat) (xs : Vector.t X n) (i : Fin.t n) (x y : X) :
+  In y (replace xs i x) -> x = y \/ exists j, i <> j /\ xs[@j] = y.
+Proof.
+  revert i x y. induction xs; intros; cbn -[nth] in *.
+  - inv i.
+  - dependent destruct i; cbn -[nth] in *.
+    + apply In_cons in H as [->|H].
+      * tauto.
+      * apply vect_nth_In' in H as (j&H). right. exists (Fin.FS j). split. discriminate. cbn. assumption.
+    + apply In_cons in H as [->|H].
+      * right. exists Fin.F1. split. discriminate. cbn. reflexivity.
+      * specialize (IHxs _ _ _ H) as [-> | (j&IH1&IH2)]; [ tauto | ].
+        right. exists (Fin.FS j). split. now intros -> % Fin.FS_inj. cbn. assumption.
+Qed.
+
+Lemma dupfree_replace (X : Type) (n : nat) (xs : Vector.t X n) (x : X) :
+  dupfree xs -> ~ In x xs -> forall i, dupfree (replace  xs i x).
+Proof.
+  revert x. induction xs; intros; cbn.
+  - inv i.
+  - dependent destruct i; cbn.
+    + constructor; auto.
+      * intros H1. contradict H0. now econstructor.
+      * inv H. existT_eq'. assumption.
+    + apply dupfree_cons in H as (H&H').
+      assert (~In x xs).
+      {
+        intros H1. contradict H0. now constructor.
+      }
+      specialize (IHxs x H H1 p). constructor.
+      * intros [ -> | H2] % In_replace. contradict H0. constructor. tauto.
+      * tauto.
+Qed.
+
+Coercion Vector.to_list : Vector.t >-> list.
+
+Lemma tolist_In (X : Type) (n : nat) (xs : Vector.t X n) (x : X) :
+  Vector.In x xs <-> List.In x xs.
+Proof.
+  split; intros H.
+  - induction H; cbn; auto.
+  - induction xs; cbn in *; auto. destruct H as [-> | H]; econstructor; eauto.
+Qed.
+
+Lemma tolist_dupfree (X : Type) (n : nat) (xs : Vector.t X n) :
+  dupfree xs -> Dupfree.dupfree xs.
+Proof.
+  induction 1.
+  - cbn. constructor.
+  - cbn. constructor; auto. intros H1. contradict H. now apply tolist_In.
+Qed.
+
+
+Instance Fin_finTypeC n : finTypeC (EqType (Fin.t n)).
+Proof.
+  pose (enum := tabulate_vec (fun i : Fin.t n => i)).
+  pose (enum' := Vector.to_list enum).
+  constructor 1 with (enum := enum').
+  intros x. cbn in x.
+  eapply dupfreeCount.
+  - subst enum'. eapply tolist_dupfree. eapply dupfree_tabulate_functional; eauto.
+  - eapply tolist_In. subst enum. eapply in_tabulate. eauto.
+Qed.
+
+Section Count.
+  Variable (X : eqType).
+
+  Definition count (n : nat) (x : X) (xs : t X n) :=
+    fold_right (fun y c => if Dec (x = y) then S c else c) xs 0.
+
+  Lemma count0_notIn (n : nat) (x : X) (xs : t X n) :
+    count x xs = 0 -> ~ In x xs.
+  Proof.
+    revert x. induction xs; intros; cbn in *.
+    - vector_not_in.
+    - intros H1. decide (x=h); try congruence.
+      apply In_cons in H1 as [-> | H1]; try tauto.
+      eapply IHxs; eauto.
+  Qed.
+
+  Lemma count0_notIn' (n : nat) (x : X) (xs : t X n) :
+    ~ In x xs -> count x xs = 0.
+  Proof.
+    induction xs; intros; cbn in *.
+    - reflexivity.
+    - decide (x = h) as [ -> | D ].
+      + contradict H. constructor.
+      + apply IHxs. intros H2. contradict H. now constructor.
+  Qed.
+
+  Lemma countDupfree (n : nat) (xs : t X n) :
+    (forall x : X, In x xs -> count x xs = 1) <-> dupfree xs.
+  Proof.
+    split; intros H.
+    {
+      induction xs; cbn -[count] in *.
+      - constructor.
+      - constructor.
+        + intros H2. specialize (H h ltac:(now constructor)). cbn in H.
+          decide (h = h); try tauto. inv H.
+          contradict H2. now eapply count0_notIn.
+        + apply IHxs. intros x Hx. specialize (H x ltac:(now constructor)).
+          cbn in H. decide (x = h); inv H; auto. rewrite H1.
+          contradict Hx. now eapply count0_notIn.
+    }
+    {
+      induction H as [ | n x' xs HIn HDup IH ]; intros; cbn in *.
+      - inv H.
+      - decide (x = x') as [ -> | D].
+        + f_equal. exact (count0_notIn' HIn).
+        + apply (IH x). now apply In_cons in H as [ -> | H].
+    }
+  Qed.
+
+
+(* (* Test *)
+End Count.
+Compute let xs := [|1;2;3;4;5;6|] in
+        let x  := 2 in
+        let y  := 1 in
+        let i  := Fin.F1 in
+        Dec (x = y) + count x xs = Dec (x = xs[@i]) + count x (replace xs i y).
+*)
+
+  Lemma replace_nth (n : nat) (xs : Vector.t X n) (p : Fin.t n) :
+    replace xs p xs[@p] = xs.
+  Proof.
+    eapply eq_nth_iff. intros ? ? <-.
+    decide (p = p1) as [ -> | D].
+    - now rewrite Vector_replace_nth.
+    - now rewrite Vector_replace_nth2.
+  Qed.
+  
+  Lemma count_replace (n : nat) (xs : t X n) (x y : X) (i : Fin.t n) :
+    Dec (x = y) + count x xs = Dec (x = xs[@i]) + count x (replace xs i y).
+  Proof.
+    induction xs; intros; cbn -[nth count] in *.
+    - inv i.
+    - dependent destruct i; cbn -[nth count] in *.
+      + decide (x = y) as [ D | D ]; cbn -[nth count] in *; cbn -[bool2nat dec2bool count].
+        * rewrite <- D in *. decide (x = h) as [ -> | D2]; cbn [dec2bool bool2nat plus]; auto.
+          cbv [count]. cbn. rewrite D. decide (y = y); try tauto. decide (y = h); congruence.
+        * decide (x = h); subst; cbn [bool2nat dec2bool plus]; cbv [count]; try reflexivity.
+          -- cbn. decide (h = h); try tauto. decide (h = y); tauto.
+          -- cbn. decide (x = h); try tauto. decide (x = y); tauto.
+      + cbn. decide (x = y); cbn.
+        * decide (x = h); cbn; f_equal.
+          -- decide (x = xs[@p]); cbn; repeat f_equal; subst.
+             ++ symmetry. now apply replace_nth.
+             ++ cbn in *. specialize (IHxs p). decide (h = xs[@p]); tauto.
+          -- decide (x = xs[@p]); cbn; repeat f_equal; subst.
+             ++ symmetry. now apply replace_nth.
+             ++ cbn in *. specialize (IHxs p). decide (y = xs[@p]); tauto.
+        * decide (x = h); cbn; f_equal.
+          -- decide (x = xs[@p]); cbn; f_equal; subst.
+             ++ cbn in *. specialize (IHxs p). decide (xs[@p] = xs[@p]); cbn in *; try tauto.
+             ++ specialize (IHxs p). cbn in *. decide (h = xs[@p]); cbn in *; tauto.
+          -- decide (x = xs[@p]); cbn; auto.
+             ++ specialize (IHxs p). cbn in *. decide (x = xs[@p]); cbn in *; tauto.
+             ++ specialize (IHxs p). cbn in *. decide (x = xs[@p]); cbn in *; tauto.
+  Qed.
+  
+End Count.
+
+Lemma dupfree_nth_injective (X : Type) (n : nat) (xs : Vector.t X n) :
+  dupfree xs -> forall (i j : Fin.t n), xs[@i] = xs[@j] -> i = j.
+Proof.
+  induction 1; intros; cbn -[nth] in *.
+  - inv i.
+  - dependent destruct i; dependent destruct j; cbn -[nth] in *; auto.
+    + cbn in *. contradict H. eapply vect_nth_In; eauto.
+    + cbn in *. contradict H. eapply vect_nth_In; eauto.
+    + f_equal. now apply IHdupfree.
+Qed.
