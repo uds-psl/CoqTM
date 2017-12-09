@@ -85,7 +85,8 @@
 \renewcommand{\None}{\emptyset}
 \newcommand{\true}{\mathbf{true}}
 \newcommand{\false}{\mathbf{false}}
-\newcommand{\unit}{\mathbf{unit}}
+\newcommand{\unit}{\mathbf{()}}
+\newcommand{\Rel}{\mathsf{Rel}}
 
 % Tapes
 \newcommand{\tape}[1]{[ #1 ]}
@@ -101,14 +102,14 @@
 \newcommand{\Tau}{\Gamma}
 
 % Relations
-\newcommand{\IdR}{\mathit{IdR}}
 \newcommand{\rif}{\mathbin{\phi}}
 \newcommand{\at}[2][]{#1|_{#2}}
-\newcommand{\Rel}{\mathsf{Rel}}
+\DeclareMathOperator{\ignoreParam}{\Uparrow}
+\DeclareMathOperator{\hideParam}{\Downarrow}
 
 % ``Keywords'' in math
 \newcommand{\mwhile}[1]{\MS{While}}
-\newcommand{\mseq}{\mathbin{;}}
+\newcommand{\mseq}{;~}
 \newcommand{\mif}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
 \newcommand{\mmatch}{\MS{match}}
 \newcommand{\mlet}[2]{\MS{Let}~#1~\MS{In}~#2}
@@ -116,7 +117,7 @@
 % More constants and functions
 \DeclareMathOperator{\inl}{\ensuremath{\MS{inl}}}
 \DeclareMathOperator{\inr}{\ensuremath{\MS{inr}}}
-\DeclareMathOperator{\map}{\ensuremath{\MS{map}}}
+\newcommand{\map}{\ensuremath{\MS{map}}}
 
 \begin{document}
 
@@ -151,6 +152,8 @@ Later we will also write $X \hookrightarrow Y$ to denote the canonical (tight) r
 if it is clear weather we mean the retract or the injection.  (This is analogous in the Coq-development:  Since we use type-classes there, we often
 do not have to specify those functions since they can be inferred automatically.)  Set-notations are used to define relations.
 
+Vectors and lists are $0$-indexed.  We write numbers $n < k$ when we mean values of the finite Type $\Fin_k$, where $k\in\Nat$.
+
 \section{Definition of multi-tape Turing machines}
 \label{sec:def}
 
@@ -165,6 +168,8 @@ do not have to specify those functions since they can be inferred automatically.
     \item $s:Q$ is the start state,
     \item $h \from Q \to \Bool$ is the decidable subset of halting states.
   \end{itemize}
+
+  Tuples of the type $\Option(\Sigma) \times \Move$ are called \emph{actions}.  They are refered to with the symbol $\MS{Act}$, if $\Sigma$ is clear.
 \end{definition}
 
 We make no distinction between input and output tapes.  Note that the transition function has to yield a successor state even on halting states.  It
@@ -172,12 +177,15 @@ is usually convenient to make halting states loop in the transition function, be
 parameterized Definition \ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, but we abstract from the states, as states are
 considered an ``internal'' property of Turing machines.  Since $\gamma$ is a function, our machines behave deterministically.
 
+For most machines $M$ we give at least a partitioning function $p \from Q_M \to F$, were $F$ is a finite type.
+For machines together with partition functions, we often write $(M, p)$.
+
 Now we want to define the semantics of multi-tape Turing machines.
 
-A \emph{tape} essentially consists of a string and a pointer on this string.  The pointer can be either on any position of the string or outside of
-the string.  We split the tape content at the pointer position into the current symbol, the list of symbols to the left (in reversed order) and to the
-right.  If a tape is not empty, the pointer could be to the right or left of the (non-empty) tape content, or pointing at a symbol $m$.  In the
-following Definition we define tapes formally.
+A \emph{tape} essentially consists of a (possbly empty) string and a pointer on this string.  The pointer can be either on any position of the string
+or outside of the string.  We split the tape content at the pointer position into the current symbol, the list of symbols to the left (in reversed
+order) and to the right.  If a tape is not empty, the pointer could be to the right or left of the (non-empty) tape content, or pointing at a symbol
+$m$.  In the following definition, tapes are defined formally.
 
 \begin{definition}[Tape]
   \label{def:tape}
@@ -186,7 +194,7 @@ following Definition we define tapes formally.
   \begin{itemize}
     \item the empty tape $\niltape$.
     \item $\leftof{r}{R}$ where the pointer is outside on the left side of the non-empty string $r \cons R$.
-    \item $\midtape{L}{m}{R}$, the for non-empty tape where the pointer points on $m$ and is between $L$ and $R$.
+    \item $\midtape{L}{m}{R}$, the non-empty tape where the pointer points on $m$ and is between $L$ and $R$.
     \item $\rightof{L}{l}$, the non-empty tape where the pointer is on the right outmost position after the string $L \app [l]$.
   \end{itemize}
 
@@ -194,9 +202,9 @@ following Definition we define tapes formally.
   In the Coq-implementation, tapes are defined inductively:
   \begin{alignat*}{2}
     \emph{Tape}:\Type := \quad & \MS{niltape} \\
-                         | \quad & \MS{leftof}  ~ (r:\Sigma) ~ (R:\List(\Sigma)) \\
-                         | \quad & \MS{midtape} ~ (L:\List(\Sigma)) ~ (m:\Sigma) ~ (R:\List(\Sigma)) \\
-                         | \quad & \MS{rightof} ~ (l:\Sigma) ~ (L:\List(\Sigma)).
+                       | \quad & \MS{leftof}  ~ (r:\Sigma) ~ (R:\List(\Sigma)) \\
+                       | \quad & \MS{midtape} ~ (L:\List(\Sigma)) ~ (m:\Sigma) ~ (R:\List(\Sigma)) \\
+                       | \quad & \MS{rightof} ~ (l:\Sigma) ~ (L:\List(\Sigma)).
   \end{alignat*}
   Note, however, that the lists called $L$ are in reversed order.  For example $\MS{midtape}~(\rev(L))~m~R$ corresponds to the tape
   $\midtape{L}{m}{R}$.
@@ -219,6 +227,7 @@ The function $\MS{mv}_L$ is defined analogously.
 To define the function $\MS{write} \from \Option(\Sigma) \to \Tape \to \Tape$, we first need functions
 $\MS{left},~\MS{right} \from \Tape \to \List(\Sigma)$
 that return the symbols to the left side of the pointer and respectively the symbols to the right of the pointer.
+% TODO: Two collums
 \begin{alignat*}{2}
   \MS{left} &~\niltape          &&:= \nil \\
   \MS{left} &~\leftof{r}{R}     &&:= \nil \\
@@ -264,7 +273,7 @@ After that each tape writes a symbol and moves its head into a direction.  The m
 \begin{alignat*}{2}
   \MS{wr\_mv}&~t~(wr, D)     &~:=~& \MS{mv}_D (\MS{wr}~t~wr) \\
   \MS{step}&~(\MS{tapes}, q) &~:=~& \mlet{(\MS{actions}, q') := \gamma_M(\MS{current}(\MS{tapes}))}{ \\
-           &                  &~  ~& (\MS{map}_2~\MS{wr\_mv}~\MS{tapes}~\MS{actions},~ q')}
+           &                  &~  ~& (\map_2~\MS{wr\_mv}~\MS{tapes}~\MS{actions},~ q')}
 \end{alignat*}
 To define the execution of a machine, we first introduce an abstract recursive \emph{loop} function of the type
 $\MS{loop} \from \Nat \to (A \to A) \to (A \to \Bool) \to A \to \Option(A)$, for every $A:\Type$:
@@ -298,7 +307,7 @@ given the initial tapes:
   \MS{init\_state}   &~\MS{tapes}      &&:= (\MS{tapes}, s_M) \\
   \MS{halting\_state}&~(\MS{tapes}, q) &&:= h_M(q) \\
   \MS{loopM}         &~\MS{initc}~k    &&:= \MS{loop}~k~\MS{step}~\MS{halting\_state}~\MS{initc} \\
-  \MS{exec}          &~\MS{tapes}      &&:= \MS{loopM} (\MS{init\_state}~\MS{tapes})
+  \MS{exec}          &~\MS{tapes}      &&:= \MS{loopM}~(\MS{init\_state}~\MS{tapes})
 \end{alignat*}
 
 
@@ -325,8 +334,8 @@ We define some useful relations that operate on the parameter.
   \label{def:rel-param-op}
   For a relation $R:\Rel~X~Z$ we define:
   \begin{alignat*}{3}
-    \Uparrow   R &:= \setMap{(x, (y, z))}{R ~ x ~ z} &&:\Rel~X            ~ (Y \times Z) \\
-    \Downarrow R &:= \setMap{((x, y), z)}{R ~ x ~ z} &&:\Rel~(X \times Y) ~ Z
+    \ignoreParam   R &:= \setMap{(x, (y, z))}{R ~ x ~ z} &&:\Rel~X            ~ (Y \times Z) \\
+    \hideParam R &:= \setMap{((x, y), z)}{R ~ x ~ z} &&:\Rel~(X \times Y) ~ Z
   \end{alignat*}
 \end{definition}
 
@@ -451,6 +460,7 @@ Note that of $R$ is functional, this represents the determinism of the machine.
 \end{lemma}
 
 \section{Combinators}
+\label{sec:combinators}
 
 We need to make programming more \textit{structural} by introducing well-known operators from imperative structural programming languages, namely
 \emph{match}, \emph{if}, \emph{sequential composition} and \emph{while}.
@@ -697,8 +707,8 @@ An immediate consequence is the strong correctness of $\MS{loop}$.
   \label{lem:match-realise}
   If $M \vDash_p R$ (or $\vDash_p^{k_1}$ for some $k_1:\Nat$) and for each $y:F$, $M_y \vDash_{p'_y} R_r$ (or $\vDash_{p'_y}^{k_2}$ for some
   $k_2:\Nat$), then
-  $$\mmatch~(M_f, p_f) \vDash \bigcup_{f:F} (R \at f) \circ R_f.$$
-  (or $\vDash^{(1+k_1+k+2)}$).
+  $$\mmatch~(M_f, p_f) \vDash \bigcup_{f:F} (R \at f) \circ R_f$$
+  (or $\vDash^{1+k_1+k_2}$).
 \end{lemma}
 \begin{proof}
   Both claims (strong realisation and realisation in constant time) are immediate consequences of Lemma \ref{lem:match-merge}.
@@ -743,7 +753,7 @@ trivial matching from any states of $M_1$ to $M_2$, and a boolean if amounts to 
 
 \begin{corollary}[Correctness of sequential composition]
   \label{lem:seq}
-  If $M_1 \vDash R_1$ and $M_2 \vDash R_2$, then $M_1 \mseq M_2 \vDash R_1 \circ \Downarrow R_2$.
+  If $M_1 \vDash R_1$ and $M_2 \vDash R_2$, then $M_1 \mseq M_2 \vDash R_1 \circ \hideParam R_2$.
 \end{corollary}
 
 \begin{definition}[Boolean if]
@@ -915,7 +925,7 @@ Let $M$ be a $m$-tape Turing machine over $\Sigma$.  Let $n \ge m$ and let $\MS{
 (We will from now on call the function $\MS{inject}$ implicitly with $\MS{indexes}$.)
 
 The second function we need is $\MS{reorder} \from X^n \to X^m$, that selects the values of the indexes in the image of $f$:
-$$\MS{reorder}~Z := \MS{map}~(\MS{nth}~Z)~\MS{indexes}.$$
+$$\MS{reorder}~Z := \map~(\MS{nth}~Z)~\MS{indexes}.$$
 
 Using these two functions we can define the transition function $\gamma_{\MS{lift}}$:
 \begin{alignat*}{3}
@@ -931,7 +941,7 @@ Thus, we have defined all components of the lift machine; from other chapters we
   For $R : \Rel~\Tapes{n}~(F \times \Tapes{n})$:
   \begin{multline*}
     R_{\MS{lift}}(R) := \setMap{(\MS{input}, (y, \MS{output}))}{R~(\MS{reorder}~\MS{input})~(y,\MS{reorder}~\MS{output})} \cap \\
-    \Uparrow \setMap{(\MS{input},\MS{output})}{\forall j:\Fin_n, j \notin \MS{indexes} \rightarrow \MS{input}[j] = \MS{output}[j]}
+    \ignoreParam \setMap{(\MS{input},\MS{output})}{\forall j:\Fin_n, j \notin \MS{indexes} \rightarrow \MS{input}[j] = \MS{output}[j]}
   \end{multline*}
   For $T : \Rel~\Tapes{n}~\Nat$: $ T_{\MS{lift}}(T) := \setMap{(\MS{input}, k)}{T~(\MS{reorder}~\MS{input})~k} $.
 \end{definition}
@@ -989,16 +999,21 @@ $\Sigma$.  This idea is illustrated in Figure \ref{fig:sigma-tau-lift-example-ma
 Let $M$ be an $n$-tape Turing machine over $\Sigma$.  The alphabet of the lift-machine is $\Tau$.  The states, initial states, the final states, and
 the partitioning are inherited from $M$.  To define the transition function of the list, we have to define some functions again.
 
-There is a dependent function $\MS{map}_\Tape:\forall X, Y:\MS{finType},~(X \to Y) \to \Tape(X) \to \Tape(Y)$, that applies a function to a each symbol
-on of a tape and preserves the position of the pointer.  For convenience, we also introduce the functions $\MS{map}_\Option$ and $\MS{map}_\MS{Act}$:
+There is a dependent function $\map_\Tape:\forall X, Y:\MS{finType},~(X \to Y) \to \Tape(X) \to \Tape(Y)$, that applies a function to a each symbol
+on of a tape and preserves the position of the pointer.
+For convenience, we also introduce the functions $\map_\Option$, $\map_\MS{left}$, $\map_\MS{right}$, and $\map_\MS{Act}$:
 \begin{alignat*}{4}
-  \MS{map}_\Option &&~ f && a &:=
+  \map_\Option &&~ f && a &:=
     \begin{cases}
       \Some{f~a'} & a = \Some{a'} \\
       \None       & a = \None
     \end{cases} \\
-    \MS{map}_\MS{left} &&~ f &&~ (a, b) &:= (\MS{map}_\Option~f~a, b)
+    \map_\MS{left}  &&~ f &&~ (a, b) &:= (f~a, b) \\
+    \map_\MS{right} &&~ f &&~ (a, b) &:= (a, f~b) \\
+    \map_\MS{Act}   &&~ f &&         &:= \map_\MS{left}~(\map_\Option~f)
 \end{alignat*}
+% XXX Define Act
+Note that $map_\MS{Act}$ applies a function to the optional symbol of an action tuple.
 
 Then we can define the function $g' \from \Tau \to \Sigma$, that is $g$ extended by $\MS{default}$:
 \begin{align*}
@@ -1009,8 +1024,8 @@ Then we can define the function $g' \from \Tau \to \Sigma$, that is $g$ extended
   \end{cases}
 \end{align*}
 
-Furthermore we define $\MS{surject\_tape}(tape) := \MS{map}_\Tape~\MS{surject}~t$ and
-$\MS{surject\_tapes}(\MS{tapes}) := \MS{map}~\MS{surject\_tape}~\MS{tapes}$.
+Furthermore we define $\MS{surject\_tape}(tape) := \map_\Tape~\MS{surject}~t$ and
+$\MS{surject\_tapes}(\MS{tapes}) := \map~\MS{surject\_tape}~\MS{tapes}$.
 Now we can finally define the transition function $\gamma_\MS{lift}$ of the $\Sigma,\Tau$-lift:
 \begin{alignat*}{3}
   &\gamma_\MS{lift} (q, sym) &~:=~& \mlet {(q', acts) := \gamma_M(q, \map~(\map_\Option~\MS{surject})~sym)}{\\
@@ -1021,8 +1036,8 @@ Now, that we have defined all components the $\Sigma,\Tau$-lift, from other chap
 
 \begin{definition}[Relational $\Sigma,\Tau$-lift]
   \label{def:sigma,tau-rellift}
-  For $R \subseteq \Tapes{n} \times (F \times \Tapes{n})$
-  $$R_\MS{lift}(R) := \setMap{\MS{input} (y, \MS{output})}{R~(\MS{surject\_tapes}~\MS{input})~(y, \MS{surject\_tapes~output})}$$
+  For $R : \Rel~\Tapes{n}~(F \times \Tapes{n})$:
+  $$R_\MS{lift}(R) := \setMap{\MS{input} (y, \MS{output})}{R~(\MS{surject\_tapes}~\MS{input})~(y, \MS{surject\_tapes~\MS{output}})}$$
   For $T : \Rel~\Tapes{n}~\Nat$:
   $T_\MS{lift}(T) := \setMap{(\MS{input}, k)}{T (\MS{surject\_tapes}~\MS{input})~k}$
 \end{definition}
@@ -1037,96 +1052,219 @@ Now, that we have defined all components the $\Sigma,\Tau$-lift, from other chap
   \end{enumerate}
 \end{lemma}
 
-% TODO: Mirror-TM
+
 \subsection{Mirror machine}
 \label{sub:mirror}
 
 The two machine transformations we have seen, modify either the number of tapes or the content of the tapes, but don't modify actions.
-This operator swaps all the directions, if the original machine would move one pointer to the left, this machine would move that pointer to the right.
+This operator swaps all the directions:  If the original machine would move one pointer to the left, this machine would move that pointer to the right.
 
 This is in particular useful, for example, if we define and certify a machine, that moves its pointer to the right.  Then we don't want to repeat all
 definitions and proofs, just for a machine, that moves its pointer to the left.
 
-We first define a function, that mirrors a tape:
+
+To define the $\MS{mirror}$ machine, we need the involutive and bijective function $\MS{mirror\_mv} \from \Move \to \Move$ that swaps $L$ and $R$.
 \begin{alignat*}{3}
-  \MS{mirror}&~\niltape            &&:= \niltape \\
-  \MS{mirror}&~\leftof{r}{rs}      &&:= \rightof{\rev~rs}{r} \\
-  \MS{mirror}&~\rightof{ls}{l}     &&:= \leftof{l}{\rev~ls} \\
-  \MS{mirror}&~\midtape{ls}{m}{rs} &&:= \midtape{\rev~rs}{m}{\rev~ls}
+  &\gamma_\MS{mirror}~\MS{\MS{qsym}} &~:=~& \mlet {(q, \MS{acts}) := \gamma_M (\MS{qsym})}{\\
+  &                                  &~  ~& (q', \map~(\MS{\MS{map\_right}~\MS{mirror\_move}})~\MS{acts})}
+\end{alignat*}
+The number of taeps, states, the partitioning function, the halting states and the initial state are inherited from $M$.  We write $\MS{mirror}$.
+
+
+% TODO: definition
+
+
+% XXX: Now correctness
+
+We define a function that mirrors a tape, where the pointer stays at the same position:
+\begin{alignat*}{3}
+  \MS{mirror\_tape}&~\niltape            &&:= \niltape \\
+  \MS{mirror\_tape}&~\leftof{r}{rs}      &&:= \rightof{\rev~rs}{r} \\
+  \MS{mirror\_tape}&~\rightof{ls}{l}     &&:= \leftof{l}{\rev~ls} \\
+  \MS{mirror\_tape}&~\midtape{ls}{m}{rs} &&:= \midtape{\rev~rs}{m}{\rev~ls} \\
+  \MS{mirror\_tapes}&                    &&:= \map~\MS{mirror\_tape}
 \end{alignat*}
 Note that this definition differs slightly from the definition in Coq, since we store the left lists already in reversed order.
 
-\begin{lemma}[Correctnes of $\MS{mirror}$]
+\begin{lemma}[Correctnes of $\MS{mirror\_tape}$]
   \label{lem:mirror}
   Let $t$ be a tapes over an alphabet.  Then
   \begin{enumerate}
-    \item $\MS{left} (\MS{mirror}~t) = \MS{right}~t$ and $\MS{right}(\MS{mirror}~t) = \MS{left} ~t$.
-    \item $\MS{current}(\MS{mirror}~t) = \MS{current}~t$
-    \item $\MS{mirror}$ is involutive and injective.
+    \item $\MS{left} (\MS{mirror\_tape}~t) = \MS{right}~t$ and $\MS{right}(\MS{mirror\_tape}~t) = \MS{left} ~t$.
+    \item $\MS{current}(\MS{mirror\_tape}~t) = \MS{current}~t$
+    \item $\MS{mirror\_tape}$  is involutive and injective.
+    \item $\MS{mirror\_tapes}$ is involutive and injective.
   \end{enumerate}
 \end{lemma}
 \begin{proof}
-  By case analysis over $t$.
+  Claims 1--3 follow by case analysis over $t$.
+  Claim 4 follows by claim 3.
 \end{proof}
+
+We observe the following behaviour of the $\MS{mirror}$ machine:  If we first mirror the tapes, then run the mirrored machine, and mirror the tapes
+again, the resulting tapes are exactly the tapes that result when we run the original machine on the origial input tapes.
+We express that behaviour as relations.
+\begin{definition}[Relational mirror]
+  \label{def:mirror-rellift}
+  For $R : \Rel~\Tapes{n}~(F \times \Tapes{n})$:
+  $$R_\MS{mirror}(R) := \setMap{\MS{input} (y, \MS{output})}{R~(\map~\MS{mirror}~\MS{input})~(y, \map~\MS{mirror}~\MS{output})}$$
+  For $T : \Rel~\Tapes{n}~\Nat$:
+  $T_\MS{lift}(T) := \setMap{(\MS{input}, k)}{T (\map~\MS{mirror}~\MS{input})~k}$
+\end{definition}
+\begin{lemma}[Correctness of $\MS{mirror}$]
+  \label{lem:sigma-tau}
+  For correctness relations $R$ and termination relations $T$:
+  \begin{enumerate}
+    \item
+      If $M \VDash R$, then $\MS{mirror} \VDash R_{\MS{mirror}}(R)$.
+    \item
+      If $M \downarrow T$, then $\MS{mirror} \downarrow T_{\MS{mirror}}(T)$.
+  \end{enumerate}
+\end{lemma}
 
 \section{Basic machines}
 
 % TODO Present basic machiens here:
-% TODO - Nop (1, n)
 % TODO - Write
 % TODO - Move
-% TODO - Read
 
-We introduce some basic $1$-tape classes machines (together with their partition functions) here, that are very helpful when composing greater
-machines.  They all do at most one simple step, for example write a symbol, or move the pointer.
+We introduce some basic $1$-tape classes machines (together with their partition functions) here, that are very helpful when combining machines.
+They all do at most one simple step, for example write a symbol, or move the pointer.
 
 The simplest class of $1$-tape machines is $\MS{nop}~y$, that does nothing and terminates in its initial state.  However, the partition function
 returns $y$ for this state.
-
-\section{Compound machines}
-
-% TODO: present some compound machines
-TODO: Implement/present compound machines
-
-\subsection{Write string}
-
-One other operation that we need is writing a certain string on a tape instead of only a single symbol.  We give a movement direction $D$ as
-parameter and define this machine by recursion over the string:
+Let $F$ be a finite type and $y : F$.
+Then we define the $1$-tape $\MS{nop}$ machine with its portioning function:
 \begin{alignat*}{3}
-  Write\_String&~\nil       ~&& D := Nop \\
-  Write\_String&~(e \cons l)~&& D := Write~e \mseq Move~D \mseq Write\_String~l
+  Q_     \MS{nop} &~  &&:= \Unit \\
+  s_     \MS{nop} &~  &&:= \unit \\
+  h_     \MS{nop} &~\_&&:= \true \\
+  \gamma_\MS{nop} &~\_&&:= (\unit, (\None, N)^1) \\
+  p_     \MS{nop} &~q &&:= y
 \end{alignat*}
 
+There are many ways how to express the correctness statement of this machine, e.g.:
+\begin{lemma}[Correctness of $\MS{nop}$]
+  \label{lem:nop-tm}
+  For every $y \in F$:
+  $$\MS{nop}~y \vDash^0 \setMap{(t_{in}, (y_{out}, t_{out}))}{t_{in}[0] = t_{out}[0] \land y_{out} = y}.$$
+\end{lemma}
+Note that we could also build an $n$-tape $\MS{nop}$ operator by applying the $m,n$-lift to the empty machine with $0$ tapes.
+
+
+We also present a class of $1$-tape-$1$-step machines $\MS{read}$, that read a symbol and terminate into a state, that corresponds to this symbol.
+Let $\Sigma$ be an alphabet.  Then the portioning function has the type $p_\MS{read} \from Q_\MS{read} \to \Option~\Sigma $.
+The initial state is $\inl \true$, the final states are all other states.  It terminates in $(\inl \false)$ if and only if there is no current symbol
+on the tape.  Else it terminates in the corresponding right state of the read symbol.
+\begin{alignat*}{3}
+  Q_     \MS{read} &~  &&:= \Bool + \Sigma \\
+  s_     \MS{read} &~  &&:= \inl \true \\
+  h_     \MS{read} &~q &&:= q \neq \inl \true \\
+  \gamma_\MS{read} &~(\_, \MS{sym}) &&:=
+  \begin{cases}
+    (\inl \false, (\None, N)) & \MS{sym}[0] =\None \\
+    (\inr a,      (\None, N)) & \MS{sym}[0] =\Some a
+  \end{cases} \\
+  p_     \MS{read} &~q &&:=
+  \begin{cases}
+    \Some a                   & q = \inl a \\
+    \None                     & \txt{else}
+  \end{cases}
+\end{alignat*}
+
+\begin{lemma}[Correctness of $\MS{read}$]
+  \label{lem:read-tm}
+  $\MS{read}$ realises the following relation in one step:
+  $$\MS{read} \vDash^1 \setMap{(t_{in}, (y_{out}, t_{out}))}{t_{in}[0] = t_{out}[0] \land y_{out} = \MS{current}(t_{in}[0])}.$$
+\end{lemma}
+
+The next class of machines, $\MS{write}~x~y$, writes exactly on symbol $x:\Sigma$ to its tape and terminates in one step to a state corresponding $y$.
+The definition is straight forward.
+\begin{alignat*}{3}
+  Q_     \MS{write} &~  &&:= \Bool \\
+  s_     \MS{write} &~  &&:= \false \\
+  h_     \MS{write} &~q &&:= q \\
+  \gamma_\MS{write} &~\_&&:= (\true, (\Some x, N)^1) \\
+  p_     \MS{write} &~\_&&:= y
+\end{alignat*}
+\begin{lemma}[Correctness of $\MS{write}$]
+  \label{lem:write-tm}
+  $$\MS{write} \vDash^1 \setMap{(t_{in}, (y_{out}, t_{out}))}{t_{out}[0] = \MS{wr}~(t_{in}[0])~\Some{x} \land y_{out} = y}.$$
+\end{lemma}
+
+The last operation-machine class we need is $\MS{move}~D~y$, where $D : \Move$ is an direction and $y : F$ is a parameter.
+\begin{alignat*}{3}
+  Q_     \MS{write} &~  &&:= \Bool \\
+  s_     \MS{write} &~  &&:= \false \\
+  h_     \MS{write} &~q &&:= q \\
+  \gamma_\MS{write} &~\_&&:= (\true, (\None, D)^1) \\
+  p_     \MS{write} &~\_&&:= y
+\end{alignat*}
+\begin{lemma}[Correctness of $\MS{move}$]
+  \label{lem:move-tm}
+  Let $D$ be a direction and $y : F$.  Then
+  $$\MS{move} \vDash^1 \setMap{(t_{in}, (y_{out}, t_{out}))}{t_{out} = \MS{mv}_D (t_{in}[0]) \land y_{out} = y}.$$
+\end{lemma}
+
+We can use this operational machine, to build a machine that writes a certain string on a tape instead of only a single symbol.
+Given a move direction $D : \Move$, a string $xs : \List~\Sigma$, and a parameter $y \in F$, we define this machine by recursion over the string,
+using sequential composition:
+\begin{alignat*}{3}
+  \MS{write\_str}&~\nil         &&:= \MS{nop}~y \\
+  \MS{write\_str}&~(x \cons xs) &&:= \MS{write}~x \mseq \MS{move}~D \mseq \MS{write\_str}~xs
+\end{alignat*}
+
+To define the correctness relation for this class of machines, we also use recursion on the string and define a function, that writes a string on a
+tape:
+\begin{alignat*}{3}
+  \MS{write\_str'}~t &~\nil         &&:= t \\
+  \MS{write\_str'}~t &~(x \cons xs) &&:= \MS{write\_str'}~(\MS{wr\_mv}~t~(\Some x, D))~xs
+\end{alignat*}
+
+\begin{lemma}[Correctness of $\MS{write\_string}$]
+  \label{lem:write-string}
+  For each string $xs : \List~\Sigma$ and direction $D : \Move$:
+  $$\MS{write\_string}~D~xs \vDash^{4 \cdot \left|str\right|} \setMap{(t_{in}, (y_{out}, t_{out}))}{t_{out} = \MS{write\_str'}~t_{in}~xs \land
+    y_{out} = y}.$$
+\end{lemma}
+\begin{proof}
+  The idea is to recursively define a correctness relation $R~xs$ and show by induction on $xs$ that $\MS{write\_string}~xs$ realises $R~xs$ in
+  $4 \cdot \left|str\right|$ steps using the correctness lemmas \ref{lem:seq}, \ref{lem:write-tm}, and \ref{lem:move-tm}.
+  Then we show that $R~xs$ is a includes the correctness relation of $\MS{write\_string}$.
+\end{proof}
 
 \section{Encoding types}
 \label{sec:encode}
 
-To approach an interpreter for $\lambda$-terms, we have to define encodings for all occurring data types.
-We define encodable types as a type class parametrised by the alphabet.
+The next step is to define what it means that a tape encodes a certain value.
+Therefore we need a mechanism to linearise values to lists of symbols.
+The key idea is the definition of \emph{encodable types}.
 
-\begin{definition}[Codeable type]
+\begin{definition}[Codable type]
   \label{def:code}
-  A type $X$ is \emph{encodable} in an alphabet $\Sigma$, if there exists an \emph{encoding function}
-  $encode \from X \to \List(\Sigma)$ with the property:
-  \begin{multline*}
-    \forall v_1,v_2:X,~r_1,r_2:\List(\Sigma), \\
-    encode(x) \app r_1 = encode(v_2) \app r_2 \Rightarrow
-    v_1 = v_2 \land r_1 = r_2.
-  \end{multline*}
-\end{definition}
-Note that this property implies injectivity of the encoding function.  Because we can not make tapes smaller, the machine that interacts with encoded
-values must know where the string ends.  Therefore injectivity of the encoding function alone is not enough.
+  A type $X$ is \emph{encodable} over an alphabet $\Sigma$, if there exists an \emph{encoding function}
+  $\MS{encode} \from X \to \List~\Sigma$, such that for all values $v_1, v_2:X$ and rest lists $r_1, r_2:\List~\Sigma$,
+  if $\MS{encode}(x) \app r_1 = \MS{encode}(v_2) \app r_2$, then
+  $v_1 = v_2$ and $r_1 = r_2$.
 
-Our Coq development provides a library of encoding functions for typical types, for example:  $\Unit$, $\bot$, $\Option(X)$, $X+Y$, $X \times Y$, $\List(X)$
-and $\Nat$.  Note that each type can be encoded on different alphabets.  For example we can encode every finite type $F$ to the alphabet $F$ itself.
+  If $X$ is encodable over $\Sigma$, then we will use the overloaded notation $\MS{encode}_{\Sigma}(x)$, to call the encoding function, or leave out
+  $\Sigma$, if it is clear.  In the Coq implementation, this Definition is a type class.
+\end{definition}
+
+Note that this strong property implies injectivity of the encoding function.
+It also implies that the encoding is a prefix encoding.
+
+Our Coq development provides a library of encoding functions for typical types, for example:  $\Unit$, $\bot$, $\Option(X)$, $X+Y$, $X \times Y$,
+$\List(X)$ and $\Nat$.  Note that each type can be encoded on different alphabets.  For example we can encode every finite type $F$ to the alphabet
+$F$ itself.  But we could also encode finite types to $\Unit$.
 
 \begin{example}[Encoding basic types]
   \label{ex:bacic-code}
-  $\Unit$ and $\bot$ are encoded on the empty alphabet, while every finite type $F$ encodes itself:
+  $\Unit$ and $\bot$ can be encoded over the empty alphabet, while every finite type $F$ can encode itself:
   \begin{alignat*}{3}
-    encode&_F    &&~(f:F)         &&:= [f] \\
-    encode&_\bot &&~(devil:\bot)  &&:= [] \\
-    encode&_\Unit&&~(\unit:\Unit) &&:= [] \\
+    \MS{encode}&_F    &&~(f:F)     &&:= [f] \\
+    \MS{encode}&_\bot &&~(x:\bot)  &&:= [] \\
+    \MS{encode}&_\Unit&&~(x:\Unit) &&:= [] \\
   \end{alignat*}
 \end{example}
 
@@ -1134,21 +1272,21 @@ To encode more complex types we need a mechanism to extend an alphabet.
 \begin{lemma}[Alphabet mapping]
   \label{lem:code-map}
   Let $X$ be a type and $\Sigma, \Tau$ be alphabets.
-  Let $encode \from X \to \List(\Sigma)$ be an encoding function for $X$ on $\Sigma$.
-  Let $(f,g) \from \Sigma \hookrightarrow \Tau$ be a tight retract.
-  Then we can define an encoding function $encode_{\Sigma \hookrightarrow \Tau} \from X \to \List(\Tau)$.
+  Let $\MS{encode}_\Sigma \from X \to \List~\Sigma$ is an encoding function for $X$ on $\Sigma$ and
+  let $(f,g) \from \Sigma \hookrightarrow \Tau$ be a retract.
+  Then $\MS{encode}_\Tau \from \X \to \List~\Tau := \map~f~(\MS{encode}~x)$ is an encoding function for $X$ on $\Tau$.
 \end{lemma}
 
 \begin{proof}
-  We define the new encoding function:
-  $$encode_{\Sigma \hookrightarrow \Tau}(x) := map~f~(encode~x).$$
   To show that this is a valid encoding function, it suffices to show the following lemma:
   \begin{multline*}
     \forall v_1,v_2:X,~\forall r_1, r_2:\List(\Sigma),~\forall R_1, R_2:\List(\Tau),\\
-    map~f~(encode~v_1 \app r_1) \app R_1 = map~(encode~v_2 \app r_2) \app R_2 \Rightarrow \\
-    v_1 = v_1 \land map~f~r_1 \app R_1 = map~f~r_2 \app R_2.
+    \map~f~(\MS{encode}~v_1 \app r_1) \app R_1 = \map~(\MS{encode}~v_2 \app r_2) \app R_2 \Rightarrow \\
+    v_1 = v_1 \land \map~f~r_1 \app R_1 = \map~f~r_2 \app R_2.
   \end{multline*}
-  This can be shown by double-induction over $R_1, R_2:\List(\Tau)$, using some lemmas.
+  This can be shown by double-induction over $R_1, R_2:\List~\Tau$, using some lemmas.
+  In particular we have to create a tight retract $(f, g') \from \Sigma \hookrightarrow \Tau$.
+  That is possible because alphabets are discrete.
 \end{proof}
 
 
@@ -1156,81 +1294,112 @@ To encode more complex types we need a mechanism to extend an alphabet.
   \label{lem:extend-alphabet}
   Let $X, Y$ be types encodable over $\Sigma$ and $\Tau$, respectively.
   Using Lemma \ref{lem:code-map} we can build new encoding functions:
-  \begin{alignat*}{2}
-    encode_{\Sigma \hookrightarrow \Sigma + \Tau} &\from X \to \List(\Sigma + \Tau) \\
-    encode_{\Tau   \hookrightarrow \Sigma + \Tau} &\from Y \to \List(\Sigma + \Tau) \\
-    encode_{\Sigma \hookrightarrow \Option(\Sigma)}  &\from X \to \List(\Option(\Sigma)) \\
-    encode_{\Sigma + \bot \hookrightarrow \Sigma} &\from X \to \List(\Sigma).
+  \begin{alignat*}{3}
+    \MS{encode}&_{\Sigma + \Tau}    &&\from X \to \List(\Sigma + \Tau) \\
+    \MS{encode}&_{\Sigma + \Tau}    &&\from Y \to \List(\Sigma + \Tau) \\
+    \MS{encode}&_{\Option(\Sigma)}  &&\from X \to \List(\Option(\Sigma))
   \end{alignat*}
+  Furthermore, if $X$ is encodable over $\Sigma+\bot$, then $X$ is encodable over $\Sigma$.
+  Also, if $X$ is encodable over $\Sigma+\Tau$, then $X$ is encodable over $\Tau+\Sigma$.
 \end{corollary}
 
-Using Corollary \ref{lem:extend-alphabet} we can construct encoding functions for compound types:
+Using Corollary \ref{lem:extend-alphabet} we can construct more encoding functions for compound types:
 \begin{corollary}[Encoding compound types]
   \label{lem:code-compound}
   Let $X, Y$ be types encodable over $\Sigma$ and $\Tau$, respectively.
   Then the following functions are encoding functions:
-  \begin{alignat*}{2}
-    encode_{X+Y}&(x)             &&:= \false                 \cons encode_{\Sigma \hookrightarrow \Sigma + \Tau}(x) \\
-    encode_{X+Y}&(y)             &&:= \true \hspace{0.15em} \cons encode_{\Tau   \hookrightarrow \Sigma + \Tau}(y) \\
-    encode_{\List(X)}& (\nil)    &&:= \false \\
-    enocde_{\List(X)}& (x :: xs) &&:= \true \hspace{0.15em} \cons encode_{\Sigma \hookrightarrow \Bool + \Sigma}(x) \app
-                                      encode_{\List(X) \hookrightarrow \Bool + \Sigma}(xs)
+  \begin{alignat*}{3}
+    \MS{encode}&_{\Sigma + \Tau + \Bool}&(\inl x) &:= \inr \false \cons \MS{encode}(x) \\
+    \MS{encode}&_{\Sigma + \Tau + \Bool}&(\inl y) &:= \inr \true  \cons \MS{encode}(y) \\
+    \MS{encode}&_{\Sigma + \Bool}& (\nil)         &:= \inr \false \\
+    \MS{encode}&_{\Sigma + \Bool}& (x :: xs)      &:= \inr \true \cons \MS{encode}(x) \app \MS{encode}_{\Sigma + \Bool}(xs)
   \end{alignat*}
+  Note that for each application of $\MS{encode}(x)$ and $\MS{encode}(y)$ we have to use $\map$.
+  Also note that the list encoding is the only encoding that needs the strong encoding property.  All other encoding functions so far can be built
+  with only the injectivity property.
 \end{corollary}
 
-We will now see how we can encode tuples.  If we have types $X$ and $Y$ that are encodable over the same alphabet $\Sigma$, it is easy:
-$$encode(x,y) := encode(x) \app encode(y).$$
-However, if we encode $X$ over $\Sigma$ and $\Tau$, we first have to map the alphabets to $\Sigma + \Tau$:
-$$encode(x,y) := encode_{\Sigma \hookrightarrow \Sigma + \Tau}(x) \app encode_{\Tau \hookrightarrow \Sigma + \Tau}(y).$$
+We will now see how we can encode tuples.
+Technically, to encode tuples of type $X \times Y$, where $X$ and $Y$ are both encodable over $\Sigma$, we could just append the encoding of $x:X$
+and $y:Y$, and get the encoding for $(x, y)$.
+This is true since we assume the strong encoding property.
+However, later, we want to define a class of projection machines $\pi$, that, given an tape that ``contains'' (we will define this predicate later)
+the encoding of a tuple $(x,y) : X \times Y$, copies $x$ and $y$ to separate tapes.
+We do not want this machine to ``parse'' the encoding.  This would be possible but it complicates simple copy and projection operators.
 
-We want to reduce the encoding of $\Nat$ to the encoding of $\List(\Unit)$.
-\begin{lemma}[Code reducing]
+Therefore, we define a general encoding function for tuples, where $X$ is encoded over $\Sigma$ and $Y$ is encoded over $\Tau$:
+\begin{lemma}[Encoding of tuples]
+  If $X$ is encodable over $\Sigma$ and $Y$ is encodable over $\Tau$, then $X \times Y$ is encodable over $\Sigma + \Tau$:
+  $$\MS{encode}_{\Sigma+\Tau}(x,y) := \MS{encode}_{\Sigma+\Tau}(x) \app \MS{encode}_{\Sigma+\Tau}(y).$$
+\end{lemma}
+
+
+We want to define a encoding function for $\Nat$ on $\Bool$, i.e. $\MS{encode}(n)=\true^n \app [\false]$.
+We use reductions, to construct this encoding functions.
+
+\begin{lemma}[Reducibility of encodability]
   \label{lem:code-reduce}
   Let $Y$ be a type encodable over $\Sigma$.
   Let $f \from X \to Y$ be an injective function.
-  Then $encode(x) := encode(f(x))$ is an encoding function for $X$ on $\Sigma$.
+  Then $\MS{encode}(x) := \MS{encode}(f(x))$ is an encoding function for $X$ on $\Sigma$.
 \end{lemma}
-\begin{corollary}
-  Using lemma \ref{lem:code-reduce} we can derive following encoding functions:
-  \begin{alignat*}{4}
-    encode&_\Nat      &&\from \Nat    &&\to \List(\Bool) \\
-    encode&_{\Option(X)} &&\from \Option(X) &&\to \List(\Bool + \Sigma).
-  \end{alignat*}
+
+\begin{corollary}[Encoding of natural numbers]
+  \label{lem:code-nat}
+  Natural numbers are encodable on $\Bool$.
 \end{corollary}
+\begin{proof}
+  With Lemma \ref{lem:code-compound} we know that $\List~\Unit$ is encodable on $\bot + \Bool$, and using Lemma \ref{lem:code-map}, on $\Bool$.
+  Therefore it suffices to show that there is an injective function $f \from \Nat \to \List~\Unit$.
+  We choose $f(n) := \unit^n$.
+\end{proof}
+
+\begin{corollary}[Encoding of options]
+  \label{lem:code-option}
+  If $X$ is encodable over $\Sigma$, then
+  $\Option~X$ is encodable over $\Sigma + \Bool$.
+\end{corollary}
+\begin{proof}
+  With Lemma \ref{lem:code-compound} we know that $X + \Unit$ is encodable on $\Sigma + (\bot + \Bool)$, and using Lemma \ref{lem:code-map}, on
+  $\Sigma + \Bool$.  Therefore it suffices to show that there is an injective function $f \from \Option~X \to X + \Unit$.
+  We choose the canonical one.
+\end{proof}
 
 
 \section{Computing functions}
 
-Finally we want to define a notion that a Turing machine \emph{computes} a function.  Therefore we need a predicate $encodes : \Rel~\Tape~X$
-for an encodable type $X$.
+Finally we want to define a notion that a Turing machine \emph{computes} a function.
+Therefore we need a relation $encodes : \Rel~\Tape~X$ for types $X$ that are encodable on the alphabet.
 
-We have several possibilities to define such a predicate.  The first possibility is that the current string on the tape encodes the value:
-$$\MS{encodes}(tape, x) := \MS{encode}_X(x) = \MS{tape\_to\_string}(\MS{tape}).$$
+We have several possibilities to define such a relation.  The first possibility is that the current string on the tape encodes the value:
+$$\MS{encodes}~\MS{tape}~x:= \MS{encode}_X(x) = \MS{tape\_to\_string}(\MS{tape}).$$
 This is not a good definition: Since it is impossible to remove symbols from a tape, we can not ``decrease'' $x$ (that means that the encoding of
 $x$ gets smaller).
 
 To fix this problem, we can define the predicate in this way:
-$$\MS{encodes}(\MS{tape}, x) := \exists~\MS{rest},~\MS{encode}_X(x) \app \MS{rest} = \MS{tape\_to\_string}(\MS{tape}).$$
+$$\MS{encodes}~\MS{tape}~x := \exists~\MS{rest},~\MS{encode}_X(x) \app \MS{rest} = \MS{tape\_to\_string}(\MS{tape}).$$
 However, one problem remains:  If a machine is supposed to only remove the first symbol of the encoding, it would have to shift the whole tape
 content.
 
 We can solve this issues by introducing a \emph{start} and a \emph{end} symbol (using Corollary \ref{lem:extend-alphabet}), thus if $X$ is
 encodable over $\Sigma$, a tape of the \emph{extended alphabet} $\Sigma^+ := \Sigma + \Bool$ can encode a value of $X$:
 \begin{multline*}
-  \MS{encodes}(\MS{tape},x) := \exists!~r_1, r_2 : \List(\Sigma^+),~\\
-  \MS{left}(\MS{tape}) = \inr \true \cons r_1 \land
-  \MS{local}(\MS{tape}) = (\MS{map} \inl)~(\MS{encode}_\Sigma(x)) \app \inr \false \cons r_2
+  \MS{encodes}~\MS{tape}~x:= \exists!~r_1, r_2 : \List(\Sigma^+),~\\
+  \MS{left}(\MS{tape}) = r_1 \app [\inr \true] \land
+  \MS{local}(\MS{tape}) = \MS{encode}_{\Sigma^+}(x) \app \inr \false \cons r_2
 \end{multline*}
-$\MS{local}$ is a function that returns $\niltape$ if the tape is empty; and $c' \cons \MS{right}(t)$, if $\MS{current}(t) = \Some{c'}$.
+$\MS{local}$ is a function that returns $\niltape$ if the tape is empty; and $c' \cons \MS{right}(t)$, whenever $\MS{current}(t) = \Some{c'}$.
 
 Now it is possible to define computation of a function:
 \begin{definition}[Computation of a function]
-  \label{def:computes}
-  Let $X, Y$ be encodable types over $\Sigma$.  A machine $M$ \emph{computes} a function $f \from X \to Y$ from $i < n$ to $j < n$, if
-  $$M \VDash \setMap{(\MS{input}, (y, \MS{output}))}{\forall x:X,~ \MS{encodes}(\MS{input}[i], x) \rightarrow \MS{encodes}(\MS{output}[j], f(x))}.$$
+  \label{def:computes} Let $X, Y$ be encodable types over $\Sigma$.  A machine $M$ \emph{computes} a function $f \from X \to Y$ from $i < n$ (the
+  input tape) to $j < n$ (the output tape), if
+  $M \VDash R_{i,j}(f)$ with
+  $$R_{i,j}(f) :=  \ignoreParam \setMap{(t_{in}, t_{out})}{\forall x:X,~ \MS{encodes}(t_{in}[i], x) \rightarrow \MS{encodes}(t_{out}[j], f(x))}.$$
 \end{definition}
+We can extend this definition to binary, trinary, etc. functions.
 
-We can already show that functional computation is compositive, using sequencial composition:
+We can already show that functional computation is compositive, using sequential composition:
 \begin{lemma}[Compose functions]
   \label{lem:computes-composes}
   Let $X, Y, Z$ be encodable types over $\Sigma$.  If $M_1$ and $M_2$ are $n$-tape Turing machines over $\Sigma$ and $M_1$ computes
@@ -1242,11 +1411,99 @@ We can already show that functional computation is compositive, using sequencial
 \end{proof}
 
 Note that in Lemma \ref{lem:computes-composes} the two machines have to compute the functions on compatible tapes.
-We can get rid of this restriction using the the $n,m$-lift to swap tapes.
+We can get rid of this restriction using the $n,m$-lift to swap tapes.
 
-% upper-most machine is an $while$.  Inside the while-loop we use the $match$-operator using the $read$ machine to check the first symbol, that is
-% $\true$ for a non-empty list and $\false$ for $\nil$.  If the recursion terminates in one of these cases, the corresponding $case$-machine will
-% terminate in a state that corresponds to $\false$.  Otherwise the wile-loop will be repeated.
+It is also important to note, that in Definition \ref{def:computes} and in Lemma \ref{lem:computes-composes}, the types have to be encodable over the
+same alphabet $\Sigma$.  We can use the $\Sigma,\Tau$-lift to solve this problem.  However, we have to be very careful about the $\MS{default}$
+symbol.
+
+\begin{lemma}[Change alphabet]
+  \label{lem:change-alphabet}
+  Let $f \from X \to Y$ be a function, $X$ and $Y$ be encodable.
+  Let a machine $M$ computes $f$ from $i$ to $j$ over the alphabet $\Sigma$.
+  Let $(f,g) \from \Sigma \hookrightarrow \Tau$ be a retract and $\MS{default} : \Sigma$.
+
+  Let either
+  \begin{itemize}
+    \item the retract be full, e.g. $\forall y:\Tau, \exists \sigma:\Sigma, g(y) = \Some{\sigma}$, or
+    \item for all $x : X$, $\MS{default} \notin \MS{encode}~x$,
+  \end{itemize}
+  then $\MS{lift}~(f,g)~M$ computes $f$ from $i$ to $j$ over the alphabet $\Tau$.
+\end{lemma}
+
+This result can also be generalised to binary functions.
+
+
+\section{Key study: Compute boolean functions}
+\label{sec:bool-tm}
+
+In this section we show that all unary and binary finite type-valued functions are computable with Turing machines.
+Furthermore we apply the operators from section \ref{sec:combinators}.
+
+Let $f \from \Sigma \to \Sigma$ be a function.  We define a $1$-tape machine $\MS{UnaryFinTM}$ over $\Sigma^+$, that computes $f$:
+\begin{align*}
+  \MS{UnaryFinTM}~f :=
+  \MS{match}~(\MS{read})
+  \left(
+    \begin{cases}
+      \MS{write}~(\inl(f~r'))   & r=\Some{r'} \\
+      \MS{nop}~\unit            & r=\None
+    \end{cases}
+  \right).
+\end{align*}
+\begin{lemma}[Correctness of $\MS{UnaryFinTM}$]
+  \label{lem:unary-fin-tm}
+  $\MS{UnaryFinTM}~f$ computes every function $f\from\Sigma\to\Sigma$ in $3$ steps.
+\end{lemma}
+
+We can extend this machine to all binary finite functions $f\from\Sigma\to\Sigma\to\Sigma$:
+\begin{align*}
+  \MS{BinaryFinTM}~f :=
+  \MS{match}~(\MS{read})
+  \left(
+    \begin{cases}
+      \MS{lift}~[0]~(\MS{UnaryFinTM}~(f~r')) & r=\Some{r'} \\
+      \MS{lift}~[0]~(\MS{nop}~\unit)         & r=\None
+    \end{cases}
+  \right).
+\end{align*}
+\begin{lemma}
+  \label{lem:binary-fin-tm}
+  $\MS{BinaryFinTM}~f$ (unary) computes $id$ from $0$ to $0$ and (binary) computes $f$ from tape $0$ to tape $1$ in $5$ steps.
+\end{lemma}
+
+Another $2$-tape machine computes two binary functions, that are computed sequencially on tape $0$ and tape $1$:
+$$ \MS{UnaryParallelTM}~f~g := \MS{lift}~[0]~(\MS{UnaryFinTM}~f) \mseq \MS{lift}~[1]~(\MS{UnaryFinTM}~g) $$
+
+\begin{lemma}
+  \label{lem:parallel-fin-tm}
+  $\MS{UnaryParallelTM}~f~g$ computes $f$ on $0$ and $g$ on tape $1$ in $7$ steps.
+\end{lemma}
+
+
+Now we consider boolean functions.  We demonstrate how to employ commutativity of $notb$ and the de-Morgan laws.
+
+First we instantate \ref{lem:unary-fin-tm} and \ref{lem:binary-fin-tm}, to generate machines $\MS{NOT}$ and $\MS{AND}$, that compute the boolean
+functions $negb$ and $andb$, where the output of $\MS{NOT}$ is stored on the tape $1$.
+Note that we also know that $\MS{AND}$ ``computes'' $id$ on the input-only tape $0$.
+
+We see, that $\MS{nop}$ realises the identity function $\MS{id}_\Bool$.
+
+Then we define the retract $(f, g) \from \Bool \hookrightarrow \Bool$, that results from boolean negation.
+We use the De'Morgan law $\neg(\neg b_1 \land \neg b_2) = b_1 \lor b_2$.
+When we apply the $\Sigma,\Tau$-lift using this injection on the $\MS{AND}$ machine, we essentially negate the inputs and the output.
+Using Lemma \ref{lem:change-alphabet}, we conclude that $\MS{lift}~(f,g)~\MS{AND}$ realises $orb$ in $5$ steps.
+
+Next, we see that if we sequentially compose two $\MS{not}$ machines, we also get the identity function.
+
+We employ the de-Morgan law again.  This time we explicitely negate the inputs and the outputs.
+Using Lemma \ref{lem:parallel-fin-tm}, we know that the machine $\MS{not}_2 := \MS{UnaryParallelTM}~negb~negb$ computes the function $negb$
+seperately on tape $0$ and on tape $1$.
+Now $\MS{OR'} := \MS{NOT}_2 \mseq \MS{AND} \mseq \MS{lift}~[1]~\MS{NOT}$, negates the inputs, applies $andb$ and negates the output on tape $1$.
+Thus we conclude, that $\MS{NOT'}$ also computes $orb$.
+
+Finally, we see how ``swapping'' tapes works:  We use the index-vector $\MS{swap\_tapes} := [1,0]$, $\MS{lift}~\MS{swap\_tapes}~\MS{AND}$ computes
+$andb$ from tape $1$ to tape $0$ and leaves the value of tape $1$ unchanged.
 
 \end{document}
 
