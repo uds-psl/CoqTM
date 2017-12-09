@@ -498,8 +498,6 @@ Section Injection_Compose.
 End Injection_Compose.
 
 
-
-
 Section Map_Injective.
   Variable (sig tau : Type) (t : sig -> tau).
   Hypothesis t_injective : injective t.
@@ -533,3 +531,42 @@ End Injection_Corollaries.
 Hint Resolve injective_id : inj.
 Hint Resolve injective_inl : inj.
 Hint Resolve injective_inr : inj.
+
+
+(* TODO: Can any injection between decidable types be made a retract? *)
+Section Dec_Retract.
+End Dec_Retract.
+
+
+Section Retract_TightRetract.
+  Variable (X : Type) (Y : eqType) (f : X -> Y) (g : Y -> option X).
+  Hypothesis retr : retract f g.
+
+  Global Instance retract_dec_image :
+    forall y, dec (exists x, f x = y).
+  Proof.
+    intros y. destruct (g y) as [x | ] eqn:E.
+    - decide (f x = y) as [<- | D].
+      + left. eauto.
+      + right. intros (x'&<-). enough (Some x' = Some x) by congruence.
+        erewrite <- retract_g_adjoint; eauto.
+    - right. intros (x&<-). rewrite retract_g_adjoint in E; eauto. congruence.
+  Qed.
+
+  Definition make_tight_retract_g : Y -> option X :=
+    fun y => if Dec (exists x, f x = y) then g y else None.
+
+  Global Instance make_tight_retract : tight_retract f make_tight_retract_g.
+  Proof.
+    unfold make_tight_retract_g. split.
+    - intros H. decide (exists x, f x = y) as [ (x'&<-) | D].
+      + rewrite retract_g_adjoint in H; auto. congruence.
+      + congruence.
+    - intros ->. decide (exists x', f x' = f x) as [ (x'&Hx') | D].
+      + rewrite retract_g_adjoint; auto.
+      + contradict D. eauto.
+  Qed.
+
+End Retract_TightRetract.
+
+Hint Resolve make_tight_retract : inj.

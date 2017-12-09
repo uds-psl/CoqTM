@@ -97,14 +97,12 @@ Section DoubleListInduction.
 
 End DoubleListInduction.
 
-
-
-Section Encode_Map.
+Section Map_Retract.
   Variable (X : Type).
   Variable (sig tau : finType).
   Hypothesis (code_sig : codeable sig X).
   Variable (f : sig -> tau) (g : tau -> option sig).
-  Hypothesis (inj : tight_retract f g).
+  Hypothesis (inj : retract f g).
 
   Lemma map_map_app_eq_None_None (ss1 ss2 : list sig) (t1 t2 : tau) (ts1 ts2 : list tau) :
     g t1 = None -> g t2 = None ->
@@ -145,6 +143,21 @@ Section Encode_Map.
     rewrite C in Contra. apply (Contra t); auto.
   Qed.
 
+End Map_Retract.
+
+Section Encode_Map.
+  Variable (X : Type).
+  Variable (sig tau : finType).
+  Hypothesis (code_sig : codeable sig X).
+  Variable (f : sig -> tau) (g : tau -> option sig).
+
+  (*
+   * We actually do not need the retract to be tight, since sig and tau are finite.
+   * If there is a retract for f and g, Coq will automaticly find a function g' : tau -> option sig,
+   * such that (f, g') is a tight retract.
+   *)
+  Hypothesis (inj : tight_retract f g).
+
   Lemma encode_map_injective':
     forall (v1 v2 : X) (r1 r2 : list sig) (R1 R2 : list tau),
       map f (encode v1 ++ r1) ++ R1 = map f (encode v2 ++ r2) ++ R2 -> v1 = v2 /\ map f r1 ++ R1 = map f r2 ++ R2.
@@ -158,14 +171,14 @@ Section Encode_Map.
         rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
         pose proof (IHd _ _ H) as (->&IH). rewrite !app_nil_r in *.
         rewrite map_app in IH. rewrite <- app_assoc in IH. auto.
-      + rewrite !app_nil_r in *. exfalso. replace (y :: ys) with ([y] ++ ys) in H by reflexivity. eapply map_app_eq_nil_None; eauto.
+      + rewrite !app_nil_r in *. exfalso. replace (y :: ys) with ([y] ++ ys) in H by reflexivity. eapply map_app_eq_nil_None; auto_inj.
     - destruct (g x) eqn:E.
       + eapply tretract_g_inv' in E; auto_inj; subst.
         replace (f e :: xs) with (map f [e] ++ xs) in H by reflexivity.
         rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
         pose proof (IHd _ _ H) as (->&IH). rewrite !app_nil_r in *.
         rewrite map_app in IH. rewrite <- app_assoc in IH. auto.
-      + rewrite !app_nil_r in *. exfalso. replace (x :: xs) with ([x] ++ xs) in H by reflexivity. eapply map_app_eq_nil_None; eauto.
+      + rewrite !app_nil_r in *. exfalso. replace (x :: xs) with ([x] ++ xs) in H by reflexivity. eapply map_app_eq_nil_None; auto_inj.
     - destruct (g x) eqn:E1, (g y) eqn:E2.
       + eapply tretract_g_inv' in E1; auto_inj; subst. eapply tretract_g_inv' in E2; auto_inj; subst.
         replace (f e  :: xs) with (map f [e ] ++ xs) in H by reflexivity.
@@ -182,10 +195,9 @@ Section Encode_Map.
         rewrite app_assoc in H. rewrite <- map_app in H. rewrite <- app_assoc in H.
         pose proof (IHd2 _ _ H) as (->&IH). rewrite !map_app in IH. rewrite <- !app_assoc in IH. split; auto.
       + replace (x :: xs) with ([x] ++ xs) in H by reflexivity. replace (y :: ys) with ([y] ++ ys) in H by reflexivity.
-        pose proof (map_map_app_eq_None_None E1 E2 H) as (L&->&->). apply map_injective in L. now apply encode_injective in L as (->&->).
-        auto_inj.
+        pose proof (map_map_app_eq_None_None ltac:(auto_inj) E1 E2 H) as (L&->&->). apply map_injective in L.
+        now apply encode_injective in L as (->&->). auto_inj.
   Qed.
-
 
   Lemma encode_map_injective :
     forall (v1 v2 : X) (r1 r2 : list tau),
@@ -202,7 +214,17 @@ Section Encode_Map.
   
 End Encode_Map.
 
+(* Without the requirement that (f,g) is a tight retract. *)
+Section Encode_Map'.
+  Variable (X : Type).
+  Variable (sig tau : finType).
+  Hypothesis (code_sig : codeable sig X).
+  Variable (f : sig -> tau) (g : tau -> option sig).
+  Hypothesis (inj : retract f g).
+  Definition Encode_Map' : codeable tau X := ltac:(eauto).
+End Encode_Map'.
 
+  
 (* TODO: Injectivity of the X coding is enough. *)
 Section Stop.
 
