@@ -81,9 +81,11 @@ Section Fix_Sig.
 
     (* Extend sig with a start end a end symbol *)
 
+    (*
     Check sig^+.
     Check tapes sig^+ 42.
     Check (sig + bool) % type.
+    *)
 
     Definition START : bool := false.
     Definition STOP  : bool := true.
@@ -221,23 +223,18 @@ Section Fix_Sig.
     Variable n_tapes : nat.
     Variable (i j k : Fin.t n_tapes).
     Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
-    Variable f : X -> Y -> Z.
     Variable F : finType.
 
-    Definition Computes2 : relation (tapes sig^+ n_tapes) :=
+    Definition Computes2 (f : X -> Y -> Z) : relation (tapes sig^+ n_tapes) :=
       fun tin tout =>
         forall (x : X) (y : Y),
           tape_encodes _ ( tin[@i]) x ->
           tape_encodes _ ( tin[@j]) y ->
           tape_encodes _ (tout[@k]) (f x y).
 
-    Definition Computes2_Rel : Rel (tapes sig^+ n_tapes) (F * tapes sig^+ n_tapes) :=
-      ignoreParam (Computes2).
+    Definition Computes2_Rel (f : X -> Y -> Z) :
+      Rel (tapes sig^+ n_tapes) (F * tapes sig^+ n_tapes) := ignoreParam (Computes2 f).
 
   End Computes2.
-
-  Section Computes_To_Computes2.
-
-  End Computes_To_Computes2.
 
 End Fix_Sig.

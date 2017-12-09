@@ -294,6 +294,14 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Proof.
     intros H1 H2. eapply RealiseIn_monotone. eapply H1. assumption. firstorder.
   Qed.
+
+  Fact RealiseIn_split n (F : finType) (pM : { M : mTM n & (states M -> F) }) R1 R2 (k : nat) :
+    pM ⊨c(k) R1 /\ pM ⊨c(k) R2 <-> pM ⊨c(k) R1 ∩ R2.
+  Proof.
+    split; swap 1 2; [ intros H | intros (H1&H2)]; repeat intros ?. hnf; firstorder eauto.
+    specialize (H1 input) as (outc &H1&H1'). specialize (H2 input) as (outc2&H2&H2').
+    pose proof loop_functional H1 H2 as <-. exists outc. split; hnf; eauto.
+  Qed.
   
   Fact Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
     pM ⊫ R /\ projT1 pM ↓ (fun _ i => i >= k) <-> pM ⊨c(k) R.
@@ -392,4 +400,4 @@ Hint Rewrite tapeToList_move : tape.
 Hint Rewrite tapeToList_move_R : tape.
 Hint Rewrite tapeToList_move_L : tape.
 
-Check tape_write.
+Arguments tapes (sig % type) (n % nat).

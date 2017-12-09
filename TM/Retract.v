@@ -39,6 +39,7 @@ Class Inversion (X Y : Type) :=
     Inv_g : Y -> X;
     Inv_inv :> inverse Inv_f Inv_g;
   }.
+Coercion Inv_inv : Inversion >-> inverse.
 
 (* Replace [ f (g x) ] with [ x ], etc. *)
 Ltac inverse :=
@@ -255,6 +256,7 @@ Class Retract (X Y : Type) :=
     Retr_g : Y -> option X;
     Retr_adj :> retract Retr_f Retr_g;
   }.
+Coercion Retr_adj : Retract >-> retract.
 
 Ltac retract_adjoint :=
   match goal with
@@ -296,6 +298,7 @@ Class TRetract (X Y : Type) :=
     TRetr_g : Y -> option X;
     TRetr_inv :> tight_retract TRetr_f TRetr_g;
   }.
+Coercion TRetr_inv : TRetract >-> tight_retract.
 
 
 Section Retract_Compose.
@@ -478,6 +481,7 @@ Class Injection (X Y : Type) :=
     Inj_f : X -> Y;
     Inj_inj :> injective  Inj_f;
   }.
+Coercion Inj_inj : Injection >-> injective.
 
 Ltac inj_subst :=
   match goal with
