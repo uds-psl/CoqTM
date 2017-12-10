@@ -1,8 +1,9 @@
-Require Export Shared.FiniteTypes.FinTypes Shared.FiniteTypes.BasicFinTypes Shared.FiniteTypes.CompoundFinTypes Shared.FiniteTypes.VectorFin Shared.Tactics.AutoIndTac.
+Require Export Shared.FiniteTypes.FinTypes Shared.FiniteTypes.BasicFinTypes Shared.FiniteTypes.CompoundFinTypes Shared.FiniteTypes.VectorFin.
 Require Export Shared.Extra Shared.Base.
-Require Export Program.Equality.
 
 Require Export smpl.Smpl.
+
+Global Open Scope vector_scope.
 
 
 (* Instance fin_eq_dec (A: finType) : eq_dec A. *)
@@ -207,17 +208,34 @@ Tactic Notation "dependent" "destruct" constr(V) :=
   | _ => fail "Wrong type"
   end.
 
-
 Lemma destruct_vector_nil (X : Type) :
   forall v : Vector.t X 0, v = [||]%vector_scope.
 Proof.
-  intros H. dependent destruction H. reflexivity.
+  now apply case0.
 Qed.
 
 Lemma destruct_vector_cons (X : Type) (n : nat) :
   forall v : Vector.t X (S n), { h : X & { v' : Vector.t X n | v = h ::: v' }} % vector_scope.
 Proof.
-  intros H. dependent destruction H. eauto.
+  revert n. apply caseS. eauto.
+Qed.
+
+Ltac existT_eq :=
+  match goal with
+  | [ H: existT ?X1 ?Y1 ?Z1 = existT ?X2 ?Y2 ?Z2 |- _] =>
+    apply EqdepFacts.eq_sigT_iff_eq_dep in H; inv H
+  end.
+
+Ltac existT_eq' :=
+  match goal with
+  | [ H: existT ?X1 ?Y1 ?Z1 = existT ?X2 ?Y2 ?Z2 |- _] =>
+    apply EqdepFacts.eq_sigT_iff_eq_dep in H; induction H
+  end.
+
+Lemma In_cons (X : Type) (n : nat) (x y : X) (xs : Vector.t X n) :
+  In y (x ::: xs) -> x = y \/ In y xs.
+Proof.
+  intros H. inv H; existT_eq'; tauto.
 Qed.
 
 (* Destruct a vector of known size *)
@@ -268,9 +286,7 @@ Section In_nth.
 
 End In_nth.
 
-
 Section tabulate_vec.
-
   Variable X : Type.
 
   Fixpoint tabulate_vec (n : nat) (f : Fin.t n -> X) {struct n} : Vector.t X n.
@@ -289,7 +305,7 @@ Section tabulate_vec.
     - cbn. reflexivity.
     - cbn. rewrite IHm. reflexivity.
   Qed.
-  
+
   Lemma in_tabulate n (f : Fin.t n -> X) (x : X) :
     In x (tabulate_vec (n := n) f) <-> exists i : Fin.t n, x = f i.
   Proof.
@@ -297,7 +313,7 @@ Section tabulate_vec.
     {
       revert f x. induction n; intros f x H.
       - cbn in *. inv H.
-      - cbn in *. dependent induction H.
+      - cbn in *. apply In_cons in H as [ <- | H ].
         + eauto.
         + specialize (IHn (fun m => f (Fin.FS m)) _ H) as (i&IH). eauto.
     }
@@ -383,27 +399,11 @@ Tactic Notation "spec_assert" hyp(H) "by" tactic(T) :=
 
 (* Dupfree vector *)
 
-Global Open Scope vector_scope.
-
 Inductive dupfree X : forall n, Vector.t X n -> Prop :=
   dupfreeVN :
     dupfree (@Vector.nil X)
 | dupfreeVC n (x : X) (V : Vector.t X n) :
     ~ Vector.In x V -> dupfree V -> dupfree (x ::: V).
-  
-
-Ltac existT_eq :=
-  match goal with
-  | [ H: existT ?X1 ?Y1 ?Z1 = existT ?X2 ?Y2 ?Z2 |- _] =>
-    apply EqdepFacts.eq_sigT_iff_eq_dep in H; inv H
-  end.
-
-Ltac existT_eq' :=
-  match goal with
-  | [ H: existT ?X1 ?Y1 ?Z1 = existT ?X2 ?Y2 ?Z2 |- _] =>
-    apply EqdepFacts.eq_sigT_iff_eq_dep in H; induction H
-  end.
-
 
 Ltac vector_not_in_step :=
   match goal with
@@ -448,12 +448,6 @@ Proof.
   - constructor.
     + intros (x & H2 % H) % in_tabulate. congruence.
     + eapply IHn. now intros x y -> % H % Fin.FS_inj.
-Qed.
-
-Lemma In_cons (X : Type) (n : nat) (x y : X) (xs : Vector.t X n) :
-  In y (x ::: xs) -> x = y \/ In y xs.
-Proof.
-  intros H. inv H; existT_eq'; tauto.
 Qed.
 
 Lemma In_replace (X : Type) (n : nat) (xs : Vector.t X n) (i : Fin.t n) (x y : X) :
