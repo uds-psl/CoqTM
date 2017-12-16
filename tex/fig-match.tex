@@ -1,0 +1,47 @@
+\begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.8cm]
+  \begin{scope}
+	  % Machine M
+	  \node[state]          (M init)                                    {$s$};
+	  \node[state]          (M exit 1)  [right of=M init,yshift= 1.5cm] {$h_1$};
+	  \node[state]          (M exit 2)  [right of=M init,yshift= 0.0cm] {$h_2$};
+	  \node[state]          (M exit 3)  [right of=M init,yshift=-1.5cm] {$h_3$};
+	  \path (M init)
+	  edge[dotted] (M exit 1)
+	  edge[dotted] (M exit 2)
+	  edge[dotted] (M exit 3);
+	  \path (M init) ++(-1.0,0) edge (M init);
+  \end{scope}
+  \begin{scope}[xshift=6.5cm]
+	  % Match-Machines
+	  \begin{scope}[yshift=1.5cm]
+		  % Accepting match machine
+		  \node[state]          (M 1 init)                                        {$s'$};
+		  \node[state, double]  (M 1 exit 1)  [right of=M 1 init, yshift= 0.75cm] {$h'_1$};
+		  \node[state, double]  (M 1 exit 2)  [right of=M 1 init, yshift=-0.75cm] {$h'_2$};
+		  \path (M 1 init)
+		  edge[dotted] (M 1 exit 1)
+		  edge[dotted] (M 1 exit 2);
+	  \end{scope}
+	  \begin{scope}[yshift=-1.5cm]
+		  % Accepting match machine
+		  \node[state]          (M 2 init)                                        {$s''$};
+		  \node[state, double]  (M 2 exit 1)  [right of=M 2 init, yshift= 0.75cm] {$h''_1$};
+		  \node[state, double]  (M 2 exit 2)  [right of=M 2 init, yshift=-0.75cm] {$h''_2$};
+		  \path (M 2 init)
+		  edge[dotted] (M 2 exit 1)
+		  edge[dotted] (M 2 exit 2);
+	  \end{scope}
+  \end{scope}
+  % Connecting edges
+  \path
+  (M exit 1) edge node[anchor=south] {$(\None, N)$} (M 1 init)
+  (M exit 2) edge node[anchor=north,yshift=-0.2cm] {$(\None, N)$} (M 1 init)
+  (M exit 3) edge node[anchor=north] {$(\None, N)$} (M 2 init);
+
+  \begin{pgfonlayer}{background}
+	  \filldraw [line width=4mm,join=round,blue!10]
+	  (M   exit 1.north -| M   init.west) rectangle (M   exit 3.south -| M   exit 3.east)
+	  (M 1 exit 1.north -| M 1 init.west) rectangle (M 1 exit 2.south -| M 1 exit 2.east)
+	  (M 2 exit 1.north -| M 2 init.west) rectangle (M 2 exit 2.south -| M 2 exit 2.east);
+  \end{pgfonlayer}
+\end{tikzpicture}

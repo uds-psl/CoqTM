@@ -1,0 +1,112 @@
+\usepackage{listings}
+\usepackage{parskip}
+\usepackage{tikz-cd} % for commutative diagrams
+
+% To get \VDash to work (three options)
+% \usepackage{fdsymbol} % other math-font
+% \usepackage{mathabx}  % other math-font
+\renewcommand{\vDash}{\models} \DeclareRobustCommand{\VDash}{\mathrel{|\mkern-2mu|}\joinrel \Relbar}
+
+
+% TikZ ist *kein* Zeichenprogramm.
+\usepackage{tikz}
+\usetikzlibrary{arrows,shapes,snakes,automata,backgrounds}
+
+\newcommand{\lam}[2]{\lambda#1{.}\hskip.7pt#2}
+\newcommand{\Cond}[3]{\mathsf{if}\;#1\;\mathsf{then}\;#2\;\mathsf{else}\;#3}
+\newcommand{\eset}{\ensuremath{\emptyset}}
+\newcommand{\set}[1]{\ensuremath{\{#1\}}}
+\newcommand{\mset}[2]{\set{\,#1\mid#2\,}}
+\newcommand{\incl}{\ensuremath{\subseteq}}
+\newcommand{\toot}{\leftrightarrow}
+\newcommand{\sor}{\mathbin{\,\bar\lor\,}}
+\newcommand{\sexists}{\bar\exists}
+\newcommand{\adj}{\tdot}
+\newcommand{\union}{{\textstyle\bigcup}\hskip1pt}
+\newcommand{\inter}{{\textstyle\bigcap}\hskip1pt}
+\newcommand{\res}{\hskip.5pt\vert\hskip1pt}
+\newcommand{\pow}{\mathscr{P}}
+\newcommand{\wo}{\div}
+
+% Formating
+\newcommand{\txt}[1]{\text{#1}} % this disables spell-checking in my editor
+\newcommand{\MS}[1]{\textsf{#1}}
+
+% Lists
+\newcommand{\nil}{\MS{nil}}
+\newcommand{\cons}{\mathbin{::}}
+\newcommand{\rev}{\MS{rev}}
+
+% ++ operator:
+% Source: https://tex.stackexchange.com/questions/4194/how-to-typeset-haskell-operator-and-friends
+\newcommand\doubleplus{+\kern-1.3ex+\kern0.8ex}
+\newcommand\mdoubleplus{\ensuremath{\mathbin{+\mkern-10mu+}}}
+\newcommand{\app}{\mdoubleplus}
+
+\newcommand{\rew}{\Rightarrow}
+\newcommand{\trew}{\stackrel{\textrm{T}}\Rightarrow}
+\newcommand{\llrew}{\stackrel{\textrm{L}}\Rightarrow}
+\newcommand{\rlrew}{\stackrel{\textrm{R}}\Rightarrow}
+\newcommand{\arew}{\triangleright}
+\newcommand{\conc}{\mathop{{+}\hskip-5pt{+}}}
+\newcommand{\gen}{\Rightarrow}
+
+% Sets
+\newcommand{\setOf}[1]{\bigl\{ #1 \bigr \}}
+\newcommand{\setMap}[2]{\setOf{#1~\big|~#2}}
+\newcommand{\depPair}[2]{\setOf{#1~{\&}~#2}}
+\newcommand{\pair}[2]{\bigl( #1 , #2 \bigr)}
+\newcommand{\class}[1]{\bigl[ #1 \bigr]}
+\newcommand{\choice}[1]{\bigl< #1 \bigr>}
+\newcommand{\explainRel}[2]{\stackrel{\text{#1}}{#2}}
+\newcommand{\family}[2]{\bigl( #1 \bigr)_{#2}}
+\newcommand{\from}{:}
+\renewcommand{\to}{\rightarrow}
+
+% Types and constants
+\newcommand{\Option}{\MS{Option}}
+\newcommand{\Fin}{\MS{Fin}}
+\newcommand{\Bool}{\MS{Bool}}
+\newcommand{\Nat}{\MS{Nat}}
+\newcommand{\Prop}{\MS{Prop}}
+\newcommand{\Type}{\MS{Type}}
+\newcommand{\Unit}{\MS{Unit}}
+\newcommand{\List}{\MS{List}}
+\renewcommand{\Some}[1]{\left\lfloor {#1}\right\rfloor}
+\renewcommand{\None}{\emptyset}
+\newcommand{\true}{\mathbf{true}}
+\newcommand{\false}{\mathbf{false}}
+\newcommand{\unit}{\mathbf{()}}
+\newcommand{\Rel}{\mathsf{Rel}}
+
+% Tapes
+\newcommand{\tape}[1]{[ #1 ]}
+\newcommand{\tapePointer}[1]{\underset{\uparrow}{#1}}
+\newcommand{\niltape}{\tape{\tapePointer{}}}
+\newcommand{\midtape}[3]{\tape{#1~\tapePointer{#2}~#3}}
+\newcommand{\leftof}[2]{\tape{\tapePointer{}~#1~#2}}
+\newcommand{\rightof}[2]{\tape{#1~#2~\tapePointer{}}}
+
+\newcommand{\Tape}{\MS{Tape}}
+\newcommand{\Tapes}[1]{\Tape^{#1}}
+\newcommand{\Move}{\MS{Move}}
+\newcommand{\Tau}{\Gamma}
+
+% Relations
+\newcommand{\rif}{\mathbin{\phi}}
+\newcommand{\at}[2][]{#1|_{#2}}
+\DeclareMathOperator{\ignoreParam}{\Uparrow}
+\DeclareMathOperator{\hideParam}{\Downarrow}
+
+% ``Keywords'' in math
+\newcommand{\mwhile}[1]{\MS{While}}
+\newcommand{\mseq}{;~}
+\newcommand{\mif}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
+\newcommand{\mmatch}{\MS{match}}
+\newcommand{\mlet}[2]{\MS{Let}~#1~\MS{In}~#2}
+
+% More constants and functions
+\DeclareMathOperator{\inl}{\ensuremath{\MS{inl}}}
+\DeclareMathOperator{\inr}{\ensuremath{\MS{inr}}}
+\newcommand{\map}{\ensuremath{\MS{map}}}
+
