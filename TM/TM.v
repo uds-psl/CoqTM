@@ -149,7 +149,19 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     tapeToList (tape_move_left t) = tapeToList t.
   Proof. apply (tapeToList_move t L). Qed.
 
+  Lemma tape_move_right_left (t : tape) (s : sig) :
+    current t = Some s ->
+    tape_move_left (tape_move_right t) = t.
+  Proof.
+    intros H1. destruct t; cbn in *; inv H1; auto; destruct l; auto; destruct l0; auto.
+  Qed.
 
+  Lemma tape_move_left_right (t : tape) (s : sig) :
+    current t = Some s ->
+    tape_move_right (tape_move_left t) = t.
+  Proof.
+    intros H1. destruct t; cbn in *; inv H1; auto; destruct l; auto; destruct l0; auto.
+  Qed.
 
   (** Writing on the tape *)
 
@@ -399,5 +411,8 @@ Tactic Notation "simpl_tape" "in" "*" := autorewrite with tape in *.
 Hint Rewrite tapeToList_move : tape.
 Hint Rewrite tapeToList_move_R : tape.
 Hint Rewrite tapeToList_move_L : tape.
+Hint Rewrite tape_move_right_left using eauto : tape.
+Hint Rewrite tape_move_left_right using eauto : tape.
 
+(* Set Notation scopes for tapes *)
 Arguments tapes (sig % type) (n % nat).
