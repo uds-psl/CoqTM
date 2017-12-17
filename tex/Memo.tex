@@ -160,9 +160,9 @@ We can now define the function $\MS{step} \from \MS{Conf} \to \MS{Conf}$.  A ste
 symbols from the tapes.  It inserts this vector and the current state into the transition function $\gamma_M$ of the machine $M$.  After that step,
 After that each tape writes a symbol and moves its head into a direction.  The machine ends up in a new step $q'$.
 \begin{alignat*}{2}
-  \MS{wr\_mv}&~t~(x, D)      &~:=~& \MS{mv}_D (\MS{wr}~t~x) \\
-  \MS{step}&~(\MS{tapes}, q) &~:=~& \mlet{(\MS{actions}, q') := \gamma_M(\MS{current}(\MS{tapes}))}{ \\
-           &                  &~  ~& (\map_2~\MS{wr\_mv}~\MS{tapes}~\MS{actions},~ q')}
+  \MS{wr\_mv}&~t~(x, D)        &~:=~& \MS{mv}_D (\MS{wr}~t~x) \\
+    \MS{step}&~(\MS{tapes}, q) &~:=~& \mlet{(q', \MS{actions}) := \gamma_M(q, \map~\MS{current}~\MS{tapes})}{ \\
+             &                 &~  ~& (q', \map_2~\MS{wr\_mv}~\MS{tapes}~\MS{actions})}
 \end{alignat*}
 To define the execution of a machine, we first introduce an abstract recursive \emph{loop} function of the type
 $\MS{loop} \from \Nat \to (A \to A) \to (A \to \Bool) \to A \to \Option(A)$, for every $A:\Type$:
