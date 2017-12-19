@@ -1173,7 +1173,7 @@ We do not want this machine to ``parse'' the encoding.  This would be possible b
 Therefore, we define a general encoding function for tuples, where $X$ is encoded over $\Sigma$ and $Y$ is encoded over $\Tau$:
 \begin{lemma}[Encoding of tuples]
   If $X$ is encodable over $\Sigma$ and $Y$ is encodable over $\Tau$, then $X \times Y$ is encodable over $\Sigma + \Tau$:
-  $$\MS{encode}_{\Sigma+\Tau}(x,y) := \MS{encode}_{\Sigma+\Tau}(x) \app \MS{encode}_{\Sigma+\Tau}(y).$$
+  $$\MS{encode}_{\Sigma+\Tau}(x,y) := \map~\inl~\MS{encode}_{\Sigma}(x) \app \map~\inr~\MS{encode}_{\Tau}(y).$$
 \end{lemma}
 
 

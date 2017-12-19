@@ -179,11 +179,11 @@
 \end{frame}
 
 \begin{frame}{Correctness of machines}
-  \begin{definition}[Realisation, $M \VDash_p R$]
+  \begin{definition}[Realisation, $M \VDash_f R$]
     Let $R \subseteq (\Tape^n) \times (F \times \Tape^n)$ and $f \from Q_M \to F$, for a finite $F$.\\
     Then $M$ \textbf{realises} $R$, if
     \begin{multline*}
-      \forall t_{in},~n:\Nat,~c_{out}={q_{out}, t_{out}}, \\
+      \forall t_{in},~n:\Nat,~c_{out}=(q_{out}, t_{out}), \\
       M(t_{in}) \triangleright^n c_{out} \Rightarrow \\
       \left(t_{in}, \left(f(q_{out}), t_{out} \right) \right) \in R
     \end{multline*}
@@ -207,12 +207,12 @@
 
 \begin{frame}{Relations}
   \footnotesize
-  Let $R, S \subseteq X \times Y$; $T \subseteq Y \times Z$; $U \subseteq X \times X$; and $\Phi \from F \to \Rel~X~Y$.
+  Let $R, S \subseteq X \times Y$; $T \subseteq Y \times Z$; $U \subseteq X \times X$; $V \subseteq X \times (F \times Y)$; and $\Phi \from F \to \Rel~X~Y$.
   \vspace{0.5cm}
 
   \begin{columns}
     \begin{column}{0.6\textwidth}
-      We use standard relational definitions:
+      Standard relation combinators:
       \begin{alignat*}{2}
         R \cap  S &:= \setMap{(x, y)}{(x, y) \in R \land (x,y) \in S} \\
         R \cup  S &:= \setMap{(x, y)}{(x, y) \in R \lor  (x,y) \in S} \\
@@ -220,7 +220,9 @@
         \MS{Id}_X &:= \setMap{(x, x)}{x : X}
       \end{alignat*}
       Reflexive transitive closure:
-      $$\inferrule{ }{(x,x) \in U^*} \qquad \inferrule{(x, y) \in U \and (y,z) \in U^*}{(x, z) \in U^*}$$
+      \[\inferrule{ }{(x,x) \in U^*} \qquad \inferrule{(x, y) \in U \and (y,z) \in U^*}{(x, z) \in U^*}\]
+      Big union:
+      \[\bigcup_{a:F}\Phi(a) := \setMap{(x, y)}{\exists a, (x,y) \in (\Phi~a)}\]
     \end{column}
     \begin{column}{0.4\textwidth}
       Parametrise relations: {\tiny(for $a \in F$)}
@@ -230,11 +232,14 @@
       \end{alignat*}
       Relational if:
       \begin{alignat*}{3}
-        R_1 \rif R_2 :=  &\setMap{(x, (\true, y))&}{(x, y) \in R} \\
-        \cup\, &\setMap{(x, (\false, y))&}{(x,y) \in S}
+        R \rif S :=  &\setMap{(x, (\true,  y))&&}{(x, y) \in R} \\
+              \cup\, &\setMap{(x, (\false, y))&&}{(x, y) \in S}
       \end{alignat*}
-      Big union:
-      $$\bigcup_{a:F}\Phi(y) := \setMap{(x, y)}{\exists a, (x,y) \in (\Phi~a)}$$
+      Restriction: {\tiny(for $a \in F$)}
+      \begin{alignat*}{3}
+        V\at {a} &:= \setMap{(x,      z)}{(x,(a, z)) \in V} \\
+        % V\att{a} &:= \setMap{(x, (a, z))}{(x,(a, z)) \in V} \\
+      \end{alignat*}
     \end{column}
   \end{columns}
 \end{frame}
@@ -253,13 +258,216 @@
   \refs{[Asperti and Ricciotti]} % use this to show references on a slide
 \end{frame}
 
+\begin{frame}{Sequential composition}
+  Let $M_1$ be parametrised over $F$ and $M_2$ over $F'$.
+
+  \begin{definition}[Sequential composition]
+    $$M_1 \mseq M_2 := \mmatch~M_1~(\lam y M_2)$$
+  \end{definition}
+
+  \begin{corollary}[Correctness of sequential composition]
+    If $M_1 \VDash R_1$ and $M_2 \VDash R_2$, then $M_1 \mseq M_2 \VDash R_1 \circ \hideParam R_2$.
+  \end{corollary}
+\end{frame}
+
+\begin{frame}{If Then Else}
+  Let $M_1$ be parametrised over $\Bool$ and $M_2$ and $M_3$ over $F$.
+
+  \begin{definition}[Boolean if]
+    $$ \mif{M_1}{M_2}{M_3} := \MS{match}~(M_1) \left(\lam b \begin{cases} M_2 & b = \true \\ M_3 & b = \false \end{cases} \right) $$
+  \end{definition}
+
+  \begin{corollary}[Correctness of boolean if]
+    If $M_1 \VDash R_1$ and $M_2 \VDash R_2$ and $M_3 \VDash R_3$, then
+    $(\mif{M_1}{M_2}{M_3}) \VDash (R_1 \at \true) \circ R_2 \cup (R_1 \at \false) \circ R_3$.
+  \end{corollary}
+\end{frame}
+
+\begin{frame}{While}
+  \begin{columns}
+
+    \begin{column}{0.6\textwidth}
+      Idea:
+      \begin{itemize}
+        \item Let $M$ be parametrised over $\Bool \times F$.
+        \item Repeat $M$ until terminates in a rejecting state
+        \item Partition function returns the $F$ part
+      \end{itemize}
+    \end{column}
+    \pause%
+    \begin{column}{0.4\textwidth}
+      Example:
+      \begin{figure}
+        \resizebox{3.5cm}{!}{%
+          \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.8cm,bend angle=45]
+            \begin{scope}
+              % Machine M
+              \node[state]          (M init)                                    {$q_0$};
+              \node[state]          (M exit 1)  [right of=M init,yshift= 1.5cm] {$q_{h1}$};
+              \node[state, double]  (M exit 2)  [right of=M init,yshift= 0.0cm] {$q_{h2}$};
+              \node[state, double]  (M exit 3)  [right of=M init,yshift=-1.5cm] {$q_{h3}$};
+              \path (M init)
+              edge[dotted]          (M exit 1)
+              edge[dotted]  (M exit 2)
+              edge[dotted]  (M exit 3);
+              \path (M init) ++(-1.0,0) edge (M init);
+              \path (M exit 1) edge[bend right] node[anchor=south,yshift=0.2em] {$(\None, N)$} (M init);
+            \end{scope}
+
+            \begin{pgfonlayer}{background}
+              \filldraw [line width=4mm,join=round,blue!10]
+              (M   exit 1.north -| M   init.west) rectangle (M   exit 3.south -| M   exit 3.east);
+            \end{pgfonlayer}
+          \end{tikzpicture}
+        }
+      \end{figure}
+      \footnotesize
+      \vspace{-0.2cm}
+      \begin{align*}
+        \#1(p(q_{h1})) &= \true \\
+        \#1(p(q_{h2})) &= \#1(p(q_{h3})) = \false
+      \end{align*}
+    \end{column}
+  \end{columns}
+  \pause%
+  \begin{lemma}[Correctness of $\MS{while}$]
+    If $M \VDash R$, then
+    \[
+      \MS{while} \VDash
+      \left( \bigcup_{y:F} R\at{(\true, y)} \right)^* \circ
+      \setMap{(t, (y, t'))}{(t, ((\false, y), t')) \in R}
+    \]
+  \end{lemma}
+\end{frame}
+
+\begin{frame}{Machine transformations}
+  \textbf{Problem:}
+  When combining machines, the numbers of tapes and the alphabet have to match!
+  \pause
+
+  \textbf{Solution:} Two operations on machines:
+  \begin{itemize}
+    \item $n$-Lift:
+      \onslide<3->{
+        \begin{itemize}
+          \item Have: injection between tape indexes ($f \from \Fin_n \hookrightarrow \Fin_m$)
+          \item Have $n$-tape machine over $\Sigma$
+          \item Give $m$-tape machine over $\Sigma$
+        \end{itemize}
+      }
+    \item $\Sigma$-Lift:
+      \onslide<4->{
+        \begin{itemize}
+          \item Have: injection between two alphabets ($f \from \Sigma \hookrightarrow \Tau$)
+            with a $\mathbf{default}$ symbol in $\Sigma$
+          \item Have $n$-tape machine over $\Sigma$
+          \item Give $n$-tape machine over $\Tau$
+        \end{itemize}
+      }
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Basic machines}
+  Classes of $1$-tape machines for each basic action \\(together with partitioning functions):
+  \begin{itemize}
+    \item Move head in the direction $D$
+    \item Write one symbol
+    \item Read one symbol
+    \item nop
+    \pause%
+    \item Write a list of symbols (defined per recursion over the string)
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Encoding}
+  \begin{definition}[Encodable types]
+    A type $X$ is \emph{encodable} over $\Sigma$, if there exists a function $\MS{encode} \from X \to \List~\Sigma$, s.t.
+    \begin{multline*}
+      \forall v_1,v_2:X,~r_1,r_2: \List~\Sigma, \\
+      \MS{encode}(x) \app r_1 = \MS{encode}(v_2) \app r_2 \Rightarrow
+      v_1 = v_2 \land r_1 = r_2
+    \end{multline*}
+  \end{definition}
+  \pause%
+  \begin{definition}[Tape encodes value]
+    We write $\Sigma^+$ instead of $\Sigma + \Bool$. \\
+    For a $X$ encodable over $\Sigma$, a $\Sigma^+$-tape $t$ \textbf{encodes} a value $x:X$, if
+    \[t = \midtape{(r_1 \app [\inr \true])}{(\inl y)}{(\map~\inl~ys \app \inr \false \cons r_2)}\]
+    for $y \cons ys = \MS{encode}(x)$, and some $r_1, r_2 \in \List~\Sigma^+$.
+  \end{definition}
+\end{frame}
+
+\begin{frame}{Calculate functions}
+  \begin{definition}[Calculate function]
+    A machine $M$ \emph{computes} a function $f \from X \to Y$ from $i < n$ to $j < n$, if
+    \begin{multline*}
+      M \VDash \ignoreParam \setMap{(t_{in}, t_{out})}{\\
+      \forall x:X,~ \MS{encodes}(t_{in}[i], x) \rightarrow \MS{encodes}(t_{out}[j], f(x))}.
+    \end{multline*}
+  \end{definition}
+  \pause%
+  \begin{lemma}[Finite functions]
+    All functions with finite range and domain are computable in one step.
+  \end{lemma}
+  \pause%
+  Extendable to multiple tapes.
+\end{frame}
+
+\begin{frame}{Example: Boolean machines}
+  \begin{itemize}
+    \item There is a machine $\MS{AND}$ that computes boolean conjugation.
+    \item When we apply the $\Sigma$-lift where we swap $\true$ with $\false$, we get $\MS{OR}$.
+    \item Then $\MS{OR}$ computes boolean disjunction.
+  \end{itemize}
+  \begin{table}
+    \begin{tabular}{|cc|cc|c|c|c|}
+      \hline
+      $a$ & $\bar{a}$ & $b$ & $\bar{b}$ & $a\land b$ & $\bar{a}\land\bar{b}$ & $\overline{\bar{a}\land\bar{b}}=a\lor b$\tabularnewline
+      \hline
+      0 & 1 & 0 & 1 & 0 & 1 & 0\tabularnewline
+      0 & 1 & 1 & 0 & 0 & 0 & 1\tabularnewline
+      1 & 0 & 0 & 1 & 0 & 0 & 1\tabularnewline
+      1 & 0 & 1 & 0 & 1 & 0 & 1\tabularnewline
+      \hline
+    \end{tabular}
+  \end{table}
+\end{frame}
+
+
+\begin{frame}{Conclusion}
+  What we have
+  \begin{itemize}
+    \item Formal definition of Turing machines and a framework of correctness predicates
+    \item Construction and verification of combinators and transformations
+    \item Formal definition of encoding and computation
+    \item Implementation of some basic and compound machines
+  \end{itemize}
+
+  Future work
+  \begin{itemize}
+    \item Verify compound machines with $\MS{while}$, e.g.\ the projection functions for tuples and lists
+    \item Build towards an interpreter for the weak CBV lambda calculus $L$
+    \item Time and space analysis; proof strong invariant thesis for $L$
+  \end{itemize}
+\end{frame}
+
+\appendix % appendix sections will not occur in the headline
+
+%% Backup-Slides
+
+\begin{frame}{Backup Slides}
+  This Are The Backup Slides!
+  \vfill
+  Thank you!
+\end{frame}
+
 \begin{frame}{Match}
   \framesubtitle{The idea}
   Given:
   \begin{itemize}
     \item Two finite types $F$ and $F'$,
     \item A machine $M$ and a partitioning function $p \from Q_M \to F$,
-    \item For all $y:F$, a machine $M'_y$ with a partitioning function $p'_y \from Q_{M'_y} \to F'$
+    \item For all $a:F$, a machine $M'_a$ with a partitioning function $p'ay \from Q_{M'_a} \to F'$
   \end{itemize}
   Do:
   \begin{enumerate}
@@ -270,7 +478,6 @@
       \end{itemize}
   \end{enumerate}
 \end{frame}
-
 
 \begin{frame}{Match}
   \framesubtitle{Example for a match machine}
@@ -291,100 +498,67 @@
       \gamma_{M}(q, \MS{symbols})                                & h_M(q) = \false \\
       \left( s_{\left(M'_{p(q)}\right)}, (\None, N)^n \right)  & h_M(q) = \true
     \end{cases} \\
-    \gamma_{\MS{match}} & (\inr (y, q), \MS{symbols}) &&:= \gamma_{\left({M'_y}\right)}(q, \MS{symbols})
+    \gamma_{\MS{match}} & (\inr (a, q), \MS{symbols}) &&:= \gamma_{\left({M'_a}\right)}(q, \MS{symbols})
   \end{alignat*}
   \begin{alignat*}{3}
     h_{\MS{match}} &~ (\inl      q) &&:= \false \\
-    h_{\MS{match}} &~ (\inr (y, q)) &&:= h_{\left( M'_y \right)}(q)
+    h_{\MS{match}} &~ (\inr (a, q)) &&:= h_{\left( M'_a \right)}(q)
   \end{alignat*}
   \begin{alignat*}{3}
     p_{\MS{match}} &~ (\inl      q) &&:= \dots \\
-    p_{\MS{match}} &~ (\inr (y, q)) &&:= p'_y(q)
+    p_{\MS{match}} &~ (\inr (a, q)) &&:= p'_a(q)
   \end{alignat*}
 \end{frame}
 
 \begin{frame}{Match}
   \framesubtitle{Correctness}
   \begin{lemma}[Correctness of $\MS{match}$]
-    If $M \VDash R$ and for each $y:F$, $M'_y \VDash R'_y$, then
-    $$\MS{match} \VDash \bigcup_{y:F} \left( (R \at y) \circ R'_y \right)$$
+    If $M \VDash R$ and for each $a:F$, $M'_a \VDash R'_a$, then
+    $$\MS{match} \VDash \bigcup_{y:F} \left( (R \at y) \circ R'_a \right)$$
   \end{lemma}
 \end{frame}
 
-\begin{frame}{Match}
-  \framesubtitle{Sequential composition is just an instance of match.}
-  \begin{definition}[Sequential composition]
-    For dependent pairs of machines and transition functions $M_1$ and $M_2$:
-    $$M_1 \mseq M_2 := \mmatch~M_1~(\lam y M_2)$$
-  \end{definition}
 
-  \begin{corollary}[Correctness of sequential composition]
-    If $M_1 \VDash R_1$ and $M_2 \VDash R_2$, then $M_1 \mseq M_2 \VDash R_1 \circ \hideParam R_2$.
-  \end{corollary}
+\begin{frame}{coqwc}
+	% \tiny \verbatiminput{../wc.txt}
+	\begin{table}
+		\begin{tabular}{|l|r|r|}
+			\hline
+			& Lines Spec & Lines Proof\tabularnewline
+			\hline
+			Prelim & 235+ & 286+\tabularnewline
+			Relations/Retracts & 475 & 269\tabularnewline
+			Def. $n$TM & 215 & 85\tabularnewline
+			$\Sigma$-Lift & 132 & 129\tabularnewline
+			$n$-Lift & 153 & 195\tabularnewline
+			Basic machines & 142 & 69\tabularnewline
+			Encoding & 170 & 164\tabularnewline
+			Computation & 241 & 289\tabularnewline
+			Combinators & 158 & 354\tabularnewline
+			Finite and $\Bool$ TM & 112 & 203\tabularnewline
+			\hline
+			$\Sigma$ & 2033 & 2042\tabularnewline
+			\hline
+		\end{tabular}
+	\end{table}
 \end{frame}
 
-\begin{frame}{Match}
-  \framesubtitle{If then else is just an instance of match.}
-  \begin{definition}[Boolean if]
-    For dependent pairs of machines and transition functions $M_1$, $M_2$, and $M_3$,
-    where $M_1$ is partitioned over $\Bool$:
-    $$ \mif{M_1}{M_2}{M_3} := \MS{match}~(M_1) \left(\lam b \begin{cases} M_2 & b = \true \\ M_3 & b = \false \end{cases} \right) $$
-  \end{definition}
-
-  \begin{corollary}[Correctness of boolean if]
-    If $M_1 \VDash R_1$ and $M_2 \VDash R_2$ and $M_3 \VDash R_3$, then
-    $\mif{M_1}{M_2}{M_3} \VDash (R_1 \at \true) \circ R_2 \cup (R_1 \at \false) \circ R_3$.
-  \end{corollary}
-\end{frame}
-
-\begin{frame}{While}
-  \center
-  \resizebox{3.0cm}{!}{%
-    \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.8cm,bend angle=45]
-      \begin{scope}
-        % Machine M
-        \node[state]          (M init)                                    {$q_0$};
-        \node[state]          (M exit 1)  [right of=M init,yshift= 1.5cm] {$q_{h1}$};
-        \node[state, double]  (M exit 2)  [right of=M init,yshift= 0.0cm] {$q_{h2}$};
-        \node[state, double]  (M exit 3)  [right of=M init,yshift=-1.5cm] {$q_{h3}$};
-        \path (M init)
-        edge[dotted]          (M exit 1)
-        edge[dotted]  (M exit 2)
-        edge[dotted]  (M exit 3);
-        \path (M init) ++(-1.0,0) edge (M init);
-        \path (M exit 1) edge[bend right] node[anchor=south,yshift=0.2em] {$(\None, N)$} (M init);
-      \end{scope}
-
-      \begin{pgfonlayer}{background}
-        \filldraw [line width=4mm,join=round,blue!10]
-        (M   exit 1.north -| M   init.west) rectangle (M   exit 3.south -| M   exit 3.east);
-      \end{pgfonlayer}
-    \end{tikzpicture}
-  }
-  \begin{lemma}[Correctness of $\MS{while}$]
-    If $M \VDash R$, then
-    $$ \MS{while} \VDash
-    \left( \bigcup_{y:F} R\at{(\true, y)} \right)^* \circ
-    \setMap{(t, (y, t'))}{R~t~((\false, y), t')}
-    $$
-  \end{lemma}
-\end{frame}
-
-\begin{frame}{Machine transformations}
-  \textbf{Problem:}
-  When combining machines, the numbers of tapes and the alphabet have to match!
-  \pause
-
-  Two operations on machines:
-  \begin{itemize}
-    \item $n$-Lift: injection on the tapes
-    \item $\Sigma$-Lift: injection on the alphabet
-  \end{itemize}
+\begin{frame}{Encoding functions}
+  \footnotesize
+  \begin{alignat*}{3}
+    \MS{encode}&_{\Sigma + \Tau + \Bool}&(\inl x) &:= \inr \false \cons \map~(\inl \circ \inr)~\MS{encode}(x) \\
+    \MS{encode}&_{\Sigma + \Tau + \Bool}&(\inl y) &:= \inr \true  \cons \map~(\inl \circ \inl)~\MS{encode}(y) \\
+    \MS{encode}&_{\Sigma + \Bool}& (\nil)         &:= \inr \false \\
+    \MS{encode}&_{\Sigma + \Bool}& (x :: xs)      &:= \inr \true \cons \map~\inl~\MS{encode}_{\Sigma}(x) \app \MS{encode}_{\Sigma + \Bool}(xs) \\
+    \MS{encode}&_{\Sigma+\Tau}   &(x,y)           &:= \map~\inl~\MS{encode}_{\Sigma}(x) \app \map~\inr~\MS{encode}_{\Tau}(y) \\
+    \MS{encode}&_{\Bool}         &(0)             &:= [\false] \\
+    \MS{encode}&_{\Bool}         &(\MS S~n)       &:= \true \cons \MS{encode}_{\Bool}(n)
+  \end{alignat*}
 \end{frame}
 
 \begin{frame}{$n$-lift}
   \begin{figure}
-    \center
+    \center%
     \begin{tikzpicture}
       \begin{scope}
         \node(a0)[yshift=-0 cm]  {$0$};
@@ -437,126 +611,6 @@
     \end{tikzpicture}
     \caption{Example alphabet retract; $\gamma$ is the default symbol in $\Sigma$.}
   \end{figure}
-\end{frame}
-
-\begin{frame}{Basic machines}
-  Classes of $1$-tape machines for each basic action \\(together with partitioning functions):
-  \begin{itemize}
-    \item Move head in the direction $D$
-    \item Write one symbol
-    \item Read one symbol
-    \item nop
-    \pause%
-    \item Write a list of symbols (defined per recursion over the string)
-  \end{itemize}
-\end{frame}
-
-\begin{frame}{Encoding}
-  \begin{definition}[Encodable types]
-    A type $X$ is \emph{encodable} over $\Sigma$, if there exists a function $\MS{encode} \from X \to \List~\Sigma$, s.t.
-    $\MS{encode}(x) \app r_1 = \MS{encode}(v_2) \app r_2$
-    implies $v_1 = v_2$ and $r_1 = r_2$, for all $v_1,v_2 : X$ and $r_1,r_2: \List~\Sigma$.
-  \end{definition}
-  \pause%
-  \begin{definition}[Tape encodes value]
-    We write $\Sigma^+$ instead of $\Sigma + \Bool$. \\
-    For a $X$ encodable over $\Sigma$, a $\Sigma^+$-tape $t$ \textbf{encodes} a value $x:X$, if
-    $$t = \midtape{(r_1 \app [\true])}{(\inl y)}{(\map~\inl~ys \app \false \cons r_2)} $$
-    for $y \cons ys = \MS{encode}(x)$, and some $r_1, r_2 \in \List~\Sigma^+$.
-  \end{definition}
-\end{frame}
-
-%% TODO
-\begin{frame}{Calculate functions}
-  \begin{definition}[Calculate function]
-    A machine $M$ \emph{computes} a function $f \from X \to Y$ from $i < n$ to $j < n$, if
-    \begin{multline*}
-      M \VDash \ignoreParam \setMap{(t_{in}, t_{out})}{\\
-      \forall x:X,~ \MS{encodes}(t_{in}[i], x) \rightarrow \MS{encodes}(t_{out}[j], f(x))}.
-    \end{multline*}
-  \end{definition}
-  \pause%
-  \begin{lemma}[Finite functions]
-    All functions with finite range and domain are computable in one step.
-  \end{lemma}
-  \pause%
-  Extendable to multiple tapes.
-\end{frame}
-
-\begin{frame}{Example: Boolean machines}
-  \begin{itemize}
-    \item There is a machine $\MS{AND}$ that computes boolean conjugation.
-    \item When we apply the $\Sigma$-lift where we swap $\true$ with $\false$, we get $\MS{OR}$.
-    \item Then $\MS{OR}$ computes boolean disjunction.
-  \end{itemize}
-	\begin{table}
-		\begin{tabular}{|cc|cc|c|c|c|}
-			\hline
-			$a$ & $\bar{a}$ & $b$ & $\bar{b}$ & $a\land b$ & $\bar{a}\land\bar{b}$ & $\overline{\bar{a}\land\bar{b}}=a\lor b$\tabularnewline
-			\hline
-			\hline
-			0 & 1 & 0 & 1 & 0 & 1 & 0\tabularnewline
-			\hline
-			0 & 1 & 1 & 0 & 0 & 0 & 1\tabularnewline
-			\hline
-			1 & 0 & 0 & 1 & 0 & 0 & 1\tabularnewline
-			\hline
-			1 & 0 & 1 & 0 & 1 & 0 & 1\tabularnewline
-			\hline
-		\end{tabular}
-	\end{table}
-\end{frame}
-
-
-\begin{frame}{Conclusion}
-  What we have
-  \begin{itemize}
-    \item Formal definition of Turing machines and a framework of correctness predicates
-    \item Construction and verification of combinators and transformations
-    \item Formal definition of encoding and computation
-    \item Implementation of some basic and compound machines
-  \end{itemize}
-
-  Future work
-  \begin{itemize}
-    \item Verify compound machines with $\MS{while}$, e.g.\ the projection functions for tuples and lists
-    \item Build towards an interpreter for the weak CBV lambda calculus $L$
-    \item Time and space analysis; proof strong invariant thesis for $L$
-  \end{itemize}
-\end{frame}
-
-\appendix % appendix sections will not occur in the headline
-
-%% Backup-Slides
-
-\begin{frame}{Backup Slides}
-  This Are The Backup Slides!
-  \vfill
-  Thank you!
-\end{frame}
-
-\begin{frame}{coqwc}
-	% \tiny \verbatiminput{../wc.txt}
-	\begin{table}
-		\begin{tabular}{|l|r|r|}
-			\hline
-			& Lines Spec & Lines Proof\tabularnewline
-			\hline
-			Prelim & 235+ & 286+\tabularnewline
-			Relations/Retracts & 475 & 269\tabularnewline
-			Def. $n$TM & 215 & 85\tabularnewline
-			$\Sigma$-Lift & 132 & 129\tabularnewline
-			$n$-Lift & 153 & 195\tabularnewline
-			Basic machines & 142 & 69\tabularnewline
-			Encoding & 170 & 164\tabularnewline
-			Computation & 241 & 289\tabularnewline
-			Combinators & 158 & 354\tabularnewline
-			Finite and $\Bool$ TM & 112 & 203\tabularnewline
-			\hline
-			$\Sigma$ & 2033 & 2042\tabularnewline
-			\hline
-		\end{tabular}
-	\end{table}
 \end{frame}
 
 \end{document}
