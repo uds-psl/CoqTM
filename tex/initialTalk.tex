@@ -1,14 +1,42 @@
 \include{beamerhead}
 \include{mypreamble}
-% My favourite color theme for beamer
+%% My favourite color theme for beamer
 \usecolortheme{orchid}
-\usepackage{verbatim}
+% \usepackage{verbatim}
+
+%% Use "mathematical" versions of the type names
+\renewcommand{\Type}{\mathbb{T}}
+\renewcommand{\Nat}{\mathbb{N}}
+\renewcommand{\Bool}{\mathbb{B}}
+\renewcommand{\Option}{\mathcal{O}}
+
+\beamertemplatenavigationsymbolsempty%
+% \setbeamertemplate{footline}[page number]
+%% Show only current page number
+\setbeamertemplate{footline}{\raisebox{5pt}{\makebox[\paperwidth]{\hfill\makebox[20pt]{\scriptsize{\color{gray}\insertframenumber}}}}}
+
+%% Display a list of references at the bottom
+\newcommand\refs[1]{%
+  \begin{textblock*}{8cm}(0.3cm,9.0cm)%
+    \scriptsize {\color{gray}#1}
+  \end{textblock*}
+}
+
 
 \title{Formalising multi-tape Turing machines in Coq}
 \subtitle{First Bachelor Seminar Talk}
 \author{Maximilian Wuttke}
 \institute{{\scshape Saarland University}}
-\date{Dezember 21, 2017}
+\date{December 21, 2017\\
+  \bigskip{}
+  \bigskip{}
+  {
+    \tiny
+    Advisor: Yannick Forster\\
+    Supervisor: Prof.\ Dr.\ Gert Smolka%
+  }
+}
+
 
 % Passt nicht gut
 % \include{beamerlayout}
@@ -17,17 +45,24 @@
 
 \frame{\titlepage}
 
-\begin{frame}{Introduction: Finish the reduction chain}
-  $$\lambda \rightarrow \SM{MTTM} \rightarrow \SM{TM} \rightarrow \SM{PCP}$$
+\begin{frame}{Motivation: Finish the reduction chain}
+  \[\MS{L} \rightarrow n\MS{TM} \rightarrow \MS{TM} \rightarrow \MS{PCP}\]
+
+  \begin{itemize}
+    \pause\item $\MS{TM} \rightarrow \MS{PCP}$ formalised by Edith
+    \pause\item $L$ has been formalised by Yannick
+    \pause\item Now we formalize $n\MS{TM}$s
+    \pause\item Goal: build a multi-tape Turing machine that reduces $L$-terms
+  \end{itemize}
 \end{frame}
 
 \begin{frame}{Introduction: Turing machines}
   Pros:
   \begin{itemize}
     \item are easy to understand / imagine;
-    \item are the de-factor standard model of computation
+    \item are the de-facto standard model of computation
   \end{itemize}
-  \pause \\
+  \pause%
   Cons:
   \begin{itemize}
     \item not compositional;
@@ -40,35 +75,39 @@
 \begin{frame}{Introduction: Related Work}
   \footnotesize
   \begin{thebibliography}{10}
-    \beamertemplatearticlebibitems
+    \beamertemplatearticlebibitems%
     \bibitem{}
     Xu, Jian and Zhang, Xingyuan and Urban, Christian
-    \newblock{\em Mechanising Turing Machines and Computability Theory in Isabelle/HOL}
+    \newblock{\em Mechanising Turing Machines and Computability Theory in Isabelle/HOL}%
     \newblock{ITP 2013}
 
     \bibitem{}
     Andrea Asperti and Wilmer Ricciotti
-    \newblock{\em A formalization of multi-tape Turing machines}
+    \newblock{\em A formalization of multi-tape Turing machines}%
     \newblock{Theoretical Computer Science, 2015}
 
+    \bibitem{}
+    Alberto Ciaffaglione
+    \newblock{\em Towards Turing computability via coinduction}%
+    \newblock{Science of Computer Programming, 2016}
   \end{thebibliography}
 \end{frame}
 
 
 \begin{frame}{Definitions}
-  \begin{definition}[$n$-tape Turing machine]
-    Let $\Sigma$ be a finite type and $n:\Nat$.
-    \\
-    An $n$-tape Turing machine over $\Sigma$ is a tuple:
+  Let $\Sigma$ be a finite type and $n:\Nat$.
+  \begin{definition}[$n$-tape Turing machine over $\Sigma$]
+    An $n$-tape Turing machine over $\Sigma$ is a record tuple:
     \begin{itemize}
-      \item $Q : \MS{finType}$ (states);
-      \item $\gamma \from Q \times (\Option~\Sigma)^n \to Q \times (\Option~\Sigma \times \MS{Move})^n$
+      \item $Q$ is the finite type of states;
+      \item $\gamma \from Q \times \Option(\Sigma)^n \to Q \times (\Option(\Sigma) \times \MS{Move})^n$
         \\ (transition function);
       \item $s:Q$ (start state);
       \item $h \from Q \to \Bool$ (halting states)
     \end{itemize}
     Where $\MS{Move} := \setOf{L, R, N}$.
   \end{definition}
+  \refs{[Asperti and Ricciotti]} % use this to show references on a slide
 \end{frame}
 
 \begin{frame}{Definitions}
@@ -76,35 +115,37 @@
     A tape over $\Sigma$ is either:
     $ \niltape$, $\leftof{r}{R}$, $\midtape{R}{m}{L}$, or $\rightof{L}{l}$,\\
     Where $r,l : \Sigma$ and $R,L : \List~\Sigma$.
-    \pause
+    \pause%
     \begin{alignat*}{2}
-      \emph{Tape}:\Type := \quad & \MS{niltape} \\
+      \MS{Tape}:\Type := \quad & \MS{niltape} \\
       | \quad & \MS{leftof}  ~ (r:\Sigma) ~ (R:\List~\Sigma) \\
       | \quad & \MS{midtape} ~ (L:\List~\Sigma) ~ (m:\Sigma) ~ (R:\List~\Sigma) \\
       | \quad & \MS{rightof} ~ (l:\Sigma) ~ (L:\List~\Sigma).
     \end{alignat*}
   \end{definition}
-  \pause
+  \pause%
   \begin{definition}[Configuration]
-    A configuration of a machine $M$ is a tuple $\MS{Conf} := \{\MS{state}:Q_M, \MS{tapes}:\Tape^n\}$.
+    A configuration of a machine $M$ is a record tuple $\MS{Conf} := \{\MS{state}:Q_M\mseq \MS{tapes}:\Tape^n\}$.
   \end{definition}
+  \refs{[Asperti and Ricciotti]} % use this to show references on a slide
 \end{frame}
 
 \begin{frame}{Definitions}
   \begin{definition}[Step function]
     With the functions
     \begin{alignat*}{2}
-      \MS{mv}      & \from \Move \to \Tape \to \Tape \\
-      \MS{wr}      & \from \Tape \to \Option~\Sigma \to \Tape \\
-      \MS{wr\_mv}  & \from \Tape \to (\Option~\Sigma \times \Move) \to \Tape \\
-      \MS{current} & \from \Tape \to \Option~\Sigma
+      % \MS{mv}      & \from \Move \to \Tape \to \Tape \\
+      % \MS{wr}      & \from \Tape \to \Option~\Sigma \to \Tape \\
+      \MS{wr\_mv}  & \from \Tape \to (\Option(\Sigma) \times \Move) \to \Tape \\
+      \MS{current} & \from \Tape \to \Option(\Sigma)
     \end{alignat*}
-    we define for a machine $M$
+    we define for a machine $M$ the \textbf{step function} $\MS{step} \from \MS{Conf} \to \MS{Conf}$:
     \begin{alignat*}{2}
       \MS{step}&~(\MS{tapes}, q) &~:=~& \mlet{(q', \MS{actions}) := \gamma_M(q, \map~\MS{current}~\MS{tapes})}{ \\
                &                 &~  ~& (q', \map_2~\MS{wr\_mv}~\MS{tapes}~\MS{actions})}
       \end{alignat*}
   \end{definition}
+  \refs{[Asperti and Ricciotti]} % use this to show references on a slide
 \end{frame}
 
 \begin{frame}{Definitions}
@@ -117,66 +158,83 @@
         \MS{loop}~(n-1)~f~h~(f s)  & h(s) = \false \land n > 0
       \end{cases}
     \end{align*}
-    \pause
+    \pause%
     \begin{alignat*}{3}
-      \MS{init\_state}   &~\MS{tapes}      &&:= (\MS{tapes}, s_M) \\
-      \MS{halting\_state}&~(\MS{tapes}, q) &&:= h_M(q) \\
-      \MS{loopM}         &~\MS{initc}~k    &&:= \MS{loop}~k~\MS{step}~\MS{halting\_state}~\MS{initc} \\
-      \MS{exec}          &~\MS{tapes}      &&:= \MS{loopM}~(\MS{init\_state}~\MS{tapes})
+      \MS{init\_conf}    &~\MS{tapes}      &&:= (\MS{tapes}, s_M) \\
+      \MS{halting\_conf} &~(\MS{tapes}, q) &&:= h_M(q) \\
+      \MS{loopM}         &~\MS{initc}~k    &&:= \MS{loop}~k~\MS{step}~\MS{halting\_conf}~\MS{initc} \\
+      \MS{exec}          &~\MS{tapes}      &&:= \MS{loopM}~(\MS{init\_conf}~\MS{tapes})
     \end{alignat*}
+    {
+      \small
+      %(Types:
+      %$\MS{loopM} \from \MS{Conf} \to \Nat \to \Option(\MS{Conf})$ and
+      $\MS{exec} \from \Tape^n \to \Nat \to \Option(\MS{Conf})$
+    }
   \end{definition}
 
-  \pause
-  We write $\mathbf{M:t_{in} \Rightarrow^n c_{out}}$, if $\MS{exec}~t_{in}~n= \Some{c_{out}}$.
+  \pause%
+  We write $\mathbf{M(t_{in}) \triangleright^n c_{out}}$, if $\MS{exec}~t_{in}~n= \Some{c_{out}}$.
+  \refs{[Asperti and Ricciotti]} % use this to show references on a slide
 \end{frame}
 
 \begin{frame}{Correctness of machines}
-  \begin{definition}[Weak realisation, $M \VDash_p R$]
-    Let $R \subseteq (\Tape^n) \times (F \times \Tape^n)$ and $p \from Q_M \to F$, for a finite $F$.\\
-    Then $M$ \textbf{realises} $R$, if for all $t_{in}$, $n:\Nat$, $c_{out} = (q_{out}, t_{out})$,\\
-    $M: t_{in} \Rightarrow^n c_{out}$ implies $\left(t_{in}, \left(p~q_{out}, t_{out} \right) \right) \in R$.\\
-    We write $\mathbf{M \VDash_p R}$.
+  \begin{definition}[Realisation, $M \VDash_p R$]
+    Let $R \subseteq (\Tape^n) \times (F \times \Tape^n)$ and $f \from Q_M \to F$, for a finite $F$.\\
+    Then $M$ \textbf{realises} $R$, if
+    \begin{multline*}
+      \forall t_{in},~n:\Nat,~c_{out}={q_{out}, t_{out}}, \\
+      M(t_{in}) \triangleright^n c_{out} \Rightarrow \\
+      \left(t_{in}, \left(f(q_{out}), t_{out} \right) \right) \in R
+    \end{multline*}
+    We write $\mathbf{M \VDash_f R}$.
   \end{definition}
+  \pause%
   We often use dependent tuples of machines with partitioning functions:
-  If $M : \depPair{M' : \MS{TM}}{Q_M' \to F}$, then we write $\mathbf{M \VDash R}$.
+  If $M : \depPair{M' : \MS{TM}}{Q_{M'} \to F}$, then we write $\mathbf{M \VDash R}$.
 \end{frame}
 
 \begin{frame}{Termination of machines}
   \begin{definition}[Termination, $M \downarrow T$]
     Let $T \subseteq (\Tape^n) \times \Nat$.\\
-    Then $M$ \textbf{terminates in} $T$, if for all $t_{in}$ and $n:\Nat$, $T~t_{in}~n$ implies
-    that there exists a final configuration $c_{out}$, such that $M: t_{in} \Rightarrow^n c_{out}$.\\
+    Then $M$ \textbf{terminates in} $T$, if
+    \[
+      \forall (t_{in},~n) \in T,~\exists c_{out},~M(t_{in}) \Rightarrow^n c_{out}
+    \]
     We write $\mathbf{M \downarrow T}$.
   \end{definition}
 \end{frame}
 
 \begin{frame}{Relations}
+  \footnotesize
+  Let $R, S \subseteq X \times Y$; $T \subseteq Y \times Z$; $U \subseteq X \times X$; and $\Phi \from F \to \Rel~X~Y$.
+  \vspace{0.5cm}
+
   \begin{columns}
-    \footnotesize
-    \begin{column}{0.5\textwidth}
+    \begin{column}{0.6\textwidth}
       We use standard relational definitions:
       \begin{alignat*}{2}
-        R \cap  S &:= \setMap{(x, y)}{R~x~y \land S~x~y} \\
-        R \cup  S &:= \setMap{(x, y)}{R~x~y \lor  S~x~y} \\
-        R \circ S &:= \setMap{(x, z)}{\exists y,~ R~x~y \land S~y~z} \\
-        \MS{Id}   &:= \setOf{(x, x)}{}
+        R \cap  S &:= \setMap{(x, y)}{(x, y) \in R \land (x,y) \in S} \\
+        R \cup  S &:= \setMap{(x, y)}{(x, y) \in R \lor  (x,y) \in S} \\
+        R \circ T &:= \setMap{(x, z)}{\exists y,~ (x,y) \in R \land (y,z) \in T} \\
+        \MS{Id}_X &:= \setMap{(x, x)}{x : X}
       \end{alignat*}
       Reflexive transitive closure:
-      $$\inferrule{ }{R^*~x~x} \qquad \inferrule{R~x~y \and R^*~y~z}{R^*~x~z}$$
+      $$\inferrule{ }{(x,x) \in U^*} \qquad \inferrule{(x, y) \in U \and (y,z) \in U^*}{(x, z) \in U^*}$$
     \end{column}
-    \begin{column}{0.5\textwidth}
-      Parametrises relations:
+    \begin{column}{0.4\textwidth}
+      Parametrise relations: {\tiny(for $a \in F$)}
       \begin{alignat*}{2}
-        \ignoreParam   R &:= \setMap{(x, (y, z))}{R ~ x ~ z} \\
-        \hideParam R &:= \setMap{((x, y), z)}{R ~ x ~ z}
+        \ignoreParam R &:= \setMap{(x, (a, y))}{(x, y) \in R} \\
+        \hideParam   R &:= \setMap{((x, a), y)}{(x, y) \in R}
       \end{alignat*}
       Relational if:
       \begin{alignat*}{3}
-        R_1 \rif R_2 :=  &\setMap{(x, (\true, y))&}{R_1~x~y} \\
-        \cup\, &\setMap{(x, (\false, y))&}{R_2~x~y}
+        R_1 \rif R_2 :=  &\setMap{(x, (\true, y))&}{(x, y) \in R} \\
+        \cup\, &\setMap{(x, (\false, y))&}{(x,y) \in S}
       \end{alignat*}
       Big union:
-      $$\bigcup_{y:F}R(y) := \setMap{(x, z)}{\exists y:F,(R~y)~x~z}$$
+      $$\bigcup_{a:F}\Phi(y) := \setMap{(x, y)}{\exists a, (x,y) \in (\Phi~a)}$$
     \end{column}
   \end{columns}
 \end{frame}
@@ -190,19 +248,9 @@
       \item if then else
       \item do-while
     \end{itemize}
-  \item Verify them using the relational approach
+  \item Verify them using correctness relations
   \end{itemize}
-  \pause
-  \begin{thebibliography}{10}
-    \beamertemplatearticlebibitems
-    \bibitem{}
-    Andrea Asperti and Wilmer Ricciotti
-    \newblock{\em A formalization of multi-tape Turing machines}
-    \newblock{Theoretical Computer Science, 2015}
-  \end{thebibliography}
-  \begin{itemize}
-    \item if then else, sequential composition, and do-while
-  \end{itemize}
+  \refs{[Asperti and Ricciotti]} % use this to show references on a slide
 \end{frame}
 
 \begin{frame}{Match}
@@ -226,7 +274,11 @@
 
 \begin{frame}{Match}
   \framesubtitle{Example for a match machine}
+	\vspace{-1cm}
   \include{fig-match}
+  \[
+    p(h_1) = \true \qquad p(h_2) = \true \qquad p(h_3) = \false
+  \]
 \end{frame}
 
 \begin{frame}{Match}
@@ -260,7 +312,7 @@
 \end{frame}
 
 \begin{frame}{Match}
-  \framesubtitle{Sequential composition is just an instances of match.}
+  \framesubtitle{Sequential composition is just an instance of match.}
   \begin{definition}[Sequential composition]
     For dependent pairs of machines and transition functions $M_1$ and $M_2$:
     $$M_1 \mseq M_2 := \mmatch~M_1~(\lam y M_2)$$
@@ -272,7 +324,7 @@
 \end{frame}
 
 \begin{frame}{Match}
-  \framesubtitle{If then else is just an instances of match.}
+  \framesubtitle{If then else is just an instance of match.}
   \begin{definition}[Boolean if]
     For dependent pairs of machines and transition functions $M_1$, $M_2$, and $M_3$,
     where $M_1$ is partitioned over $\Bool$:
@@ -309,7 +361,7 @@
       \end{pgfonlayer}
     \end{tikzpicture}
   }
-  \begin{lemma}[Week correctness of $\MS{while}$]
+  \begin{lemma}[Correctness of $\MS{while}$]
     If $M \VDash R$, then
     $$ \MS{while} \VDash
     \left( \bigcup_{y:F} R\at{(\true, y)} \right)^* \circ
@@ -319,11 +371,14 @@
 \end{frame}
 
 \begin{frame}{Machine transformations}
-  Three operations on machines:
+  \textbf{Problem:}
+  When combining machines, the numbers of tapes and the alphabet have to match!
+  \pause
+
+  Two operations on machines:
   \begin{itemize}
     \item $n$-Lift: injection on the tapes
     \item $\Sigma$-Lift: injection on the alphabet
-    \item Mirror: swap left and right movement
   \end{itemize}
 \end{frame}
 
@@ -391,7 +446,7 @@
     \item Write one symbol
     \item Read one symbol
     \item nop
-    \pause
+    \pause%
     \item Write a list of symbols (defined per recursion over the string)
   \end{itemize}
 \end{frame}
@@ -402,7 +457,7 @@
     $\MS{encode}(x) \app r_1 = \MS{encode}(v_2) \app r_2$
     implies $v_1 = v_2$ and $r_1 = r_2$, for all $v_1,v_2 : X$ and $r_1,r_2: \List~\Sigma$.
   \end{definition}
-  \pause
+  \pause%
   \begin{definition}[Tape encodes value]
     We write $\Sigma^+$ instead of $\Sigma + \Bool$. \\
     For a $X$ encodable over $\Sigma$, a $\Sigma^+$-tape $t$ \textbf{encodes} a value $x:X$, if
@@ -416,23 +471,47 @@
   \begin{definition}[Calculate function]
     A machine $M$ \emph{computes} a function $f \from X \to Y$ from $i < n$ to $j < n$, if
     \begin{multline*}
-      $M \VDash \ignoreParam \setMap{(t_{in}, t_{out})}{\\
-      \forall x:X,~ \MS{encodes}(t_{in}[i], x) \rightarrow \MS{encodes}(t_{out}[j], f(x))}.$$
+      M \VDash \ignoreParam \setMap{(t_{in}, t_{out})}{\\
+      \forall x:X,~ \MS{encodes}(t_{in}[i], x) \rightarrow \MS{encodes}(t_{out}[j], f(x))}.
     \end{multline*}
   \end{definition}
-  \pause
+  \pause%
   \begin{lemma}[Finite functions]
     All functions with finite range and domain are computable in one step.
   \end{lemma}
-  \pause
+  \pause%
   Extendable to multiple tapes.
+\end{frame}
+
+\begin{frame}{Example: Boolean machines}
+  \begin{itemize}
+    \item There is a machine $\MS{AND}$ that computes boolean conjugation.
+    \item When we apply the $\Sigma$-lift where we swap $\true$ with $\false$, we get $\MS{OR}$.
+    \item Then $\MS{OR}$ computes boolean disjunction.
+  \end{itemize}
+	\begin{table}
+		\begin{tabular}{|cc|cc|c|c|c|}
+			\hline
+			$a$ & $\bar{a}$ & $b$ & $\bar{b}$ & $a\land b$ & $\bar{a}\land\bar{b}$ & $\overline{\bar{a}\land\bar{b}}=a\lor b$\tabularnewline
+			\hline
+			\hline
+			0 & 1 & 0 & 1 & 0 & 1 & 0\tabularnewline
+			\hline
+			0 & 1 & 1 & 0 & 0 & 0 & 1\tabularnewline
+			\hline
+			1 & 0 & 0 & 1 & 0 & 0 & 1\tabularnewline
+			\hline
+			1 & 0 & 1 & 0 & 1 & 0 & 1\tabularnewline
+			\hline
+		\end{tabular}
+	\end{table}
 \end{frame}
 
 
 \begin{frame}{Conclusion}
   What we have
   \begin{itemize}
-    \item Formal definition of turing machines and a framework of correctness predicates
+    \item Formal definition of Turing machines and a framework of correctness predicates
     \item Construction and verification of combinators and transformations
     \item Formal definition of encoding and computation
     \item Implementation of some basic and compound machines
@@ -441,14 +520,14 @@
   Future work
   \begin{itemize}
     \item Verify compound machines with $\MS{while}$, e.g.\ the projection functions for tuples and lists
-    \item Build torwards an interpreter for the week CBV lambda calculus $L$
+    \item Build towards an interpreter for the weak CBV lambda calculus $L$
     \item Time and space analysis; proof strong invariant thesis for $L$
   \end{itemize}
 \end{frame}
 
 \appendix % appendix sections will not occur in the headline
 
-\backupbegin % backup-slides will not be counted for the numbering
+%% Backup-Slides
 
 \begin{frame}{Backup Slides}
   This Are The Backup Slides!
@@ -457,11 +536,29 @@
 \end{frame}
 
 \begin{frame}{coqwc}
-  \tiny
-  \verbatiminput{../wc.txt}
+	% \tiny \verbatiminput{../wc.txt}
+	\begin{table}
+		\begin{tabular}{|l|r|r|}
+			\hline
+			& Lines Spec & Lines Proof\tabularnewline
+			\hline
+			Prelim & 235+ & 286+\tabularnewline
+			Relations/Retracts & 475 & 269\tabularnewline
+			Def. $n$TM & 215 & 85\tabularnewline
+			$\Sigma$-Lift & 132 & 129\tabularnewline
+			$n$-Lift & 153 & 195\tabularnewline
+			Basic machines & 142 & 69\tabularnewline
+			Encoding & 170 & 164\tabularnewline
+			Computation & 241 & 289\tabularnewline
+			Combinators & 158 & 354\tabularnewline
+			Finite and $\Bool$ TM & 112 & 203\tabularnewline
+			\hline
+			$\Sigma$ & 2033 & 2042\tabularnewline
+			\hline
+		\end{tabular}
+	\end{table}
 \end{frame}
 
-\backupend
-
 \end{document}
+
 % vim: ts=2 sts=2 sw=2 expandtab textwidth=150

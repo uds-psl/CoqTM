@@ -305,7 +305,7 @@ Let $R:\Rel~\Tapes{n}~(F \times \Tapes{n})$ and $T:\Rel~\Tapes{n}~\Nat$.
   We write $M \downarrow T$.
 \end{definition}
 
-Finally, we define \emph{strong realisation}, which is a combination of termination an week realisation.
+Finally, we define \emph{strong realisation}, which is a combination of termination an weak realisation.
 
 \begin{definition}[Strong realisation]
   \label{def:realise}
@@ -410,7 +410,7 @@ Note that the machine can not halt in an inner state of $M$, thus the first case
 
 We have now defined all components of $\MS{match}$.
 
-Now we proof the correctness of this operator.  We prove week correctness and termination separately.
+Now we proof the correctness of this operator.  We prove weak correctness and termination separately.
 We generalised the idea of the correctness proofs from the sequence operator from Asperti et al.
 However, they could not define the $\MS{match}$ machine, because they do not use parametrised relations.
 
@@ -667,7 +667,7 @@ We now defined every component of $\MS{while}$.
 
 The semantics of $\MS{while}$ can be defined with help of the Kleene star:
 
-\begin{lemma}[Week correctness of $\MS{while}$]
+\begin{lemma}[weak correctness of $\MS{while}$]
   \label{lem:while-wrealise}
   If $M \VDash R$, then
   $$ \MS{while} \VDash
