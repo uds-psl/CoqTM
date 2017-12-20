@@ -9,6 +9,7 @@
 \renewcommand{\Nat}{\mathbb{N}}
 \renewcommand{\Bool}{\mathbb{B}}
 \renewcommand{\Option}{\mathcal{O}}
+\newcommand{\Pow}{\mathcal{P}}
 
 \beamertemplatenavigationsymbolsempty%
 % \setbeamertemplate{footline}[page number]
@@ -199,7 +200,7 @@
     Let $T \subseteq (\Tape^n) \times \Nat$.\\
     Then $M$ \textbf{terminates in} $T$, if
     \[
-      \forall (t_{in},~n) \in T,~\exists c_{out},~M(t_{in}) \Rightarrow^n c_{out}
+      \forall (t_{in},~n) \in T,~\exists c_{out},~M(t_{in}) \triangleright^n c_{out}
     \]
     We write $\mathbf{M \downarrow T}$.
   \end{definition}
@@ -207,7 +208,8 @@
 
 \begin{frame}{Relations}
   \footnotesize
-  Let $R, S \subseteq X \times Y$; $T \subseteq Y \times Z$; $U \subseteq X \times X$; $V \subseteq X \times (F \times Y)$; and $\Phi \from F \to \Rel~X~Y$.
+  Let $R, S \subseteq X \times Y$; $T \subseteq Y \times Z$; $U \subseteq X \times X$; $V \subseteq X \times (F \times Y)$; and
+  $\Phi \from F \to \Pow(X \times Y)$.
   \vspace{0.5cm}
 
   \begin{columns}

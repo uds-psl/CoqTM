@@ -72,8 +72,9 @@
 \newcommand{\Type}{\MS{Type}}
 \newcommand{\Unit}{\MS{Unit}}
 \newcommand{\List}{\MS{List}}
-\renewcommand{\Some}[1]{\left\lfloor {#1}\right\rfloor}
-\renewcommand{\None}{\emptyset}
+\newcommand{\Some}[1]{\left\lfloor {#1}\right\rfloor}
+% \None is defined sometimes
+\def\None{\emptyset}
 \newcommand{\true}{\mathbf{true}}
 \newcommand{\false}{\mathbf{false}}
 \newcommand{\unit}{\mathbf{()}}
