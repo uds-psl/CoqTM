@@ -60,7 +60,7 @@
     \pause\item Computational theory of $L$ formalised in Coq%
     \footnote{\tiny Yannick Forster and Gert Smolka: Weak Call-by-Value Lambda Calculus as a Model of Computation in Coq; 2017}
     \pause\item Now we formalise multi-tape Turing machines%
-    \pause\item Goal: build a multi-tape Turing machine that $L$%
+    \pause\item Goal: build a multi-tape Turing machine that simulates $L$%
     \footnote{\tiny Yannick Forster, Fabian Kunze, Marc Roth: The strong invariance thesis for a lambda-calculus; LOLA 2017}%
 \end{itemize}
 \end{frame}
@@ -197,7 +197,7 @@
     Then we say that $M$ \textbf{realises} $R$.
   \end{definition}
   \pause%
-  For \textbf{partioned machines} $M : \setOf{M' : \MS{TM};~ f \from Q_{M'} \to F}$,\\
+  For \textbf{partioned machines} $M : \setOf{M' : \MS{mTM}~\Sigma~n;~ f \from Q_{M'} \to F}$,\\
   we write $\mathbf{M \VDash R}$.
 \end{frame}
 
@@ -206,7 +206,7 @@
     Let $T \subseteq (\Tape^n) \times \Nat$.
     \[
       \mathbf{M \downarrow T} :=
-      \forall (t_{in},~n) \in T
+      \forall (t_{in},~n) \in T.~
       \exists c_{out},~M(t_{in}) \triangleright^n c_{out}
     \]
     We say that $M$ \textbf{terminates in} $T$.
@@ -244,7 +244,7 @@
         R \rif S :=  &\setMap{(x, (\true,  y))&&}{(x, y) \in R} \\
               \cup\, &\setMap{(x, (\false, y))&&}{(x, y) \in S}
       \end{alignat*}
-      Restriction: {\tiny(for a fixed $a \in F$)}
+      Restriction: {\tiny(for a fixed $a : F$)}
       \begin{alignat*}{3}
         V\at {a} &:= \setMap{(x,      z)}{(x,(a, z)) \in V} \\
         % V\att{a} &:= \setMap{(x, (a, z))}{(x,(a, z)) \in V} \\
@@ -258,7 +258,7 @@
     \item Implement programming primitives as operators on Turing machines:
     \begin{itemize}
       \item match
-      \item Sequential composition
+      \item sequential composition
       \item if then else
       \item do-while
     \end{itemize}
@@ -295,7 +295,7 @@
 \end{frame}
 
 \begin{frame}{$n$-Lift}
-  Let $f \from \Fin_n \hookrightarrow \Fin_m$ be an injection between tape indexes.
+  Let $f \from \Fin_m \hookrightarrow \Fin_n$ be an injection between tape indexes.
 
   Let $M$ be an $m$-tape $F$-partitioned Turing machine parametrised over $\Sigma$,
   and $R$ be a $F$-parametrised relation.
