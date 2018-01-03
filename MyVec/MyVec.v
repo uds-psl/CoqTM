@@ -6,42 +6,43 @@ Section VecDef.
 
   Variable X : Type.
 
+  Inductive Nil : Type :=
+  | nil : Nil.
+
+  Inductive Cons (X Y : Type) : Type :=
+  |  cons : forall (x : X) (y : Y), Cons X Y.
+
   Fixpoint t (n : nat) : Type :=
     match n with
-    | 0 => unit
-    | S n => X * t n
+    | 0 => Nil
+    | S n => Cons X (t n)
     end.
 
-  (* The empty vector *)
-  Definition nil : t 0 := tt.
-
   (** The first element of a non-empty vector *)
-  Definition head {n : nat} (xs : t (S n)) : X := fst xs.
+  Definition head (X Y : Type) : Cons X Y -> X := fun '(cons x y) => x.
   
   (** Remove the first element of a non-empty vector *)
-  Definition tail {n : nat} (xs : t (S n)) : t n := snd xs.
+  Definition tail (X Y : Type) : Cons X Y -> Y := fun '(cons x y) => y.
 
-  (** Pre-append a value to a vector *)
-  Definition cons {n : nat} (x : X) (xs : t n) : t (S n) := (x, xs).
-
-  Lemma cons_head_tail {n : nat} (xs : t (S n)) :
+  Lemma eta {n : nat} (xs : t (S n)) :
     cons (head xs) (tail xs) = xs.
-  Proof. cbn in *. unfold cons, head, tail. destruct xs. cbn. reflexivity. Qed.
+  Proof. induction n as [ | n' IH]; intros; cbn in *; destruct xs; cbn in *; auto. Qed.
   
+    
   (** Return the last element of a non-empyt vector *)
   Fixpoint last {n:nat} (xs : t (S n)) : X.
   Proof.
     destruct n; cbn in *.
-    - apply (fst xs).
-    - apply (last n (snd xs)).
+    - apply (head xs).
+    - apply (last n (tail xs)).
   Defined.
 
   (** Return the [n]-th element of the vector *)
   Fixpoint nth {n:nat} (xs : t n) (i : MyFin.t n) {struct n} : X.
   Proof.
     destruct n as [ | n']; destruct_fin i; cbn in *.
-    - apply (fst xs).
-    - apply (nth n' (snd xs) i).
+    - apply (head xs).
+    - apply (nth n' (tail xs) i).
   Defined.
 
   Lemma eq_nth_iff (n : nat) (v1 v2 : t n) :
@@ -59,14 +60,14 @@ Section VecDef.
   Proof.
     destruct n as [ | n']; cbn in *.
     - apply (cons x nil).
-    - apply (fst xs, put _ (snd xs) x).
+    - apply (cons (head xs) (put _ (tail xs) x)).
   Defined.
 
   Fixpoint app {n m:nat} (xs:t n) (ys:t m) {struct n} : t (n+m).
   Proof.
     destruct n as [ | n']; cbn in *.
     - apply ys.
-    - apply (fst xs, app _ _ (snd xs) ys).
+    - apply (cons (head xs) (app _ _ (tail xs) ys)).
   Defined.
 
 
@@ -74,7 +75,7 @@ Section VecDef.
   Proof.
     destruct n as [ | n']; cbn in *.
     - apply nil.
-    - apply (put (rev _ (snd xs)) (fst xs)).
+    - apply (put (rev _ (tail xs)) (head xs)).
   Defined.
 
   (* Problem: [rev (app xs ys)] and [app (rev ys) (rev xs)] don't have the same type! *)
@@ -161,39 +162,44 @@ Section VecDef.
     
 
 End VecDef.
-  
-
-Arguments nil {X}.
 
 Module VectorNotations.
-  (* TODO *)
   Delimit Scope vector_scope with vector.
   Notation "[| |]" := nil (format "[| |]") : vector_scope.
-  Notation "h :: t" := (cons h t) (at level 60, right associativity) : vector_scope.
+  Notation "h ':::' t" := (cons h t) (at level 60, right associativity) : vector_scope.
+
   Notation "[| x |]" := (cons x nil) : vector_scope.
   Notation "[| x ; y ; .. ; z |]" := (cons x (cons y .. (cons z nil) ..)) : vector_scope.
+
   Notation "v [@ p ]" := (nth v p) (at level 1, format "v [@ p ]") : vector_scope.
   Open Scope vector_scope.
 End VectorNotations.
 
 
+(* Doof ist nur noch, dass die Länge explizit annotiert werden muss. *)
+
 (* Test *)
 
 (*
 Include VectorNotations.
+
+Check [| |].
+Check (cons 4 nil) : t nat 1.
+Check 4 ::: [| |].
+
+
+Check nil.
 Compute [|1|].
 Compute [|1;2|].
 Compute [|1;2;3|].
 Compute [|1;2;3;4|].
-Compute [|1;2;3;4|][@MyFin.FS (MyFin.FS MyFin.F1)].
+Compute ([|1;2;3;4|] : t _ 4).
+Compute ([|1;2;3;4|] : t _ 4)[@MyFin.FS (MyFin.FS MyFin.F1)].
 
-Compute put [|1;2;3;4|] 5.
-Compute app [|1;2;3;4|] [|5;6;7;8|].
-Compute rev [|1;2;3;4|].
+Compute put ([|1;2;3;4|] : t _ 4) 5.
+Compute app ([|1;2;3;4|] : t _ 4) ([|5;6;7;8|] : t _ 4).
+Compute rev ([|1;2;3;4|] : t _ 4).
 
-Compute revert [|4;8;15;16;23;42|].
-Compute revert [|42;23;16;15;8;4|].
+Compute revert ([|4;8;15;16;23;42|] : t _ 6).
+Compute revert ([|42;23;16;15;8;4|] : t _ 6).
 *)
-
-
-(* TODO: Notations verbessern; insbesondere das mit cons und [| ... |]; e.g., remove def of [con] and [nil] *)
