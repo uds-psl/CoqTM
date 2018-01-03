@@ -258,54 +258,28 @@ Section Computes_Gen.
     | t ::: paramTypes' => t -> paramVectCoerce paramTypes'
     end.
 
-
-  Fixpoint Computes_Gen {k:nat} (paramTypes : Vector.t Type k) (paramTapes : Vector.t (Fin.t n) k)
-           (codXs : forall (j : Fin.t k), codeable sig (paramTypes[@j]))
-           (f : paramVectCoerce paramTypes) {struct k} : relation (tapes (sig^+) n).
+  Fixpoint Computes_Gen {k:nat}
+           (params : Vector.t ({ t : Type & codeable sig t} * Fin.t n) k)
+           (f : paramVectCoerce (Vector.map (fun x => projT1 (fst x)) params))
+           {struct params} : relation (tapes (sig^+) n).
   Proof.
-    intros tin tout. destruct k.
-    - rewrite (destruct_vector_nil paramTypes) in *. cbn in f.
-      apply (tape_encodes _ (tout[@resTape]) f).
-    - specialize (Computes_Gen k). (* <-- Tricky!  Fix has to be specialized before `dependent destruction' is called! *)
-      dependent destruct paramTapes; dependent destruct paramTypes;
-        rename n into k; rename n0 into n; rename h0 into tapeX; rename t0 into tapesList; rename h into X;
-          cbn in f.
-
+    intros tin tout. destruct params as [ | ((X&codX)&tapeX) k]; cbn in f.
+    - apply (tape_encodes _ (tout[@resTape]) f).
+    - specialize (Computes_Gen k).
       assert (IH : forall x : X,relation (tapes (sig^+) n)).
       {
-        intros x. eapply Computes_Gen.
-        + eapply tapesList.
-        + intros. specialize (codXs (Fin.FS j)). cbn in codXs. eassumption.
-        + apply (f x).
+        intros x. eapply Computes_Gen with (params := params). apply (f x).
       }
-      specialize (codXs Fin.F1) as codX. cbn in codX.
       apply ((forall x : X, tape_encodes codX (tin [@tapeX]) x -> IH x tin tout)).
   Defined.
 
   Variable (k : nat).
-  Variable (paramTypes : Vector.t Type k) (paramTapes : Vector.t (Fin.t n) k).
-  Hypothesis (codXs : forall (j : Fin.t k), codeable sig (paramTypes[@j])).
-  Variable (f : paramVectCoerce paramTypes).
+  Variable (params : Vector.t ({ t : Type & codeable sig t} * Fin.t n) k)
+           (f : paramVectCoerce (Vector.map (fun x => projT1 (fst x)) params)).
 
   Definition Computes_Gen_Rel : Rel (tapes (sig^+) n) (F * (tapes (sig^+) n)) :=
-    ignoreParam (@Computes_Gen k _ paramTapes _ f).
+    ignoreParam (@Computes_Gen k params f).
 
-
-  (*
-  Variable (k : nat).
-  Variable (paramTypes : Vector.t { X : Type & codeable sig X} k) (paramTapes : Vector.t (Fin.t n) k).
-  Hypothesis (codXs : forall (j : Fin.t k), codeable sig (projT1 paramTypes[@j])).
-  Variable (f : paramVectCoerce (Vector.map (@projT1 _ _) paramTypes)).
-                       
-  Definition Computes_Gen_Rel : Rel (tapes (sig^+) n) (F * (tapes (sig^+) n)).
-  Proof.
-    apply ignoreParam.
-    eapply Computes_Gen; swap 2 3.
-    - eapply paramTapes.
-    - eapply f.
-    - cbn. intros. erewrite VectorSpec.nth_map; eauto.
-  Defined.
-*)
 
 End Computes_Gen.
 
@@ -321,24 +295,12 @@ Section Test_Computes_Gen1.
   Variable (f : X -> Y).
   Variable F : finType.
 
-  Local Lemma l1 : forall j : Fin.t 1, codeable sig [|X|][@j].
-  Proof.
-    Require Import Program. (* XXX *)
-    intros. dependent destruction j0.
-    - cbn. auto.
-    - inv j0.
-  Qed.
-  Print All Dependencies l1. (* XXX *)
+  Let gen1 := Computes_Gen cY j (params := [| ( existT _ _ cX, i ) |]) f.
   
-  Program Let gen1 := Computes_Gen _ cY j [| i |] (paramTypes := [|X|]) l1 f.
-
   (* Vector.t Nicht benutzbar! *)
   Goal gen1 =2 Computes i j cX cY f.
   Proof.
     split; cbn; hnf; intuition.
-    - hnf. intros x0 Hx0. specialize (H x0). admit.
-    - 
-  Abort.
-  
+  Qed.
   
 End Test_Computes_Gen1.
