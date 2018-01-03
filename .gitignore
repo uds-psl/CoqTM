@@ -1,4 +1,5 @@
 // Coq Files
+CoqMakefile.conf
 *.vo
 *.glob
 *.aux
