@@ -38,8 +38,8 @@ TM/Code/BoolTM.v
 # Basic Machines
 TM/Basic/Nop.v
 TM/Basic/Mono.v
+TM/Basic/Multi.v
 TM/Basic/WriteString.v
-# TM/Basic/Multi.v
 
 # Compound Machines
 # TM/Compound.v

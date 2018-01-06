@@ -1,197 +1,75 @@
-Require Import Basic.
+Require Import TM.Prelim.
+Require Import TM.TM.
+Require Import TM.Basic.Mono.
+Require Import TM.LiftMN.
 
-Section par_move_step.
+
+(* n-tape versions of the machines from TM.Basic.Mono *)
+
+Section Write.
 
   Variable sig : finType.
-  Variable tapes_no : nat.
+  Variable c : sig.
+  Variable (F : finType) (f : F).
+  Variable (n : nat) (k : Fin.t n).
 
-  Variable tape_i : nat.
-  Hypothesis i_is_a_tape : tape_i < S tapes_no.
+  Definition Write_multi : { M : mTM sig n & states M -> F} :=
+    Inject (Write c f) [|k|].
+    
+  Definition Write_multi_R : Rel (tapes sig n) (F * tapes sig n) :=
+    (fun t '(y, t') => y = f /\ t'[@k] = midtape (left t[@k]) c (right t[@k])).
 
-  Variable tape_j : nat.
-  Hypothesis j_is_a_tape : tape_j < S tapes_no.
-  
+  Lemma Write_multi_Sem :
+    Write_multi ⊨c(1) Write_multi_R.
+  Proof.
+    eapply RealiseIn_monotone. eapply Inject_RealisesIn. vector_dupfree. eapply Write_Sem. omega.
+    hnf. intros tin (yout,tout) (H1&H2); hnf in *. intuition.
+  Qed.
+
+End Write.
+
+Section Move.
+
+  Variable sig : finType.
   Variable D : TM.move.
+  Variable (F : finType) (f : F).
+  Variable (n : nat) (k : Fin.t n).
 
-  Definition states := Fin.t 3.
+  Definition Move_multi : { M : mTM sig n & states M -> F} :=
+    Inject (Move _ D f) [|k|].
 
-  Definition pm_start : states := Fin.F1.
-  Definition pm_true  : states := Fin.FS (Fin.F1).
-  Definition pm_false : states := Fin.FS (Fin.FS (Fin.F1)).
+  Definition Move_multi_R : Rel (tapes sig n) (F * tapes sig n) :=
+    (fun t '(y, t') => y = f /\ t'[@k] = tape_move (sig := sig) t[@k] D).
   
-  Definition par_move_trans (p : states * Vector.t (option sig) (S tapes_no)) : states * Vector.t (option sig * move) (S tapes_no) :=
-    let (s,a) := p in
-    match s with
-    | Fin.F1 => match get_at i_is_a_tape a with
-               | None => (pm_false, null_action)
-               | Some c => match get_at j_is_a_tape a with
-                          | None => (pm_false, null_action)
-                          | Some c' => (pm_true, do_on_tapes tape_i tape_j (None, D))
-                          end
-               end
-    | _ => (s, null_action)
-    end.
-
-  Definition parmove_step : mTM sig tapes_no :=
-    Build_mTM par_move_trans pm_start (fun x => negb (Fin.eqb x pm_start)).
-  
-  Definition Parmove_step_R :=
-    if?
-        (fun t t' => exists c c' : sig,
-             current (get_at tape_0 t) = Some c /\
-             current (get_at tape_1 t) = Some c' /\
-             get_at tape_0 t' = tape_move (get_at tape_0 t) D /\
-             get_at tape_1 t' = tape_move (get_at tape_1 t) D)
-        ! (fun t t' =>
-             (current (get_at tape_0 t) = None \/
-               current (get_at tape_1 t) = None)) ∩ (@IdR _).
-                
-
-  Definition Parmove_step := (parmove_step ; fun x : states => Fin.eqb x pm_true).
-  
-  Lemma Parmove_step_sem :
-    Parmove_step ⊨(1) ⇑⇑[i_is_a_tape; j_is_a_tape] Parmove_step_R.
+  Lemma Move_Sem :
+    Move_multi ⊨c(1) Move_multi_R.
   Proof.
-    cbn.
-    intros t.
-    destruct (current (get_at i_is_a_tape t)) eqn:E1.
-    - destruct (current (get_at j_is_a_tape t)) eqn:E2.
-      + exists (mk_mconfig pm_true (tape_move_multi t (do_on_tapes tape_i tape_j (None, D)))).
-        simpl_TM. rewrite E1, E2. simpl_TM.
-      + exists (mk_mconfig pm_false t).
-        simpl_TM. rewrite E1, E2. simpl_TM.
-    - exists (mk_mconfig pm_false t).
-      simpl_TM. rewrite E1. simpl_TM.
-  Qed.                             
-
-End par_move_step.
-
-Section copy.
-
-  Variable sig : finType.
-  Variable tapes_no : nat.
-
-  Variable tape_i : nat.
-  Hypothesis i_is_a_tape : tape_i < S tapes_no.
-
-  Variable tape_j : nat.
-  Hypothesis j_is_a_tape : tape_j < S tapes_no.
-  
-  Definition c_start : states := Fin.F1.
-  Definition c_true  : states := Fin.FS (Fin.F1).
-  Definition c_false : states := Fin.FS (Fin.FS (Fin.F1)).
-  
-  Definition copy_trans (p : states * Vector.t (option sig) (S tapes_no)) : states * Vector.t (option sig * move) (S tapes_no) :=
-    let (s,a) := p in
-    match s with
-    | Fin.F1 => match get_at i_is_a_tape a with
-               | None => (c_false, null_action)
-               | Some c => match get_at j_is_a_tape a with
-                          | None => (c_false, null_action)
-                          | Some c' => (c_true, do_on_tape j_is_a_tape (Some c, TM.N))
-                          end
-               end
-    | _ => (s, null_action)
-    end.
-
-  Definition copy : mTM sig tapes_no :=
-    Build_mTM copy_trans c_start (fun x => negb (Fin.eqb x c_start)).
-
-  Lemma copy_sem :
-    copy ⊨(fun x : states => Fin.eqb x c_true,1)
-         (fun t p =>
-            let (b, t') := p in
-            if b
-            then
-              (exists c c' : sig,
-                  current (get_at i_is_a_tape t) = Some c /\
-                  current (get_at j_is_a_tape t) = Some c' /\
-                  (forall i (itape : i < S tapes_no), i <> tape_j -> get_at itape t = get_at itape t') /\
-                  get_at j_is_a_tape t' = tape_write (get_at j_is_a_tape t) (Some c))
-            else
-              ( (current (get_at i_is_a_tape t) = None \/
-                 current (get_at j_is_a_tape t) = None) /\
-                t = t')).
-  Proof.
-    cbn.
-    intros t.
-    destruct (current (get_at i_is_a_tape t)) eqn:E1.
-    - destruct (current (get_at j_is_a_tape t)) eqn:E2.
-      + exists (mk_mconfig c_true (tape_move_multi t (do_on_tape j_is_a_tape (Some e, TM.N)))).
-        simpl_TM.
-        rewrite E1, E2. simpl_TM.
-      + exists (mk_mconfig c_false t).
-        simpl_TM. rewrite E1, E2. simpl_TM.
-    - exists (mk_mconfig c_false t).
-      simpl_TM. rewrite E1. simpl_TM.
+    eapply RealiseIn_monotone. eapply Inject_RealisesIn. vector_dupfree. eapply Move_Sem. omega.
+    hnf. intros tin (yout,tout) (H1&H2); hnf in *. intuition.
   Qed.
 
-End copy.
+End Move.
 
-
-Section compare.
+Section ReadChar.
 
   Variable sig : finType.
-  Variable tapes_no : nat.
+  Variable (n : nat) (k : Fin.t n).
 
-  Variable tape_i : nat.
-  Hypothesis i_is_a_tape : tape_i < S tapes_no.
+  Definition ReadChar_multi : { M : mTM sig n & states M -> option sig} :=
+    Inject (Read_char _) [|k|].
 
-  Variable tape_j : nat.
-  Hypothesis j_is_a_tape : tape_j < S tapes_no.
+  Definition ReadChar_multi_R  : Rel (tapes sig n) (option sig * tapes sig n) :=
+    (fun (t : tapes sig n) '(s,t') => s = current t[@k]) ∩ ignoreParam (@IdR _).
 
-  Definition compare_start : states := Fin.F1.
-  Definition compare_true  : states := Fin.FS (Fin.F1).
-  Definition compare_false : states := Fin.FS (Fin.FS (Fin.F1)).
-  
-  Definition compare_trans (p : states * Vector.t (option sig) (S tapes_no)) : states * Vector.t (option sig * move) (S tapes_no) :=
-    let (s,a) := p in
-    match s with
-    | Fin.F1 => match get_at i_is_a_tape a with
-               | None => (compare_false, null_action)
-               | Some c => match get_at j_is_a_tape a with
-                          | None => (compare_false, null_action)
-                          | Some c' => if Decb (c = c')
-                                      then (compare_true, null_action)
-                                      else (compare_false, null_action)
-                          end
-               end
-    | _ => (s, null_action)
-    end.
-
-  Definition compare_step : mTM sig tapes_no :=
-    Build_mTM compare_trans compare_start (fun x => negb (Fin.eqb x compare_start)).
-
-  Lemma compare_step_sem :
-    compare_step ⊨(fun x : states => Fin.eqb x compare_true,1)
-                 (fun t p =>
-                    let (b, t') := p in
-                    t = t' /\
-                    if b
-                    then
-                      (exists c c' : sig,
-                          current (get_at i_is_a_tape t) = Some c /\
-                          current (get_at j_is_a_tape t) = Some c' /\
-                          c = c')
-                    else
-                      ( (current (get_at i_is_a_tape t) = None \/
-                         current (get_at j_is_a_tape t) = None \/
-                         current (get_at i_is_a_tape t) <> current (get_at j_is_a_tape t)))).
+  Lemma ReadChar_multi_Sem :
+    ReadChar_multi ⊨c(1) ReadChar_multi_R.
   Proof.
-    cbn.
-    intros t.
-    destruct (current (get_at i_is_a_tape t)) eqn:E1.
-    - destruct (current (get_at j_is_a_tape t)) eqn:E2.
-      + destruct (Decb (e = e0)) eqn:E3.
-        *  exists (mk_mconfig compare_true t).
-           simpl_TM.
-           rewrite E1, E2, E3. simpl_TM. 
-        * exists (mk_mconfig compare_false t). simpl_TM.
-          rewrite E1, E2, E3. simpl_TM. decide (e = e0); cbn in *; firstorder congruence.
-      + exists (mk_mconfig compare_false t).
-        simpl_TM. rewrite E1, E2. simpl_TM.        
-    - exists (mk_mconfig compare_false t).
-      simpl_TM. rewrite E1. simpl_TM.
+    eapply RealiseIn_monotone. eapply Inject_RealisesIn. vector_dupfree. eapply read_char_sem. omega.
+    hnf. intros tin (yout,tout) (H1&H2); hnf in *. intuition. hnf in *. cbn in *.
+    eapply VectorSpec.eq_nth_iff. intros p ? <-.
+    decide (p = k) as [->|d].
+    - now inv H0.
+    - eapply H2. vector_not_in. tauto.
   Qed.
 
-End compare.
+End ReadChar.
