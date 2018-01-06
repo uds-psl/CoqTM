@@ -140,130 +140,36 @@ Section While.
 
   Section While_terminatesIn.
     Variable (R : Rel (tapes sig n) (bool * F * tapes sig n)).
-    Variable (T : Rel (tapes sig n) nat).
-
-    Inductive WhileT : Rel (tapes sig n) nat :=
-    | WhileT_Stop t1 k1 t2 y k2 :
-        R t1 (false, y, t2) -> T t1 k1 -> k1 <= k2 -> WhileT t1 k2
-    | WhileT_Loop t1 k1 y t2 k2 k3 :
-        R t1 (true, y, t2) -> T t1 k1 ->
-        WhileT t2 k2 ->
-        k1 + k2 < k3 ->
-        WhileT t1 k3.
-
-    Lemma WhileT_functionalOn :
-      functionalOn T R ->
-      functionalOn WhileT R.
-    Proof.
-      intros H. hnf in *. intros x k H1. induction H1; intros; eauto.
-    Qed.
+    Variable (T T' : Rel (tapes sig n) nat).
 
     Lemma While_terminatesIn :
       pM ⊫ R ->
       projT1 pM ↓(T) ->
-      functionalOn T R ->
-      While ↓ WhileT.
+      functionalOn T' R -> 
+      (forall (x : tapes sig n) (i:nat),
+          T' x i -> exists (x':tapes _ _) (b:bool) (y:F) i1,
+            R x (b,y,x') /\ T x i1 /\ if b then exists i2, T' x' i2 /\ i1+1+i2<=i else i1 <= i)->
+      While ↓(T').
     Proof.
-      intros HR Term_M Func.
+      intros HR Term_M Func Hyp.
       intros t i. revert t. apply complete_induction with (x:=i); clear i; intros i IH t T't.
-      destruct T't as [ t1 k1 t2 y k2 R1 T1 Hk | l1 k1 y t2 k2 k3 R1 T1 HW Hk ].
-      - hnf in Term_M. specialize (Term_M _ _ T1) as (oenc&Eq).
+      destruct (Hyp _ _ T't) as (t'& b&y&i1&Rx&Tx&H).
+      destruct b.
+      - destruct H as (i2&T't'&Leq).
+        apply IH in T't' as (oenc & Eq);[ |omega].
+        exists oenc.
+        apply Term_M in Tx as (oenc1 & Eq1).
+        apply (loop_ge (k1:=i1 + (1 + i2)));[omega| ].
+        specialize (HR _ _ _ Eq1). specialize (Func _ _ T't _ _ HR Rx). inv Func.
+        eapply (While_true_merge Eq1); eauto.
+      - apply Term_M in Tx as [oenc Eq].
+        exists oenc.
+        eapply While_false_merge. eapply loop_ge;[ |exact Eq]. omega.
         specialize (HR _ _ _ Eq).
-        specialize (Func _ _ T1 _ _ HR R1). inv Func.
-        exists oenc. eapply While_false_merge; cbn; eauto.
-        unfold loopM. eapply loop_ge; eauto.
-      - specialize (Term_M _ _ T1) as (oenc&Eq).
-        specialize (IH k2 ltac:(omega) _ HW) as (oenc2&Eq2).
-        specialize (HR _ _ _ Eq).
-        specialize (Func _ _ T1 _ _ HR R1). inv Func.
-        exists oenc2. unfold loopM. apply (loop_ge (k1:= k1 + (1 + k2)));[omega| ].
-        eapply While_true_merge; eauto.
+        specialize (Func _ _ T't _ _ HR Rx). inv Func. eauto.
     Qed.
 
   End While_terminatesIn.
-
-
-  (* Termination with size function *)
-  Section While_size.
-    Variable size : tapes sig n -> nat.
-    Variable (R : Rel (tapes sig n) (bool * F * tapes sig n)).
-    Variable (k : nat).
-
-    Hypothesis size_decreases :
-      forall tin term f tout,
-        R tin (term, f, tout) -> size tout < size tin. (* after each loop the size decreases *)
-
-    Inductive WhileTSize : Rel (tapes sig n) nat :=
-    | WhileTSize_Stop tin fout tout k' :
-        R tin (false, fout, tout) -> k <= k' -> WhileTSize tin k'
-    | WhileTSize_Loop tin fout tout1 k' k'' :
-        R tin (true, fout, tout1) -> WhileTSize tout1 k' -> k + k' < k'' -> WhileTSize tin k''.
-
-    Lemma While_TerminatesIn_size :
-      functional R ->
-      pM ⊨c(k) R ->
-      While ↓ WhileTSize.
-    Proof.
-      intros HFunc HRealise tin k' sizeT.
-      induction sizeT as [tin fout tout' k' HR Hk' | tin fout tout1 k' k'' HR1 sizeT IH Hk''].
-      {
-        hnf in HRealise. specialize (HRealise tin) as (outc&HLoop1&HR1).
-        cbn in *. hnf in HFunc. specialize (HFunc tin _ _ HR HR1).
-        inv HFunc. cbn in *. symmetry in H0.
-        pose proof While_false_merge HLoop1 H0 as Merge. exists outc. eapply loop_ge; swap 1 2; eauto.
-      }
-      {
-        destruct IH as (outc2&HLoop2).
-        hnf in HRealise. specialize (HRealise tin) as (outc1&HLoop1'&HR1').
-        cbn in *. hnf in HFunc. specialize (HFunc tin _ _ HR1 HR1'). inv HFunc. cbn in *. symmetry in H0.
-        pose proof While_true_merge HLoop1' HLoop2 H0. cbn in *. exists outc2. eapply loop_ge; swap 1 2; eauto. omega.
-      }
-    Qed.
-
-    (*
-    Lemma While_TerminatesIn_size' :
-      functional R ->
-      pM ⊨c(k) R ->
-      While ↓ (fun tin k' => k' >= (S k) * size tin).
-    Proof.
-      intros HFunc HRealise. eapply TerminatesIn_monotone'. now eapply While_TerminatesIn_size.
-      refine (@size_induction _ size _ _); intros tin IH k' Hk'.
-
-      hnf in HRealise. pose proof (HRealise tin) as (outc&HLoop&HR).
-      destruct outc as [qout tout]; cbn in *.
-      destruct (projT2 pM qout) as [term yout] eqn:E.
-      destruct term; swap 1 2.
-      {
-        pose proof (size_decreases HR) as sd.
-        exists k. split; swap 1 2.
-        - econstructor 1. eauto. omega.
-        - enough (k <= k * size tin) by omega. enough (k * 1 <= k * size tin) by omega. eapply Nat.mul_le_mono; omega.
-      }
-      {
-        pose proof (size_decreases HR) as sd.
-        specialize (IH _ sd (size tout + k * size tout)) as (k2&Hk2&whileTSize).
-        {
-          enough (k * size tout <= k * size tin) by omega.
-          eapply Nat.mul_le_mono; omega.
-        }
-        {
-          exists (size tin + k * size tin). split; swap 1 2.
-          - econstructor 2. eapply HR. eapply whileTSize. admit.
-          - omega.
-        }
-      }
-      
-      
-
-
-      
-      destruct k as [ | k' ]; cbn.
-      - hnf in HRealise. admit.
-      - 
-*)
-    End While_size.
-      
-
 
 End While.
 (* Arguments While {n} {sig} M _. *)
