@@ -269,9 +269,18 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Notation "M ↓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '↓'  T").
 
   Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : Rel (tapes _) _) :
-    M ↓ T1 -> (forall x y, T2 x y -> T1 x y) -> M ↓ T2.
+    M ↓ T1 -> (forall tin k, T2 tin k -> T1 tin k) -> M ↓ T2.
   Proof.
     intros H1 H2. firstorder.
+  Qed.
+
+  Lemma TerminatesIn_monotone' {n : nat} (M : mTM n) (T1 T2 : Rel (tapes _) _) :
+    M ↓ T1 -> (forall tin k1, T2 tin k1 -> exists k2, k2 <= k1 /\ T1 tin k2) -> M ↓ T2.
+  Proof.
+    intros H1 H2. hnf. intros tin k1 Hk.
+    specialize (H2 tin k1 Hk) as (k3&Hk3&Hk3').
+    hnf in H1. specialize (H1 tin k3 Hk3') as (oconf&HLoop).
+    exists oconf. eapply loop_ge; eauto.
   Qed.
 
   Lemma WRealise_to_Realise n (F : finType) (pM : { M : mTM n & (states M -> F) }) R T :

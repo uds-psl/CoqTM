@@ -58,6 +58,10 @@ Definition functionalOn X Y Z (T : Rel X Y) (R : Rel X Z) :=
   forall x i, T x i -> forall z1 z2, R x z1 -> R x z2 -> z1 = z2.
 
 Lemma functional_functionalOn X Y Z (T : Rel X Y) (R : Rel X Z) :
+  functional R -> functionalOn T R.
+Proof. firstorder. Qed.
+
+Lemma functionalOn_functional X Y Z (T : Rel X Y) (R : Rel X Z) :
   functionalOn T R -> surjective T -> functional R.
 Proof. firstorder. Qed.
 

@@ -389,12 +389,27 @@ Tactic Notation "spec_assert" hyp(H) :=
     assert A as H'; [ | specialize (H H'); clear H']
   end.
 
+Tactic Notation "spec_assert" hyp(H) "as" simple_intropattern(p) :=
+  let H' := fresh in
+  match type of H with
+  | ?A -> _ =>
+    assert A as H'; [ | specialize (H H') as p; clear H']
+  end.
+
 Tactic Notation "spec_assert" hyp(H) "by" tactic(T) :=
   let H' := fresh in
   match type of H with
   | ?A -> _ =>
     assert A as H' by T; specialize (H H'); clear H'
   end.
+
+Tactic Notation "spec_assert" hyp(H) "as" simple_intropattern(p) "by" tactic(T) :=
+  let H' := fresh in
+  match type of H with
+  | ?A -> _ =>
+    assert A as H' by T; [ | specialize (H H') as p; clear H']
+  end.
+
 
 
 (* Dupfree vector *)

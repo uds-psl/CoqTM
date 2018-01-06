@@ -3,6 +3,7 @@ Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Match TM.Combinators.While TM.Combinators.SequentialComposition.
 Require Import TM.Compound.Peek.
 Require Import TM.Mirror.
+Require Import TM.Compound.TMTac.
 
 Require Import FunInd.
 Require Import Recdef.
@@ -14,27 +15,21 @@ Section move_to_symbol.
   Variable sig : finType.
   Variable f : sig -> bool.
 
-  Print Mono.
-
-  Check While.
-
   (*
    * One Step:
    * Read one symbol.  If there was no symbol, return [ None ].
    * If the read symbol fulfills [ f ], return [ Some true ].
    * Else move one to the right and return [ Some false ].
    *)
-  Definition M1 : { M : mTM sig 1 & states M -> option bool } :=
+  Definition M1 : { M : mTM sig 1 & states M -> bool * bool} :=
     MATCH (Read_char _)
           (fun b : option sig =>
              match b with
-             | Some x => if f x then
-                          mono_Nop sig (Some true)
-                        else
-                          Move _ R (Some false)
-             | _ => mono_Nop sig None
-             end
-          ).
+             | Some x => if f x
+                        then mono_Nop _ (false, true) (* found the symbol, break and return true *)
+                        else Move _ R (true, false) (* wrong symbol, move right and continue *)
+             | _ => mono_Nop _ (false, false) (* there is no such symbol, break and return false *)
+             end).
 
   Definition M1_Fun : tape sig -> tape sig :=
     fun t1 =>
@@ -43,82 +38,15 @@ Section move_to_symbol.
       | _ => t1
       end.
 
-  Definition M1_Rel : Rel (tapes sig 1) (option bool * tapes sig 1) :=
+  Definition M1_Rel : Rel (tapes sig 1) (bool * bool * tapes sig 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
               tout = M1_Fun tin /\
               (
-                (yout = Some true  /\ exists s, current tin = Some s /\ f s = true ) \/
-                (yout = Some false /\ exists s, current tin = Some s /\ f s = false) \/
-                (yout = None /\ current tout = None)
+                (yout = (false, true)  /\ exists s, current tin = Some s /\ f s = true ) \/
+                (yout = (true, false)  /\ exists s, current tin = Some s /\ f s = false) \/
+                (yout = (false, false) /\ current tout = None)
               )
-           ).
-
-  (* Simplifies the goal without makeing any decissions *)
-  Tactic Notation "TMSimp" tactic(T) :=
-    repeat progress
-           (
-             hnf in *;
-             cbn in *;
-             intros;
-             subst;
-             destruct_tapes;
-             simpl_tape in *;
-             try T;
-             match goal with
-             | [ H : _ ::: _ = [||]  |- _ ] => inv H
-             | [ H : [||] = _ ::: _ |- _ ] => inv H
-             | [ H : _ ::: _ = _ ::: _ |- _ ] => inv H
-
-             | [ H : _ ::  _ = []  |- _ ] => inv H
-             | [ H : [] = _ :: _ |- _ ] => inv H
-             | [ H : _ ::  _ = _ :: _ |- _ ] => inv H
-
-             | [ H : Some _ = Some _ |- _ ] => inv H
-             | [ H : None   = Some _ |- _ ] => inv H
-             | [ H : Some _ = None   |- _ ] => inv H
-
-             | [ H : _ /\ _ |- _] => destruct H
-             | [ H : ex ?P |- _] => destruct H
-             | [ x : _ * _    |- _ ] => destruct x
-
-             | [ H1: ?X = _, H2: context [ ?X ] |- _ ] => rewrite H1 in H2
-             | [ H1: ?X = _    |- context [ ?X ]     ] => rewrite H1
-
-             | [   |- _ /\ _    ] => split
-             | _ => idtac
-             end
-           ).
-
-  Tactic Notation "TMBranche" :=
-    (
-      match goal with
-      | [ H : context [ match ?x with _ => _ end ] |- _ ] => let E := fresh "E" in destruct x eqn:E
-      | [   |- context [ match ?x with _ => _ end ]     ] => let E := fresh "E" in destruct x eqn:E
-      | [ H : _ \/ _ |- _] => destruct H
-      | [ IH : ?P -> ?Q |- _] =>
-        match type of P with
-        | Prop => spec_assert IH; [ clear IH | ]
-        end
-
-      | [ x : bool        |- _ ] => destruct x
-      | [ x : option _ |- _ ] => destruct x
-
-      | [   |- ex ?P    ] => eexists
-      | [ H : _ \/ _ |- _] => destruct H
-      end
-    ).
-
-  Tactic Notation "TMSolve" int_or_var(k) :=
-    eauto k;
-    try congruence.
-
-  Tactic Notation "TMSimp" := TMSimp idtac.
-  Tactic Notation "TMCrush" tactic(T) :=
-    repeat progress
-           (
-             TMSimp T;
-             try TMBranche
-           ).
+           ).  
 
   Lemma M1_RealiseIn :
     M1 ⊨c(3) M1_Rel.
@@ -142,22 +70,22 @@ Section move_to_symbol.
     }
   Qed.
 
+  (*** FIXME: DAS STIMMT NICHT!!!! Es muss ein anderer Weg gefunden werden, Terminierung zu zeigen! *)
+  Lemma M1_Rel_functional : functional M1_Rel.
+  Proof.
+    hnf. intros tin (b1,o1) (b2,o2) (H1&H1') (H2&H2'). destruct_tapes; cbn in *. subst. f_equal.
+    TMCrush idtac; auto. all:exfalso.
+    - destruct h1; cbn in *; inv H0. rewrite H1 in H2. cbn in *. congruence.
+    - destruct h1 eqn:E; cbn in *; inversion H. subst e. rewrite H0 in H1. destruct l0; cbn in *; inversion H1. admit.
+    - destruct h1; cbn in *; inv H. rewrite H1 in H0. cbn in *. congruence.
+    - destruct h1; cbn in *; inv H. rewrite H1 in H0. destruct l0; cbn in *; inv H0. admit.
+  Admitted.
+
   (*
    * The main loop of the machine.
    * Execute M1 in a loop until M1 returned [ None ] or [ Some true ]
    *)
-  Definition M2 : { M : mTM sig 1 & states M -> bool } :=
-    WHILE
-      (
-        MATCH M1
-              (fun o : option bool =>
-                 match o with
-                 | Some true  => mono_Nop _ (false,  true) (* found the symbol, break and return true *)
-                 | Some false => mono_Nop _ (true,  false) (* not found the symbol yet, continue *)
-                 | None       => mono_Nop _ (false, false) (* there is no such symbol, break and return false *)
-                 end
-              )
-      ).
+  Definition M2 : { M : mTM sig 1 & states M -> bool } := WHILE M1.
       
   Definition rlength (t : tape sig) :=
     match t with
@@ -234,10 +162,7 @@ Section move_to_symbol.
   Proof.
     eapply WRealise_monotone.
     {
-      unfold M2. eapply While_WRealise. eapply Match_WRealise.
-      - eapply Realise_WRealise. eapply RealiseIn_Realise. eapply M1_RealiseIn.
-      - cbn in *. instantiate (1 := fun o => match o with Some true => _ | Some false => _ | None => _ end).
-        intros [ [ | ] | ]. all: eapply Realise_WRealise. all: eapply RealiseIn_Realise. all: eapply mono_Nop_Sem.
+      unfold M2. eapply While_WRealise. eapply Realise_WRealise, RealiseIn_Realise. eapply M1_RealiseIn.
     }
     {
 
@@ -251,7 +176,7 @@ Section move_to_symbol.
         now rewrite M2_Fun_equation.
       }
       {
-        Time TMCrush idtac; TMSolve 6.
+        TMCrush idtac; TMSolve 6.
         all:
           try now
               (
@@ -267,7 +192,7 @@ Section move_to_symbol.
   Proof.
     functional induction M2_Fun t; try reflexivity; simpl_tape in *; congruence.
   Qed.
-  Hint Rewrite M2_Fun_tapesToList : tapes.
+  Hint Rewrite M2_Fun_tapesToList : tape.
 
   Lemma tape_move_niltape (t : tape sig) (D : move) : tape_move t D = niltape _ -> t = niltape _.
   Proof. destruct t, D; cbn; intros; try congruence. destruct l; congruence. destruct l0; congruence. Qed.
@@ -280,228 +205,72 @@ Section move_to_symbol.
   Qed.
 
 
-  (* Now we combine M1 and M2 and get get the final Machine, MoveToSymbol.
-   * It returns true iff it has found the symbol.
-   *)
+  (** Termination *)
 
-
-  Definition MoveToSymbol : { M : mTM sig 1 & states M -> bool } :=
-    MATCH M1
-          (fun o : option bool =>
-             match o with
-             | Some true => mono_Nop _ true
-             | _ => Move _ R tt ;; M2
-             end).
-
-  Definition MoveToSymbol_Fun :=
-    fun t =>
-      match M1_Fun t with
-      | midtape _ m _ as t' => if f m then t' else M2_Fun t'
-      | _ as t' => M2_Fun (tape_move_right t')
-      end.
-  
-  Lemma MoveToSymbol_true t x :
-    current t = Some x ->
-    f x = true ->
-    MoveToSymbol_Fun t = t.
-  Proof.
-    intros H1 H2. unfold MoveToSymbol_Fun. erewrite M1_true; eauto.
-    destruct t eqn:E; try rewrite M2_Fun_equation; auto; cbn in *; inv H1. now rewrite H2.
-  Qed.
-
-  Lemma M2_M2 t :
-    M2_Fun (M2_Fun t) = M2_Fun t.
-  Proof.
-    functional induction M2_Fun t; auto.
-    - rewrite M2_Fun_equation; cbn; now rewrite e0.
-    - destruct t; now rewrite M2_Fun_equation.
-  Qed.
-
-  Lemma M1_M2 t :
-    M1_Fun (M2_Fun t) = M2_Fun t.
-  Proof.
-    functional induction M2_Fun t; auto.
-    - cbn. now rewrite e0.
-    - destruct t; cbn; auto.
-  Qed.
-
-  (* TODO: Finish *)
-
-  Definition MoveToSymbol_Rel : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
-    Mk_R_p ((if? (fun t t' => exists s, current t' = Some s /\ f s = true)
-               ! (fun t t' => current t' = None)) ∩ ignoreParam (fun t t' => MoveToSymbol_Fun t = t')).
-
-  Lemma MoveToSymbol_WRealise :
-     MoveToSymbol ⊫ MoveToSymbol_Rel.
-  Proof.
-    eapply WRealise_monotone.
-    {
-      unfold MoveToSymbol. eapply Match_WRealise.
-      - eapply Realise_WRealise. eapply RealiseIn_Realise. eapply M1_RealiseIn.
-      - cbn in *. instantiate (1 := fun o : option bool => match o with Some true => _ | _ => _ end).
-        intros [ [ | ] | ].
-        1: eapply Realise_WRealise; eapply RealiseIn_Realise; eapply mono_Nop_Sem.
-        1-2: eapply Seq_WRealise; [eapply Realise_WRealise; eapply RealiseIn_Realise; eapply Move_Sem | eapply M2_WRealise].
-    }
-    {
-      Time TMCrush idtac; TMSolve 6.
-      - erewrite M1_true; eauto.
-      - erewrite MoveToSymbol_true, M1_true; eauto.
-      - admit.
-      - admit.
-      - admit.
-      - admit.
-    }
-  Admitted.
-
-
-  (* TODO: Termination *)
-  (* FIXME *)
-
-  Fixpoint time_until_symbol_list (ls : list sig) :=
-    match ls with
-    | nil => 1
-    | c :: ls => if f c then 1 else 1 + time_until_symbol_list ls
-    end.
-  
-  Fixpoint time_until_symbol_r (t : tape sig) :=
+  Function MoveToSymbol_TermTime (t : tape sig) { measure rlength t } : nat :=
     match t with
-    | niltape _ => 2
-    | leftof c r => 1 + time_until_symbol_list (c :: r)
-    | rightof c r => 2
-    | midtape l1 c l2 => time_until_symbol_list (c :: l2)
+    | midtape ls m rs => if f m then 4 else S (S (S (S (MoveToSymbol_TermTime (tape_move_right t)))))
+    | _ => 4
     end.
-
-  Fixpoint time_until_symbol_l (t : tape sig) :=
-    match t with
-    | niltape _ => 2
-    | leftof c r => 2
-    | rightof c r => 1 + time_until_symbol_list (c :: r)
-    | midtape l1 c l2 => time_until_symbol_list (c :: l1)
-    end.
-
-  Definition time_until_symbol D (t : tape sig) :=
-    match D with
-    | L => time_until_symbol_l t
-    | R => time_until_symbol_r t
-    | N => 0
-    end.
-  
-
-  (* TODO: Make this proof/excution faster, by inserting counters in WhileTerm *)
-  (* It can also be made faster by replacing the read machine by a machine that reads and terminates in the right state. *)
-  Lemma MoveToSymbol_TerminatesIn :
-    projT1 (MoveToSymbol) ↓ (fun x i => i = 11 * time_until_symbol_r (x[@Fin.F1])).
   Proof.
-    (*
-    unfold MoveToSymbol_R. simpl projT1.
-    eapply While_terminatesIn.
-    {
-      unfold M_R. eapply Match_WRealise.
-      eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Peek_RealisesIn.
-      instantiate (1 := (fun o => match o with
-                               | inl true => _
-                               | inl false => _
-                               | inr L => _ | inr _ => _
-                               end)).
-      intros r. cbn in r. destruct r as [ [ | ] | D' ] eqn:E.
-      + eapply Realise_WRealise, RealiseIn_Realise. eapply mono_Nop_Sem.
-      + eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Move_Sem.
-      + destruct D'; cbn; eapply Realise_WRealise, RealiseIn_Realise, mono_Nop_Sem.
-    }
-    {
-      unfold M_R. simpl. eapply Match_TerminatesIn. shelve.
-      - eapply Realise_WRealise. eapply RealiseIn_Realise. eapply Peek_RealisesIn.
-      - eapply Realise_total. eapply Peek_RealisesIn.
-      - instantiate (1 := (fun o => match o with
-                               | inl true => _
-                               | inl false => _
-                               | inr L => _ | inr _ => _
-                               end)).
-        intros r. cbn in r. destruct r as [ [ | ] | D' ] eqn:E.
-        + eapply Realise_total. eapply mono_Nop_Sem.
-        + eapply Realise_total. eapply Move_Sem.
-        + destruct D'; eapply Realise_total; eapply mono_Nop_Sem.
-          Unshelve.
-          {
-            (* TODO: Automatisation !!!! *)
-            hnf. unfold Peek_Rel, Mk_R_p. intros.
-            destruct z1, z2. destruct H0 as (H0&H0'). destruct H1 as (H1&H1').
-            destruct_tapes. hnf in *. cbn in *. subst. destruct h1; congruence.
-          }
-    }
-    {
-      (* TODO: Automatisation !!!! *)
-      hnf. admit.
-    }
-    {
-      intros ? ? ?. hnf. destruct_tapes. hnf in *.
-      exists ([| moveToSymbol_R h |]). unfold finType_CS. admit.
-    }
-    
-    
-    
-      
-    
-    
-    (*
+    all: (intros; try now (cbn; omega)). destruct rs; cbn; omega.
+  Qed.
+  Hint Rewrite MoveToSymbol_TermTime_equation : tape.
+
+
+  (* Idee: Lösung des Problems kanonische Relation ranklatschen, damit die relation funktional wird. *)
+  Lemma M2_terminates :
+    projT1 M2 ↓ (fun tin k => k = MoveToSymbol_TermTime (tin[@Fin.F1])).
+  Proof.
     eapply TerminatesIn_monotone.
-    - cbn -[M1]. eapply While_Terminates.
-    - intros t k ->. destruct_tapes. destruct h.
-      + unfold M1. econstructor; unfold MATCH; cbn [projT1]; cbn [projT2].
-        * eapply Match_Terminates''.
-          -- cbn. eauto.
-          -- cbn. eauto.
-        * cbn. eauto.
-      + unfold M1. econstructor; unfold MATCH; cbn [projT1]; cbn [projT2].
-        * eapply Match_Terminates''.
-          -- cbn. eauto.
-          -- cbn. eauto.
-        * cbn. eauto.
-      + unfold M1. econstructor; unfold MATCH; cbn [projT1]; cbn [projT2].
-        * eapply Match_Terminates''.
-          -- cbn. eauto.
-          -- cbn. eauto.
-        * cbn. eauto.
-      + unfold M1. unfold MATCH; cbn [projT1]; cbn [projT2]. destruct (f e) eqn:E.
-        * cbn. rewrite E. cbn. replace 4 with (2 + S 1) by omega.
-          eapply term_false. eapply Match_Terminates''.
-          -- cbn. rewrite E. cbn. eauto.
-          -- cbn. eauto.
-          -- cbn. eauto.
-        * revert l e E. induction l0 as [ | r rs IH]; intros ls e E.
-          -- simpl. rewrite E. cbn. replace 8 with (3 + S 4) by omega. eapply term_true.
-             ++ simpl. cbn. rewrite E. cbn. eauto.
-             ++ simpl. eauto.
-             ++ simpl. eapply term_false.
-                ** cbn. eauto.
-                ** cbn. eauto.
-          -- simpl time_until_symbol_r. rewrite E.
-             assert (4 * S (if f r then 1 else S (time_until_symbol_list rs)) =
-                     3 + (S (if f r then 4 else 4 + 4 * (time_until_symbol_list rs)))) as ->
-                 by (destruct (f r); simpl; omega).
-             eapply term_true.
-             ++ cbn. rewrite E. cbn. eauto.
-             ++ cbn. eauto.
-             ++ destruct (f r) eqn:E2.
-                ** replace 4 with (3 + S 0) by omega. eapply term_false.
-                   --- cbn. rewrite E2. cbn. eauto.
-                   --- cbn. eauto.
-                ** specialize (IH (e :: ls) r E2). cbn -[mult] in *. rewrite E2 in *.
-                   now replace (S (S (S (S (4 * time_until_symbol_list rs))))) with (4 * S (time_until_symbol_list rs)) by omega.
-*)
-*)
-  Admitted.
-
-
-  Lemma MoveToSymbol_Realise : 
-    MoveToSymbol ⊨ MoveToSymbol_Rel.
-  Proof.
-    eapply WRealise_to_Realise.
-    - cbn. eapply MoveToSymbol_TerminatesIn.
-    - firstorder. eexists. eauto.
-    - eapply MoveToSymbol_WRealise.
+    {
+      cbn. eapply While_TerminatesIn_size; swap 1 2.
+      - eapply M1_RealiseIn. (* hier *)
+      - eapply M1_Rel_functional.
+    }
+    {
+      intros tin k ->. destruct_tapes. cbn.
+      destruct h; cbn.
+      {
+        rewrite MoveToSymbol_TermTime_equation.
+        econstructor 1; autorewrite with tape. 2: omega.
+        hnf. cbn. split. now instantiate (1 := [|niltape sig|]). cbn. auto.
+      }
+      {
+        rewrite MoveToSymbol_TermTime_equation.
+        econstructor 1; autorewrite with tape. 2: omega.
+        hnf. cbn. split. now instantiate (1 := [|leftof e l|]). cbn. auto.
+      }
+      {
+        rewrite MoveToSymbol_TermTime_equation.
+        econstructor 1; autorewrite with tape. 2: omega.
+        hnf. cbn. split. now instantiate (1 := [|rightof e l|]). cbn. auto.
+      }
+      {
+        revert l e. induction l0 as [ | r rs IH]; intros.
+        {
+          rewrite MoveToSymbol_TermTime_equation.
+          destruct (f e) eqn:E; cbn.
+          - econstructor 1; autorewrite with tape. 2: omega.
+            hnf. cbn. split. rewrite E. now instantiate (1 := [|midtape l e []|]). cbn; eauto 6.
+          - autorewrite with tape.
+            econstructor 2; autorewrite with tape. 3: instantiate (1 := 3); omega; swap 1 2.
+            + hnf. split; cbn. rewrite E. now instantiate (1 := [|rightof e l|]). cbn. eauto 6.
+            + econstructor. cbn. split. now instantiate (1 := [|rightof e l|]). eauto. omega.
+        }
+        {
+          rewrite MoveToSymbol_TermTime_equation.
+          destruct (f e) eqn:E.
+          - econstructor 1. 2: omega. cbn. split. rewrite E. now instantiate (1 := [|midtape _ _ _|]). eauto.
+          - econstructor 2. 2: now eapply IH. cbn. split. rewrite E. eauto. eauto 6. cbn. omega.
+        }
+      }
+    }
   Qed.
+  
+    
+    
+
 
 
   (** Move to left *)

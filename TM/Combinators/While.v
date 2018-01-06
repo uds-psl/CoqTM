@@ -2,6 +2,8 @@
 Require Export TM.TM TM.Basic.Nop.
 Require Import Shared.FiniteTypes.DepPairs EqdepFacts.
 
+Require Import Wellfounded.
+
 Section While.
 
   Variable n : nat.
@@ -42,12 +44,12 @@ Section While.
     unfold loopM in H.
     eapply loop_split with (p := fun c=> halt (projT1 pM) (cstate c)) in H.
     destruct H as (i1 & x1 & i2 & H1 & H2 & ->).
-    -exists i1,x1,i2. split;[ |split;[exact H2|reflexivity]].
-     eapply loop_lift with (lift:=id) in H1.
-     +exact H1.
-     +reflexivity.
-     +unfold id.  intros. destruct x. unfold step. cbn in *. rewrite H. now rewrite andb_false_r.
-    -intros b. unfold halt at 2. cbn. now intros ->. 
+    - exists i1,x1,i2. split;[ |split;[exact H2|reflexivity]].
+      eapply loop_lift with (lift:=id) in H1.
+      + exact H1.
+      + reflexivity.
+      + unfold id.  intros. destruct x. unfold step. cbn in *. rewrite H. now rewrite andb_false_r.
+    - intros b. unfold halt at 2. cbn. now intros ->. 
   Qed.
 
   Lemma While_true_split i (x : mconfig _ (states While) _) oenc (f : F) :
@@ -179,6 +181,89 @@ Section While.
     Qed.
 
   End While_terminatesIn.
+
+
+  (* Termination with size function *)
+  Section While_size.
+    Variable size : tapes sig n -> nat.
+    Variable (R : Rel (tapes sig n) (bool * F * tapes sig n)).
+    Variable (k : nat).
+
+    Hypothesis size_decreases :
+      forall tin term f tout,
+        R tin (term, f, tout) -> size tout < size tin. (* after each loop the size decreases *)
+
+    Inductive WhileTSize : Rel (tapes sig n) nat :=
+    | WhileTSize_Stop tin fout tout k' :
+        R tin (false, fout, tout) -> k <= k' -> WhileTSize tin k'
+    | WhileTSize_Loop tin fout tout1 k' k'' :
+        R tin (true, fout, tout1) -> WhileTSize tout1 k' -> k + k' < k'' -> WhileTSize tin k''.
+
+    Lemma While_TerminatesIn_size :
+      functional R ->
+      pM ⊨c(k) R ->
+      While ↓ WhileTSize.
+    Proof.
+      intros HFunc HRealise tin k' sizeT.
+      induction sizeT as [tin fout tout' k' HR Hk' | tin fout tout1 k' k'' HR1 sizeT IH Hk''].
+      {
+        hnf in HRealise. specialize (HRealise tin) as (outc&HLoop1&HR1).
+        cbn in *. hnf in HFunc. specialize (HFunc tin _ _ HR HR1).
+        inv HFunc. cbn in *. symmetry in H0.
+        pose proof While_false_merge HLoop1 H0 as Merge. exists outc. eapply loop_ge; swap 1 2; eauto.
+      }
+      {
+        destruct IH as (outc2&HLoop2).
+        hnf in HRealise. specialize (HRealise tin) as (outc1&HLoop1'&HR1').
+        cbn in *. hnf in HFunc. specialize (HFunc tin _ _ HR1 HR1'). inv HFunc. cbn in *. symmetry in H0.
+        pose proof While_true_merge HLoop1' HLoop2 H0. cbn in *. exists outc2. eapply loop_ge; swap 1 2; eauto. omega.
+      }
+    Qed.
+
+    (*
+    Lemma While_TerminatesIn_size' :
+      functional R ->
+      pM ⊨c(k) R ->
+      While ↓ (fun tin k' => k' >= (S k) * size tin).
+    Proof.
+      intros HFunc HRealise. eapply TerminatesIn_monotone'. now eapply While_TerminatesIn_size.
+      refine (@size_induction _ size _ _); intros tin IH k' Hk'.
+
+      hnf in HRealise. pose proof (HRealise tin) as (outc&HLoop&HR).
+      destruct outc as [qout tout]; cbn in *.
+      destruct (projT2 pM qout) as [term yout] eqn:E.
+      destruct term; swap 1 2.
+      {
+        pose proof (size_decreases HR) as sd.
+        exists k. split; swap 1 2.
+        - econstructor 1. eauto. omega.
+        - enough (k <= k * size tin) by omega. enough (k * 1 <= k * size tin) by omega. eapply Nat.mul_le_mono; omega.
+      }
+      {
+        pose proof (size_decreases HR) as sd.
+        specialize (IH _ sd (size tout + k * size tout)) as (k2&Hk2&whileTSize).
+        {
+          enough (k * size tout <= k * size tin) by omega.
+          eapply Nat.mul_le_mono; omega.
+        }
+        {
+          exists (size tin + k * size tin). split; swap 1 2.
+          - econstructor 2. eapply HR. eapply whileTSize. admit.
+          - omega.
+        }
+      }
+      
+      
+
+
+      
+      destruct k as [ | k' ]; cbn.
+      - hnf in HRealise. admit.
+      - 
+*)
+    End While_size.
+      
+
 
 End While.
 (* Arguments While {n} {sig} M _. *)

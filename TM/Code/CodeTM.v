@@ -258,9 +258,14 @@ Section Computes_Gen.
     | t ::: paramTypes' => t -> paramVectCoerce paramTypes'
     end.
 
+  Definition param_genT k := Vector.t ({ t : Type & codeable sig t} * Fin.t n) k.
+
+  Definition param_genF k (params : param_genT k) :=
+    paramVectCoerce (Vector.map (fun x => projT1 (fst x)) params).
+
   Fixpoint Computes_Gen {k:nat}
-           (params : Vector.t ({ t : Type & codeable sig t} * Fin.t n) k)
-           (f : paramVectCoerce (Vector.map (fun x => projT1 (fst x)) params))
+           (params : param_genT k)
+           (f : param_genF params)
            {struct params} : relation (tapes (sig^+) n).
   Proof.
     intros tin tout. destruct params as [ | ((X&codX)&tapeX) k]; cbn in f.
@@ -273,9 +278,9 @@ Section Computes_Gen.
       apply ((forall x : X, tape_encodes codX (tin [@tapeX]) x -> IH x tin tout)).
   Defined.
 
-  Variable (k : nat).
-  Variable (params : Vector.t ({ t : Type & codeable sig t} * Fin.t n) k)
-           (f : paramVectCoerce (Vector.map (fun x => projT1 (fst x)) params)).
+  Variable (k : nat)
+           (params : param_genT k)
+           (f : param_genF params).
 
   Definition Computes_Gen_Rel : Rel (tapes (sig^+) n) (F * (tapes (sig^+) n)) :=
     ignoreParam (@Computes_Gen k params f).
@@ -283,6 +288,8 @@ Section Computes_Gen.
 
 End Computes_Gen.
 
+Arguments Computes_Gen {sig} {n} {Res} (codRes) (resTape) {k} (params) (f).
+Arguments Computes_Gen_Rel {sig} {n} F {Res} (codRes) (resTape) {k} (params) (f).
 
 (* Check, that Computes_Gen coincises with Computes for [k := 1] *)
 
@@ -295,7 +302,7 @@ Section Test_Computes_Gen1.
   Variable (f : X -> Y).
   Variable F : finType.
 
-  Let gen1 := Computes_Gen cY j (params := [| ( existT _ _ cX, i ) |]) f.
+  Let gen1 := Computes_Gen cY j [| (existT _ _ cX, i) |] f.
   
   (* Vector.t Nicht benutzbar! *)
   Goal gen1 =2 Computes i j cX cY f.

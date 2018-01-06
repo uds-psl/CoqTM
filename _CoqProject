@@ -14,7 +14,6 @@ MyVec/MyFin.v
 TM/Prelim.v
 TM/Relations.v
 TM/TM.v
-# TM/TMTac.v
 TM/Retract.v
 
 # Programming combinators
@@ -44,6 +43,7 @@ TM/Basic/WriteString.v
 
 # Compound Machines
 # TM/Compound.v
+TM/Compound/TMTac.v
 TM/Compound/Peek.v
 TM/Compound/MoveToSymbol.v
 # TM/Compound/FindSymbol.v
