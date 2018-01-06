@@ -16,7 +16,7 @@ Ltac simpl_dec :=
 
 Section test.
   Variable P : Prop.
-  Parameter dec_P : dec P.
+  Variable dec_P : dec P.
   Goal if Dec (1 = 1) then True else False.
   Proof.
     intros. deq 1. tauto.
@@ -39,6 +39,12 @@ Section test.
   Qed.
 End test.
 
+Ltac inv_pair :=
+  match goal with
+  | [ H : (?a, ?b) = (?c, ?d) |- _] => inv H
+  | [ |- (?a, ?b) = (?c, ?d) ] => f_equal
+  end.
+
 
 (* Simplifies the goal without making any decissions *)
 Tactic Notation "TMSimp" tactic(T) :=
@@ -54,17 +60,17 @@ Tactic Notation "TMSimp" tactic(T) :=
            | [ H : _ ::: _ = [||]  |- _ ] => inv H
            | [ H : [||] = _ ::: _ |- _ ] => inv H
            | [ H : _ ::: _ = _ ::: _ |- _ ] => inv H
+           | [ |- (_ ::: _) = (_ ::: _) ] => f_equal
 
            | [ H : _ ::  _ = []  |- _ ] => inv H
            | [ H : [] = _ :: _ |- _ ] => inv H
            | [ H : _ ::  _ = _ :: _ |- _ ] => inv H
 
-           | [ H : (?a, ?b) = (?c, ?d) |- _] => inv H
-           | [ |- (?a, ?b) = (?c, ?d) ] => f_equal
 
            | [ H : Some _ = Some _ |- _ ] => inv H
            | [ H : None   = Some _ |- _ ] => inv H
            | [ H : Some _ = None   |- _ ] => inv H
+           | [ |- Some _ = Some _ ] => f_equal
 
            | [ H : _ /\ _ |- _] => destruct H
            | [ H : ex ?P |- _] => destruct H

@@ -1,14 +1,11 @@
 Require Import TM.Prelim.
 Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Match TM.Combinators.While TM.Combinators.SequentialComposition.
-Require Import TM.Compound.Peek.
 Require Import TM.Mirror.
 Require Import TM.Compound.TMTac.
 
 Require Import FunInd.
 Require Import Recdef.
-
-Ltac deq x := let H := fresh in destruct (Dec (x = x)) as [? | H]; [ | now contradiction H].
 
 Section move_to_symbol.
   

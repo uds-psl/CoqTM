@@ -41,7 +41,7 @@ Section Move.
   Definition Move_multi_R : Rel (tapes sig n) (F * tapes sig n) :=
     (fun t '(y, t') => y = f /\ t'[@k] = tape_move (sig := sig) t[@k] D).
   
-  Lemma Move_Sem :
+  Lemma Move_multi_Sem :
     Move_multi ⊨c(1) Move_multi_R.
   Proof.
     eapply RealiseIn_monotone. eapply Inject_RealisesIn. vector_dupfree. eapply Move_Sem. omega.

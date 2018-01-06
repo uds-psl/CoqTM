@@ -46,4 +46,5 @@ TM/Basic/WriteString.v
 TM/Compound/TMTac.v
 TM/Compound/Peek.v
 TM/Compound/MoveToSymbol.v
+TM/Compound/CopySymbols.v
 # TM/Compound/FindSymbol.v
