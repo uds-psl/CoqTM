@@ -2,54 +2,97 @@ Require Import TM.Prelim.
 Require Import TM.TM.
 Require Import TM.Basic.Mono.
 Require Import TM.LiftMN.
+Require Import TM.Combinators.SequentialComposition TM.Combinators.Match.
+
+Require Import TM.Compound.TMTac.
 
 
-(* n-tape versions of the machines from TM.Basic.Mono *)
+(* Simple 2-tape Turing machines *)
 
-Section Write.
 
+(* Let both tapes move *)
+Section MovePar.
   Variable sig : finType.
-  Variable c : sig.
-  Variable (F : finType) (f : F).
-  Variable (n : nat) (k : Fin.t n).
+  Variable (D1 D2 : move).
+  Variable (F : finType) (def : F).
 
-  Definition Write_multi : { M : mTM sig n & states M -> F} :=
-    Inject (Write c f) [|k|].
-    
-  Definition Write_multi_R : Rel (tapes sig n) (F * tapes sig n) :=
-    (fun t '(y, t') => y = f /\ t'[@k] = midtape (left t[@k]) c (right t[@k])).
+  Definition MovePar_R : Rel (tapes sig 2) (F * tapes sig 2) :=
+    (fun (t t' : tapes sig 2) => t'[@Fin.F1] = tape_move t[@Fin.F1] D1 /\
+                              t'[@Fin.FS Fin.F1] = tape_move t[@Fin.FS Fin.F1] D2) ||_ def.
 
-  Lemma Write_multi_Sem :
-    Write_multi ⊨c(1) Write_multi_R.
+  Definition MovePar : { M : mTM sig 2 & states M -> F} :=
+    Inject (Move _ D1 tt) [|Fin.F1|];; Inject (Move _ D2 def) [|Fin.FS Fin.F1|].
+
+  Lemma MovePar_Sem : MovePar ⊨c(3) MovePar_R.
   Proof.
-    eapply RealiseIn_monotone. eapply Inject_RealisesIn. vector_dupfree. eapply Write_Sem. omega.
-    hnf. intros tin (yout,tout) (H1&H2); hnf in *. intuition.
+    eapply RealiseIn_monotone.
+    {
+      unfold MovePar.
+      eapply Seq_RealiseIn; (eapply Inject_RealisesIn; [vector_dupfree | eapply Move_Sem ]).
+    }
+    {
+      omega.
+    }
+    {
+      hnf in *. intros tin (yout&tout). destruct_tapes. cbn -[Vector.nth] in *.
+      intros ((()&t1)&((_&H1)&H2)&(H3&H4)&H5); hnf in *; subst; split; auto; destruct_tapes.
+      specialize (H5 Fin.F1 ltac:(vector_not_in)); cbn in H5; subst. cbn in H1, H4; subst.
+      specialize (H2 (Fin.FS Fin.F1) ltac:(vector_not_in)); cbn in H2; subst. auto.
+    }
   Qed.
-
-End Write.
-
-Section Move.
-
-  Variable sig : finType.
-  Variable D : TM.move.
-  Variable (F : finType) (f : F).
-  Variable (n : nat) (k : Fin.t n).
-
-  Definition Move_multi : { M : mTM sig n & states M -> F} :=
-    Inject (Move _ D f) [|k|].
-
-  Definition Move_multi_R : Rel (tapes sig n) (F * tapes sig n) :=
-    (fun t '(y, t') => y = f /\ t'[@k] = tape_move (sig := sig) t[@k] D).
   
-  Lemma Move_multi_Sem :
-    Move_multi ⊨c(1) Move_multi_R.
+End MovePar.
+
+(* Copy the current symbol from tape 0 to tape 1 *)
+Section Copy.
+  Variable sig : finType.
+
+  Definition Copy_char : { M : mTM sig 2 & states M -> bool} :=
+    MATCH (Inject (Read_char sig) [|Fin.F1|])
+          (fun s : option sig =>
+             match s with
+               None =>  Nop _ _ false
+             | Some s => Inject (Write s true) [|Fin.FS Fin.F1|]
+             end).
+
+  Definition Copy_char_R :=
+    (if? (fun t t' : tapes sig 2 =>
+            exists c, current t[@Fin.F1] = Some c /\
+                 t'[@Fin.FS Fin.F1] = tape_write t[@Fin.FS Fin.F1] (Some c) /\
+                 t[@Fin.F1] = t'[@Fin.F1])
+         ! (fun t t' => current t[@Fin.F1] = None) ∩ (@IdR _)).
+
+  Lemma Copy_char_Sem : Copy_char ⊨c(3) Copy_char_R.
   Proof.
-    eapply RealiseIn_monotone. eapply Inject_RealisesIn. vector_dupfree. eapply Move_Sem. omega.
-    hnf. intros tin (yout,tout) (H1&H2); hnf in *. intuition.
+    eapply RealiseIn_monotone.
+    {
+      unfold Copy_char. eapply Match_RealiseIn. cbn.
+      eapply Inject_RealisesIn; [ vector_dupfree| eapply read_char_sem].
+      instantiate (2 := fun o : option sig => match o with Some s => _ | None => _ end).
+      intros [ s | ]; cbn.
+      eapply Inject_RealisesIn; [ vector_dupfree| eapply Write_Sem].
+      eapply RealiseIn_monotone'. eapply Nop_total. omega.
+    }
+    {
+      cbn. omega.
+    }
+    {
+      hnf. intros tin (yout&tout). intros (o&t&((H1&H2)&H3)&H4); hnf in *; subst.
+      cbn in H2. destruct_tapes. cbn -[Vector.nth] in *. cbn in H2. inv H2. cbn in H4.
+      specialize (H3 (Fin.FS Fin.F1) ltac:(vector_not_in)); cbn in H3; subst.
+      destruct h; cbn [current] in *.
+      - destruct H4 as (H4&H5); hnf in *; subst. inv H5. now cbv.
+      - destruct H4 as (H4&H5); hnf in *; subst. inv H5. now cbv.
+      - destruct H4 as (H4&H5); hnf in *; subst. inv H5. now cbv.
+      - destruct H4 as ((H4&H5)&H6); hnf in *; subst. cbn in H5; subst.
+        specialize (H6 Fin.F1 ltac:(vector_not_in)); cbn in H6; subst. cbn. eauto.
+    }
   Qed.
 
-End Move.
+End Copy.
 
+
+(* Read a char at an arbitrary tape *)
 Section ReadChar.
 
   Variable sig : finType.

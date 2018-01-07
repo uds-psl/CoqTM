@@ -1,9 +1,9 @@
 Require Import TM.Prelim.
-Require Import TM.Basic.Mono.
-Require Import TM.Basic.Multi.
-Require Import TM.Combinators.Match TM.Combinators.While TM.Combinators.SequentialComposition.
+Require Import TM.Basic.Mono TM.Basic.Multi.
+Require Import TM.Combinators.Combinators.
 Require Import TM.Mirror.
 Require Import TM.Compound.TMTac.
+Require Import TM.LiftMN.
 
 Require Import FunInd.
 Require Import Recdef.
@@ -19,17 +19,17 @@ Section CopySymbols.
   Variable f : sig -> bool.
 
   Definition M1 : { M : mTM sig 2 & states M -> bool * bool} :=
-    (* Read a symbol from tape 1 *)
     MATCH (ReadChar_multi _ Fin.F1)
           (fun b : option sig =>
              match b with
              | Some x =>
                (* First write the read symbol to tape 1 *)
-               Write_multi x tt (Fin.FS Fin.F1);;
                if f x
-               then Nop _ _ (false, true) (* found the symbol, break and return true *)
-               else Move_multi _ R tt Fin.F1;; (* wrong symbol, move both tapes right and continue *)
-                    Move_multi _ R (true, false) (Fin.FS Fin.F1)
+               then (* found the symbol: write it to tape 1; break and return true *)
+                 Inject (Write x (false, true)) [|Fin.FS Fin.F1|]
+               else (* wrong symbol: write it to tape 1 and move both tapes right and continue *)
+                 Inject (Write x tt) [|Fin.FS Fin.F1|];;
+                 MovePar _ R R (true, false)
              | _ => Nop _ _ (false, false) (* there is no such symbol, break and return false *)
              end).
 
@@ -53,8 +53,15 @@ Section Test.
   Compute it (M1_Fun f) 3 (midtape [L; N; R] N [R; N; L; N], niltape _).
   Compute it (M1_Fun f) 4 (midtape [L; N; R] N [R; N; L; N], niltape _).
   Compute it (M1_Fun f) 5 (midtape [L; N; R] N [R; N; L; N], niltape _).
-  Compute it (M1_Fun f) 6 (midtape [L; N; R] N [R; N; L; N], niltape _).
-  Compute it (M1_Fun f) 7 (midtape [L; N; R] N [R; N; L; N], niltape _).
+
+  (* Actually simulating the machine... :-) *)
+  Let M' := projT1 (M1 f).
+  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [L; N; R] N [R; N; L; N]; niltape _|])).
+  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [N; L; N; R] R [N; L; N]; rightof N []|])).
+  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [R; N; L; N; R] N [L; N]; rightof R [N]|])).
+  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [N; R; N; L; N; R] L [N]; rightof N [R; N]|])).
+  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [N; R; N; L; N; R] L [N]; midtape [N; R; N] L []|])).
+
 End Test.
 *)
 
@@ -66,42 +73,33 @@ End Test.
          (yout = (true, false)  /\ exists s, current tin[@Fin.F1] = Some s /\ f s = false) \/
          (yout = (false, false) /\ current tin[@Fin.F1] = None)
        )
-    ).  
+    ).
 
   Lemma M1_Rel_functional : functional M1_Rel.
-  Proof. hnf. unfold M1_Rel, M1_Fun. TMCrush idtac; TMSolve 1. Qed.
+  Proof. hnf. unfold M1_Rel, M1_Fun. TMCrush (cbn [Vector.nth] in *); TMSolve 1. Qed.
 
   Lemma M1_RealiseIn :
     M1 ⊨c(7) M1_Rel.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold M1. eapply Match_RealiseIn. eapply ReadChar_multi_Sem.
+      unfold M1. eapply Match_RealiseIn. cbn. eapply Inject_RealisesIn; [vector_dupfree| eapply read_char_sem].
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
-      - destruct (f e); swap 1 2; cbn.
-        + repeat eapply Seq_RealiseIn. eapply Write_multi_Sem. eapply Move_multi_Sem. eapply Move_multi_Sem.
-        + eapply Seq_RealiseIn. eapply Write_multi_Sem. cbn. eapply RealiseIn_monotone'. eapply Nop_total. omega.
+      - destruct (f e); swap 1 2.
+        + eapply Seq_RealiseIn. eapply Inject_RealisesIn; [vector_dupfree | eapply Write_Sem]. eapply MovePar_Sem.
+        + cbn. eapply Inject_RealisesIn; [vector_dupfree | eapply Write_Sem].
       - cbn. eapply RealiseIn_monotone'. eapply Nop_total. omega.
     }
     {
       (cbn; omega).
     }
     {
-      unfold M1_Rel, M1_Fun. hnf. intros tin (yout, tout). destruct_tapes. cbn.
-      intros (y1&t1'&(->&H1)&H2); hnf in *. destruct_tapes; cbn in *. injection Hvect as -> ->. cbn in *.
-      destruct h3 eqn:E1; cbn in *; hnf in *.
-      - destruct H2 as (H2&H3). hnf in H3. inv H3. hnf in H2. subst. eauto.
-      - destruct H2 as (H2&H3). hnf in H3. inv H3. hnf in H2. subst. eauto.
-      - destruct H2 as (H2&H3). hnf in H3. inv H3. hnf in H2. subst. eauto.
-      - destruct (f e) eqn:E2; hnf in *.
-        + destruct H2 as ((()&t)&(_&H2)&H3); hnf in *; cbn in *. destruct H3 as (H3&H4); hnf in *; cbn in *.
-          rewrite H4 in H2. cbn in *.
-          subst. split; eauto. f_equal. admit.
-        + TMCrush idtac; TMSolve 6. all: admit.
-
+      TMCrush repeat simpl_not_in; TMSolve 1.
+      all: cbn in *; try congruence; eauto; subst.
+      all: TMCrush idtac; TMSolve 6.
     }
-  Admitted.
+  Qed.
 
   (*
    * The main loop of the machine.
@@ -122,12 +120,24 @@ End Test.
   (* Function of M2 *)
   Function CopySymbols_Fun (tin : tape sig * tape sig) { measure rlength' tin } : tape sig * tape sig :=
     match tin with
-      (midtape ls m rs as t1, t2) => if f m then (t1, t2) else CopySymbols_Fun (M1_Fun (t1, t2))
+      (midtape ls m rs as t1, t2) =>
+      if f m
+      then (t1, tape_write t2 (Some m))
+      else CopySymbols_Fun (M1_Fun (t1, t2))
     |  (t1, t2) => (t1, t2)
     end.
   Proof.
     all: (intros; try now (cbn; omega)). destruct rs; cbn. rewrite teq1. cbn. omega. rewrite teq1. cbn. omega.
-  Qed.
+  Defined.
+
+(* (* Test *)
+End CopySymbols.
+Section Test.
+  Let f := fun x => Dec (x = L) : bool.
+  Compute CopySymbols_Fun f (midtape [L; N; R] N [R; N; L; N], niltape _).
+  Compute it (M1_Fun f) 4 (midtape [L; N; R] N [R; N; L; N], niltape _).
+End Test.
+*)
 
   (*
   Lemma M1_Fun_M2_None t :
@@ -174,10 +184,7 @@ End Test.
 *)
   
   Definition CopySymbols_Rel : Rel (tapes sig 2) (bool * tapes sig 2) :=
-    fun tin '(yout, tout) =>
-      (tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = M1_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]) /\
-      (yout = true  /\ exists s, current tout[@Fin.F1] = Some s /\ f s = true ) \/
-      (yout = false /\ current tout[@Fin.F1] = None).
+    ignoreParam (fun tin tout => ((tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = M1_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]))).
 
   Lemma CopySymbols_WRealise :
     CopySymbols ⊫ CopySymbols_Rel.
@@ -192,18 +199,24 @@ End Test.
       {
         TMCrush idtac; TMSolve 6.
         all: repeat inv_pair; cbn in *; eauto.
-        left. split; eauto.
       }
       {
-        (* TMCrush idtac; TMSolve 6.
-        all:
-          try now
-              (
-                rewrite MoveToSymbol_Fun_equation; TMSimp; auto
-              ).
-        all: erewrite <- MoveToSymbol_M1_false; eauto.
-*)
-        admit.
+        TMSimp. cbn in *. TMSimp.
+        destruct H0 as [ [ H0 H0' ] | [ [H0 H0'] | [H0 H0']]]; inv H0;
+          destruct H2 as [ [ H2 H2' ] | [ [H2 H2'] | [H2 H2']]]; inv H2;
+            try destruct H0' as (s&H0'&H0''); destruct H2' as (s'&H2'&H2'').
+        all: destruct h, h3; cbn in *; inv H0'; inv H2'.
+        all: repeat match goal with [ H : context [if f ?s then _ else _] |- _] =>
+                                    let E := fresh "E" in destruct (f s) eqn:E end.
+        all: try destruct (f _) eqn:E1; try destruct (f _) eqn:E2; cbn in *.
+        all: repeat inv_pair; cbn in *.
+        all: spec_assert IH2; [ now (repeat split; eauto 6) | auto].
+        all: try destruct l2 in *; cbn in *; try congruence.
+        all: repeat match goal with [ E: f _ = _ |- _] => rewrite E in * end.
+        all: repeat match goal with [ H : context [if f ?s then _ else _] |- _] =>
+                                    let E := fresh "E" in destruct (f s) eqn:E end.
+        all: try now (injection IH2 as IH2 IH2'; congruence).
+        all: admit.
       }
     }
   Admitted.

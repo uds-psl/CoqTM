@@ -46,7 +46,7 @@ Section move_to_symbol.
            ).  
 
   Lemma M1_Rel_functional : functional M1_Rel.
-  Proof. hnf. TMCrush idtac; auto. Qed.
+  Proof. hnf. TMCrush cbn [Vector.nth] in *; auto. Qed.
 
   Lemma M1_RealiseIn :
     M1 ⊨c(3) M1_Rel.
@@ -163,7 +163,7 @@ Section move_to_symbol.
         all: TMCrush idtac; TMSolve 6.
       }
       {
-        TMCrush idtac; TMSolve 6.
+        TMCrush (cbn [Vector.nth] in *); TMSolve 6.
         all:
           try now
               (

@@ -1,4 +1,5 @@
 Require Import Prelim TM.TM.
+Require Import TM.LiftMN.
 
 Ltac dec_pos P := let H := fresh in destruct (Dec P) as [_ | H]; [ | now contradiction H].
 Ltac dec_neg P := let H := fresh in destruct (Dec P) as [H | _]; [now contradiction H | ].
@@ -45,13 +46,21 @@ Ltac inv_pair :=
   | [ |- (?a, ?b) = (?c, ?d) ] => f_equal
   end.
 
+Ltac simpl_not_in :=
+  match goal with
+  | [ H1: forall i : Fin.t 2, not_indices [|Fin.F1|] i -> _ |- _] =>
+    specialize (H1 (Fin.FS Fin.F1) ltac:(vector_not_in))
+  | [ H1: forall i : Fin.t 2, not_indices [|Fin.FS Fin.F1|] i -> _ |- _] =>
+    specialize (H1 Fin.F1 ltac:(vector_not_in))
+  end.
+
 
 (* Simplifies the goal without making any decissions *)
 Tactic Notation "TMSimp" tactic(T) :=
   repeat progress
          (
            hnf in *;
-           cbn in *;
+           cbn -[Vector.nth] in *;
            intros;
            subst;
            destruct_tapes;

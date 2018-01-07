@@ -459,3 +459,7 @@ Proof.
     eexists (_, x0). firstorder.
     Unshelve. eassumption.
 Qed.
+
+
+Definition rfix X Y Z (R : Rel X Z) (p : Y) : Rel X (Y*Z) := (fun x '(y, z) => y = p /\ R x z).
+Notation "R '||_' f" := (rfix R f) (at level 30, format "R '||_' f").
