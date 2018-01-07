@@ -46,12 +46,22 @@ Ltac inv_pair :=
   | [ |- (?a, ?b) = (?c, ?d) ] => f_equal
   end.
 
+
+Lemma simpl_not_in_helper1 :
+  not_indices (n := 2) [|Fin.F1|] (Fin.FS Fin.F1).
+Proof. vector_not_in. Qed.
+
+Lemma simpl_not_in_helper2 :
+  not_indices (n := 2) [|Fin.FS Fin.F1|] (Fin.F1).
+Proof. vector_not_in. Qed.
+
+  
 Ltac simpl_not_in :=
   match goal with
   | [ H1: forall i : Fin.t 2, not_indices [|Fin.F1|] i -> _ |- _] =>
-    specialize (H1 (Fin.FS Fin.F1) ltac:(vector_not_in))
+    specialize (H1 (Fin.FS Fin.F1) simpl_not_in_helper1)
   | [ H1: forall i : Fin.t 2, not_indices [|Fin.FS Fin.F1|] i -> _ |- _] =>
-    specialize (H1 Fin.F1 ltac:(vector_not_in))
+    specialize (H1 Fin.F1 simpl_not_in_helper2)
   end.
 
 
