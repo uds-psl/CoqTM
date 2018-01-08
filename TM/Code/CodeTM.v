@@ -3,6 +3,8 @@ Require Import TM.Combinators.SequentialComposition.
 Require Import TM.Relations.
 Require Export TM.Retract.
 Require Import TM.LiftSigmaTau.
+Require Import TM.Basic.Mono TM.Basic.WriteString.
+Require Import TM.Compound.TMTac.
 
 Section Tape_Local.
 
@@ -292,7 +294,6 @@ Arguments Computes_Gen {sig} {n} {Res} (codRes) (resTape) {k} (params) (f).
 Arguments Computes_Gen_Rel {sig} {n} F {Res} (codRes) (resTape) {k} (params) (f).
 
 (* Check, that Computes_Gen coincises with Computes for [k := 1] *)
-
 Section Test_Computes_Gen1.
 
   Variable sig : finType.
@@ -304,10 +305,129 @@ Section Test_Computes_Gen1.
 
   Let gen1 := Computes_Gen cY j [| (existT _ _ cX, i) |] f.
   
-  (* Vector.t Nicht benutzbar! *)
-  Goal gen1 =2 Computes i j cX cY f.
+  Lemma Computes_Gen_Computes : gen1 =2 Computes i j cX cY f.
   Proof.
     split; cbn; hnf; intuition.
   Qed.
   
 End Test_Computes_Gen1.
+
+(* Check, that Computes_Gen coincises with Computes2 for [k := 2] *)
+Section Test_Computes_Gen2.
+  Variable sig : finType.
+  Variable n_tapes : nat.
+  Variable (i j k : Fin.t n_tapes).
+  Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
+  Variable (f : X -> Y -> Z).
+  Variable F : finType.
+
+  Let gen2 := Computes_Gen cZ k [| (existT _ _ cX, i); (existT _ _ cY, j) |] f.
+
+  Lemma Computes_Gen_Computes2 : gen2 =2 Computes2 i j k cX cY cZ f.
+  Proof.
+    split; cbn; hnf.
+    - intuition. hnf. intuition.
+    - intuition.
+  Qed.
+
+End Test_Computes_Gen2.
+
+
+(* Write a value to a tape *)
+Section InitTape.
+
+  Section Write_String_Rev.
+    Variable sig : finType.
+
+    (* This should go directly to WriteString.  It is a better definition *)
+    
+    Definition WriteStr_Rev_Rel (str:list sig) : Rel (tapes sig 1) (unit * tapes sig 1) :=
+      Mk_R_p (ignoreParam (fun tin tout => right tout = str ++ right tin)).
+
+    (*
+    Section Test.
+      Let t : tape (FinType(EqType(move))) := midtape [N;N;N;N;N] N [N;N;N;N;N].
+      Let str := [R;R;R;R;R;R;N].
+      Compute rev str ++ right t.
+      Compute right (Tape_Write_String L t str).
+      Compute right (Tape_Write_String L t (str ++ [L;R])).
+      Compute Tape_Write_String L t (rev str).
+      Compute Tape_Write_String L (Tape_Write_String L t [L;R]) str.
+      Compute Tape_Write_String L t ([L;R] ++ str).
+    End Test.
+     *)
+
+    Lemma Tape_Write_String_L_cont (str str' : list sig) (t : tape sig) :
+      Tape_Write_String L t (str ++ str') = Tape_Write_String L (Tape_Write_String L t str) str'.
+    Proof. revert t str'. induction str; intros; cbn in *; auto. Qed.
+
+    Lemma Tape_Write_String_L_right' (str : list sig) : forall t : tape sig,
+        right (Tape_Write_String L t str) = rev str ++ right t.
+    Proof.
+      induction str; intros; cbn in *; auto.
+      destruct t; cbn; simpl_list; rewrite IHstr; cbn; auto.
+      destruct l; cbn; auto.
+    Qed.
+
+    Lemma Tape_Write_String_L_right (str : list sig) : forall t : tape sig,
+        right (Tape_Write_String L t (rev str)) = str ++ right t.
+    Proof. intros. rewrite <- (rev_involutive str) at 2. apply Tape_Write_String_L_right'. Qed.
+
+    Lemma WriteStr_Rev_Sem (str:list sig) :
+      Write_String L tt (rev str) ⊨c(4 * |str|) WriteStr_Rev_Rel str.
+    Proof.
+      eapply RealiseIn_monotone.
+      - eapply Write_string_Sem.
+      - simpl_list. omega.
+      - intros tin (()&tout); TMSimp; cbn in *; subst. clear H0. rename h0 into t. apply Tape_Write_String_L_right.
+    Qed.
+
+  End Write_String_Rev.
+  
+
+  Variable sig : finType.
+  Variable X : Type.
+  Hypothesis codX : codeable sig X.
+
+
+  Definition InitTape_Rel (x : X) : Rel (tapes sig^+ 1) (unit * tapes sig^+ 1) :=
+    Mk_R_p (ignoreParam (fun _ tout => tape_encodes _ tout x)).
+
+  Definition InitTape (x : X) : { M : mTM sig^+ 1 & states M -> unit } :=
+    Write_String L tt (rev (inr START :: map inl (encode (codeable := codX) x) ++ [inr STOP]));; Move _ R tt;; Move _ R tt.
+                 
+
+  Lemma InitTape_Sem (x : X) :
+    InitTape x ⊨c(12 + 4 * |encode x|) InitTape_Rel x.
+  Proof.
+    eapply RealiseIn_monotone.
+    - eapply Seq_RealiseIn. eapply WriteStr_Rev_Sem.
+      eapply Seq_RealiseIn; eapply Move_Sem.
+    - cbn. simpl_list. cbn. omega.
+    - intros tin (()&tout). hnf. TMSimp; cbn in *; subst. destruct u, H1.
+      destruct h1; cbn in *; inv H; cbn.
+      + destruct (encode x) eqn:E; cbn; do 2 eexists; split; hnf; cbn; try rewrite E; simpl_list; cbn; eauto.
+      + destruct (encode x) eqn:E; cbn; do 2 eexists; split; hnf; cbn; try rewrite E; simpl_list; cbn; eauto.
+  Qed.
+
+End InitTape.
+
+
+(* Check, that Computes_Gen coincises with InitTape for [k := 0] *)
+
+Section Test_InitTape_Gen0.
+  Variable sig : finType.
+  Variable (X : Type) (cX : codeable sig X).
+  Variable x : X.
+
+  Let gen0 := Computes_Gen cX (Fin.F1 (n := 0)) [||] x.
+
+  Lemma Computes_Gen_InitTape :
+    gen0 =2 InitTape_Rel cX x |_tt.
+  Proof.
+    hnf. split.
+    - TMSimp cbn in *. do 2 eexists. split; hnf; cbn; eauto.
+    - TMSimp cbn in *. do 2 eexists. split; hnf; cbn; eauto.
+  Qed.
+  
+End Test_InitTape_Gen0.

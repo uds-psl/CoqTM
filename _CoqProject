@@ -34,6 +34,7 @@ TM/Code/CodeTM.v
 TM/Code/FinTM.v
 TM/Code/ChangeAlphabet.v
 TM/Code/BoolTM.v
+TM/Code/MatchTM.v
 
 # Basic Machines
 TM/Basic/Nop.v
