@@ -15,13 +15,17 @@ Section MatchSum.
   Variable (sigX sigY : finType).
   Hypothesis (codX : codeable sigX X) (codY : codeable sigY Y).
 
-  Definition MatchSum_R : Rel (tapes (sigX+sigY+bool)^+ 1) (bool * tapes (sigX+sigY+bool)^+ 1) :=
+  Definition MatchSum_Rel : Rel (tapes (sigX+sigY+bool)^+ 1) (bool * tapes (sigX+sigY+bool)^+ 1) :=
     Mk_R_p (if? (fun (tin tout : tape (sigX+sigY+bool)^+) =>
-                   forall x : X, tape_encodes (Encode_Sum codX codY) tin (inl x) ->
-                            tape_encodes (Encode_Map codX (@retract_l_l sigX sigY)) tout x)
+                   forall v : X + Y,
+                     tape_encodes (Encode_Sum codX codY) tin v ->
+                     exists x : X, v = inl x /\
+                              tape_encodes (Encode_Map codX (@retract_l_l sigX sigY)) tout x)
               ! (fun (tin tout : tape (sigX+sigY+bool)^+) =>
-                   forall y : Y, tape_encodes (Encode_Sum codX codY) tin (inr y) ->
-                            tape_encodes (Encode_Map codY (@retract_l_r sigX sigY)) tout y)).
+                   forall v : X + Y,
+                     tape_encodes (Encode_Sum codX codY) tin v ->
+                     exists y : Y, v = inr y /\
+                              tape_encodes (Encode_Map codY (@retract_l_r sigX sigY)) tout y)).
 
   Definition MatchSum : { M : mTM (sigX+sigY+bool)^+ 1 & states M -> bool } :=
     MATCH (Read_char _)
@@ -31,7 +35,7 @@ Section MatchSum.
                  | _ => mono_Nop _ true (* invalid input *)
                  end).
 
-  Lemma MatchSum_Sem : MatchSum ⊨c(5) MatchSum_R.
+  Lemma MatchSum_Sem : MatchSum ⊨c(5) MatchSum_Rel.
   Proof.
     eapply RealiseIn_monotone.
     {
@@ -52,25 +56,20 @@ Section MatchSum.
     {
       intros tin (yout&tout) H. destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
       destruct_tapes; cbn in *.
-      destruct h; cbn in *; TMSimp; eauto. destruct e; cbn in *; TMSimp.
-      destruct s; cbn in *; TMSimp. destruct b; TMSimp; cbn in *.
-      - destruct h0; cbn in *; eauto.
-        + destruct (map inl _) in H1; cbn in H1; congruence.
-        + destruct (map inl _) in H1; cbn in H1; congruence.
-        + destruct (map inl _) in H1; cbn in H1; congruence.
-        + destruct (encode x) eqn:E1; cbn in *.
-          * inv H1. do 2 eexists. split; cbn; eauto. now rewrite E1.
-          * inv H1. do 2 eexists. split; cbn; eauto. now rewrite E1.
-      - destruct h0; cbn in *; eauto.
-        + destruct (map inl _) in H1; cbn in H1; congruence.
-        + destruct (map inl _) in H1; cbn in H1; congruence.
-        + destruct (map inl _) in H1; cbn in H1; congruence.
-        + destruct (encode y) eqn:E1; cbn in *.
-          * inv H1. do 2 eexists. split; cbn; eauto. now rewrite E1.
-          * inv H1. do 2 eexists. split; cbn; eauto. now rewrite E1.
+      destruct h; cbn in *; TMSimp; eauto. destruct (map _) in H0; cbn in H0; congruence.
+      destruct e; cbn in *; TMSimp.
+      - destruct s; cbn in *; TMSimp.
+        + destruct v; cbn in *; destruct (map _) in H0; cbn in *; congruence.
+        + destruct b; cbn in *; TMSimp cbn in *; unfold encode_sum in *.
+          * destruct v; TMSimp cbn in *. eexists; split; eauto.
+            hnf. destruct (encode x1) eqn:E; cbn; do 2 eexists; split; hnf; cbn; eauto. all: rewrite E; cbn; eauto.
+          * destruct v; TMSimp cbn in *. eexists; split; eauto.
+            hnf. destruct (encode y) eqn:E; cbn; do 2 eexists; split; hnf; cbn; eauto. all: rewrite E; cbn; eauto.
+      - destruct v; cbn in *.
+        + destruct (map _) in H0; cbn in H0; inv H0.
+        + destruct (map _) in H0; cbn in H0; inv H0.
     }
   Qed.
-
 
   (* Constructors *)
   Section SumConstr.
