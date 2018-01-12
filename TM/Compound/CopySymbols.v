@@ -16,7 +16,10 @@ Require Import Recdef.
 Section CopySymbols.
   
   Variable sig : finType.
+  (* Termination check *)
   Variable f : sig -> bool.
+  (* translation *)
+  Variable g : sig -> sig.
 
   Definition M1 : { M : mTM sig 2 & states M -> bool * unit} :=
     MATCH (ReadChar_multi _ Fin.F1)
@@ -26,9 +29,9 @@ Section CopySymbols.
                (* First write the read symbol to tape 1 *)
                if f x
                then (* found the symbol: write it to tape 1; break and return true *)
-                 Inject (Write x (false, tt)) [|Fin.FS Fin.F1|]
+                 Inject (Write (g x) (false, tt)) [|Fin.FS Fin.F1|]
                else (* wrong symbol: write it to tape 1 and move both tapes right and continue *)
-                 Inject (Write x tt) [|Fin.FS Fin.F1|];;
+                 Inject (Write (g x) tt) [|Fin.FS Fin.F1|];;
                  MovePar _ R R (true, tt)
              | _ => Nop _ _ (false, tt) (* there is no such symbol, break and return false *)
              end).
@@ -38,8 +41,8 @@ Section CopySymbols.
       match t1, t2 with
       | midtape ls x rs as t1, t2 =>
         if (f x)
-        then (t1, tape_write t2 (Some x))
-        else (tape_move_right t1, tape_move_mono t2 (Some x, R))
+        then (t1, tape_write t2 (Some (g x)))
+        else (tape_move_right t1, tape_move_mono t2 (Some (g x), R))
       | t1, t2 => (t1, t2)
       end.
 
@@ -122,7 +125,7 @@ End Test.
     match tin with
       (midtape ls m rs as t1, t2) =>
       if f m
-      then (t1, tape_write t2 (Some m))
+      then (t1, tape_write t2 (Some (g m)))
       else CopySymbols_Fun (M1_Fun (t1, t2))
     |  (t1, t2) => (t1, t2)
     end.
@@ -247,9 +250,9 @@ End Test.
       - rewrite CopySymbols_TermTime_equation. exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6; congruence.
       - rewrite CopySymbols_TermTime_equation. exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6; congruence.
       - destruct (f e) eqn:E2; cbn.
-        + rewrite CopySymbols_TermTime_equation. exists [|h; tape_write h0 (Some e)|], false. cbn. rewrite E2.
-          do 2 eexists; repeat split; eauto 6; congruence.
-        + rewrite CopySymbols_TermTime_equation. exists [|tape_move_right h; tape_move_mono h0 (Some e, R)|], true. cbn. rewrite E2.
+        + rewrite CopySymbols_TermTime_equation. exists [|h; tape_write h0 (Some (g e))|], false. cbn. rewrite E2.
+          do 2 eexists; repeat split; eauto 7; try congruence.
+        + rewrite CopySymbols_TermTime_equation. exists [|tape_move_right h; tape_move_mono h0 (Some (g e), R)|], true. cbn. rewrite E2.
           destruct l0; rewrite E; cbn in *; do 2 eexists; repeat split; eauto 7.
     }
   Qed.
