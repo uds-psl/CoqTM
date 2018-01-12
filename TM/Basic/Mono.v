@@ -117,10 +117,6 @@ Section Move.
 
   Definition Move := (Move_TM; (fun x => f)).
 
-  Definition isLeftOf  (t : tape sig) := match t with leftof  _ _ =>  True | _ => False end.
-  Definition isRightOf (t : tape sig) := match t with rightof _ _ => True  | _ => False end.
-  Definition isNiltape (t : tape sig) := match t with niltape _ =>   True  | _ => False end.
-  
   Definition Move_R :=
     Mk_R_p (F := F)
            (fun t '(y, t') => y = f /\ t' = tape_move (sig := sig) t D).
@@ -132,6 +128,36 @@ Section Move.
   Qed.
 
 End Move.
+
+
+(* write and move *)
+Section WriteMove.
+
+  Variable sig : finType.
+  Variable (act : option sig * TM.move).
+  Variable (F : finType) (f : F).
+
+  Definition write_move_trans : bool -> option sig -> bool * (option sig * move) :=
+    fun _ _ => (true, act).
+  
+  Definition WriteMove_TM : mTM sig 1 :=
+    Mk_Mono_TM write_move_trans false (fun q => q).
+
+  Definition WriteMove := (WriteMove_TM; (fun x => f)).
+
+  Definition WriteMove_R :=
+    Mk_R_p (F := F)
+           (fun t '(y, t') => y = f /\ t' = tape_move_mono t act).
+  
+  Lemma WriteMove_Sem :
+    WriteMove ⊨c(1) WriteMove_R.
+  Proof.
+    unfold Mk_R_p, Move_R. hnf. intros tapes. destruct_tapes. cbn in *. eauto.
+  Qed.
+
+End WriteMove.
+
+
 
 (*
 Section test_null.
