@@ -42,8 +42,8 @@ End test.
 
 Ltac inv_pair :=
   match goal with
-  | [ H : (?a, ?b) = (?c, ?d) |- _] => inv H
-  | [ |- (?a, ?b) = (?c, ?d) ] => f_equal
+  | [ H : (_, _) = (_, _) |- _] => inv H
+  | [ |- (_, _) = (_, _) ] => f_equal
   end.
 
 

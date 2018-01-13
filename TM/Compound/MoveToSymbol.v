@@ -234,8 +234,6 @@ Section move_to_symbol.
   Definition MoveToSymbol_L := Mirror MoveToSymbol.
 
   
-  (*
-
   Definition llength (t : tape sig) :=
     match t with
     | niltape _ => 0
@@ -253,7 +251,7 @@ Section move_to_symbol.
     all: (intros; try now (cbn; omega)). destruct ls; cbn; omega.
   Qed.
 
-  Lemma moveToSymbol_mirror t t' :
+  Lemma MoveToSymbol_mirror t t' :
     MoveToSymbol_Fun (mirror_tape t) = mirror_tape t' -> MoveToSymbol_L_Fun t = t'.
   Proof.
     functional induction MoveToSymbol_L_Fun t; intros H; cbn in *; try reflexivity;
@@ -266,24 +264,51 @@ Section move_to_symbol.
   Qed.
 
   Definition MoveToSymbol_L_Rel : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
-    Mk_R_p ((if? (fun t t' => exists s, current t' = Some s /\ f s = true)
-               ! (fun t t' => current t' = None)) ∩ ignoreParam (fun t t' => moveToSymbol_L t = t')).
+    Mk_R_p (fun tin '(yout, tout) =>
+              tout = MoveToSymbol_L_Fun tin /\
+              (
+                (yout = true  /\ exists s, current tout = Some s /\ f s = true ) \/
+                (yout = false /\ current tout = None)
+              )
+           ).
 
-
-  Definition MoveToSymbol_L := Mirror MoveToSymbol_R.
-
-  (* TODO: Reduce Termination, from termination of MoveTosymbol_R *)
   Lemma MoveToSymbol_L_WRealise :
     MoveToSymbol_L ⊫ MoveToSymbol_L_Rel.
   Proof.
     eapply WRealise_monotone.
-    - eapply Mirror_WRealise. eapply MoveToSymbol_R_WRealise.
+    - eapply Mirror_WRealise. eapply MoveToSymbol_WRealise.
     - intros tin (y&tout) H. hnf in *. destruct_tapes; cbn in *. destruct H as (H1&H2); hnf in *.
-      split; hnf.
-      + now rewrite mirror_tape_current in H1.
-      + clear H1. now apply moveToSymbol_mirror.
+      symmetry in H1. apply MoveToSymbol_mirror in H1 as ->. TMCrush simpl_tape in *; TMSolve 6.
   Qed.
 
-*)
+  (* TODO: Reduce Termination, from termination of MoveTosymbol_R *)
+
+  Function MoveToSymbol_L_TermTime (t : tape sig) { measure llength t } : nat :=
+    match t with
+    | midtape ls m rs => if f m then 4 else S (S (S (S (MoveToSymbol_L_TermTime (tape_move_left t)))))
+    | _ => 4
+    end.
+  Proof.
+    all: (intros; try now (cbn; omega)). destruct ls; cbn; omega.
+  Qed.
+
+  Lemma MoveToSymbol_TermTime_mirror t :
+    MoveToSymbol_L_TermTime t = MoveToSymbol_TermTime (mirror_tape t).
+  Proof.
+    functional induction MoveToSymbol_L_TermTime t; cbn; auto;
+      simpl_tape in *; cbn in *;
+      rewrite MoveToSymbol_TermTime_equation.
+    - now rewrite e0.
+    - now rewrite e0, IHn.
+    - destruct t; cbn; auto.
+  Qed.
+
+  Lemma MoveToSymbol_L_terminates :
+    projT1 MoveToSymbol_L ↓ (fun tin k => k = MoveToSymbol_L_TermTime (tin[@Fin.F1])).
+  Proof.
+    eapply TerminatesIn_monotone.
+    - eapply Mirror_Terminates. eapply MoveToSymbol_terminates.
+    - cbn. intros tin k. intros ->. destruct_tapes; cbn. now apply MoveToSymbol_TermTime_mirror.
+  Qed.
 
 End move_to_symbol.

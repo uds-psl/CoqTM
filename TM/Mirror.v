@@ -34,6 +34,14 @@ Section MirrorTM.
     t1 = t2.
   Proof. destruct t1, t2; intros H; cbn in *; congruence. Qed.
 
+  Lemma mirror_tape_move_left (t : tape sig) :
+    mirror_tape (tape_move_left t) = tape_move_right (mirror_tape t).
+  Proof. destruct t; cbn; auto. destruct l; cbn; auto. Qed.
+
+  Lemma mirror_tape_move_right (t : tape sig) :
+    mirror_tape (tape_move_right t) = tape_move_left (mirror_tape t).
+  Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
+
   Definition mirror_tapes (t : tapes sig n) : tapes sig n := Vector.map mirror_tape t.
 
   Lemma mirror_tapes_involution (t : tapes sig n) :
@@ -221,4 +229,6 @@ Hint Rewrite mirror_tape_left : tape.
 Hint Rewrite mirror_tape_right : tape.
 Hint Rewrite mirror_tape_current : tape.
 Hint Rewrite mirror_tape_involution : tape.
+Hint Rewrite mirror_tape_move_left : tape.
+Hint Rewrite mirror_tape_move_right : tape.
 Hint Rewrite mirror_tapes_involution : tape.
