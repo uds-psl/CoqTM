@@ -98,7 +98,6 @@ Tactic Notation "TMSimp" tactic(T) :=
            | [ H1: ?X = _, H2: context [ ?X ] |- _ ] => rewrite H1 in H2
            | [ H1: ?X = _    |- context [ ?X ]     ] => rewrite H1
 
-           | [   |- _ /\ _    ] => split
            | _ => idtac
            end
          ).
@@ -122,14 +121,22 @@ Tactic Notation "TMBranche" :=
     end
   ).
 
-Tactic Notation "TMSolve" int_or_var(k) :=
-  eauto k;
-  try congruence.
-
 Tactic Notation "TMSimp" := TMSimp idtac.
+
+Tactic Notation "TMSolve" int_or_var(k) :=
+  repeat progress first [
+           match goal with
+           | [ |- _ /\ _ ] => split
+           end
+           || congruence
+           || eauto k
+         ].
+
 Tactic Notation "TMCrush" tactic(T) :=
   repeat progress
          (
            TMSimp T;
            try TMBranche
          ).
+
+Tactic Notation "TMCrush" := TMCrush idtac.
