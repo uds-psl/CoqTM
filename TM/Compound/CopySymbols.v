@@ -126,11 +126,14 @@ End Test.
       (midtape ls m rs as t1, t2) =>
       if f m
       then (t1, tape_write t2 (Some (g m)))
-      else CopySymbols_Fun (M1_Fun (t1, t2))
+      else CopySymbols_Fun (tape_move_right t1, tape_move_mono t2 (Some (g m), R))
     |  (t1, t2) => (t1, t2)
     end.
   Proof.
-    all: (intros; try now (cbn; omega)). destruct rs; cbn. rewrite teq1. cbn. omega. rewrite teq1. cbn. omega.
+    all: (intros; try now (cbn; omega)).
+    all: (intros; try now (cbn; omega)).
+    destruct rs; cbn. omega.
+    destruct rs; cbn. omega. omega.
   Qed.
 
 (* (* Test *)
@@ -212,9 +215,9 @@ End Test.
         - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; try congruence.
           clear H2. inv H2'. rewrite H2'' in *. spec_assert IH2; [now auto| ]. clear H0.
           destruct h; cbn in *.
-          + inv H. rewrite CopySymbols_Fun_equation. destruct (f s) eqn:E1; cbn in *; try congruence. rewrite E1. auto.
-          + inv H. rewrite CopySymbols_Fun_equation. destruct (f s) eqn:E1; cbn in *; try congruence. rewrite E1. auto.
-          + inv H. rewrite CopySymbols_Fun_equation. destruct (f s) eqn:E1; cbn in *; try congruence. rewrite E1. auto.
+          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H2''. cbn. auto.
+          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H2''. cbn. auto.
+          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H2''. cbn. auto.
           + destruct (f e) eqn:E; cbn in *.
             * inv H. destruct l0; cbn in *; inv H1; auto; rewrite CopySymbols_Fun_equation; cbn; rewrite H2''; cbn; auto.
             * inv H. destruct l0; cbn in *; inv H1; auto; rewrite CopySymbols_Fun_equation; cbn; rewrite H2''; cbn; auto.
