@@ -5,6 +5,7 @@ Require Export TM.Retract.
 Require Import TM.LiftSigmaTau.
 Require Import TM.Basic.Mono TM.Basic.WriteString.
 Require Import TM.Compound.TMTac.
+Require Import TM.Mirror.
 
 Section Tape_Local.
 
@@ -18,6 +19,22 @@ Section Tape_Local.
     | midtape _ a l => a :: l
     end.
 
+  Definition tape_local_l (t : tape sig) : list sig :=
+    match t with
+    | niltape _ => nil
+    | leftof a l => nil
+    | rightof _ _ => nil
+    | midtape r a l => a :: r
+    end.
+
+  Lemma tape_local_mirror (t : tape sig) :
+    tape_local_l (mirror_tape t) = tape_local t.
+  Proof. destruct t; cbn; auto. Qed.
+
+  Lemma tape_local_mirror' (t : tape sig) :
+    tape_local (mirror_tape t) = tape_local_l t.
+  Proof. destruct t; cbn; auto. Qed.
+    
   Lemma tape_local_current_cons (x : sig) (xs : list sig) (t : tape sig) :
     tape_local t = x :: xs -> current t = Some x.
   Proof. destruct t eqn:E; cbn; congruence. Qed.
@@ -57,6 +74,8 @@ Section Tape_Local.
 
 End Tape_Local.
 
+Hint Rewrite tape_local_mirror  : tape.
+Hint Rewrite tape_local_mirror' : tape.
 Hint Rewrite tape_local_current_cons using auto : tape.
 Hint Rewrite tape_local_right        using auto : tape.
 Hint Rewrite tape_left_move_right    using auto : tape.

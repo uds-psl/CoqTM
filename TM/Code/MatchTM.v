@@ -7,10 +7,6 @@ Require Import TM.LiftMN.
 Require Import TM.Compound.TMTac.
 Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 
-
-Check ltac:(idtac "Warning: This file could take LONG!"; apply 42).
-
-
 (* Basic pattern matching *)
 Section MatchSum.
   Variable X Y : Type.
@@ -127,6 +123,7 @@ End MatchSum.
 
 Section Copy.
 
+  (*
   Section Test.
 
     Let inputX := encode (4, 3).
@@ -145,21 +142,31 @@ Section Copy.
         | _ => true (* Stop at symbol from Y or halt/stop symbol *)
         end.
 
+    Ltac re x := assert (x = x) by reflexivity.
+
     (* CopySymbols_Fun is not computable!  Use the equational rewriting to "execute"
      * (CopSymbols_Fun can be made computable by changing the termination proof to Qed.)
      *)
     Goal True.
-      Ltac re x := assert (x = x) by reflexivity.
       re (tape_local (fst (CopySymbols_Fun stop_X id (t, rightof (inr START) [])))).
       re (snd (CopySymbols_Fun stop_X id (t, rightof (inr START) []))).
       re ((left (snd (CopySymbols_Fun stop_X id (t, rightof (inr START) []))))).
-      subst t; repeat ( rewrite CopySymbols_Fun_equation in * || cbn in * ); cbv [id] in *.
+      subst t; repeat ( rewrite CopySymbols_Fun_equation in *; cbn in * ); cbv [id] in *.
+    Abort.
+
+
+    Goal True.
+      re (right (MoveToSymbol_Fun stop_X t)).
+      re (left (MoveToSymbol_Fun stop_X t)).
+      re (current (MoveToSymbol_Fun stop_X t)).
+      re (tape_local (MoveToSymbol_Fun stop_X t)).
+      Compute t.
+      subst t; repeat ( rewrite MoveToSymbol_Fun_equation in *; cbn in * ).
     Abort.
     
   End Test.
+   *)
   
-  (* Require Import FunInd. *)
-
   Variable sig : finType.
   Variable stop : sig -> bool.
 
@@ -204,35 +211,77 @@ Section Copy.
           erewrite IHstr1; eauto. destruct tr; simpl_list; cbn; eauto. destruct l0; cbn; auto.
   Qed.
 
-
-  (*
   Lemma MoveToSymbol_right t str1 str2 x :
     (forall x, List.In x str1 -> stop x = false) ->
-    (exists s, current t = Some s) ->
     (stop x = true) ->
-    right t = str1 ++ x :: str2 ->
-    right (MoveToSymbol_Fun stop t) = str2.
+    tape_local t = str1 ++ x :: str2 ->
+    right (MoveToSymbol_Fun stop t) = str2 /\
+    current (MoveToSymbol_Fun stop t) = Some x.
   Proof.
-    intros H H0 H1. destruct t as [ | r rs | l ls | ls m rs]; cbn in *.
+    intros H H0. destruct t as [ | r rs | l ls | ls m rs]; cbn in *.
     1,3: rewrite MoveToSymbol_Fun_equation; cbn; destruct str1; cbn in *; try congruence.
-    1: destruct H0; congruence.
-    1: clear H0.
-    revert rs m ls ls H1. induction str1 as [ | s' str1' IHstr1]; cbn in *; intros.
-    - rewrite MoveToSymbol_Fun_equation. cbn. destruct (stop m) eqn:E1.
-      + cbn.
-
-    
-    revert str1 str2 m ls H H1. induction rs as [ | r rs' IHl]; cbn in *; intros.
-    - destruct str1; cbn in *; congruence.
+    1: destruct str1; cbn in *; congruence.
+    revert m ls str1 H. revert rs.
+    refine (@size_induction _ (@length sig) _ _); intros [ | s rs'] IH; intros.
+    - rewrite MoveToSymbol_Fun_equation; cbn. destruct str1; cbn in *; inv H1.
+      + rewrite H0. cbn. auto.
+      + destruct str1; cbn in *; congruence.
     - rewrite MoveToSymbol_Fun_equation; cbn.
-      destruct (stop m) eqn:E1; cbn in *.
-      + destruct str1; cbn in *. inv H1.
-   *)
-    
-    
+      destruct (stop m) eqn:E1.
+      + cbn. destruct str1; cbn in *; inv H1; eauto. specialize (H _ ltac:(eauto)). congruence.
+      + destruct str1; cbn in *; inv H1.
+        * congruence.
+        * eapply IH; cbn; eauto.
+  Qed.
+
+  Lemma MoveToSymbol_left t str1 str2 x :
+    (forall x, List.In x str1 -> stop x = false) ->
+    (stop x = true) ->
+    tape_local t = str1 ++ x :: str2 ->
+    left (MoveToSymbol_Fun stop t) = rev str1 ++ left t.
+  Proof.
+    intros H H0. destruct t as [ | r rs | l ls | ls m rs]; cbn in *.
+    1,3: rewrite MoveToSymbol_Fun_equation; cbn; destruct str1; cbn in *; try congruence.
+    1: destruct str1; cbn in *; congruence.
+    revert m ls str1 H. revert rs.
+    refine (@size_induction _ (@length sig) _ _); intros [ | s rs'] IH; intros.
+    - rewrite MoveToSymbol_Fun_equation; cbn. destruct str1; cbn in *; inv H1.
+      + rewrite H0. cbn. auto.
+      + destruct str1; cbn in *; congruence.
+    - rewrite MoveToSymbol_Fun_equation; cbn.
+      destruct (stop m) eqn:E1.
+      + cbn. destruct str1; cbn in *; inv H1; eauto. specialize (H _ ltac:(eauto)). congruence.
+      + destruct str1; cbn in *; inv H1.
+        * congruence.
+        * simpl_list. eapply IH; cbn; eauto.
+  Qed.
+
+  Corollary MoveToSymbol_L_left t str1 str2 x :
+    (forall x, List.In x str1 -> stop x = false) ->
+    (stop x = true) ->
+    tape_local_l t = str1 ++ x :: str2 ->
+    left (MoveToSymbol_L_Fun stop t) = str2 /\
+    current (MoveToSymbol_L_Fun stop t) = Some x.
+  Proof.
+    intros. pose proof (@MoveToSymbol_right (Mirror.mirror_tape t) str1 str2 x).
+    rewrite !tape_local_mirror' in H2. repeat spec_assert H2 by eauto. 
+    erewrite MoveToSymbol_mirror; swap 1 2. symmetry; now eapply Mirror.mirror_tape_involution.
+    now simpl_tape in *.
+  Qed.
+
+  Corollary MoveToSymbol_L_right t str1 str2 x :
+    (forall x, List.In x str1 -> stop x = false) ->
+    (stop x = true) ->
+    tape_local_l t = str1 ++ x :: str2 ->
+    right (MoveToSymbol_L_Fun stop t) = rev str1 ++ right t.
+  Proof.
+    intros. pose proof (@MoveToSymbol_left (Mirror.mirror_tape t) str1 str2 x).
+    rewrite !tape_local_mirror' in H2. repeat spec_assert H2 by eauto. 
+    erewrite MoveToSymbol_mirror; swap 1 2. symmetry; now eapply Mirror.mirror_tape_involution.
+    now simpl_tape in *.
+  Qed.
   
 End Copy.
-
 
 
 Section Projection.
@@ -256,31 +305,9 @@ Section Projection.
       | _ => true (* Stop at symbol from X or halt/stop symbol *)
       end.
 
+  (* TODO: Split the relation and the machine into three parts:
 
-  Definition Proj_Rel : Rel (tapes (sigX+sigY)^+ 2) (unit * tapes (sigX+sigY)^+ 2) :=
-    ignoreParam (
-        fun (tin tout : tapes (sigX+sigY)^+ 2) =>
-          forall (xy : X * Y),
-            tape_encodes (Encode_Pair' codX codY) tin[@Fin.F1] xy ->
-            tape_encodes (Encode_Map codY (@retract_inr sigX sigY)) tout[@Fin.F1] (snd xy) /\
-            tape_encodes (Encode_Map codX (@retract_inl sigX sigY)) tout[@Fin.FS Fin.F1] (fst xy)
-      ).
-
-
-  Definition Proj : { M : mTM (sigX+sigY)^+ 2 & states M -> unit } :=
-    Inject (WriteMove (Some (inr START), R) tt) [|Fin.FS Fin.F1|];;
-    CopySymbols stop_X id;;
-    Inject (
-      (Move _ L tt);;
-      WriteMove (Some (inr START), R) tt
-    ) [|Fin.F1|];;
-    Inject (
-      WriteMove (Some (inr STOP), L) tt;;
-      MoveToSymbol_L stop_Y;;
-      Move _ R tt
-    ) [|Fin.FS Fin.F1|].
-
-  (* Θ (18 + (4+?)*(?+1)*|enocode (fst x)|) *)
+ *)
 
 
   Local Lemma CopySymbols_pair_first' (inputX : list sigX) (inputY : list sigY) tltr tl' tr' rs' :
@@ -330,310 +357,168 @@ Section Projection.
     intros H1 H2. apply (CopySymbols_pair_second' (tltr := (midtape ls m rs, tr)) ltac:(cbn; eapply H1) H2).
   Qed.
 
-  Lemma Proj_WRealise : Proj ⊫ Proj_Rel.
+
+  Let M1 : { M : mTM (sigX+sigY)^+ 2 & states M -> unit } :=
+    CopySymbols stop_X id;;
+    Inject (
+      (Move _ L tt);;
+      WriteMove (Some (inr START), R) tt
+    ) [|Fin.F1|].
+
+  
+  (* Copy the symbols from tape 0 to tape 1, finish tape 0 but not don't initialise tape 1 *)
+  Let R1 : Rel (tapes (sigX+sigY)^+ 2) (unit * tapes (sigX+sigY)^+ 2) :=
+    ignoreParam (
+        fun (tin tout : tapes (sigX+sigY)^+ 2) =>
+          forall (xy : X * Y),
+            tape_encodes (Encode_Pair' codX codY) tin[@Fin.F1] xy ->
+            tape_encodes (Encode_Map codY (@retract_inr sigX sigY)) tout[@Fin.F1] (snd xy) /\
+            left (tout[@Fin.FS Fin.F1]) = rev (map inl (map inl (encode (fst xy)))) ++ left (tin[@Fin.FS Fin.F1])
+      ).
+
+  
+  Local Lemma M1_WRealise : M1 ⊫ R1.
   Proof.
+    subst M1 R1.
     eapply WRealise_monotone.
     {
-      unfold Proj. do 3 try eapply Seq_WRealise.
+      do 1 try eapply Seq_WRealise.
       all: try (eapply Inject_WRealise; [vector_dupfree| ]).
-      3-4: repeat eapply Seq_WRealise.
+      2: eapply Seq_WRealise.
       all: try (eapply Realise_WRealise, RealiseIn_Realise;
                 first [ eapply Move_Sem | eapply WriteMove_Sem | eapply Write_Sem ]).
       - eapply CopySymbols_WRealise.
-      - eapply MoveToSymbol_L_WRealise.
     }
     {
       hnf. intros. hnf. destruct y. intros (inputX, inputY).
-      TMSimp repeat progress simpl_not_in || cbn [Vector.nth] in *.
-      destruct h3; cbn in *; inv H0; [do 2 destruct (encode _); cbn in H3; congruence | ]. clear H1.
+      TMSimp repeat progress simpl_not_in || cbn [Vector.nth] in *. destruct u.
+      destruct h1; cbn in *; inv H0; [ do 2 destruct (encode _); cbn in H2; congruence | ]. clear H1.
       (*
       erewrite List.map_app, !List.map_map, <- app_assoc in H3; cbn in H3.
        *)
       split.
-      - pose proof CopySymbols_pair_first'' H3 H as L1.
-        destruct h1; cbn in *; try (destruct (encode inputY); cbn in L1; congruence).
+      - pose proof CopySymbols_pair_first'' H2 H as L1.
+        destruct h3; cbn in *; try (destruct (encode inputY); cbn in L1; congruence).
         destruct l; cbn in *.
         + hnf. do 2 eexists. split; cbn; eauto.
         + hnf. do 2 eexists. split; cbn; eauto.
-      - pose proof CopySymbols_pair_second'' H3 H as L1. rewrite !map_rev in L1.
-        Set Printing Implicit. cbv [finType_CS] in *. Unset Printing Implicit.
-        rewrite L1 in *.
-        hnf. do 2 eexists. split; cbn.
-        + 
-  Admitted.
+      - pose proof (CopySymbols_pair_second'' H2 H) as ->. now rewrite !map_rev.
+    }
+  Qed.
+  
+  Definition Proj : { M : mTM (sigX+sigY)^+ 2 & states M -> unit } :=
+    Inject (WriteMove (Some (inr START), R) tt) [|Fin.FS Fin.F1|];;
+    M1;;
+    Inject (
+      WriteMove (Some (inr STOP), L) tt;;
+      MoveToSymbol_L stop_X;;
+      Move _ R tt
+    ) [|Fin.FS Fin.F1|].
+
+  
+  Definition Proj_Rel : Rel (tapes (sigX+sigY)^+ 2) (unit * tapes (sigX+sigY)^+ 2) :=
+    ignoreParam (
+        fun (tin tout : tapes (sigX+sigY)^+ 2) =>
+          forall (xy : X * Y),
+            tape_encodes (Encode_Pair' codX codY) tin[@Fin.F1] xy ->
+            tape_encodes (Encode_Map codY (@retract_inr sigX sigY)) tout[@Fin.F1] (snd xy) /\
+            tape_encodes (Encode_Map codX (@retract_inl sigX sigY)) tout[@Fin.FS Fin.F1] (fst xy)
+      ).
+
+  (* Θ (18 + (4+?)*(?+1)*|enocode (fst x)|) *)
+
+  Lemma tape_match_right_left (tau : finType) (t : tape tau) (x : tau) :
+    right
+      match left t with
+      | [] => leftof x (right t)
+      | a :: rs => midtape rs a (x :: right t)
+      end =
+    x :: right t.
+  Proof. destruct t; cbn; auto. destruct l; cbn; auto. Qed.
+
+  Lemma tape_match_left_right (tau : finType) (t : tape tau) (x : tau) :
+    left
+      match right t with
+      | [] => rightof x (left t)
+      | a :: rs => midtape (x :: left t) a rs
+      end =
+    x :: left t.
+  Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
+
+  Lemma tape_match_symbols_right (tau : finType) (r : tau) (rs : list tau) (xs : list tau) :
+    right
+      match xs with
+      | [] => leftof r rs
+      | a :: ls' => midtape ls' a (r :: rs)
+      end = r :: rs.
+  Proof. destruct xs; cbn; auto. Qed.
+
+  Lemma tape_match_symbols_tape_local_l (tau : finType) (r : tau) (rs : list tau) (xs : list tau) :
+  tape_local_l
+    match xs with
+    | [] => leftof r rs
+    | a :: ls' => midtape ls' a (r :: rs)
+    end = xs.
+  Proof. destruct xs; cbn; auto. Qed.
+  
+  (* TODO: [spec_assert as (a&b) by tac] is broken *)
+  (* TODO: add the above lemmas to Prelim.v bzw. CodeTM.v and add them to the tape database *)
+
+  Lemma Proj_WRealise : Proj ⊫ Proj_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    {
+      unfold Proj. do 2 try eapply Seq_WRealise.
+      all: try (eapply Inject_WRealise; [vector_dupfree| ]).
+      3: repeat eapply Seq_WRealise.
+      all: try (eapply Realise_WRealise, RealiseIn_Realise;
+                first [ eapply Move_Sem | eapply WriteMove_Sem | eapply Write_Sem ]).
+      - eapply M1_WRealise.
+      - eapply MoveToSymbol_L_WRealise.
+    }
+    {
+      hnf. intros. hnf. destruct y. intros (inputX, inputY).
+      TMSimp repeat progress simpl_not_in || cbn [Vector.nth] in *. destruct u.
+      destruct h3; cbn in *; inv H0; [do 2 destruct (encode _); cbn in H3; congruence | ]. clear H1. clear M1 R1. 
+      specialize (H (inputX, inputY)). spec_assert H by (hnf; do 2 eexists; hnf; split; cbn; eauto). destruct H as (H1&H1').
+      split; eauto. hnf; unfold tape_encodes_r; cbn in *. clear b H2 H1 h H3.
+      rewrite tape_match_left_right in *. unfold finType_CS in *; rewrite H1'.
+
+      destruct (encode inputX) as [ | cs cX'] eqn:E1; cbn in *.
+      - do 2 eexists; hnf; split; cbn; hnf; rewrite MoveToSymbol_L_Fun_equation; cbn; eauto.
+      - repeat ( rewrite <- !app_assoc in *; cbn in * ).
+
+        assert (tape_local_l (tape_move_mono h4 (Some (inr STOP), L)) =
+                (rev (map inl (map inl cX')) ++ [inl (inl cs)]) ++ inr START :: left h2) as L1.
+        {
+          repeat ( rewrite <- !app_assoc in *; cbn in * ).
+          destruct h4; cbn in *; try (destruct cX'; cbn in *; congruence). subst. apply tape_match_symbols_tape_local_l.
+        }
+        
+        (* TODO: This is a little mess! *)
+        epose proof MoveToSymbol_L_left (stop := stop_X) _ _ L1 as (L2&L3). Unshelve. all: eauto.
+        Focus 2.
+        rewrite <- !map_rev, List.map_map. intros x [ (?&<-&?) % in_map_iff | [ <- | H]] % in_app_iff; cbn; auto.
+        epose proof MoveToSymbol_L_right (stop := stop_X) _ _ L1 as L4. Unshelve. all: eauto.
+        Focus 2.
+        rewrite <- !map_rev, List.map_map. intros x [ (?&<-&?) % in_map_iff | [ <- | H]] % in_app_iff; cbn; auto.
+        cbn in *. rewrite H1' in *. cbn in *.
+        do 2 eexists; hnf; split; cbn; eauto.
+        + erewrite tape_left_move_right; eauto.
+        + erewrite tape_local_move_right; eauto.
+          eapply tape_local_iff. do 2 eexists. split; eauto. split.
+          eapply L3. unfold finType_CS in *. rewrite L4. cbn.
+          rewrite tape_match_symbols_right. cbn.
+          rewrite rev_app_distr; cbn. rewrite <- !map_rev, rev_involutive. eauto.
+    }
+  Qed.
+
+
+  (* TODO Termination *)
+  
 
 End Projection.
 
 
 
-
 (* TODO: Match operator for functions *)
-(*
-
-Section MatchSum_Fun.
-
-  Variable n : nat.
-  Variable k : nat.
-
-  Variable (sigX sigY : finType).
-  Variable Z : Type.
-  Variable tpZ : Fin.t n.
-  Hypothesis codZ : codeable (sigX+sigY+bool)^+ Z.
-  Variable parF : param_genT (sigX+sigY+bool)^+ n (S k).
-  Variable f : param_genF Z parF.
-
-  Let f_param1 := Vector.hd parF.
-  Let f_param1T := projT1 (fst f_param1).
-  Let f_param1Enc := projT2 (fst f_param1).
-  Let f_param1Tape := snd f_param1.
-
-  Variable X : Type.
-  Variable codX
-
-  Variable para 
-
-
-End MatchSum_Fun.
-
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-    
-
-
-Section MatchTM.
-
-  Variable sig : finType.
-  Variable n : nat.
-  Variable (F1 : finType).
-  Variable (def : F1).
-  Variable (pM : sig -> { M1 : mTM sig^+ n & states M1 -> F1}).
-
-  Variable k : nat.
-  Variable resType : Type.
-  Variable resTape : Fin.t n.
-  Hypothesis codRes : codeable sig resType.
-  Variable params : param_genT sig n (S k).
-  Variable f : param_genF resType params.
-
-  Let param1 := Vector.hd params.
-  Let param1T := projT1 (fst param1).
-  Let param1Enc := projT2 (fst param1).
-  Let param1Tape := snd param1.
-
-  Definition matchTM : { M : mTM sig^+ n & states M -> F1}:=
-    MATCH (Read_char_at (sig^+) param1Tape)
-          (fun o : option (sig^+) =>
-             match o with
-             | Some (inl s) =>
-               (* TODO: write True on param1T, move param1T to R, call pM s *)
-               pM s
-             | _ => Nop n _ def
-             end).
-
-
-  Section MatchOption.
-
-    Variable cont_None : 
-    
-  End MatchOption.
-
-End MatchTM.
-
-*)
