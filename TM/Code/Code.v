@@ -257,17 +257,17 @@ Section Encode_Sum.
   Variable (sig tau : finType).
   Hypothesis (code_X : codeable sig X) (code_Y : codeable tau Y).
 
-  Definition retract_l_l := tretract_compose (@retract_inl sig tau) (@retract_inl _ bool).
-  Definition retract_l_r := tretract_compose (@retract_inr sig tau) (@retract_inl _ bool).
+  Definition retract_r_l := tretract_compose (@retract_inl sig tau) (@retract_inr bool _).
+  Definition retract_r_r := tretract_compose (@retract_inr sig tau) (@retract_inr bool _).
 
-  Definition encode_sum (a : X + Y) : list (sig + tau + bool) :=
+  Definition encode_sum (a : X + Y) : list (bool + (sig + tau)) :=
     match a with
-    | inl x => inr true  :: encode (codeable := Encode_Map code_X retract_l_l) x
-    | inr y => inr false :: encode (codeable := Encode_Map code_Y retract_l_r) y
+    | inl x => inl true  :: encode (codeable := Encode_Map code_X retract_r_l) x
+    | inr y => inl false :: encode (codeable := Encode_Map code_Y retract_r_r) y
     end.
 
   Lemma encode_sum_injective :
-    forall (v1 v2 : X + Y) (r1 r2 : list (sig + tau + bool)),
+    forall (v1 v2 : X + Y) (r1 r2 : list (bool + (sig + tau))),
       encode_sum v1 ++ r1 = encode_sum v2 ++ r2 -> v1 = v2 /\ r1 = r2.
   Proof.
     intros [x1|y1] [x2|y2] r1 r2; cbn; intros H; inv H.
@@ -275,34 +275,8 @@ Section Encode_Sum.
     - eapply encode_map_injective in H1 as (->&->). tauto. eapply tretract_compose; auto_inj.
   Qed.
 
-  Global Instance Encode_Sum : codeable (FinType (EqType (sig + tau + bool))) (X + Y) := mk_codeable encode_sum_injective.
+  Global Instance Encode_Sum : codeable (FinType (EqType (bool + (sig + tau)))) (X + Y) := mk_codeable encode_sum_injective.
 End Encode_Sum.
-
-
-Section Encode_List.
-  Variable sig: finType.
-  Variable (X : Type) (code_X : codeable sig X).
-
-  Fixpoint encode_list (xs : list X) : list (sig + bool) :=
-    match xs with
-    | nil => [inr false]
-    | x :: xs' => inr true :: encode (codeable := Encode_Map code_X (@retract_inl _ _)) x ++ encode_list xs'
-    end.
-
-  Lemma encode_injective_list :
-    forall (v1 v2 : list X) (r1 r2 : list (sig + bool)), encode_list v1 ++ r1 = encode_list v2 ++ r2 -> v1 = v2 /\ r1 = r2.
-  Proof.
-    intros xs. induction xs as [ | x xs IH]; intros y2 r1 r2 H; cbn in *.
-    + destruct y2; cbn in *; try congruence; cbn in *; try now inv H.
-    + destruct y2 as [ | y ys]; cbn in *; auto.
-      * congruence.
-      * inv H. rewrite <- !app_assoc in H1.
-        eapply encode_map_injective in H1 as (->&H1). now specialize (IH _ _ _ H1) as (->&->). apply retract_inl.
-  Qed.
-
-  Global Instance Encode_List : codeable (FinType (EqType (sig + bool)))%type (list X) := mk_codeable encode_injective_list.
-
-End Encode_List.
 
 
 Section Encode_Pair.
@@ -372,7 +346,7 @@ Section Encode_Cast.
 
 End Encode_Cast.
 
-Lemma Encode_Option' (X : Type) (sig : finType) : codeable sig X -> codeable (FinType (EqType (sig + Empty_set + bool))) (option X).
+Lemma Encode_Option' (X : Type) (sig : finType) : codeable sig X -> codeable (FinType (EqType (bool + (sig + Empty_set)))) (option X).
 Proof.
   intros H. eapply Encode_Cast. eapply Encode_Sum.
   - apply H.
@@ -383,7 +357,7 @@ Proof.
 Defined.
 
 (* Eleminate the Empty_set from above *)
-Global Instance Encode_Option (X : Type) (sig : finType) : codeable sig X -> codeable (FinType (EqType (sig + bool))) (option X).
+Global Instance Encode_Option (X : Type) (sig : finType) : codeable sig X -> codeable (FinType (EqType (bool + sig))) (option X).
 Proof.
   intros H. eapply Encode_Map. eapply Encode_Option'; auto. eapply inversion_retract. 
   (* (* Just for cosmetics *) Unshelve. all: unfold finType_CS. 2-3: cbn; shelve. Show Existentials. *)
@@ -391,6 +365,35 @@ Proof.
   - auto_inj. (* eapply inverse_sum_Empty_set. *)
   - auto_inj. (* apply inverse_id. *)
 Defined.
+
+
+Section Encode_List.
+  Variable sig: finType.
+  Variable (X : Type) (code_X : codeable sig X).
+
+  Fixpoint encode_list (xs : list X) : list (bool + sig) :=
+    match xs with
+    | nil => [inl false]
+    | x :: xs' => inl true :: encode (codeable := Encode_Map code_X (@retract_inr _ _)) x ++ encode_list xs'
+    end.
+
+  Lemma encode_injective_list :
+    forall (v1 v2 : list X) (r1 r2 : list (bool + sig)), encode_list v1 ++ r1 = encode_list v2 ++ r2 -> v1 = v2 /\ r1 = r2.
+  Proof.
+    intros xs. induction xs as [ | x xs IH]; intros y2 r1 r2 H; cbn in *.
+    + destruct y2; cbn in *; try congruence; cbn in *; try now inv H.
+    + destruct y2 as [ | y ys]; cbn in *; auto.
+      * congruence.
+      * inv H. rewrite <- !app_assoc in H1.
+        eapply encode_map_injective in H1 as (->&H1). now specialize (IH _ _ _ H1) as (->&->). apply retract_inr.
+  Qed.
+
+  Global Instance Encode_List : codeable (FinType (EqType (bool + sig))) (list X) := mk_codeable encode_injective_list.
+
+End Encode_List.
+
+
+
 
 
 Section Encode_Nat.
@@ -472,4 +475,11 @@ Check Encode_Pair' (Encode_List (Encode_Unit)) Encode_Unit.
 Compute encode ([tt;tt;tt], tt).
 
 Compute encode ([tt;tt;tt], tt, 42).
+
+
+Compute encode (inl 42).
+Compute encode (inr 42).
+Compute encode (1, 2).
+Compute encode [4;5].
+Compute encode (Some 4) ++ encode (Some 5) ++ encode None.
 *)

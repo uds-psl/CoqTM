@@ -11,7 +11,7 @@ Section FinTM1.
     MATCH (Read_char _)
           (fun r1 =>
              match r1 with
-             | Some (inl r1') => Write (inl (f r1')) tt
+             | Some (inr r1') => Write (inr (f r1')) tt
              | _ => mono_Nop _ tt
              end).
   
@@ -21,14 +21,14 @@ Section FinTM1.
     eapply RealiseIn_monotone.
     - unfold UnaryFinTM. eapply Match_RealiseIn.
       + eapply read_char_sem.
-      + instantiate (2 := fun r1 => match r1 with Some (inl r1') => _ | _ => _ end).
-        intros y. cbn in y. destruct y as [ [ | ] | ]; cbn in *.
+      + instantiate (2 := fun r1 => match r1 with Some (inr r1') => _ | _ => _ end).
+        intros y. cbn in y. destruct y as [ [ | ] | ]; swap 1 2. cbn in *.
         * eapply Write_Sem.
         * eapply mono_Nop_Sem.
         * eapply mono_Nop_Sem.
     - cbn. omega.
     - hnf. intros tin (yout, tout) H x (r1&r2&H3&H4). hnf in H.
-      destruct H as (y&t2&H1&H2). hnf in *. destruct y as [ [ | ] | ]; hnf in *.
+      destruct H as (y&t2&H1&H2). hnf in *. destruct y as [ [ | ] | ]; swap 1 2; hnf in *.
       + (* valid input *) destruct H1 as (H&H'). hnf in *. destruct H2 as (->&H2). subst.
         destruct_tapes. cbn in *. subst. cbn.
         pose proof tape_local_current_cons H4 as H4'; rewrite H4' in H; inv H; clear H4'.
@@ -58,7 +58,7 @@ Section FinTM2.
     MATCH (ReadAt1)
           (fun r1 =>
              match r1 with
-             | Some (inl r1') => UnaryFinTM2 r1'
+             | Some (inr r1') => UnaryFinTM2 r1'
              | _ => Nop2
              end).
   
@@ -72,7 +72,7 @@ Section FinTM2.
       unfold DualFinTM. eapply Match_RealiseIn.
       - unfold ReadAt1. cbn. eapply Inject_RealisesIn. vector_dupfree. eapply read_char_sem.
       - instantiate (2 := fun r1 => match r1 with Some (inl r1') => _ | _ => _ end).
-        intros y. cbn in y. destruct y as [ [ | ] | ]; cbn in *.
+        intros y. cbn in y. destruct y as [ [ | ] | ]; swap 1 2; cbn in *.
         + unfold UnaryFinTM2. eapply Inject_RealisesIn. vector_dupfree. eapply UnaryFinTM_Computes.
         + eapply RealiseIn_monotone'. eapply Nop_total. omega.
         + eapply RealiseIn_monotone'. eapply Nop_total. omega.

@@ -89,7 +89,7 @@ Proof. destruct t; cbn; reflexivity. Qed.
 Hint Rewrite mapTape_local : tape.
 
 
-Notation "sig '^+'" := (FinType(EqType(sig + bool))) (at level 0) : type_scope.
+Notation "sig '^+'" := (FinType(EqType(bool + sig))) (at level 0) : type_scope.
 
 Section Fix_Sig.
   
@@ -111,8 +111,8 @@ Section Fix_Sig.
     Definition START : bool := false.
     Definition STOP  : bool := true.
 
-    Instance codeX : codeable sig^+ X := Encode_Map cX          (@retract_inl sig bool).
-    Instance codeS : codeable sig^+ bool := Encode_Map Encode_Bool (@retract_inr sig bool).
+    Instance codeX : codeable sig^+ X := Encode_Map cX           (@retract_inr _ _ ).
+    Instance codeS : codeable sig^+ bool := Encode_Map Encode_Bool (@retract_inl _ _).
 
     Definition tape_encodes_r (t : tape sig^+) (x : X) (r1 r2 : list sig^+) :=
       left t = encode START ++ r1 /\ tape_local t = encode x ++ encode STOP ++ r2.
@@ -124,7 +124,7 @@ Section Fix_Sig.
       tape_encodes_r t x1 r1 r2 -> tape_encodes_r t x2 s1 s2 -> x1 = x2 /\ r1 = s1 /\ r2 = s2.
     Proof.
       intros (H2&H2') (H1&H1'). rewrite H2 in H1; clear H2. rewrite H2' in H1'. clear H2'. cbn in *.
-      eapply encode_map_injective in H1' as (->&H2). inv H1. inv H2. tauto. eapply retract_inl.
+      eapply encode_map_injective in H1' as (->&H2). inv H1. inv H2. tauto. eapply retract_inr.
     Qed.
 
     Lemma tape_encodes_injective (t : tape sig^+) (x1 x2 : X) :
@@ -413,7 +413,7 @@ Section InitTape.
     Mk_R_p (ignoreParam (fun _ tout => tape_encodes _ tout x)).
 
   Definition InitTape (x : X) : { M : mTM sig^+ 1 & states M -> unit } :=
-    Write_String L tt (rev (inr START :: map inl (encode (codeable := codX) x) ++ [inr STOP]));; Move _ R tt;; Move _ R tt.
+    Write_String L tt (rev (inl START :: map inr (encode (codeable := codX) x) ++ [inl STOP]));; Move _ R tt;; Move _ R tt.
                  
 
   Lemma InitTape_Sem (x : X) :

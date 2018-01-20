@@ -13,23 +13,23 @@ Section MatchSum.
   Variable (sigX sigY : finType).
   Hypothesis (codX : codeable sigX X) (codY : codeable sigY Y).
 
-  Definition MatchSum_Rel : Rel (tapes (sigX+sigY+bool)^+ 1) (bool * tapes (sigX+sigY+bool)^+ 1) :=
-    Mk_R_p (if? (fun (tin tout : tape (sigX+sigY+bool)^+) =>
+  Definition MatchSum_Rel : Rel (tapes (bool + (sigX+sigY))^+ 1) (bool * tapes (bool + (sigX+sigY))^+ 1) :=
+    Mk_R_p (if? (fun (tin tout : tape (bool + (sigX+sigY))^+) =>
                    forall v : X + Y,
                      tape_encodes (Encode_Sum codX codY) tin v ->
                      exists x : X, v = inl x /\
-                              tape_encodes (Encode_Map codX (@retract_l_l sigX sigY)) tout x)
-              ! (fun (tin tout : tape (sigX+sigY+bool)^+) =>
+                              tape_encodes (Encode_Map codX (@retract_r_l sigX sigY)) tout x)
+              ! (fun (tin tout : tape ((bool + (sigX+sigY))^+)) =>
                    forall v : X + Y,
                      tape_encodes (Encode_Sum codX codY) tin v ->
                      exists y : Y, v = inr y /\
-                              tape_encodes (Encode_Map codY (@retract_l_r sigX sigY)) tout y)).
+                              tape_encodes (Encode_Map codY (@retract_r_r sigX sigY)) tout y)).
 
-  Definition MatchSum : { M : mTM (sigX+sigY+bool)^+ 1 & states M -> bool } :=
+  Definition MatchSum : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> bool } :=
     MATCH (Read_char _)
           (fun o => match o with
-                 | Some (inl (inr true))  => Write (inr START) tt;; Move _ R true  (* inl *)
-                 | Some (inl (inr false)) => Write (inr START) tt;; Move _ R false (* inr *)
+                 | Some (inr (inl true))  => Write (inl START) tt;; Move _ R true  (* inl *)
+                 | Some (inr (inl false)) => Write (inl START) tt;; Move _ R false (* inr *)
                  | _ => mono_Nop _ true (* invalid input *)
                  end).
 
@@ -38,14 +38,14 @@ Section MatchSum.
     eapply RealiseIn_monotone.
     {
       unfold MatchSum. eapply Match_RealiseIn. cbn. eapply read_char_sem.
-      instantiate (2 := fun o : option (sigX+sigY+bool)^+ =>
-                          match o with Some (inl (inr true)) => _ | Some (inl (inr false)) => _ | _ => _ end).
+      instantiate (2 := fun o : option (bool + (sigX+sigY))^+ =>
+                          match o with Some (inr (inl true)) => _ | Some (inr (inl false)) => _ | _ => _ end).
       cbn. intros [ s | ]; cbn.
-      - destruct s as [ s | start]; cbn.
-        + destruct s as [xy | cons]; cbn.
+      - destruct s as [ start | s]; cbn.
+        + eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
+        + destruct s as [cons | xy]; swap 1 2; cbn.
           * eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
           * destruct cons; (eapply Seq_RealiseIn; [eapply Write_Sem | eapply Move_Sem]).
-        + eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
       - eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
     }
     {
@@ -55,8 +55,8 @@ Section MatchSum.
       intros tin (yout&tout) H. destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
       destruct_tapes; cbn in *.
       destruct h; cbn in *; TMSimp; eauto. destruct (map _) in H0; cbn in H0; congruence.
-      destruct e; cbn in *; TMSimp.
-      - destruct s; cbn in *; TMSimp.
+      destruct e; swap 1 2; cbn in *; TMSimp.
+      - destruct s; swap 1 2; cbn in *; TMSimp.
         + destruct v; cbn in *; destruct (map _) in H0; cbn in *; congruence.
         + destruct b; cbn in *; TMSimp cbn in *; unfold encode_sum in *.
           * destruct v; TMSimp cbn in *. eexists; split; eauto.
@@ -72,18 +72,18 @@ Section MatchSum.
   (* Constructors *)
   Section SumConstr.
 
-    Definition ConstrSum_Rel (is_left:bool) : Rel (tapes (sigX+sigY+bool)^+ 1) (unit * tapes (sigX+sigY+bool)^+ 1) :=
+    Definition ConstrSum_Rel (is_left:bool) : Rel (tapes (bool + (sigX+sigY))^+ 1) (unit * tapes (bool + (sigX+sigY))^+ 1) :=
       Mk_R_p (
           ignoreParam
             (fun tin tout =>
                if is_left
-               then forall x : X, tape_encodes (Encode_Map codX (@retract_l_l sigX sigY)) tin x ->
+               then forall x : X, tape_encodes (Encode_Map codX (@retract_r_l sigX sigY)) tin x ->
                              tape_encodes (Encode_Sum codX codY) tout (inl x)
-               else forall y : Y, tape_encodes (Encode_Map codY (@retract_l_r sigX sigY)) tin y ->
+               else forall y : Y, tape_encodes (Encode_Map codY (@retract_r_r sigX sigY)) tin y ->
                              tape_encodes (Encode_Sum codX codY) tout (inr y))).
 
-    Definition ConstrSum (is_left:bool) : { M : mTM (sigX+sigY+bool)^+ 1 & states M -> unit } :=
-      Move _ L tt;; Write (inl (inr is_left)) tt;; Move _ L tt;; Write (inr START) tt;; Move _ R tt.
+    Definition ConstrSum (is_left:bool) : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> unit } :=
+      Move _ L tt;; Write (inr (inl is_left)) tt;; Move _ L tt;; Write (inl START) tt;; Move _ R tt.
 
     Lemma ConstrSum_Sem (is_left:bool) : (ConstrSum is_left) ⊨c(9) (ConstrSum_Rel is_left).
     Proof.
@@ -294,14 +294,14 @@ Section Projection.
   Definition stop_X :=
     fun (x : (sigX+sigY)^+) =>
       match x with
-      | (inl (inl _)) => false
+      | (inr (inl _)) => false
       | _ => true (* Stop at symbol from Y or halt/stop symbol *)
       end.
 
   Definition stop_Y :=
     fun (x : (sigX+sigY)^+) =>
       match x with
-        inl (inr _) => false
+        inr (inr _) => false
       | _ => true (* Stop at symbol from X or halt/stop symbol *)
       end.
 
@@ -311,48 +311,48 @@ Section Projection.
 
 
   Local Lemma CopySymbols_pair_first' (inputX : list sigX) (inputY : list sigY) tltr tl' tr' rs' :
-    tape_local (fst tltr) = map inl (map inl inputX ++ map inr inputY) ++ (inr STOP :: rs') ->
+    tape_local (fst tltr) = map inr (map inl inputX ++ map inr inputY) ++ (inl STOP :: rs') ->
     (tl', tr') = CopySymbols_Fun stop_X id tltr ->
-    tape_local (tl') = map inl (map inr inputY) ++ (inr STOP :: rs').
+    tape_local (tl') = map inr (map inr inputY) ++ (inl STOP :: rs').
   Proof.
     intros. destruct inputY as [ | csy inputY'] eqn:E1; cbn in *.
     - eapply CopySymbols_pair_first; cbn; eauto.
       + rewrite app_nil_r. intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
       + trivial.
-    - eapply CopySymbols_pair_first with (str1 := map inl (map inl inputX)); cbn; eauto.
+    - eapply CopySymbols_pair_first with (str1 := map inr (map inl inputX)); cbn; eauto.
       + intros x. rewrite !List.map_map. intros (?&<-&?) % in_map_iff. cbn. trivial.
       + simpl_list. intuition.
       + now rewrite map_app, <- app_assoc in H.
   Qed.
 
   Local Lemma CopySymbols_pair_first'' (inputX : list sigX) (inputY : list sigY) ls m rs tr tl' tr' rs' :
-    m :: rs = map inl (map inl inputX ++ map inr inputY) ++ inr STOP :: rs' ->
+    m :: rs = map inr (map inl inputX ++ map inr inputY) ++ inl STOP :: rs' ->
     (tl', tr') = CopySymbols_Fun stop_X id (midtape ls m rs, tr) ->
-    tape_local tl' = map inl (map inr inputY) ++ inr STOP :: rs'.
+    tape_local tl' = map inr (map inr inputY) ++ inl STOP :: rs'.
   Proof.
     intros H1 H2. apply (CopySymbols_pair_first' (tltr := (midtape ls m rs, tr)) ltac:(cbn; eapply H1) H2).
   Qed.
 
   Local Lemma CopySymbols_pair_second' (inputX : list sigX) (inputY : list sigY) tltr tl' tr' rs' :
-    tape_local (fst tltr) = map inl (map inl inputX ++ map inr inputY) ++ (inr STOP :: rs') ->
+    tape_local (fst tltr) = map inr (map inl inputX ++ map inr inputY) ++ (inl STOP :: rs') ->
     (tl', tr') = CopySymbols_Fun stop_X id tltr ->
-    left tr' = map inl (map inl (rev inputX)) ++ left (snd tltr).
+    left tr' = map inr (map inl (rev inputX)) ++ left (snd tltr).
   Proof.
     intros. rewrite !map_rev. destruct inputY as [ | csy inputY'] eqn:E1; cbn in *.
     - rewrite app_nil_r in H.
       eapply CopySymbols_pair_second; cbn; eauto.
       + intros ? (? & <- & (? & <- & ?) % in_map_iff) % in_map_iff. cbn. trivial.
       + cbn. trivial.
-    - eapply CopySymbols_pair_second with (str1 := map inl (map inl inputX)); cbn; eauto; swap 2 3.
+    - eapply CopySymbols_pair_second with (str1 := map inr (map inl inputX)); cbn; eauto; swap 2 3.
       + intros x. rewrite !List.map_map. intros (?&<-&?) % in_map_iff. cbn. trivial.
       + rewrite map_app, <- app_assoc in H. eapply H.
       + trivial.
   Qed.
   
   Local Lemma CopySymbols_pair_second'' (inputX : list sigX) (inputY : list sigY) ls m rs tr tl' tr' rs' :
-    m :: rs = map inl (map inl inputX ++ map inr inputY) ++ inr STOP :: rs' ->
+    m :: rs = map inr (map inl inputX ++ map inr inputY) ++ inl STOP :: rs' ->
     (tl', tr') = CopySymbols_Fun stop_X id (midtape ls m rs, tr) ->
-    left tr' = map inl (map inl (rev inputX)) ++ left tr.
+    left tr' = map inr (map inl (rev inputX)) ++ left tr.
   Proof.
     intros H1 H2. apply (CopySymbols_pair_second' (tltr := (midtape ls m rs, tr)) ltac:(cbn; eapply H1) H2).
   Qed.
@@ -362,7 +362,7 @@ Section Projection.
     CopySymbols stop_X id;;
     Inject (
       (Move _ L tt);;
-      WriteMove (Some (inr START), R) tt
+      WriteMove (Some (inl START), R) tt
     ) [|Fin.F1|].
 
   
@@ -373,7 +373,7 @@ Section Projection.
           forall (xy : X * Y),
             tape_encodes (Encode_Pair' codX codY) tin[@Fin.F1] xy ->
             tape_encodes (Encode_Map codY (@retract_inr sigX sigY)) tout[@Fin.F1] (snd xy) /\
-            left (tout[@Fin.FS Fin.F1]) = rev (map inl (map inl (encode (fst xy)))) ++ left (tin[@Fin.FS Fin.F1])
+            left (tout[@Fin.FS Fin.F1]) = rev (map inr (map inl (encode (fst xy)))) ++ left (tin[@Fin.FS Fin.F1])
       ).
 
   
@@ -407,10 +407,10 @@ Section Projection.
   Qed.
   
   Definition Proj : { M : mTM (sigX+sigY)^+ 2 & states M -> unit } :=
-    Inject (WriteMove (Some (inr START), R) tt) [|Fin.FS Fin.F1|];;
+    Inject (WriteMove (Some (inl START), R) tt) [|Fin.FS Fin.F1|];;
     M1;;
     Inject (
-      WriteMove (Some (inr STOP), L) tt;;
+      WriteMove (Some (inl STOP), L) tt;;
       MoveToSymbol_L stop_X;;
       Move _ R tt
     ) [|Fin.FS Fin.F1|].
@@ -488,8 +488,8 @@ Section Projection.
       - do 2 eexists; hnf; split; cbn; hnf; rewrite MoveToSymbol_L_Fun_equation; cbn; eauto.
       - repeat ( rewrite <- !app_assoc in *; cbn in * ).
 
-        assert (tape_local_l (tape_move_mono h4 (Some (inr STOP), L)) =
-                (rev (map inl (map inl cX')) ++ [inl (inl cs)]) ++ inr START :: left h2) as L1.
+        assert (tape_local_l (tape_move_mono h4 (Some (inl STOP), L)) =
+                (rev (map inr (map inl cX')) ++ [inr (inl cs)]) ++ inl START :: left h2) as L1.
         {
           repeat ( rewrite <- !app_assoc in *; cbn in * ).
           destruct h4; cbn in *; try (destruct cX'; cbn in *; congruence). subst. apply tape_match_symbols_tape_local_l.
@@ -518,6 +518,27 @@ Section Projection.
   
 
 End Projection.
+
+
+
+(* TODO: Match für Listen *)
+
+
+(*
+Compute encode [1;2;3].
+Compute encode (true, 1).
+
+
+
+*)
+
+
+
+
+
+
+(* TODO: Match für Zahlen *)
+
 
 
 
