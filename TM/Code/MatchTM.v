@@ -17,13 +17,11 @@ Section MatchSum.
     Mk_R_p (if? (fun (tin tout : tape (bool + (sigX+sigY))^+) =>
                    forall v : X + Y,
                      tape_encodes (Encode_Sum codX codY) tin v ->
-                     exists x : X, v = inl x /\
-                              tape_encodes (Encode_Map codX (@retract_r_l sigX sigY)) tout x)
+                     exists x : X, v = inl x)
               ! (fun (tin tout : tape ((bool + (sigX+sigY))^+)) =>
                    forall v : X + Y,
                      tape_encodes (Encode_Sum codX codY) tin v ->
-                     exists y : Y, v = inr y /\
-                              tape_encodes (Encode_Map codY (@retract_r_r sigX sigY)) tout y)).
+                     exists y : Y, v = inr y)).
 
   Definition MatchSum : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> bool } :=
     MATCH (Read_char _)
@@ -60,9 +58,7 @@ Section MatchSum.
         + destruct v; cbn in *; destruct (map _) in H0; cbn in *; congruence.
         + destruct b; cbn in *; TMSimp cbn in *; unfold encode_sum in *.
           * destruct v; TMSimp cbn in *. eexists; split; eauto.
-            hnf. destruct (encode x1) eqn:E; cbn; do 2 eexists; split; hnf; cbn; eauto. all: rewrite E; cbn; eauto.
           * destruct v; TMSimp cbn in *. eexists; split; eauto.
-            hnf. destruct (encode y) eqn:E; cbn; do 2 eexists; split; hnf; cbn; eauto. all: rewrite E; cbn; eauto.
       - destruct v; cbn in *.
         + destruct (map _) in H0; cbn in H0; inv H0.
         + destruct (map _) in H0; cbn in H0; inv H0.
@@ -461,7 +457,6 @@ Section Projection.
     end = xs.
   Proof. destruct xs; cbn; auto. Qed.
   
-  (* TODO: [spec_assert as (a&b) by tac] is broken *)
   (* TODO: add the above lemmas to Prelim.v bzw. CodeTM.v and add them to the tape database *)
 
   Lemma Proj_WRealise : Proj ⊫ Proj_Rel.
@@ -521,25 +516,148 @@ End Projection.
 
 
 
+(** * Reductions for derived types *)
+
+(* TODO: Match für Option *)
+
+Require ChangeAlphabet.
+
+Section MatchOption.
+
+  (* Matching of option reduces to matching of sums with [Empty_set] *)
+
+  Variable X : Type.
+  Variable (sigX : finType).
+  Hypothesis (codX : codeable sigX X).
+
+  Compute encode None.
+  Compute encode (Some 42).
+
+  Definition MatchOption_Rel : Rel (tapes (bool + sigX)^+ 1) (bool * tapes (bool + sigX)^+ 1) :=
+    Mk_R_p (if? (fun (tin tout : tape (bool + sigX)^+) =>
+                   forall v : option X,
+                     tape_encodes (Encode_Option codX ) tin v ->
+                     exists x : X, v = Some x)
+              ! (fun (tin tout : tape (bool + sigX)^+) =>
+                   forall v : option X,
+                     tape_encodes (Encode_Option codX ) tin v ->
+                     v = None)).
+
+  Let retr' : TRetract (bool + (sigX + Empty_set)) (bool + sigX) .
+  Proof. econstructor. eapply tretract_sum; auto_inj. Defined.
+    
+  Definition MatchOption : { M : mTM (bool + sigX)^+ 1 & states M -> bool }.
+  Proof.
+    eapply ChangeAlphabet.ChangeAlphabet. 3: eapply (@MatchSum sigX (FinType (EqType Empty_set))).
+    - eapply retr'.
+    - cbn. do 2 constructor.
+  Defined.
+
+
+  
+  Lemma MatchOption_Sem :
+    MatchOption ⊨c(5) MatchOption_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    {
+      unfold MatchOption. eapply LiftSigmaTau.Lift_RealiseIn.
+      - eapply tight_retract_strong. cbn. eapply (ChangeAlphabet.retr' retr').
+      - eapply (MatchSum_Sem codX Encode_Unit).
+    }
+    { omega. }
+    {
+      hnf. intros tin (yout&tout). intros H. destruct_tapes; cbn in *.
+      hnf in *. destruct yout; cbn in *.
+      {
+        intros [ v | ] Hv; cbn in *.
+        - specialize (H (inl v)).
+          spec_assert H as (x&H).
+          {
+            destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
+            eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
+            hnf. do 2 eexists. split. exact Hv1. exact Hv2.
+          }
+          inv H. eauto.
+        - specialize (H (inr tt)).
+          spec_assert H as (x&H).
+          {
+            destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
+            eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
+            hnf. do 2 eexists. split. exact Hv1. exact Hv2.
+          }
+          inv H.
+      }
+      {
+        intros [ v | ] Hv; cbn in *.
+        - specialize (H (inl v)).
+          spec_assert H as (x&H).
+          {
+            destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
+            eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
+            hnf. do 2 eexists. split. exact Hv1. exact Hv2.
+          }
+          inv H.
+        - specialize (H (inr tt)).
+          spec_assert H as (x&H).
+          {
+            destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
+            eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
+            hnf. do 2 eexists. split. exact Hv1. exact Hv2.
+          }
+          inv H. eauto.
+      }
+    }
+  Qed.
+
+End MatchOption.
+
+
+
 (* TODO: Match für Listen *)
 
 
-(*
-Compute encode [1;2;3].
-Compute encode (true, 1).
+Section MatchList.
+
+  Section Test.
+    (* The encoding of a list is a concatenation of encoding of options *)
+
+    Compute encode [].
+    Compute encode None.
+    Compute encode [1;2;3].
+
+    Goal encode [1;2;3] = encode (Some 1) ++ encode (Some 2) ++ encode (Some 3) ++ encode None.
+    Proof. cbn. trivial. Abort.
+  End Test.
+
+  Variable X : Type.
+  Variable (sigX : finType).
+  Hypothesis (codX : codeable sigX X).
+
+  Definition MatchList_Rel : Rel (tapes (bool+sigX)^+ 2) (bool * tapes (bool+sigX)^+ 2) :=
+    (if? (fun (tin tout : tapes (bool+sigX)^+ 2) =>
+          forall (lst : list X),
+            tape_encodes (Encode_List codX) tin[@Fin.F1] lst ->
+            exists (head : X) (tail : list X),
+              tape_encodes _ (tout[@Fin.F1]) tail /\
+              tape_encodes (Encode_Map codX (@retract_inr _ _)) tout[@Fin.FS Fin.F1] head)
+       ! (fun (tin tout : tapes (bool+sigX)^+ 2) =>
+            forall (lst : list X),
+              tape_encodes (Encode_List codX) tin[@Fin.F1] lst ->
+              lst = nil)).
+
+  (* Muss eventuell extra definiert werden, so ähnlich wie die [Proj] *)
+
+
+  (* Idee: Zuerst Option-Match.  Falls None, dann nil.  Falls Some, dann passenden lift auf [Proj] anwenden *)
+  
+
+End MatchList.
 
 
 
-*)
+(* TODO: Match für Zahlen: von Listen-Match ableiten *)
 
 
 
 
-
-
-(* TODO: Match für Zahlen *)
-
-
-
-
-(* TODO: Match operator for functions *)
+(* TODO: Match operators for functions *)
