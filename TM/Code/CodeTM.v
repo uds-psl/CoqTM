@@ -452,7 +452,7 @@ Section Test_InitTape_Gen0.
   Variable (X : Type) (cX : codeable sig X).
   Variable x : X.
 
-  Let gen0 := Computes_Gen cX (Fin.F1 (n := 0)) [||] x.
+  Definition gen0 := Computes_Gen cX (Fin.F1 (n := 0)) [||] x.
 
   Lemma Computes_Gen_InitTape :
     gen0 =2 InitTape_Rel cX x |_tt.
