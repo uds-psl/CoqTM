@@ -268,9 +268,11 @@ Section Computes_Gen.
   Variable n : nat.
   Variable F : finType.
 
+
   Variable (Res : Type).
   Hypothesis (codRes : codeable sig Res).
   Variable resTape : Fin.t n.
+
 
   (* Make a type for a curried function *)
   Fixpoint paramVectCoerce {k:nat} (paramTypes : Vector.t Type k) : Type :=
@@ -279,17 +281,27 @@ Section Computes_Gen.
     | t ::: paramTypes' => t -> paramVectCoerce paramTypes'
     end.
 
-  Definition param_genT k := Vector.t ({ t : Type & codeable sig t} * Fin.t n) k.
 
-  Definition param_genF k (params : param_genT k) :=
-    paramVectCoerce (Vector.map (fun x => projT1 (fst x)) params).
+  Record comp_gen_param :=
+    mk_param
+      {
+        par_tape :> Fin.t n;
+        par_type : Type;
+        par_code :> codeable sig par_type;
+      }.
 
+  Definition comp_gen_params k := Vector.t comp_gen_param k.
+
+  Definition param_genF k (params : comp_gen_params k) :=
+    paramVectCoerce (Vector.map par_type params).
+
+  
   Fixpoint Computes_Gen {k:nat}
-           (params : param_genT k)
+           (params : comp_gen_params k)
            (f : param_genF params)
            {struct params} : relation (tapes (sig^+) n).
   Proof.
-    intros tin tout. destruct params as [ | ((X&codX)&tapeX) k]; cbn in f.
+    intros tin tout. destruct params as [ | (tapeX, X, codX) k]; cbn in f.
     - apply (tape_encodes _ (tout[@resTape]) f).
     - specialize (Computes_Gen k).
       assert (IH : forall x : X,relation (tapes (sig^+) n)).
@@ -299,8 +311,9 @@ Section Computes_Gen.
       apply ((forall x : X, tape_encodes codX (tin [@tapeX]) x -> IH x tin tout)).
   Defined.
 
+
   Variable (k : nat)
-           (params : param_genT k)
+           (params : comp_gen_params k)
            (f : param_genF params).
 
   Definition Computes_Gen_Rel : Rel (tapes (sig^+) n) (F * (tapes (sig^+) n)) :=
@@ -322,7 +335,7 @@ Section Test_Computes_Gen1.
   Variable (f : X -> Y).
   Variable F : finType.
 
-  Let gen1 := Computes_Gen cY j [| (existT _ _ cX, i) |] f.
+  Definition gen1 := Computes_Gen cY j [| (mk_param i cX) |] f.
   
   Lemma Computes_Gen_Computes : gen1 =2 Computes i j cX cY f.
   Proof.
@@ -340,7 +353,7 @@ Section Test_Computes_Gen2.
   Variable (f : X -> Y -> Z).
   Variable F : finType.
 
-  Let gen2 := Computes_Gen cZ k [| (existT _ _ cX, i); (existT _ _ cY, j) |] f.
+  Definition gen2 := Computes_Gen cZ k [| mk_param i cX; mk_param j cY |] f.
 
   Lemma Computes_Gen_Computes2 : gen2 =2 Computes2 i j k cX cY cZ f.
   Proof.
