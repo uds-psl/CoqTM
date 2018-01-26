@@ -171,6 +171,27 @@ Section MapCode.
         unfold surjectSymbols in L1. apply map_length_eq in L1. auto.
   Qed.
 
+
+  Corollary surjectTapes_sameEnc (t1 t2 : tape (sig^+)) (x : X) :
+    (~ def el encode x) \/ (forall t' : tau, exists s', g t' = Some s') ->
+    surjectTape (injectTape t1) = surjectTape (injectTape t2) ->
+    tape_encodes _ t1 x -> tape_encodes _ t2 x.
+  Proof.
+    intros HDef HEq HEnc; cbn in *.
+    eapply encodeTranslate_sig. eapply encodeTranslate_tau2; auto. rewrite <- HEq.
+    eapply encodeTranslate_tau1. eapply encodeTranslate_sig. assumption.
+  Qed.
+
+  Corollary surjectTapes_sameEnc' (t1 t2 : tape (tau^+)) (x : X) :
+    (~ def el encode x) \/ (forall t' : tau, exists s', g t' = Some s') ->
+    surjectTape t1 = surjectTape t2 ->
+    tape_encodes _ t1 x -> tape_encodes _ t2 x.
+  Proof.
+    intros HDef HEq HEnc.
+    eapply encodeTranslate_tau2; auto.
+    rewrite <- HEq. now eapply encodeTranslate_tau1 in HEnc.
+  Qed.
+
 End MapCode.
 
 

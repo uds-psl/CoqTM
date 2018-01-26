@@ -17,11 +17,13 @@ Section MatchSum.
     Mk_R_p (if? (fun (tin tout : tape (bool + (sigX+sigY))^+) =>
                    forall v : X + Y,
                      tape_encodes (Encode_Sum codX codY) tin v ->
-                     exists x : X, v = inl x)
+                     exists x : X, v = inl x /\
+                              tape_encodes (Encode_Map codX (@retract_r_l sigX sigY)) tout x)
               ! (fun (tin tout : tape ((bool + (sigX+sigY))^+)) =>
                    forall v : X + Y,
                      tape_encodes (Encode_Sum codX codY) tin v ->
-                     exists y : Y, v = inr y)).
+                     exists y : Y, v = inr y /\
+                              tape_encodes (Encode_Map codY (@retract_r_r sigX sigY)) tout y)).
 
   Definition MatchSum : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> bool } :=
     MATCH (Read_char _)
@@ -58,7 +60,9 @@ Section MatchSum.
         + destruct v; cbn in *; destruct (map _) in H0; cbn in *; congruence.
         + destruct b; cbn in *; TMSimp cbn in *; unfold encode_sum in *.
           * destruct v; TMSimp cbn in *. eexists; split; eauto.
+            hnf. destruct (encode x1) eqn:E; cbn; do 2 eexists; split; hnf; cbn; eauto. all: rewrite E; cbn; eauto.
           * destruct v; TMSimp cbn in *. eexists; split; eauto.
+            hnf. destruct (encode y) eqn:E; cbn; do 2 eexists; split; hnf; cbn; eauto. all: rewrite E; cbn; eauto.
       - destruct v; cbn in *.
         + destruct (map _) in H0; cbn in H0; inv H0.
         + destruct (map _) in H0; cbn in H0; inv H0.
@@ -814,6 +818,7 @@ Section MatchList.
        ! (fun (tin tout : tapes (bool+sigX)^+ 2) =>
             forall (lst : list X),
               tape_encodes (Encode_List codX) tin[@Fin.F1] lst ->
+              tape_encodes (Encode_List codX) tout[@Fin.F1] nil /\
               lst = nil)).
 
   Lemma MatchList_Sem :
@@ -841,7 +846,11 @@ Section MatchList.
         do 2 eexists; repeat split; eauto.
       - auto.
       - congruence.
-      - eapply H. cbn. hnf; do 2 eexists; split; cbn; eauto.
+      - assert (lst = nil) as ->.
+        {
+          eapply H. cbn. hnf; do 2 eexists; split; cbn; eauto.
+        }
+        split; eauto. hnf. do 2 eexists; split; cbn in *; eauto.
     }
   Qed.
 
@@ -853,8 +862,6 @@ End MatchList.
 
 
 (** * Reductions for derived types *)
-
-(* TODO: Match für Option *)
 
 Require ChangeAlphabet.
 
@@ -915,24 +922,24 @@ Section MatchOption.
           }
           inv H. eauto.
         - specialize (H (inr tt)).
-          spec_assert H as (x&H).
+          spec_assert H as (x&H1&H2).
           {
             destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
             eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
             hnf. do 2 eexists. split. exact Hv1. exact Hv2.
           }
-          inv H.
+          inv H1.
       }
       {
         intros [ v | ] Hv; cbn in *.
         - specialize (H (inl v)).
-          spec_assert H as (x&H).
+          spec_assert H as (x&H1&H2).
           {
             destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
             eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
             hnf. do 2 eexists. split. exact Hv1. exact Hv2.
           }
-          inv H.
+          inv H1.
         - specialize (H (inr tt)).
           spec_assert H as (x&H).
           {
@@ -948,11 +955,269 @@ Section MatchOption.
 End MatchOption.
 
 
+(* TODO: Konstruktor für Listen und Tupel *)
 
 
 (* TODO: Match für Zahlen: von Listen-Match ableiten *)
 
 
+Section MapSum.
 
+  Section MapParam.
 
-(* TODO: Match operators for functions *)
+    Variable (sig tau : finType).
+    Hypothesis retr : TRetract sig tau.
+
+    Variable n : nat.
+
+    Definition param_map (param : comp_gen_param sig n) : comp_gen_param tau n.
+    Proof.
+      econstructor.
+      - eapply param.
+      - eapply Encode_Map.
+        + eapply param.
+        + eapply retr.
+    Defined.
+
+    Variable (Res : Type) (codRes : codeable sig Res).
+
+    Fixpoint param_map_f 
+             (params : list (comp_gen_param sig n))
+             (f : param_genF Res params)
+             { struct params } :
+      param_genF Res (map param_map params).
+    Proof.
+      destruct params as [ | param params']; cbn in *.
+      - apply f.
+      - intros parType. apply (param_map_f params'). apply (f parType).
+    Defined.
+
+  End MapParam. 
+
+  Arguments param_map {sig tau} (retr) {n}.
+
+  Variable n : nat.
+  Variable (sigX sigY sigZ : finType).
+  Variable (X Y Z : Type) (codX : codeable sigX X) (codY : codeable sigY Y) (codZ : codeable sigZ Z).
+
+  Variable (inputTape outputTape : Fin.t n).
+  
+  Local Definition sig_add_sum : finType := FinType(EqType((bool+(sigX+sigY))+sigZ)).
+  Local Definition sig_add_X : finType := FinType(EqType(sigX+sigZ)).
+  Local Definition sig_add_Y : finType := FinType(EqType(sigY+sigZ)).
+
+  Local Definition retr1 : TRetract (bool+(sigX+sigY)) (bool+(sigX+sigY)+sigZ).
+  Proof. econstructor. eapply retract_inl. Defined.
+
+  Local Definition retr2 : TRetract sigZ (bool+(sigX+sigY)+sigZ).
+  Proof. econstructor. eapply retract_inr. Defined.
+
+  Local Definition retr3 : TRetract (sigX+sigZ) ((bool+(sigX+sigY))+sigZ).
+  Proof.
+    econstructor. eapply tretract_sum.
+    - eapply retract_r_l.
+    - eapply inversion_retract, inverse_id.
+  Defined.
+
+  Local Definition retr4 : TRetract (sigY+sigZ) ((bool+(sigX+sigY))+sigZ).
+  Proof.
+    econstructor. eapply tretract_sum.
+    - eapply retract_r_r.
+    - eapply inversion_retract, inverse_id.
+  Defined.
+
+  Instance enc_X' : codeable sig_add_X X :=
+    Encode_Map codX (@retract_inl _ _).
+  Instance enc_Z_X : codeable sig_add_X Z :=
+    Encode_Map codZ (@retract_inr _ _).
+  Instance enc_Y' : codeable sig_add_Y Y :=
+    Encode_Map codY (@retract_inl _ _).
+  Instance enc_Z_Y : codeable sig_add_Y Z :=
+    Encode_Map codZ (@retract_inr _ _).
+  Instance enc_XY : codeable sig_add_sum (X+Y) :=
+    Encode_Map (Encode_Sum codX codY) (Build_TRetract retr1).
+  Instance enc_Z' : codeable sig_add_sum Z :=
+    Encode_Map codZ (@retract_inr _ _).
+
+  Variable f : X -> Z.
+  Variable g : Y -> Z.
+
+  Variable M1 : { M : mTM (sig_add_X ^+) n & states M -> unit }.
+  Variable M2 : { M : mTM (sig_add_Y ^+) n & states M -> unit }.
+
+  Hypothesis M1_Computes : M1 ⊫ Computes_Rel inputTape outputTape enc_X' enc_Z_X f.
+  Hypothesis M2_Computes : M2 ⊫ Computes_Rel inputTape outputTape enc_Y' enc_Z_Y g.
+
+  Definition map_sum : X + Y -> Z :=
+    fun s => match s with
+          | inl x => f x
+          | inr y => g y
+          end.
+  
+  Variable (defX : sigX) (defY : sigY) (defZ : sigZ).
+
+  Definition MapSum : { M : mTM (sig_add_sum ^+) n & states M -> unit }.
+  Proof.
+    eapply If.
+    - eapply ChangeAlphabet.ChangeAlphabet; swap 2 3; swap 1 2.
+      + cbn. eapply Inject; [ | apply [| inputTape |] ]. eapply MatchSum.
+      + apply retr1.
+      + cbn. right. left. apply defX.
+    - cbn. eapply ChangeAlphabet.ChangeAlphabet; swap 1 3. eapply M1.
+      cbn. left. apply defX. apply retr3.
+    - cbn. eapply ChangeAlphabet.ChangeAlphabet; swap 1 3. eapply M2.
+      cbn. left. apply defY. apply retr4.
+  Defined.
+
+  
+  Hypothesis DefX : forall x : X, ~ defX el encode x \/ (forall t' : sigX + sigZ, exists s' : sigX, retract_inl_g t' = Some s').
+  Hypothesis DefY : forall y : Y, ~ defY el encode y \/ (forall t' : sigY + sigZ, exists s' : sigY, retract_inl_g t' = Some s').
+
+  Lemma MapSum_Computes : MapSum ⊫ Computes_Rel inputTape outputTape enc_XY enc_Z' map_sum.
+  Proof.
+    eapply WRealise_monotone.
+    {
+      unfold MapSum. eapply If_WRealsie.
+      - eapply LiftSigmaTau.Lift_WRealise.
+        + eapply tight_retract_strong. cbn. refine (ChangeAlphabet.retr' _). apply retr1.
+        + eapply Inject_WRealise.
+          * vector_dupfree.
+          * eapply Realise_WRealise, RealiseIn_Realise. apply (MatchSum_Sem codX codY).
+      - apply (ChangeAlphabet.ChangeAlphabet_Computes_WRealise retr3 (inl defX) f).
+        + left. intros. cbn. intros (?&?&?) % in_map_iff. congruence.
+        + eapply M1_Computes.
+      - apply (ChangeAlphabet.ChangeAlphabet_Computes_WRealise retr4 (inl defY) g).
+        + left. intros. cbn. intros (?&?&?) % in_map_iff. congruence.
+        + eapply M2_Computes.
+    }
+    { clear M1_Computes M2_Computes M1 M2.
+      hnf. intros tin (()&tout). intros H. destruct_tapes; cbn in *.
+      intros [x | y] H4.
+      {
+        destruct H; destruct H as (tmid&H1&H2); hnf in H1, H2; cbn in H1, H2.
+        {
+          destruct H1 as (H1&H0); hnf in H0, H1.
+          specialize (H2 x).
+          specialize (H1 (inl x)).
+          clear H0.
+
+          spec_assert H1 as (temp&HTemp&H1).
+          {
+            epose proof ChangeAlphabet.encodeTranslate_tau1 _ H4 as L1.
+            unfold ChangeAlphabet.surjectTape in L1. cbn in *. unfold finType_CS in *.
+            unfold LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *. cbn in *.
+            erewrite VectorSpec.nth_map; eauto.
+          } symmetry in HTemp; inv HTemp; cbn in *.
+
+          Search "encodeTranslate".
+
+          spec_assert H2.
+          {
+            clear H4 H2.
+            unfold enc_X'.
+
+            Search "encodeTranslate".
+
+            eapply (ChangeAlphabet.encodeTranslate_tau1) in H1.
+            eapply (ChangeAlphabet.encodeTranslate_tau2 (def := inr defZ)).
+            - left. cbn. intros (?&?&?)%in_map_iff. congruence.
+            - eapply (ChangeAlphabet.encodeTranslate_tau2 (def := defX)).
+              + cbn. auto.
+              + destruct H1 as (r1&r2&HE1&HE2). hnf. cbn in *. exists r1, r2. split; cbn.
+                * rewrite <- HE1. f_equal. cbn. f_equal. clear HE1 HE2.
+                  unfold ChangeAlphabet.surjectTape, LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *.
+                  erewrite !VectorSpec.nth_map; eauto. unfold TRetr_f, TRetr_g. cbn.
+                  rewrite !LiftSigmaTau.mapTape_mapTape.
+                  eapply LiftSigmaTau.mapTape_ext; intros. destruct a; cbn; auto. do 3 (destruct s; cbn; auto).
+                * rewrite <- HE2. f_equal. cbn. f_equal. clear HE1 HE2.
+                  unfold ChangeAlphabet.surjectTape, LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *.
+                  erewrite !VectorSpec.nth_map; eauto. unfold TRetr_f, TRetr_g. cbn.
+                  rewrite !LiftSigmaTau.mapTape_mapTape.
+                  eapply LiftSigmaTau.mapTape_ext; intros. destruct a; cbn; auto. do 3 (destruct s; cbn; auto).
+          }
+          clear H4 H1. Set Printing Implicit. progress unfold finType_CS in *.
+          destruct H2 as (r1&r2&HE1&HE2). hnf. cbn in *. exists r1, r2. split; cbn.
+          - auto.
+          - cbn in *. clear HE1 r1. progress unfold finType_CS in *.
+            unfold sig_add_sum. unfold finType_CS. rewrite HE2. clear HE2.
+            Unset Printing Implicit. cbn. rewrite !List.map_map. cbn. auto.
+        }
+        {
+          destruct H1 as (H1&H0); hnf in H0, H1.
+          specialize (H1 (inl x)).
+          clear H0. clear H2.
+
+          spec_assert H1 as (temp&HTemp&H1).
+          {
+            epose proof ChangeAlphabet.encodeTranslate_tau1 _ H4 as L1.
+            unfold ChangeAlphabet.surjectTape in L1. cbn in *. unfold finType_CS in *.
+            unfold LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *. cbn in *.
+            erewrite VectorSpec.nth_map; eauto.
+          } congruence.
+        }
+      }
+      {
+        destruct H; destruct H as (tmid&H1&H2); hnf in H1, H2; cbn in H1, H2.
+        {
+          destruct H1 as (H1&H0); hnf in H0, H1.
+          specialize (H1 (inr y)).
+          clear H0. clear H2.
+          spec_assert H1 as (temp&HTemp&H1).
+          {
+            epose proof ChangeAlphabet.encodeTranslate_tau1 _ H4 as L1.
+            unfold ChangeAlphabet.surjectTape in L1. cbn in *. unfold finType_CS in *.
+            unfold LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *. cbn in *.
+            erewrite VectorSpec.nth_map; eauto.
+          } congruence.
+        }
+        {
+          destruct H1 as (H1&H0); hnf in H0, H1.
+          specialize (H2 y).
+          specialize (H1 (inr y)).
+          clear H0.
+
+          spec_assert H1 as (temp&HTemp&H1).
+          {
+            epose proof ChangeAlphabet.encodeTranslate_tau1 _ H4 as L1.
+            unfold ChangeAlphabet.surjectTape in L1. cbn in *. unfold finType_CS in *.
+            unfold LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *. cbn in *.
+            erewrite VectorSpec.nth_map; eauto.
+          } symmetry in HTemp; inv HTemp; cbn in *.
+
+          spec_assert H2.
+          {
+            clear H4 H2.
+            unfold enc_X'.
+
+            Search "encodeTranslate".
+
+            eapply (ChangeAlphabet.encodeTranslate_tau1) in H1.
+            eapply (ChangeAlphabet.encodeTranslate_tau2 (def := inr defZ)).
+            - left. cbn. intros (?&?&?)%in_map_iff. congruence.
+            - eapply (ChangeAlphabet.encodeTranslate_tau2 (def := defY)).
+              + cbn. auto.
+              + destruct H1 as (r1&r2&HE1&HE2). hnf. cbn in *. exists r1, r2. split; cbn.
+                * rewrite <- HE1. f_equal. cbn. f_equal. clear HE1 HE2.
+                  unfold ChangeAlphabet.surjectTape, LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *.
+                  erewrite !VectorSpec.nth_map; eauto. unfold TRetr_f, TRetr_g. cbn.
+                  rewrite !LiftSigmaTau.mapTape_mapTape.
+                  eapply LiftSigmaTau.mapTape_ext; intros. destruct a; cbn; auto. do 3 (destruct s; cbn; auto).
+                * rewrite <- HE2. f_equal. cbn. f_equal. clear HE1 HE2.
+                  unfold ChangeAlphabet.surjectTape, LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *.
+                  erewrite !VectorSpec.nth_map; eauto. unfold TRetr_f, TRetr_g. cbn.
+                  rewrite !LiftSigmaTau.mapTape_mapTape.
+                  eapply LiftSigmaTau.mapTape_ext; intros. destruct a; cbn; auto. do 3 (destruct s; cbn; auto).
+          }
+          clear H4 H1. Set Printing Implicit. progress unfold finType_CS in *.
+          destruct H2 as (r1&r2&HE1&HE2). hnf. cbn in *. exists r1, r2. split; cbn.
+          - auto.
+          - cbn in *. clear HE1 r1. progress unfold finType_CS in *.
+            unfold sig_add_sum. unfold finType_CS. rewrite HE2. clear HE2.
+            Unset Printing Implicit. cbn. rewrite !List.map_map. cbn. auto.
+        }
+      }
+    }
+    Unshelve. all: eauto.
+  Qed.
+  
+End MapSum.

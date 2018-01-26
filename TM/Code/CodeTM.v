@@ -275,10 +275,10 @@ Section Computes_Gen.
 
 
   (* Make a type for a curried function *)
-  Fixpoint paramVectCoerce {k:nat} (paramTypes : Vector.t Type k) : Type :=
+  Fixpoint paramVectCoerce (paramTypes : list Type) : Type :=
     match paramTypes with
-    | Vector.nil _ => Res
-    | t ::: paramTypes' => t -> paramVectCoerce paramTypes'
+    | nil => Res
+    | t :: paramTypes' => t -> paramVectCoerce paramTypes'
     end.
 
 
@@ -290,40 +290,47 @@ Section Computes_Gen.
         par_code :> codeable sig par_type;
       }.
 
-  Definition comp_gen_params k := Vector.t comp_gen_param k.
-
-  Definition param_genF k (params : comp_gen_params k) :=
-    paramVectCoerce (Vector.map par_type params).
+  Definition param_genF (params : list comp_gen_param) :=
+    paramVectCoerce (map par_type params).
 
   
-  Fixpoint Computes_Gen {k:nat}
-           (params : comp_gen_params k)
+  Fixpoint Computes_Gen
+           (params : list comp_gen_param)
            (f : param_genF params)
            {struct params} : relation (tapes (sig^+) n).
   Proof.
-    intros tin tout. destruct params as [ | (tapeX, X, codX) k]; cbn in f.
+    intros tin tout. destruct params as [ | (tapeX, X, codX) params']; cbn in f.
     - apply (tape_encodes _ (tout[@resTape]) f).
-    - specialize (Computes_Gen k).
-      assert (IH : forall x : X,relation (tapes (sig^+) n)).
-      {
-        intros x. eapply Computes_Gen with (params := params). apply (f x).
-      }
-      apply ((forall x : X, tape_encodes codX (tin [@tapeX]) x -> IH x tin tout)).
+    - apply (forall x : X, tape_encodes codX (tin[@tapeX]) x -> @Computes_Gen params' (f x) tin tout).
+      Show Proof.
   Defined.
 
+  Definition Computes_Gen_Rel
+             (params : list comp_gen_param)
+             (f : param_genF params) : Rel (tapes (sig^+) n) (F * (tapes (sig^+) n)) :=
+    ignoreParam (@Computes_Gen params f).
 
-  Variable (k : nat)
-           (params : comp_gen_params k)
-           (f : param_genF params).
+  Definition params_tapes (params : list comp_gen_param) : list (Fin.t n) := map par_tape params.
 
-  Definition Computes_Gen_Rel : Rel (tapes (sig^+) n) (F * (tapes (sig^+) n)) :=
-    ignoreParam (@Computes_Gen k params f).
-
+  Lemma Computes_Gen_Ext
+        (params : list comp_gen_param)
+        (f : param_genF params)
+        tin tin' tout :
+    (forall param, List.In param params ->
+              forall x : par_type param,
+                tape_encodes (par_code param) tin'[@par_tape param] x ->
+                tape_encodes (par_code param) tin [@par_tape param] x) ->
+    @Computes_Gen params f tin tout -> @Computes_Gen params f tin' tout.
+  Proof.
+    intros H HComp.
+    induction params as [ | (tapeX, X, codX) params' IH]; cbn in *; intros; auto.
+    apply IH; eauto. apply HComp. cbn in *. specialize (H _ ltac:(eauto) ltac:(eauto)). auto.
+  Qed.
 
 End Computes_Gen.
 
-Arguments Computes_Gen {sig} {n} {Res} (codRes) (resTape) {k} (params) (f).
-Arguments Computes_Gen_Rel {sig} {n} F {Res} (codRes) (resTape) {k} (params) (f).
+Arguments Computes_Gen {sig} {n} {Res} (codRes) (resTape) (params) (f).
+Arguments Computes_Gen_Rel {sig} {n} F {Res} (codRes) (resTape) (params) (f).
 
 (* Check, that Computes_Gen coincises with Computes for [k := 1] *)
 Section Test_Computes_Gen1.
