@@ -91,13 +91,7 @@ Section ID'.
       eapply ID_Computes.
     - omega.
     - intros tin (yout&tout) H. hnf in *. intros x HEnc. specialize (H (negb x)).
-      unfold id in H.
-      spec_assert H.
-      {
-        cbn. destruct x; cbn; cbv [ Encode_Map ]; hnf; cbn; eauto.
-      }
-      destruct x; cbn in H; cbv [ Encode_Map ] in H; hnf in *;
-        (destruct H as (r1&r2&H1&H2); exists r1, r2; hnf in H1, H2; cbn in H1, H2; hnf; split; cbn; auto).
+      destruct x; cbn in *; auto.
   Qed.
   
 End ID'.
@@ -112,21 +106,23 @@ Section OR.
   Lemma OR_Computes :
     OR ⊨c(5)
         Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool) ∩
-        Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ orb.
+        Computes2_Rel Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ orb.
   Proof.
     eapply RealiseIn_monotone.
     {
       pose proof AND_Computes as (L1&L2) % RealiseIn_split.
       erewrite <- RealiseIn_split. unfold OR.
-      split;
-        [eapply (ChangeAlphabet_Computes_RealiseIn  swap_true_false false (@id bool)) |
-         eapply (ChangeAlphabet_Computes2_RealiseIn swap_true_false false andb)]; cbn; eauto.
+      split.
+      - eapply (ChangeAlphabet_Computes_RealiseIn  swap_true_false false (@id bool)); cbn; eauto.
+      - eapply (ChangeAlphabet_Computes2_RealiseIn swap_true_false false andb); cbn; eauto.
     }
     { omega. }
     {
       intros tin (yout&tout) (H1&H2). hnf in *. split; intros x.
       {
-        intros HEnc. specialize (H1 (negb x)). spec_assert H1.
+        (* first function, identity on tape 0 *)
+        intros HEnc.
+        specialize (H1 (negb x)). spec_assert H1.
         {
           hnf. hnf in HEnc. destruct HEnc as (r1&r2&HEnc&HEnc').
           exists r1, r2. hnf. split; eauto. rewrite HEnc'. cbn. now rewrite negb_involutive.

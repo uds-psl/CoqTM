@@ -74,8 +74,7 @@ Section MapCode.
   Variable def : sig.
   Hypothesis retr : tight_retract f g.
 
-  Global Instance retr' : TRetract (sig^+) (tau^+).
-  Proof. econstructor. eapply tretract_sum; auto_inj. Defined.
+  Global Instance retr' : TRetract (sig^+) (tau^+) := Build_TRetract _.
   Notation "'f''" := (@TRetr_f (sig^+) (tau^+) retr').
   Notation "'g''" := (@TRetr_g (sig^+) (tau^+) retr').
 

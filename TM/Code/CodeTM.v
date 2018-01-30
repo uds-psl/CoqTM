@@ -111,9 +111,6 @@ Section Fix_Sig.
     Definition START : bool := false.
     Definition STOP  : bool := true.
 
-    Instance codeX : codeable sig^+ X := Encode_Map cX           (@retract_inr _ _ ).
-    Instance codeS : codeable sig^+ bool := Encode_Map Encode_Bool (@retract_inl _ _).
-
     Definition tape_encodes_r (t : tape sig^+) (x : X) (r1 r2 : list sig^+) :=
       left t = encode START ++ r1 /\ tape_local t = encode x ++ encode STOP ++ r2.
 
@@ -127,15 +124,42 @@ Section Fix_Sig.
       eapply encode_map_injective in H1' as (->&H2). inv H1. inv H2. tauto. eapply retract_inr.
     Qed.
 
+    Notation "t '≂' x" := (tape_encodes t x) (at level 70, no associativity).
+
     Lemma tape_encodes_injective (t : tape sig^+) (x1 x2 : X) :
-      tape_encodes t x1 -> tape_encodes t x2 -> x1 = x2.
+      t ≂ x1 -> t ≂ x2 -> x1 = x2.
     Proof.
       intros (r1&r2&H2) (s1&s2&H1). eapply tape_encodes_r_injective; eauto.
     Qed.
 
   End Tape_Encodes.
 
+  Notation "t '≂' x" := (tape_encodes _ t x) (at level 70, no associativity).
+  Notation "t '≂[' c ']' x" := (tape_encodes c t x) (at level 70, no associativity, only parsing).
 
+  Section Encodes_Ext.
+    Variable X : Type.
+    Variable (cod1 cod2 : codeable sig X).
+
+    Lemma tape_encodes_ext (t : tape sig^+) (x : X) :
+      encode (codeable := cod1) x = encode (codeable := cod2) x ->
+      t ≂[cod1] x -> t ≂[cod2] x.
+    Proof.
+      Set Printing Implicit.
+      intros HExt (r1&r2&HE1&HE2). exists r1, r2. split; cbn.
+      - exact HE1.
+      - rewrite HE2. cbn. f_equal. erewrite map_ext. f_equal. eapply HExt. auto.
+      Unset Printing Implicit.
+    Qed.
+
+    Lemma tape_encodes_ext' (t1 t2 : tape sig^+) (x : X) :
+      encode (codeable := cod1) x = encode (codeable := cod2) x ->
+      t1 = t2 ->
+      t1 ≂[cod1] x -> t2 ≂[cod2] x.
+    Proof. intros ? ->. now eapply tape_encodes_ext; eauto. Qed.
+
+  End Encodes_Ext.
+  
   Section Computes.
     Variable n_tapes : nat.
     Variable (i j : Fin.t n_tapes).
@@ -144,15 +168,12 @@ Section Fix_Sig.
 
     Definition Computes (f : X -> Y) : relation (tapes (sig ^+) n_tapes) :=
       fun tin tout =>
-        forall (x : X),
-          tape_encodes _ ( tin[@i]) x ->
-          tape_encodes _ (tout[@j]) (f x).
+        forall (x : X), tin[@i] ≂ x -> tout[@j] ≂ f x.
 
     Definition Computes_Rel (f : X -> Y) : Rel (tapes sig^+ n_tapes) (F * tapes sig^+ n_tapes) :=
       ignoreParam (Computes f).
 
     Section Computes_Ext.
-
       Variable (f f' : X -> Y).
       Hypothesis (ext : forall x, f x = f' x).
 
@@ -260,6 +281,8 @@ Section Fix_Sig.
 
 End Fix_Sig.
 
+Notation "t '≂' x" := (tape_encodes _ t x) (at level 70, no associativity).
+
 
 
 Section Computes_Gen.
@@ -302,7 +325,6 @@ Section Computes_Gen.
     intros tin tout. destruct params as [ | (tapeX, X, codX) params']; cbn in f.
     - apply (tape_encodes _ (tout[@resTape]) f).
     - apply (forall x : X, tape_encodes codX (tin[@tapeX]) x -> @Computes_Gen params' (f x) tin tout).
-      Show Proof.
   Defined.
 
   Definition Computes_Gen_Rel
@@ -470,3 +492,44 @@ Section Test_InitTape_Gen0.
   Qed.
   
 End Test_InitTape_Gen0.
+
+
+(* Auxiliary Lemmas for matching on tapes or symbol lists *)
+Section MatchTapes.
+  Variable sig : finType.
+  
+  Lemma tape_match_right_left (t : tape sig) (x : sig) :
+    right
+      match left t with
+      | [] => leftof x (right t)
+      | a :: rs => midtape rs a (x :: right t)
+      end =
+    x :: right t.
+  Proof. destruct t; cbn; auto. destruct l; cbn; auto. Qed.
+
+  Lemma tape_match_left_right (t : tape sig) (x : sig) :
+    left
+      match right t with
+      | [] => rightof x (left t)
+      | a :: rs => midtape (x :: left t) a rs
+      end =
+    x :: left t.
+  Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
+
+  Lemma tape_match_symbols_right (r : sig) (rs : list sig) (xs : list sig) :
+    right
+      match xs with
+      | [] => leftof r rs
+      | a :: ls' => midtape ls' a (r :: rs)
+      end = r :: rs.
+  Proof. destruct xs; cbn; auto. Qed.
+
+  Lemma tape_match_symbols_tape_local_l (r : sig) (rs : list sig) (xs : list sig) :
+  tape_local_l
+    match xs with
+    | [] => leftof r rs
+    | a :: ls' => midtape ls' a (r :: rs)
+    end = xs.
+  Proof. destruct xs; cbn; auto. Qed.
+  
+End MatchTapes.

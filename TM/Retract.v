@@ -40,6 +40,8 @@ Class Inversion (X Y : Type) :=
     Inv_inv :> inverse Inv_f Inv_g;
   }.
 Coercion Inv_inv : Inversion >-> inverse.
+Coercion Build_Inversion : inverse >-> Inversion.
+
 
 (* Replace [ f (g x) ] with [ x ], etc. *)
 Ltac inverse :=
@@ -47,13 +49,13 @@ Ltac inverse :=
   | [ H : context [ ?f (?g _ ) ] |- _] =>
     first [
         (erewrite Inverse_left in H ; [ | now auto_inj ])
-        ||
+        |
         (erewrite Inverse_right in H; [ | now auto_inj ])
       ]
   | [   |- context [ ?f (?g _ ) ]    ] =>
     first [
         (erewrite Inverse_left      ; [ | now auto_inj ])
-        ||
+        |
         (erewrite Inverse_right     ; [ | now auto_inj ])
       ]
   end.
@@ -83,7 +85,7 @@ Section Useful_Inversions.
 
   (* Bijectivity is a euqivialance relation. *)
   Section Inverse_Equivialence.
-    Instance inverse_id : inverse (@id A) (@id A).
+    Global Instance inverse_id : inverse (@id A) (@id A).
     Proof. hnf. firstorder. Qed.
 
     Section Inverse_Comp.
@@ -106,7 +108,7 @@ Section Useful_Inversions.
 
     End Inverse_Comp.
     
-    Instance inverse_symmetric (f : A -> B) (g : B -> A) :
+    Lemma inverse_symmetric (f : A -> B) (g : B -> A) :
       inverse f g ->
       inverse g f.
     Proof. firstorder. Qed.
@@ -129,7 +131,7 @@ Section Useful_Inversions.
             | inr d => inr (g2 d)
             end.
 
-    Instance inverse_sum :
+    Global Instance inverse_sum :
       inverse f1 g1 -> 
       inverse f2 g2 ->
       inverse inverse_sum_f inverse_sum_g.
@@ -153,7 +155,7 @@ Section Useful_Inversions.
         | inr a => inl a
         end.
 
-    Instance inverse_sum_swap : inverse inverse_sum_swap_f inverse_sum_swap_g.
+    Global Instance inverse_sum_swap : inverse inverse_sum_swap_f inverse_sum_swap_g.
     Proof. unfold inverse_sum_swap_f, inverse_sum_swap_g. hnf. split; hnf; intros [a|b]; reflexivity. Qed.
 
   End Inverse_Sum_Swap.
@@ -257,6 +259,7 @@ Class Retract (X Y : Type) :=
     Retr_adj :> retract Retr_f Retr_g;
   }.
 Coercion Retr_adj : Retract >-> retract.
+Coercion Build_Retract : retract >-> Retract.
 
 Ltac retract_adjoint :=
   match goal with
@@ -274,7 +277,7 @@ Section TightRetract.
 
   Variable I : tight_retract.
 
-  Instance tight_retract_strong : retract f g := ltac:(firstorder).
+  Global Instance tight_retract_strong : retract f g := ltac:(firstorder).
 
   Definition tretract_g_inv : forall x y, g y = Some x <-> y = f x := I.
   Definition tretract_g_inv' : forall x y, g y = Some x -> y = f x := ltac:(apply tretract_g_inv; auto).
@@ -299,6 +302,7 @@ Class TRetract (X Y : Type) :=
     TRetr_inv :> tight_retract TRetr_f TRetr_g;
   }.
 Coercion TRetr_inv : TRetract >-> tight_retract.
+Coercion Build_TRetract : tight_retract >-> TRetract.
 
 
 Section Retract_Compose.
@@ -314,13 +318,13 @@ Section Retract_Compose.
       | None => None
       end.
 
-  Instance retract_compose (retr1 : retract f1 g1) (retr2 : retract f2 g2) :
+  Lemma retract_compose (retr1 : retract f1 g1) (retr2 : retract f2 g2) :
     retract retract_comp_f retract_comp_g.
   Proof.
     hnf. unfold retract_comp_f, retract_comp_g. intros x. retract_adjoint. rewrite retract_g_adjoint; eauto.
   Qed.
 
-  Instance tretract_compose (retr1 : tight_retract f1 g1) (retr2 : tight_retract f2 g2) :
+  Lemma tretract_compose (retr1 : tight_retract f1 g1) (retr2 : tight_retract f2 g2) :
     tight_retract retract_comp_f retract_comp_g.
   Proof.
     unfold retract_comp_f, retract_comp_g. hnf.
@@ -339,7 +343,7 @@ Section Inversion_Retract.
   Variable A B : Type.
   Variable (f : A -> B) (g : B -> A).
   
-  Instance inversion_retract :
+  Global Instance inversion_retract :
     inverse f g ->
     tight_retract f (fun b => Some (g b)).
   Proof.
@@ -361,24 +365,24 @@ Section Usefull_Retracts.
   *)
 
   (* This can be derived, because [ id ] is a inversion with itself. *)
-  Instance retract_id : tight_retract (@id A) (@Some A) := ltac:(now auto_inj).
+  Global Instance retract_id : tight_retract (@id A) (@Some A) := ltac:(now auto_inj).
 
-  Instance retract_option : tight_retract (@Some A) id := ltac:(now auto_inj).
+  Global Instance retract_option : tight_retract (@Some A) id := ltac:(now auto_inj).
 
   Definition retract_inl_g := fun z : A + B => match z with inl x => Some x | inr _ => None end.
 
-  Instance retract_inl : tight_retract inl retract_inl_g.
+  Global Instance retract_inl : tight_retract inl retract_inl_g.
   Proof. hnf. intros x z. unfold retract_inl_g. destruct z; firstorder congruence. Qed.
 
   Definition retract_inr_g := fun z : A + B => match z with inr x => Some x | inl _ => None end.
 
-  Instance retract_inr : tight_retract inr retract_inr_g.
+  Global Instance retract_inr : tight_retract inr retract_inr_g.
   Proof. hnf. intros x z. unfold retract_inr_g. destruct z; firstorder congruence. Qed.
 
   Definition retract_empty_f : Empty_set -> A := fun x : Empty_set => match x with end.
   Definition retract_empty_g : A -> option Empty_set := fun y => None.
   
-  Instance retract_empty : tight_retract retract_empty_f retract_empty_g.
+  Global Instance retract_empty : tight_retract retract_empty_f retract_empty_g.
   Proof.
     hnf. unfold retract_empty_f, retract_empty_g. firstorder.
     - congruence.
@@ -408,7 +412,7 @@ Section Usefull_Retracts.
                       end
             end.
 
-    Instance retract_sum :
+    Global Instance retract_sum :
       retract f1 g1 -> 
       retract f2 g2 ->
       retract retract_sum_f retract_sum_g.
@@ -416,7 +420,7 @@ Section Usefull_Retracts.
       intros H1 H2. intros [a|b]; hnf; cbn; retract_adjoint; auto.
     Qed.
 
-    Instance tretract_sum :
+    Global Instance tretract_sum :
       tight_retract f1 g1 -> 
       tight_retract f2 g2 ->
       tight_retract retract_sum_f retract_sum_g.
@@ -448,7 +452,7 @@ Section RetractCons.
       | nil => None
       end.
   
-  Instance retract_cons : tight_retract (cons a) retract_cons_g.
+  Global Instance retract_cons : tight_retract (cons a) retract_cons_g.
   Proof.
     unfold retract_cons_g. hnf. intros xs ys. split.
     - destruct ys; intros H; inv H. decide (e = a); now inv H1.
@@ -459,7 +463,7 @@ Section RetractCons.
   Definition retract_pair_g : A * B -> option B :=
     fun '(x, b) => if Dec (a = x) then Some b else None.
 
-  Instance retract_pair : tight_retract (pair a) retract_pair_g.
+  Global Instance retract_pair : tight_retract (pair a) retract_pair_g.
   Proof. unfold retract_pair_g. hnf. intros b (x&y). decide (a = x); firstorder congruence. Qed.
 
 End RetractCons.
@@ -482,13 +486,14 @@ Class Injection (X Y : Type) :=
     Inj_inj :> injective  Inj_f;
   }.
 Coercion Inj_inj : Injection >-> injective.
+Coercion Build_Injection : injective >-> Injection.
 
 Ltac inj_subst :=
   match goal with
   | [ H : ?t ?x = ?t ?y |- _] => eapply inj_injective in H; [ subst | now auto_inj]
   end.
 
-Instance injection_id (X : Type) : injective (@id X) := ltac:(unfold id; firstorder).
+Global Instance injection_id (X : Type) : injective (@id X) := ltac:(unfold id; firstorder).
 
 Section Injection_Compose.
   Variable X Y Z : Type.
@@ -497,7 +502,7 @@ Section Injection_Compose.
 
   Definition compose_inj : X -> Z := fun x => g (f x).
 
-  Instance compose_inj_injective : injective compose_inj := ltac:(firstorder).
+  Global Instance compose_inj_injective : injective compose_inj := ltac:(firstorder).
 
 End Injection_Compose.
 
@@ -506,7 +511,7 @@ Section Map_Injective.
   Variable (sig tau : Type) (t : sig -> tau).
   Hypothesis t_injective : injective t.
 
-  Instance map_injective :
+  Global Instance map_injective :
     injective (map t).
   Proof.
     hnf. intros xs. induction xs; intros ys H; cbn in *.
@@ -516,7 +521,7 @@ Section Map_Injective.
 
 End Map_Injective.
 
-Instance retract_injective (A B : Type) (f : A -> B) (g : B -> option A) :
+Global Instance retract_injective (A B : Type) (f : A -> B) (g : B -> option A) :
   retract f g -> injective f.
 Proof.
   intros H. intros x1 x2 H2. eapply retract_f_injective; eauto.
@@ -546,7 +551,7 @@ Section Retract_TightRetract.
   Variable (X : Type) (Y : eqType) (f : X -> Y) (g : Y -> option X).
   Hypothesis retr : retract f g.
 
-  Global Instance retract_dec_image :
+  Local Instance retract_dec_image :
     forall y, dec (exists x, f x = y).
   Proof.
     intros y. destruct (g y) as [x | ] eqn:E.
@@ -560,7 +565,7 @@ Section Retract_TightRetract.
   Definition make_tight_retract_g : Y -> option X :=
     fun y => if Dec (exists x, f x = y) then g y else None.
 
-  Global Instance make_tight_retract : tight_retract f make_tight_retract_g.
+  Lemma make_tight_retract : tight_retract f make_tight_retract_g.
   Proof.
     unfold make_tight_retract_g. split.
     - intros H. decide (exists x, f x = y) as [ (x'&<-) | D].

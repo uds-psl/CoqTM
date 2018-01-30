@@ -221,7 +221,8 @@ Section Encode_Map'.
   Hypothesis (code_sig : codeable sig X).
   Variable (f : sig -> tau) (g : tau -> option sig).
   Hypothesis (inj : retract f g).
-  Definition Encode_Map' : codeable tau X := ltac:(eauto).
+  Definition Encode_Map' : codeable tau X.
+  Proof. eapply Encode_Map. eapply code_sig. eapply make_tight_retract. Defined.
 End Encode_Map'.
 
   
@@ -257,13 +258,14 @@ Section Encode_Sum.
   Variable (sig tau : finType).
   Hypothesis (code_X : codeable sig X) (code_Y : codeable tau Y).
 
-  Definition retract_r_l := tretract_compose (@retract_inl sig tau) (@retract_inr bool _).
-  Definition retract_r_r := tretract_compose (@retract_inr sig tau) (@retract_inr bool _).
+
+  Global Instance retract_r_l : TRetract sig (bool + (sig + tau)) := Build_TRetract (tretract_compose _ _).
+  Global Instance retract_r_r : TRetract tau (bool + (sig + tau)) := Build_TRetract (tretract_compose _ _).
 
   Definition encode_sum (a : X + Y) : list (bool + (sig + tau)) :=
     match a with
-    | inl x => inl true  :: encode (codeable := Encode_Map code_X retract_r_l) x
-    | inr y => inl false :: encode (codeable := Encode_Map code_Y retract_r_r) y
+    | inl x => inl true  :: encode x
+    | inr y => inl false :: encode y
     end.
 
   Lemma encode_sum_injective :
@@ -271,8 +273,9 @@ Section Encode_Sum.
       encode_sum v1 ++ r1 = encode_sum v2 ++ r2 -> v1 = v2 /\ r1 = r2.
   Proof.
     intros [x1|y1] [x2|y2] r1 r2; cbn; intros H; inv H.
-    - eapply encode_map_injective in H1 as (->&->). tauto. eapply tretract_compose; auto_inj.
-    - eapply encode_map_injective in H1 as (->&->). tauto. eapply tretract_compose; auto_inj.
+    - eapply encode_map_injective in H1 as (->&->). tauto.
+      apply retract_r_l.
+    - eapply encode_map_injective in H1 as (->&->). tauto. apply retract_r_r.
   Qed.
 
   Global Instance Encode_Sum : codeable (FinType (EqType (bool + (sig + tau)))) (X + Y) := mk_codeable encode_sum_injective.
@@ -303,9 +306,7 @@ Section Encode_Pair'.
 
   Global Instance Encode_Pair' : codeable (FinType (EqType (sig + tau)%type)) (X * Y).
   Proof.
-    apply Encode_Pair.
-    - apply (Encode_Map _ (@retract_inl _ _)).
-    - apply (Encode_Map _ (@retract_inr _ _)).
+    apply Encode_Pair; apply (Encode_Map _ _).
   Defined.
       
 End Encode_Pair'.
