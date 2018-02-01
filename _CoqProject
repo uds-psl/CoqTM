@@ -38,6 +38,7 @@ TM/Code/Copy.v
 TM/Code/MatchSum.v
 TM/Code/MatchProd.v
 TM/Code/MatchList.v
+TM/Code/MatchNat.v
 
 # Basic Machines
 TM/Basic/Nop.v
