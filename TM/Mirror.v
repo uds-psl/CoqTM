@@ -1,70 +1,8 @@
 Require Import TM.Prelim TM.TM.
 
+
 Section MirrorTM.
-
   Variable (n : nat) (sig : finType).
-
-  (* FIXME: This should go somewhere else *)
-  Definition mirror_tape (t : tape sig) : tape sig :=
-    match t with
-    | niltape _ => niltape _
-    | leftof r rs => rightof r rs
-    | rightof l ls => leftof l ls
-    | midtape ls m rs => midtape rs m ls
-    end.
-
-  Lemma mirror_tape_left (t : tape sig) :
-    left (mirror_tape t) = right t.
-  Proof. now destruct t. Qed.
-
-  Lemma mirror_tape_right (t : tape sig) :
-    right (mirror_tape t) = left t.
-  Proof. now destruct t. Qed.
-
-  Lemma mirror_tape_current (t : tape sig) :
-    current (mirror_tape t) = current t.
-  Proof. now destruct t. Qed.
-
-  Lemma mirror_tape_involution (t : tape sig) :
-    mirror_tape (mirror_tape t) = t.
-  Proof. destruct t; cbn; congruence. Qed.
-
-  Lemma mirror_tape_injective (t1 t2 : tape sig) :
-    mirror_tape t1 = mirror_tape t2 ->
-    t1 = t2.
-  Proof. destruct t1, t2; intros H; cbn in *; congruence. Qed.
-
-  Lemma mirror_tape_move_left (t : tape sig) :
-    mirror_tape (tape_move_left t) = tape_move_right (mirror_tape t).
-  Proof. destruct t; cbn; auto. destruct l; cbn; auto. Qed.
-
-  Lemma mirror_tape_move_right (t : tape sig) :
-    mirror_tape (tape_move_right t) = tape_move_left (mirror_tape t).
-  Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
-
-  Definition mirror_tapes (t : tapes sig n) : tapes sig n := Vector.map mirror_tape t.
-
-  Lemma mirror_tapes_involution (t : tapes sig n) :
-    mirror_tapes (mirror_tapes t) = t.
-  Proof.
-    unfold mirror_tapes. apply Vector.eq_nth_iff. intros ? ? ->.
-    erewrite !Vector.nth_map; eauto. apply mirror_tape_involution.
-  Qed.
-
-  Lemma mirror_tapes_injective (t1 t2 : tapes sig n) :
-    mirror_tapes t1 = mirror_tapes t2 ->
-    t1 = t2.
-  Proof.
-    intros H. unfold mirror_tapes in *. apply Vector.eq_nth_iff. intros ? ? ->.
-    eapply Vector.eq_nth_iff with (p1 := p2) in H; eauto.
-    erewrite !Vector.nth_map in H; eauto. now apply mirror_tape_injective.
-  Qed.
-  
-
-  Definition mirror_move (D : move) : move := match D with | N => N | L => R | R => L end.
-
-  Lemma mirror_move_involution (D : move) : mirror_move (mirror_move D) = D.
-  Proof. now destruct D. Qed.
 
   Definition mirror_act : (option sig * move) -> (option sig * move) := map_right mirror_move.
 
@@ -101,7 +39,7 @@ Section MirrorTM.
 
   Lemma mlift_involution s : mlift (mlift s) = s.
   Proof.
-    destruct s. unfold mlift. cbn. f_equal. now rewrite mirror_tapes_involution.
+    destruct s. unfold mlift. cbn. f_equal. apply mirror_tapes_involution.
   Qed.
 
   Definition mhlift : mconfig sig (states (projT1 pM)) n -> bool :=
@@ -119,7 +57,7 @@ Section MirrorTM.
     destruct (trans (cstate ic, current_chars (ctapes ic))) as (q'&act') eqn:E.
     destruct (trans (cstate ic, Vector.map (current (sig:=sig)) (mirror_tapes (ctapes ic)))) as (q''&act'') eqn:E2.
     unfold mlift in *. destruct ic as (qi,ti), oc as (qo, to). cbn in *. inv H.
-    replace (Vector.map (current (sig:=sig)) (Vector.map mirror_tape ti)) with (Vector.map (current (sig:=sig)) ti) in E2.
+    replace (Vector.map (current (sig:=sig)) (mirror_tapes ti)) with (Vector.map (current (sig:=sig)) ti) in E2.
     rewrite E2 in E. inv E. f_equal. 
     - apply Vector.eq_nth_iff. intros ? k ->. erewrite !Vector.nth_map2; eauto.
       eapply Vector.eq_nth_iff with (p1 := k) in H2; eauto. unfold tape_move_mono, mirror_tapes, mirror_acts in *.
@@ -128,7 +66,7 @@ Section MirrorTM.
           (mirror_tape ((tape_move (tape_write ti[@k] o)) m)) in H2.
       + now apply mirror_tape_injective in H2.
       + generalize (ti[@k]) as t. intros t. destruct o, m, t; cbn; auto; destruct l; cbn; auto; now destruct l0.
-    - apply Vector.eq_nth_iff. intros ? k ->. erewrite !Vector.nth_map; eauto. symmetry. apply mirror_tape_current.
+    - apply Vector.eq_nth_iff; intros ? k ->. now simpl_tape.
   Qed.
                                      
   Lemma mirror_step' ic oc :
@@ -182,7 +120,7 @@ Section MirrorTM.
     intros H. rewrite <- (mirror_tapes_involution tin).
     replace (initc (projT1 Mirror) (mirror_tapes (mirror_tapes tin))) with (mlift (initc (projT1 Mirror) (mirror_tapes tin))).
     - eapply mirror_loop'. now rewrite !mlift_involution.
-    - unfold mlift. cbn. rewrite !mirror_tapes_involution in *. cbn. reflexivity.
+    - unfold mlift. cbn. simpl_tape. auto.
   Qed.
     
   
@@ -224,11 +162,3 @@ Section MirrorTM.
   Qed.
 
 End MirrorTM.
-
-Hint Rewrite mirror_tape_left : tape.
-Hint Rewrite mirror_tape_right : tape.
-Hint Rewrite mirror_tape_current : tape.
-Hint Rewrite mirror_tape_involution : tape.
-Hint Rewrite mirror_tape_move_left : tape.
-Hint Rewrite mirror_tape_move_right : tape.
-Hint Rewrite mirror_tapes_involution : tape.

@@ -145,10 +145,10 @@ Section Copy.
     left (MoveToSymbol_L_Fun stop t) = str2 /\
     current (MoveToSymbol_L_Fun stop t) = Some x.
   Proof.
-    intros. pose proof (@MoveToSymbol_right (Mirror.mirror_tape t) str1 str2 x).
-    rewrite !tape_local_mirror' in H2. repeat spec_assert H2 by eauto. 
-    erewrite MoveToSymbol_mirror; swap 1 2. symmetry; now eapply Mirror.mirror_tape_involution.
-    now simpl_tape in *.
+    intros. pose proof (@MoveToSymbol_right (mirror_tape t) str1 str2 x) as L.
+    simpl_tape in L. repeat spec_assert L by auto. destruct L as (L1,L2).
+    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L1, L2; simpl_tape; eauto.
+    simpl_tape in *. auto.
   Qed.
 
   Corollary MoveToSymbol_L_right t str1 str2 x :
@@ -157,10 +157,10 @@ Section Copy.
     tape_local_l t = str1 ++ x :: str2 ->
     right (MoveToSymbol_L_Fun stop t) = rev str1 ++ right t.
   Proof.
-    intros. pose proof (@MoveToSymbol_left (Mirror.mirror_tape t) str1 str2 x).
-    rewrite !tape_local_mirror' in H2. repeat spec_assert H2 by eauto. 
-    erewrite MoveToSymbol_mirror; swap 1 2. symmetry; now eapply Mirror.mirror_tape_involution.
-    now simpl_tape in *.
+    intros. pose proof (@MoveToSymbol_left (mirror_tape t) str1 str2 x) as L.
+    simpl_tape in L. repeat spec_assert L by auto.
+    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L; simpl_tape; eauto.
+    simpl_tape in *. auto.
   Qed.
   
 End Copy.

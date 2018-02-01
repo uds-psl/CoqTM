@@ -263,6 +263,19 @@ Section move_to_symbol.
     - destruct t, t'; cbn in *; auto; congruence.
   Qed.
 
+
+  Lemma MoveToSymbol_mirror' t t' :
+    MoveToSymbol_L_Fun (mirror_tape t) = mirror_tape t' -> MoveToSymbol_Fun t = t'.
+  Proof.
+    functional induction MoveToSymbol_Fun t; intros H; cbn in *; try reflexivity;
+      rewrite MoveToSymbol_L_Fun_equation in H; cbn; auto.
+    - rewrite e0 in *; cbn in *; destruct t'; cbn in *; congruence.
+    - rewrite e0 in *; cbn in *. destruct rs; cbn in *; rewrite MoveToSymbol_Fun_equation, MoveToSymbol_L_Fun_equation in *.
+      + destruct t'; cbn in *; now inv H.
+      + destruct (f e) eqn:E1; cbn in *; eauto.
+    - destruct t, t'; cbn in *; auto; congruence.
+  Qed.
+
   Definition MoveToSymbol_L_Rel : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
               tout = MoveToSymbol_L_Fun tin /\

@@ -93,6 +93,7 @@ Section MatchSum.
       {
         TMSimp ( cbn [Vector.nth] in * ). destruct is_left; cbn in *; subst; TMSimp.
         {
+          rewrite tape_match_right_left.
           destruct h; cbn in *; TMSimp; cbn in *.
           - destruct (encode _) in H0; cbn in *; congruence.
           - destruct (encode x) as [ | eX eXs] eqn:E;
@@ -249,6 +250,7 @@ Section MapSum.
       (ChangeAlphabet.ChangeAlphabet _ (inl defX) M1)
       (ChangeAlphabet.ChangeAlphabet _ (inl defY) M2).
 
+  (* TODO! *)
   Hypothesis DefX : forall x : X, ~ defX el encode x \/ (forall t' : sigX + sigZ, exists s' : sigX, retract_inl_g t' = Some s').
   Hypothesis DefY : forall y : Y, ~ defY el encode y \/ (forall t' : sigY + sigZ, exists s' : sigY, retract_inl_g t' = Some s').
 
@@ -273,40 +275,29 @@ Section MapSum.
       intros s H4. destruct H; destruct H as (tmid&H1&H2); hnf in H1, H2; cbn in H1, H2.
       {
         destruct H1 as (H1&H0); hnf in H0, H1. specialize (H1 s). spec_assert H1 as (x&->&H1).
-        {
-          eapply ChangeAlphabet.encodeTranslate_tau1 in H4.
-          unfold LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *. cbn in *.
-          erewrite VectorSpec.nth_map; try reflexivity; try exact H4.
-        } subst; cbn. specialize (H2 x). spec_assert H2.
+        { eapply ChangeAlphabet.encodeTranslate_tau1 in H4. autounfold with tape. simpl_tape. eauto. }
+        subst; cbn. specialize (H2 x). spec_assert H2.
         { clear H4 H2.
-          eapply (ChangeAlphabet.encodeTranslate_tau1) in H1. eapply (ChangeAlphabet.encodeTranslate_tau2 (def := inr defZ)).
+          eapply (ChangeAlphabet.encodeTranslate_tau1) in H1. cbn. eapply (ChangeAlphabet.encodeTranslate_tau2 (def := inr defZ)).
           - left. cbn. intros (?&?&?)%in_map_iff. congruence.
           - eapply (ChangeAlphabet.encodeTranslate_tau2 (def := defX)).
             + cbn. auto.
-            + refine (tape_encodes_ext' _ _ H1); auto.
-              (* TODO: Automatisieren! Vectoren, autounfold von surjectTapes, etc. *)
-              unfold ChangeAlphabet.surjectTape, LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *.
-              cbn. erewrite !VectorSpec.nth_map; eauto. rewrite !LiftSigmaTau.mapTape_mapTape. cbn.
-              eapply LiftSigmaTau.mapTape_ext; intros. destruct a; cbn; auto. do 3 (destruct s; cbn; auto).
+            + refine (tape_encodes_ext' _ _ H1); auto. repeat autounfold with tape. simpl_tape. eapply mapTape_ext. clear_all.
+              destruct a; cbn; auto. destruct e; cbn; eauto. destruct s; cbn; eauto. destruct s; cbn; eauto.
         } 
         refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
       }
       {
-        destruct H1 as (H1&H0); hnf in H0, H1. specialize (H1 s). spec_assert H1 as (x&->&H1).
-        {
-          eapply ChangeAlphabet.encodeTranslate_tau1 in H4.
-          unfold LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *. cbn in *.
-          erewrite VectorSpec.nth_map; try reflexivity; try exact H4.
-        } subst; cbn. specialize (H2 x). spec_assert H2.
+        destruct H1 as (H1&H0); hnf in H0, H1. specialize (H1 s). spec_assert H1 as (y&->&H1).
+        { eapply ChangeAlphabet.encodeTranslate_tau1 in H4. autounfold with tape. simpl_tape. eauto. }
+        subst; cbn. specialize (H2 y). spec_assert H2.
         { clear H4 H2.
-          eapply (ChangeAlphabet.encodeTranslate_tau1) in H1. eapply (ChangeAlphabet.encodeTranslate_tau2 (def := inr defZ)).
+          eapply (ChangeAlphabet.encodeTranslate_tau1) in H1. cbn. eapply (ChangeAlphabet.encodeTranslate_tau2 (def := inr defZ)).
           - left. cbn. intros (?&?&?)%in_map_iff. congruence.
           - eapply (ChangeAlphabet.encodeTranslate_tau2 (def := defY)).
             + cbn. auto.
-            + refine (tape_encodes_ext' _ _ H1); auto.
-              unfold ChangeAlphabet.surjectTape, LiftSigmaTau.surjectTapes, LiftSigmaTau.surjectTape, LiftSigmaTau.mapTapes in *.
-              cbn. erewrite !VectorSpec.nth_map; eauto. rewrite !LiftSigmaTau.mapTape_mapTape. cbn.
-              eapply LiftSigmaTau.mapTape_ext; intros. destruct a; cbn; auto. do 3 (destruct s; cbn; auto).
+            + refine (tape_encodes_ext' _ _ H1); auto. repeat autounfold with tape. simpl_tape. eapply mapTape_ext. clear_all.
+              destruct a; cbn; auto. destruct e; cbn; eauto. destruct s; cbn; eauto. destruct s; cbn; eauto.
         } 
         refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
       }

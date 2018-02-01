@@ -82,8 +82,8 @@ Section MapCode.
   Hypothesis enc_X : codeable sig X.
 
   (* Translation Functions *)
-  Definition injectTape : tape (sig^+) -> tape (tau^+) := LiftSigmaTau.mapTape f'.
-  Definition surjectTape : tape (tau^+) -> tape (sig^+) := LiftSigmaTau.surjectTape g' (inr def).
+  Definition injectTape : tape (sig^+) -> tape (tau^+) := mapTape f'.
+  Definition surjectTape : tape (tau^+) -> tape (sig^+) := surjectTape g' (inr def).
 
   (* The other direction does not hold *)
   Lemma surjectTape_injectTape t :
@@ -312,3 +312,6 @@ Arguments ChangeAlphabet_Computes2_RealiseIn
           {sig} {tau} {f} {g} retr
           def {X} {Y} {Z} {cX} {cY} {cZ} func {n_tapes}
           i1 i2 i3 {F} pM k.
+
+
+Hint Unfold ChangeAlphabet.surjectTape ChangeAlphabet.injectTape : tape.

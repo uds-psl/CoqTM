@@ -39,6 +39,8 @@ Section lift_gen.
   
 End lift_gen.
 
+Arguments not_indices : simpl never.
+
 
 
 Lemma Vector_nth_In (X : Type) (n : nat) (p : Fin.t n) (m : nat) (new_pos : X) (V : Vector.t X n) :

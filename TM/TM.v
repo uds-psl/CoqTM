@@ -4,7 +4,9 @@
  *)
 
 Require Export Prelim Relations.
+(*
 Require Import Vector.
+*)
 
 Section Fix_Sigma.
 
@@ -410,12 +412,17 @@ Notation "M '↓' t" := (TerminatesIn M t) (no associativity, at level 60, forma
 (* Destruct a vector of tapes of known size *)
 Ltac destruct_tapes := unfold tapes in *; destruct_vector.
 
-(* Simplification Database for tapes *)
+(* Simplification Database for tapes and vectors *)
 Create HintDb tape.
+Create HintDb vector.
 
-Tactic Notation "simpl_tape" := autorewrite with tape.
-Tactic Notation "simpl_tape" "in" hyp(H) := autorewrite with tape in H.
-Tactic Notation "simpl_tape" "in" "*" := autorewrite with tape in *.
+Tactic Notation "simpl_tape" :=  autorewrite with tape vector.
+Tactic Notation "simpl_tape" "in" hyp_list(H) :=  autorewrite with tape vector in H.
+Tactic Notation "simpl_tape" "in" "*" := autorewrite with tape vector in *.
+
+Tactic Notation "simpl_vector" :=  autorewrite with vector.
+Tactic Notation "simpl_vector" "in" hyp_list(H) :=  autorewrite with vector in H.
+Tactic Notation "simpl_vector" "in" "*" := autorewrite with vector in *.
 
 Hint Rewrite tapeToList_move : tape.
 Hint Rewrite tapeToList_move_R : tape.
@@ -423,5 +430,320 @@ Hint Rewrite tapeToList_move_L : tape.
 Hint Rewrite tape_move_right_left using eauto : tape.
 Hint Rewrite tape_move_left_right using eauto : tape.
 
+Lemma nth_map' (A B : Type) (f : A -> B) (n : nat) (v : Vector.t A n) (k : Fin.t n) :
+  (VectorDef.map f v)[@k] = f v[@k].
+Proof. erewrite VectorSpec.nth_map; eauto. Qed.
+
+Lemma nth_map2' (A B C : Type) (f : A -> B -> C) (n : nat) (v1 : Vector.t A n) (v2 : Vector.t B n) (k : Fin.t n) :
+  (VectorDef.map2 f v1 v2)[@k] = f v1[@k] v2[@k].
+Proof. erewrite VectorSpec.nth_map2; eauto. Qed.
+
+Hint Rewrite @nth_map' : vector.
+Hint Rewrite @nth_map2' : vector.
+Hint Rewrite @nth_tabulate : vector.
+
+
+
 (* Set Notation scopes for tapes *)
 Arguments tapes (sig % type) (n % nat).
+
+
+
+Section MirrorTape.
+  Variable (n : nat) (sig : finType).
+
+  Definition mirror_tape (t : tape sig) : tape sig :=
+    match t with
+    | niltape _ => niltape _
+    | leftof r rs => rightof r rs
+    | rightof l ls => leftof l ls
+    | midtape ls m rs => midtape rs m ls
+    end.
+
+  Lemma mirror_tape_left (t : tape sig) :
+    left (mirror_tape t) = right t.
+  Proof. now destruct t. Qed.
+
+  Lemma mirror_tape_right (t : tape sig) :
+    right (mirror_tape t) = left t.
+  Proof. now destruct t. Qed.
+
+  Lemma mirror_tape_current (t : tape sig) :
+    current (mirror_tape t) = current t.
+  Proof. now destruct t. Qed.
+
+  Lemma mirror_tape_involution (t : tape sig) :
+    mirror_tape (mirror_tape t) = t.
+  Proof. destruct t; cbn; congruence. Qed.
+
+  Lemma mirror_tape_injective (t1 t2 : tape sig) :
+    mirror_tape t1 = mirror_tape t2 ->
+    t1 = t2.
+  Proof. destruct t1, t2; intros H; cbn in *; congruence. Qed.
+
+  Lemma mirror_tape_move_left (t : tape sig) :
+    mirror_tape (tape_move_left t) = tape_move_right (mirror_tape t).
+  Proof. destruct t; cbn; auto. destruct l; cbn; auto. Qed.
+
+  Lemma mirror_tape_move_right (t : tape sig) :
+    mirror_tape (tape_move_right t) = tape_move_left (mirror_tape t).
+  Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
+
+  Definition mirror_tapes (t : tapes sig n) : tapes sig n := Vector.map mirror_tape t.
+
+  Lemma mirror_tapes_involution (t : tapes sig n) :
+    mirror_tapes (mirror_tapes t) = t.
+  Proof.
+    unfold mirror_tapes. apply Vector.eq_nth_iff. intros ? ? ->.
+    erewrite !Vector.nth_map; eauto. apply mirror_tape_involution.
+  Qed.
+
+  Lemma mirror_tapes_injective (t1 t2 : tapes sig n) :
+    mirror_tapes t1 = mirror_tapes t2 ->
+    t1 = t2.
+  Proof.
+    intros H. unfold mirror_tapes in *. apply Vector.eq_nth_iff. intros ? ? ->.
+    eapply Vector.eq_nth_iff with (p1 := p2) in H; eauto.
+    erewrite !Vector.nth_map in H; eauto. now apply mirror_tape_injective.
+  Qed.
+  
+  Definition mirror_move (D : move) : move := match D with | N => N | L => R | R => L end.
+
+  Lemma mirror_move_involution (D : move) : mirror_move (mirror_move D) = D.
+  Proof. now destruct D. Qed.
+
+  Lemma mirror_tapes_nth (tapes : tapes sig n) (k : Fin.t n) :
+    (mirror_tapes tapes)[@k] = mirror_tape (tapes[@k]).
+  Proof. intros. eapply VectorSpec.nth_map; eauto. Qed.
+
+End MirrorTape.
+
+Arguments mirror_tapes : simpl never.
+
+Hint Rewrite mirror_tape_left : tape.
+Hint Rewrite mirror_tape_right : tape.
+Hint Rewrite mirror_tape_current : tape.
+Hint Rewrite mirror_tape_involution : tape.
+Hint Rewrite mirror_tape_move_left : tape.
+Hint Rewrite mirror_tape_move_right : tape.
+Hint Rewrite mirror_tapes_involution : tape.
+Hint Rewrite mirror_tapes_nth using eauto : tape.
+
+
+Section Tape_Local.
+
+  Variable sig : finType.
+
+  Definition tape_local (t : tape sig) : list sig :=
+    match t with
+    | niltape _ => []
+    | leftof a l => []
+    | rightof _ _ => []
+    | midtape _ a l => a :: l
+    end.
+
+  Definition tape_local_l (t : tape sig) : list sig :=
+    match t with
+    | niltape _ => []
+    | leftof a l => []
+    | rightof _ _ => []
+    | midtape r a l => a :: r
+    end.
+
+  Lemma tape_local_mirror (t : tape sig) :
+    tape_local_l (mirror_tape t) = tape_local t.
+  Proof. destruct t; cbn; auto. Qed.
+
+  Lemma tape_local_mirror' (t : tape sig) :
+    tape_local (mirror_tape t) = tape_local_l t.
+  Proof. destruct t; cbn; auto. Qed.
+    
+  Lemma tape_local_current_cons (x : sig) (xs : list sig) (t : tape sig) :
+    tape_local t = x :: xs -> current t = Some x.
+  Proof. destruct t eqn:E; cbn; congruence. Qed.
+
+  Lemma tape_local_right (x : sig) (xs : list sig) (t : tape sig) :
+    tape_local t = x :: xs -> right t = xs.
+  Proof. destruct t eqn:E; cbn; congruence. Qed.
+
+  Lemma tape_local_iff (t : tape sig) (xs : list sig) :
+    (tape_local t = xs /\ xs <> []) <-> (exists x xs', xs = x :: xs' /\ current t = Some x /\ right t = xs').
+  Proof.
+    split.
+    - intros (H1&H2). destruct t eqn:E; cbn in *; try congruence. eauto.
+    - intros (x&xs'&->&H1&<-). split. destruct t eqn:E; cbn in *; congruence. discriminate.
+  Qed.
+
+  Lemma tape_local_nil (t : tape sig) :
+    tape_local t = [] <-> current t = None.
+  Proof.
+    destruct t; cbn; intuition; auto; congruence.
+  Qed.
+
+  Lemma tape_local_move_right (t : tape sig) (x : sig) (xs : list sig) :
+    tape_local t = x :: xs -> tape_local (tape_move_right t) = xs.
+  Proof.
+    intro H. destruct t eqn:E; cbn in *; try congruence.
+    inv H. destruct xs; cbn; auto.
+  Qed.
+
+  Lemma tape_left_move_right (t : tape sig) (x : sig) :
+    current t = Some x -> left (tape_move_right t) = x :: left t.
+  Proof. intros H. destruct t; cbn in *; try congruence. inv H. destruct l0; cbn; reflexivity. Qed.
+
+  Lemma tape_right_move_left (t : tape sig) (x : sig) :
+    current t = Some x -> right (tape_move_left t) = x :: right t.
+  Proof. intros H. destruct t; cbn in *; try congruence. inv H. destruct l; cbn; reflexivity. Qed.
+
+End Tape_Local.
+
+Hint Rewrite tape_local_mirror  : tape.
+Hint Rewrite tape_local_mirror' : tape.
+Hint Rewrite tape_local_current_cons using auto : tape.
+Hint Rewrite tape_local_right        using auto : tape.
+Hint Rewrite tape_left_move_right    using auto : tape.
+Hint Rewrite tape_right_move_left    using auto : tape.
+
+
+(* Apply a function to each symbol on the tape *)
+Section MapTape.
+  Variable sig tau : finType.
+  Variable g : tau -> sig.
+
+  Definition mapTape : tape tau -> tape sig.
+  Proof.
+    destruct 1 eqn:E1.
+    - apply niltape.
+    - apply leftof.  apply (g e). apply (List.map g l).
+    - apply rightof. apply (g e). apply (List.map g l).
+    - apply midtape. apply (List.map g l). apply (g e). apply (List.map g l0).
+  Defined.
+
+  Definition mapTapes {n : nat} : Vector.t (tape tau) n -> Vector.t (tape sig) n := Vector.map mapTape.
+
+  (* Correctness of mapTape *)
+
+  Lemma mapTape_current t :
+    current (mapTape t) =
+    match (current t) with
+    | Some m => Some (g m)
+    | None => None
+    end.
+  Proof. destruct t; cbn; reflexivity. Qed.
+
+  Lemma mapTape_left t :
+    left (mapTape t) = map g (left t).
+  Proof. destruct t; cbn; reflexivity. Qed.
+
+  Lemma mapTape_right t :
+    right (mapTape t) = map g (right t).
+  Proof. destruct t; cbn; reflexivity. Qed.
+
+  Lemma mapTape_move_left t :
+    tape_move_left (mapTape t) = mapTape (tape_move_left t).
+  Proof. destruct t; cbn; auto. destruct l; cbn; auto. Qed.
+
+  Lemma mapTape_move_right t :
+    tape_move_right (mapTape t) = mapTape (tape_move_right t).
+  Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
+
+  (*
+  Lemma mapTapes_nth {n : nat} (ts : tapes tau n) (k : Fin.t n) :
+    (mapTapes ts)[@k] = mapTape (ts[@k]).
+  Proof. unfold mapTapes. eapply VectorSpec.nth_map; eauto. Qed.
+   *)
+
+End MapTape.
+
+(* Rewriting Hints *)
+
+Hint Rewrite nth_map' : tape.
+Hint Rewrite mapTape_current    : tape.
+Hint Rewrite mapTape_left       : tape.
+Hint Rewrite mapTape_right      : tape.
+Hint Rewrite mapTape_move_left  : tape.
+Hint Rewrite mapTape_move_right : tape.
+(*
+Hint Rewrite mapTapes_nth       : tape.
+*)
+Hint Unfold mapTapes : tape.
+
+
+Lemma mapTape_mapTape (sig tau gamma : finType) (f : sig -> tau) (g : tau -> gamma) (t : tape sig) :
+  mapTape g (mapTape f t) = mapTape (fun x => g (f x)) t.
+Proof. destruct t; cbn; auto; simpl_tape; now rewrite !map_map. Qed.
+
+Lemma mapTape_ext (sig tau : finType) (f g : sig -> tau) (t : tape sig) :
+  (forall a, f a = g a) -> mapTape f t = mapTape g t.
+Proof. intros H. destruct t; cbn; auto; simpl_tape; rewrite H; f_equal; eapply map_ext; eauto. Qed.
+
+Lemma mapTape_id (sig : finType) (t : tape sig) :
+  mapTape (fun x => x) t = t.
+Proof. destruct t; cbn; auto; f_equal; apply map_id. Qed.
+Hint Rewrite mapTape_mapTape : tape.
+Hint Rewrite mapTape_id : tape.
+
+
+
+(* Auxiliary Lemmas for matching on tapes or symbol lists, when the tape moves left and right *)
+Section MatchTapes.
+  Variable sig : finType.
+  
+  Lemma tape_match_right_left (t : tape sig) (x : sig) :
+    right
+      match left t with
+      | [] => leftof x (right t)
+      | a :: rs => midtape rs a (x :: right t)
+      end =
+    x :: right t.
+  Proof. destruct t; cbn; auto. destruct l; cbn; auto. Qed.
+
+  Lemma tape_match_left_right (t : tape sig) (x : sig) :
+    left
+      match right t with
+      | [] => rightof x (left t)
+      | a :: rs => midtape (x :: left t) a rs
+      end =
+    x :: left t.
+  Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
+
+  Lemma tape_match_symbols_left (l : sig) (ls : list sig) (xs : list sig) :
+    left
+      match xs with
+      | [] => rightof l ls
+      | a :: rs' => midtape (l :: ls) a rs'
+      end = l :: ls.
+  Proof. destruct xs; cbn; auto. Qed.
+
+  Lemma tape_match_symbols_right (r : sig) (rs : list sig) (xs : list sig) :
+    right
+      match xs with
+      | [] => leftof r rs
+      | a :: ls' => midtape ls' a (r :: rs)
+      end = r :: rs.
+  Proof. destruct xs; cbn; auto. Qed.
+
+  Lemma tape_match_symbols_tape_local (l : sig) (ls : list sig) (xs : list sig) :
+    tape_local
+      match xs with
+      | [] => rightof l ls
+      | a :: rs' => midtape (l :: ls) a rs'
+      end = xs.
+  Proof. destruct xs; cbn; auto. Qed.
+
+  Lemma tape_match_symbols_tape_local_l (r : sig) (rs : list sig) (xs : list sig) :
+  tape_local_l
+    match xs with
+    | [] => leftof r rs
+    | a :: ls' => midtape ls' a (r :: rs)
+    end = xs.
+  Proof. destruct xs; cbn; auto. Qed.
+  
+End MatchTapes.
+
+Hint Rewrite tape_match_right_left : tape.
+Hint Rewrite tape_match_left_right : tape.
+Hint Rewrite tape_match_symbols_left : tape.
+Hint Rewrite tape_match_symbols_right : tape.
+Hint Rewrite tape_match_symbols_tape_local : tape.
+Hint Rewrite tape_match_symbols_tape_local_l : tape.
