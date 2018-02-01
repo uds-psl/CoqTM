@@ -70,7 +70,7 @@ Tactic Notation "TMSimp" tactic(T) :=
   repeat progress
          (
            hnf in *;
-           cbn -[Vector.nth] in *;
+           cbn in *;
            intros;
            subst;
            destruct_tapes;

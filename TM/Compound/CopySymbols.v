@@ -204,10 +204,10 @@ End Test.
       induction H as [x | x y z IH1 _ IH2].
       {
         TMCrush idtac; TMSolve 6.
-        all: cbn in *; rewrite CopySymbols_Fun_equation in *; auto. now rewrite E0.
+        all: cbn in *; rewrite CopySymbols_Fun_equation in *; auto. inv H0. cbn. now rewrite E.
       }
       {
-        TMSimp. cbn in *. destruct x as [], y1 as [].
+        TMSimp. destruct x as [], y1 as [].
         destruct h3; cbn in *; TMSimp repeat inv_pair.
         - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
         - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.

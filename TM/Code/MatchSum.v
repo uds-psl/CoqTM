@@ -52,7 +52,7 @@ Section MatchSum.
       destruct e; swap 1 2; cbn in *; TMSimp.
       - destruct s; swap 1 2; cbn in *; TMSimp.
         + destruct v; cbn in *; destruct (map _) in H0; cbn in *; congruence.
-        + destruct b; TMSimp cbn in *.
+        + destruct b; TMSimp.
           * destruct v as [vx|vy]; TMSimp. exists vx. split; auto.
             destruct (encode _) eqn:E; cbn; do 2 eexists; split; cbn; try rewrite E; cbn; auto.
           * destruct v as [vx|vy]; TMSimp. exists vy. split; auto.
@@ -91,17 +91,17 @@ Section MatchSum.
         cbn. omega.
       }
       {
-        TMSimp ( cbn [Vector.nth] in * ). destruct is_left; cbn in *; subst; TMSimp.
+        TMSimp. destruct is_left; cbn in *; subst; TMSimp.
         {
           rewrite tape_match_right_left.
-          destruct h; cbn in *; TMSimp; cbn in *.
+          destruct h; cbn in *; TMSimp.
           - destruct (encode _) in H0; cbn in *; congruence.
           - destruct (encode x) as [ | eX eXs] eqn:E;
               cbn in *; inv H0; cbv [tape_encodes_r]; cbn; rewrite E; cbn;
                 (destruct x0; cbn; eauto).
         }
         {
-          destruct h; cbn in *; TMSimp; cbn in *.
+          destruct h; cbn in *; TMSimp.
           - destruct (encode _) in H0; cbn in *; congruence.
           - destruct (encode y) as [ | eX eXs] eqn:E;
               cbn in *; inv H0; cbv [tape_encodes_r]; cbn; rewrite E; cbn;

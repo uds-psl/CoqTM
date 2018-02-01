@@ -122,16 +122,16 @@ Section MatchList.
         destruct e; swap 1 2; cbn in *; TMSimp.
         - destruct s; swap 1 2; cbn in *; TMSimp.
           + destruct lst; cbn in *; inv H0.
-          + destruct b; cbn in *; TMSimp cbn in *; unfold encode_list in *.
-            * destruct lst; TMSimp cbn in *. eauto.
-            * destruct lst; TMSimp cbn in *. eexists; split; eauto.
+          + destruct b; cbn in *; TMSimp; unfold encode_list in *.
+            * destruct lst; TMSimp. eauto.
+            * destruct lst; TMSimp. eexists; split; eauto.
         - destruct lst; cbn in *; inv H0; eauto.
       }
       {
         destruct_tapes; cbn in *.
         destruct h; cbn in *; TMSimp; eauto. destruct e; cbn in *; TMSimp; auto.
         destruct s; cbn in *; TMSimp; auto.
-        destruct b; cbn in *; TMSimp cbn in *; auto.
+        destruct b; cbn in *; TMSimp; auto.
       }
     }
   Qed.
@@ -206,7 +206,7 @@ Section MatchList.
     }
     {
       hnf. intros. hnf. destruct y. intros head tail.
-      TMSimp repeat progress simpl_not_in || cbn [Vector.nth] in *. destruct u.
+      TMSimp repeat progress simpl_not_in. destruct u.
       destruct h1; cbn in *; inv H0; [ do 2 destruct (map _); cbn in H3; congruence | inv H3]. clear H1. 
       split.
       - 
@@ -266,7 +266,7 @@ Section MatchList.
     }
     {
       subst R1 M2 R2 M3 R3. hnf. intros. hnf. destruct y. intros head tail.
-      TMSimp repeat progress simpl_not_in || cbn [Vector.nth] in *. destruct u.
+      TMSimp repeat progress simpl_not_in. destruct u.
       destruct h3; cbn in *; inv H0; [destruct (encode _); cbn in H3; congruence | inv H3]. clear H1.
       specialize (H head tail). spec_assert H by (hnf; do 2 eexists; hnf; split; cbn; eauto). destruct H as (H1&H1').
       split; eauto. hnf; unfold tape_encodes_r; cbn in *. clear b H2 H1.
@@ -329,8 +329,8 @@ Section MatchList.
     }
     {
       subst R1 M2 R2 M3 R3. cbn.
-      TMSimp repeat progress simpl_not_in || cbn [Vector.nth] in *.
-      destruct b, H; TMSimp repeat progress simpl_not_in || cbn [Vector.nth] in *.
+      TMSimp repeat progress simpl_not_in.
+      destruct b, H; TMSimp repeat progress simpl_not_in.
       - specialize (H lst). spec_assert H as (head&tail&->) by (do 2 eexists; split; cbn; eauto).
         specialize (H1 head tail).
         spec_assert H1 as (H1&H1').
