@@ -5,13 +5,6 @@ Require Export TM.Retract.
 Require Import TM.LiftSigmaTau.
 Require Import TM.Basic.Mono TM.Basic.WriteString.
 Require Import TM.Compound.TMTac.
-Require Import TM.Mirror.
-
-Lemma mapTape_local (sig tau : finType) (f : sig -> tau) t :
-  tape_local (mapTape f t) = map f (tape_local t).
-Proof. destruct t; cbn; reflexivity. Qed.
-
-Hint Rewrite mapTape_local : tape.
 
 
 Notation "sig '^+'" := (FinType(EqType(bool + sig))) (at level 0) : type_scope.

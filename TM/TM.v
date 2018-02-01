@@ -684,6 +684,12 @@ Hint Rewrite mapTape_mapTape : tape.
 Hint Rewrite mapTape_id : tape.
 
 
+Lemma mapTape_local (sig tau : finType) (f : sig -> tau) t :
+  tape_local (mapTape f t) = map f (tape_local t).
+Proof. destruct t; cbn; reflexivity. Qed.
+Hint Rewrite mapTape_local : tape.
+
+
 
 (* Auxiliary Lemmas for matching on tapes or symbol lists, when the tape moves left and right *)
 Section MatchTapes.
