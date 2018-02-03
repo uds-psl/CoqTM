@@ -15,6 +15,7 @@ TM/Prelim.v
 TM/Relations.v
 TM/TM.v
 TM/Retract.v
+TM/Inhabited.v
 
 # Programming combinators
 TM/Combinators/Combinators.v
