@@ -206,10 +206,11 @@ Section Computes_Change_Alphabet.
 
   Variable (X Y : Type) (cX : codeable sig X) (cY : codeable sig Y).
   Variable (func : X -> Y).
-  Variable (n_tapes : nat).
-  Variable (i1 i2 : Fin.t n_tapes).
   Variable (F : finType).
   Variable (param : X -> F).
+
+  Variable (n_tapes : nat).
+  Variable (i1 i2 : Fin.t n_tapes).
   Variable (pM : {M : mTM (sig^+) n_tapes & states M -> F}).
 
   Let retr' := retr' retr. 
@@ -217,147 +218,189 @@ Section Computes_Change_Alphabet.
   Notation "'f''" := (@TRetr_f _ _ retr').
   Notation "'g''" := (@TRetr_g _ _ retr').
 
+
   Definition ChangeAlphabet : { M : mTM (tau^+) n_tapes & states M -> F } :=
     LiftSigmaTau.Lift pM (f') (g') (inr default).
 
 
-  Hypothesis GoodCode : (forall x : X, ~ default el encode (sigma := sig) (func x)) \/ (forall t' : tau, exists s', g t' = Some s').
+  Definition GoodCode := (forall x : X, ~ default el encode (sigma := sig) (func x)) \/ (forall t' : tau, exists s', g t' = Some s').
 
 
   Lemma ChangeAlphabet_Computes_WRealise :
     pM ⊫ Computes_Rel i1 i2 cX cY func ->
+    GoodCode ->
     ChangeAlphabet ⊫ Computes_Rel i1 i2 _ _ func.
   Proof.
-    intros H. eapply WRealise_monotone.
+    intros H HDef. eapply WRealise_monotone.
     - unfold ChangeAlphabet. eapply Lift_WRealise. apply tight_retract_strong. eapply retr'. eassumption.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
       eapply encodeTranslate_tau1 in HEnc1; eauto.
       specialize (HComp HEnc1) as Henc2. eapply encodeTranslate_tau2; eauto.
-      destruct GoodCode as [HDef | HDef]; auto.
+      destruct HDef as [HDef | HDef]; auto.
   Qed.
   
 
   Lemma ChangeAlphabet_Computes_WRealise_p :
     pM ⊫ Computes_Rel_p i1 i2 cX cY func param ->
+    GoodCode ->
     ChangeAlphabet ⊫ Computes_Rel_p i1 i2 _ _ func param.
   Proof.
-    intros H. eapply WRealise_monotone.
+    intros H HDef. eapply WRealise_monotone.
     - unfold ChangeAlphabet. eapply Lift_WRealise. apply tight_retract_strong. eapply retr'. eassumption.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
       eapply encodeTranslate_tau1 in HEnc1; eauto.
       specialize (HComp HEnc1) as (HEnc2&HEnc2'). split; auto. eapply encodeTranslate_tau2; eauto.
-      destruct GoodCode as [HDef | HDef]; auto.
+      destruct HDef as [HDef | HDef]; auto.
   Qed.
 
   Lemma ChangeAlphabet_Computes_RealiseIn (k : nat) :
     pM ⊨c(k) Computes_Rel i1 i2 cX cY func ->
+    GoodCode ->
     ChangeAlphabet ⊨c(k) Computes_Rel i1 i2 _ _ func.
   Proof.
-    intros H. eapply RealiseIn_monotone.
+    intros H HDef. eapply RealiseIn_monotone.
     - unfold ChangeAlphabet. eapply Lift_RealiseIn. apply tight_retract_strong. eapply retr'. eassumption.
     - omega.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
       eapply encodeTranslate_tau1 in HEnc1; eauto.
       specialize (HComp HEnc1) as HEnc2. eapply encodeTranslate_tau2; eauto.
-      destruct GoodCode as [HDef | HDef]; auto.
+      destruct HDef as [HDef | HDef]; auto.
   Qed.
 
   Lemma ChangeAlphabet_Computes_RealiseIn_p (k : nat) :
     pM ⊨c(k) Computes_Rel_p i1 i2 cX cY func param ->
+    GoodCode ->
     ChangeAlphabet ⊨c(k) Computes_Rel_p i1 i2 _ _ func param.
   Proof.
-    intros H. eapply RealiseIn_monotone.
+    intros H HDef. eapply RealiseIn_monotone.
     - unfold ChangeAlphabet. eapply Lift_RealiseIn. apply tight_retract_strong. eapply retr'. eassumption.
     - omega.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
       eapply encodeTranslate_tau1 in HEnc1; eauto.
       specialize (HComp HEnc1) as (HEnc2&HEnc2'). split; auto. eapply encodeTranslate_tau2; eauto.
-      destruct GoodCode as [HDef | HDef]; auto.
+      destruct HDef as [HDef | HDef]; auto.
   Qed.
 
 End Computes_Change_Alphabet.
 
 Arguments ChangeAlphabet_Computes_WRealise
           {sig} {tau} (default) {f} {g} retr
-          {X} {Y} {cX} {cY} func {n_tapes}
-          i1 i2 F pM.
+          {X} {Y} {cX} {cY} func {F}
+          {n_tapes} {i1} {i2} {pM} /.
 
 Arguments ChangeAlphabet_Computes_RealiseIn
           {sig} {tau} (default) {f} {g} retr
-          {X} {Y} {cX} {cY} func {n_tapes}
-          i1 i2 F pM.
+          {X} {Y} {cX} {cY} func {F}
+          {n_tapes} {i1} {i2} {pM} /.
 
 Arguments ChangeAlphabet_Computes_WRealise_p
           {sig} {tau} (default) {f} {g} retr
-          {X} {Y} {cX} {cY} func {n_tapes}
-          i1 i2 F param pM.
+          {X} {Y} {cX} {cY} func {F} param
+          {n_tapes} {i1} {i2} {pM} /.
 
 Arguments ChangeAlphabet_Computes_RealiseIn_p
           {sig} {tau} (default) {f} {g} retr
-          {X} {Y} {cX} {cY} func {n_tapes}
-          i1 i2 F param pM.
+          {X} {Y} {cX} {cY} func {F} param
+          {n_tapes} {i1} {i2} {pM} /.
 
 
-(*
-(* TODO *)
 Section Computes2_Change_Alphabet.
 
   Variable sig tau : finType.
-  Variable (f : sig -> tau) (g : tau -> option sig).
+  Variable default : sig.
 
+  Variable (f : sig -> tau) (g : tau -> option sig).
   Hypothesis retr : tight_retract f g.
-  Variable def : sig.
 
   Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
   Variable (func : X -> Y -> Z).
+  Variable (F : finType).
+  Variable (param : X -> Y -> F).
+
   Variable (n_tapes : nat).
   Variable (i1 i2 i3 : Fin.t n_tapes).
-  Variable (F : finType).
   Variable (pM : {M : mTM (sig^+) n_tapes & states M -> F}).
 
+  
+  Definition GoodCode2 := (forall (x: X) (y : Y), ~ default el encode (sigma := sig) (func x y)) \/ (forall t' : tau, exists s', g t' = Some s').
+
   Lemma ChangeAlphabet_Computes2_WRealise :
-    (forall (x: X) (y : Y), ~ def el encode (sigma := sig) (func x y)) \/
-    (forall t' : tau, exists s', g t' = Some s') ->
     pM ⊫ Computes2_Rel i1 i2 i3 cX cY cZ func ->
-    ChangeAlphabet retr def pM ⊫ Computes2_Rel i1 i2 i3 _ _ _ func.
+    GoodCode2 ->
+    ChangeAlphabet default retr pM ⊫ Computes2_Rel i1 i2 i3 _ _ _ func.
   Proof.
-    intros HDef H. eapply WRealise_monotone.
+    intros H HDef. eapply WRealise_monotone.
     - unfold ChangeAlphabet. eapply Lift_WRealise. apply tight_retract_strong. eapply retr'. eassumption.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x y. specialize (HComp x). intros HEnc1 HEnc2.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
-      apply encodeTranslate_tau1 with (def := def) in HEnc1. apply encodeTranslate_tau1 with (def := def) in HEnc2.
+      apply encodeTranslate_tau1 with (def := default) in HEnc1. apply encodeTranslate_tau1 with (def := default) in HEnc2.
       specialize (HComp y HEnc1 HEnc2). eapply encodeTranslate_tau2; eauto. destruct HDef; auto.
   Qed.
 
-  Lemma ChangeAlphabet_Computes2_RealiseIn (k : nat) :
-    (forall (x : X) (y : Y), ~ def el encode (sigma := sig) (func x y)) \/
-    (forall t' : tau, exists s', g t' = Some s') ->
-    pM ⊨c(k) Computes2_Rel i1 i2 i3 cX cY cZ func ->
-    ChangeAlphabet retr def pM ⊨c(k) Computes2_Rel i1 i2 i3 _ _ _ func.
+  Lemma ChangeAlphabet_Computes2_WRealise_p :
+    pM ⊫ Computes2_Rel_p i1 i2 i3 cX cY cZ func param ->
+    GoodCode2 ->
+    ChangeAlphabet default retr pM ⊫ Computes2_Rel_p i1 i2 i3 _ _ _ func param.
   Proof.
-    intros HDef H. eapply RealiseIn_monotone.
+    intros H HDef. eapply WRealise_monotone.
+    - unfold ChangeAlphabet. eapply Lift_WRealise. apply tight_retract_strong. eapply retr'. eassumption.
+    - hnf. intros tin (yout&tout) HComp. hnf in *. intros x y. specialize (HComp x). intros HEnc1 HEnc2.
+      unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
+      apply encodeTranslate_tau1 with (def := default) in HEnc1. apply encodeTranslate_tau1 with (def := default) in HEnc2.
+      specialize (HComp y HEnc1 HEnc2) as (?&?). split; auto. eapply encodeTranslate_tau2; eauto. destruct HDef; auto.
+  Qed.
+
+  Lemma ChangeAlphabet_Computes2_RealiseIn (k : nat) :
+    pM ⊨c(k) Computes2_Rel i1 i2 i3 cX cY cZ func ->
+    GoodCode2 ->
+    ChangeAlphabet default retr pM ⊨c(k) Computes2_Rel i1 i2 i3 _ _ _ func.
+  Proof.
+    intros H HDef. eapply RealiseIn_monotone.
     - unfold ChangeAlphabet. eapply Lift_RealiseIn. apply tight_retract_strong. eapply retr'. eassumption.
     - omega.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x y. specialize (HComp x). intros HEnc1 HEnc2.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
-      apply encodeTranslate_tau1 with (def := def) in HEnc1. apply encodeTranslate_tau1 with (def := def) in HEnc2.
+      apply encodeTranslate_tau1 with (def := default) in HEnc1. apply encodeTranslate_tau1 with (def := default) in HEnc2.
       specialize (HComp y HEnc1 HEnc2). eapply encodeTranslate_tau2; eauto. destruct HDef; auto.
+  Qed.
+
+  Lemma ChangeAlphabet_Computes2_RealiseIn_p (k : nat) :
+    pM ⊨c(k) Computes2_Rel_p i1 i2 i3 cX cY cZ func param ->
+    GoodCode2 ->
+    ChangeAlphabet default retr pM ⊨c(k) Computes2_Rel_p i1 i2 i3 _ _ _ func param.
+  Proof.
+    intros H HDef. eapply RealiseIn_monotone.
+    - unfold ChangeAlphabet. eapply Lift_RealiseIn. apply tight_retract_strong. eapply retr'. eassumption.
+    - omega.
+    - hnf. intros tin (yout&tout) HComp. hnf in *. intros x y. specialize (HComp x). intros HEnc1 HEnc2.
+      unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
+      apply encodeTranslate_tau1 with (def := default) in HEnc1. apply encodeTranslate_tau1 with (def := default) in HEnc2.
+      specialize (HComp y HEnc1 HEnc2) as (?&?). split; auto. eapply encodeTranslate_tau2; eauto. destruct HDef; auto.
   Qed.
 
 End Computes2_Change_Alphabet.
 
 
 Arguments ChangeAlphabet_Computes2_WRealise
-          {sig} {tau} {f} {g} retr
-          def {X} {Y} {Z} {cX} {cY} {cZ} func {n_tapes}
-          i1 i2 i3 {F} pM.
+          {sig} {tau} (default) {f} {g} retr
+          {X} {Y} {Z} {cX} {cY} {cZ} func {F}
+          {n_tapes} {i1} {i2} {i3} {pM} /.
 
 Arguments ChangeAlphabet_Computes2_RealiseIn
-          {sig} {tau} {f} {g} retr
-          def {X} {Y} {Z} {cX} {cY} {cZ} func {n_tapes}
-          i1 i2 i3 {F} pM k.
-*)
+          {sig} {tau} (default) {f} {g} retr
+          {X} {Y} {Z} {cX} {cY} {cZ} func {F}
+          {n_tapes} {i1} {i2} {i3} {pM} /.
+
+Arguments ChangeAlphabet_Computes2_WRealise_p
+          {sig} {tau} (default) {f} {g} retr
+          {X} {Y} {Z} {cX} {cY} {cZ} func {F} param
+          {n_tapes} {i1} {i2} {i3} {pM} /.
+
+Arguments ChangeAlphabet_Computes_RealiseIn_p
+          {sig} {tau} (default) {f} {g} retr
+          {X} {Y} {cX} {cY} func {F} param
+          {n_tapes} {i1} {i2} {pM} /.

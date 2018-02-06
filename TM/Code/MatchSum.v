@@ -240,14 +240,25 @@ Section MapSum.
           | inl x => f x
           | inr y => g y
           end.
+
+  (*
+   * Erklärung der default-Werte:
+   * Generell gilt, dass ein default-Symbol angegeben werden muss, dass nicht Teil der Kodierung der Ausgabe ist.
+   * Die [MatchSum] Maschine arbeitet auf [X+Y], welches über [bool + (sigX + sigY)].
+   * Diese wird auf das Alphabet [Bool + (sigX + sigY) + sigZ] geliftet.  Es muss also ein TRetract von [bool + (sigX + sigY)] nach
+   * [Bool + (sigX + sigY) + sigZ] angegeben werden, der automatisch bestimmt wird.  Für die Zeichen in dem größeren Alphabet muss
+   * ein Zeichen aus dem kleineren Alphabet angegeben werden, auf das die nicht zurück-übersetztbaren Zeichen gemappt wird.
+   * Jetzt darf die Kodierung des Ergebnisses der Maschine (dies ist ein X bzw. ein Y, welches über sigX + sigY kodiert ist), das
+   * [default]-Zeichen nicht enthalten.  Daher bietet sich [inl (default : bool)] an, i.e. die Injektion von einem beliebigen [bool].
+   * M1 und M2 arbeiten jeweils über dem Alphabet [sigX + sigZ], bzw. [sigY + sigZ] und geben jeweils einen Z-Wert zurück, der über die
+   * nach rechts gemappte Kodierung [sigX + sigZ] bzw. [sigY + sigZ].  In der Ausgabe darf also kein Symbol von [sigX] bzw. [sigY]
+   * stehen. Dementsprechend wird die Injektion von [sigX] bzw. [sigY] als [default]-Symbol gewählt.
+   *)
   
   Definition MapSum : { M : mTM (sig_add_sum ^+) n & states M -> unit } :=
-    If (ChangeAlphabet default _ (Inject (MatchSum sigX sigY) [|inputTape|]))
-      (ChangeAlphabet (inl default) _ M1)
-      (ChangeAlphabet (inl default) _ M2).
-
-  Hypothesis DefX : forall x : X, ~ (default : sigX) el encode x.
-  Hypothesis DefY : forall y : Y, ~ (default : sigY) el encode y.
+    If (ChangeAlphabet (inl (default : bool)) _ (Inject (MatchSum sigX sigY) [|inputTape|]))
+      (ChangeAlphabet (inl (default : sigX)) _ M1)
+      (ChangeAlphabet (inl (default : sigY)) _ M2).
 
   Lemma MapSum_Computes : MapSum ⊫ Computes_Rel inputTape outputTape _ _ map_sum.
   Proof.
@@ -259,40 +270,38 @@ Section MapSum.
         + eapply Inject_WRealise.
           * vector_dupfree.
           * eapply Realise_WRealise, RealiseIn_Realise. apply (MatchSum_Sem codX codY).
-      - simple eapply (ChangeAlphabet.ChangeAlphabet_Computes_WRealise (inl _) _ f).
-        + left. intros. cbn. intros (?&?&?) % in_map_iff. congruence.
+      - eapply (ChangeAlphabet_Computes_WRealise (inl default) _ f).
         + eapply M1_Computes.
-      - apply (ChangeAlphabet.ChangeAlphabet_Computes_WRealise (inl default) _ g).
-        + left. intros. cbn. intros (?&?&?) % in_map_iff. congruence.
+        + left. intros. cbn. intros (?&?&?) % in_map_iff. inv H.
+      - eapply (ChangeAlphabet_Computes_WRealise (inl default) _ g).
         + eapply M2_Computes.
+        + left. intros y. cbn. intros (?&?&?) % in_map_iff. inv H.
     }
     { clear M1_Computes M2_Computes M1 M2. hnf. intros tin (()&tout). intros H. destruct_tapes; cbn in *.
       intros s H4. destruct H; destruct H as (tmid&H1&H2); hnf in H1, H2; cbn in H1, H2.
       {
         destruct H1 as (H1&H0); hnf in H0, H1. specialize (H1 s). spec_assert H1 as (x&->&H1).
         { eapply ChangeAlphabet.encodeTranslate_tau1 in H4. autounfold with tape. simpl_tape. eauto. }
-        subst; cbn. specialize (H2 x). spec_assert H2.
-        { clear H4 H2.
-          eapply (ChangeAlphabet.encodeTranslate_tau1) in H1. cbn. eapply (ChangeAlphabet.encodeTranslate_tau2 (def := inr default)).
-          - left. cbn. intros (?&?&?)%in_map_iff. congruence.
-          - eapply (ChangeAlphabet.encodeTranslate_tau2 (def := default)).
-            + cbn. auto.
-            + refine (tape_encodes_ext' _ _ H1); auto. repeat autounfold with tape. rewrite !nth_map', !mapTape_mapTape. eapply mapTape_ext. clear_all.
-              destruct a; cbn; auto. destruct e; cbn; eauto. destruct s; cbn; eauto. destruct s; cbn; eauto.
+        clear H0. subst; cbn. specialize (H2 x). spec_assert H2.
+        { clear H2 H4. autounfold with tape in H1. simpl_tape in H1.
+          eapply encodeTranslate_tau2 with (def := inr default).
+          - left. cbn. intros (?&?&?) % in_map_iff. inv H.
+          - eapply (encodeTranslate_tau2 _) in H1.
+            eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
+            Unshelve. left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
         } 
         refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
       }
       {
         destruct H1 as (H1&H0); hnf in H0, H1. specialize (H1 s). spec_assert H1 as (y&->&H1).
         { eapply ChangeAlphabet.encodeTranslate_tau1 in H4. autounfold with tape. simpl_tape. eauto. }
-        subst; cbn. specialize (H2 y). spec_assert H2.
-        { clear H4 H2.
-          eapply (ChangeAlphabet.encodeTranslate_tau1) in H1. cbn. eapply (ChangeAlphabet.encodeTranslate_tau2 (def := inr default)).
-          - left. cbn. intros (?&?&?)%in_map_iff. congruence.
-          - eapply (ChangeAlphabet.encodeTranslate_tau2 (def := default)).
-            + cbn. auto.
-            + refine (tape_encodes_ext' _ _ H1); auto. repeat autounfold with tape. rewrite !nth_map', !mapTape_mapTape. eapply mapTape_ext. clear_all.
-              destruct a; cbn; auto. destruct e; cbn; eauto. destruct s; cbn; eauto. destruct s; cbn; eauto.
+        clear H0. subst; cbn. specialize (H2 y). spec_assert H2.
+        { clear H2 H4. autounfold with tape in H1. simpl_tape in H1.
+          eapply encodeTranslate_tau2 with (def := inr (default : sigZ)).
+          - left. cbn. intros (?&?&?) % in_map_iff. inv H.
+          - eapply (encodeTranslate_tau2 _) in H1.
+            eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
+            Unshelve. left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
         } 
         refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
       }
