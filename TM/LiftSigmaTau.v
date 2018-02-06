@@ -1,4 +1,4 @@
-Require Import TM.Prelim TM.Relations TM.TM TM.Retract.
+Require Import TM.Prelim TM.Relations TM.TM.
 
 
 Section SujectTape.
@@ -62,10 +62,10 @@ Section InjectSurject.
   Variable def : sig.
 
   Lemma surject_inject' (l : list sig) :
-    map (fun t : tau => match g t with
-                     | Some s => s
-                     | None => def
-                     end) (map f l) = l.
+    List.map (fun t : tau => match g t with
+                          | Some s => s
+                          | None => def
+                          end) (List.map f l) = l.
   Proof.
     induction l; cbn.
     - reflexivity.
@@ -152,11 +152,9 @@ Section LiftSigmaTau.
     intros H. cbn.
     destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2.
     cbv [step] in *. cbn -[map step] in *.
-    destruct (trans
-                (state1,
-                 Vector.map (map_opt g') (Vector.map (current (sig:=tau)) tapes1))) as (q, act) eqn:E3.
+    destruct (trans (state1, Vector.map (map_opt g') (current_chars tapes1))) as (q, act) eqn:E3.
     inv H.
-    destruct (trans (state1, Vector.map (current (sig:=sig)) (surjectTapes g def tapes1)))
+    destruct (trans (state1, current_chars (surjectTapes g def tapes1)))
       as (q', act') eqn:E4.
     enough ((state2, act) = (q', act')) as X.
     {
@@ -167,8 +165,8 @@ Section LiftSigmaTau.
     }
     rewrite <- E3, <- E4. do 2 f_equal.
     apply Vector.eq_nth_iff. intros p ? <-.
-    unfold surjectTapes, mapTapes, surject, current. 
-    erewrite !Vector.nth_map; eauto. cbn.
+    unfold surjectTapes, mapTapes, surject, current.
+    autounfold with tape. erewrite !Vector.nth_map; eauto. cbn.
     destruct (tapes1[@p]) eqn:E5; cbn; auto.
   Qed.
 
@@ -203,9 +201,8 @@ Section LiftSigmaTau.
     surjectConf (step (M := liftM) conf) = step (surjectConf conf).
   Proof.
     cbv [surjectConf]. cbv [step]. cbn.
-    replace (Vector.map (map_opt g') (current_chars (ctapes conf))) with
-        (Vector.map (current (sig:=sig)) (surjectTapes g def (ctapes conf))).
-    - cbn. destruct (trans (cstate conf, Vector.map (current (sig:=sig)) (surjectTapes g def (ctapes conf)))) eqn:E1; cbn.
+    replace (Vector.map (map_opt g') (current_chars (ctapes conf))) with (current_chars (surjectTapes g def (ctapes conf))).
+    - cbn. destruct (trans (cstate conf, current_chars (surjectTapes g def (ctapes conf)))) eqn:E1; cbn.
       f_equal. unfold surjectTapes, mapTapes. apply Vector.eq_nth_iff. intros ? ? <-.
       unfold tape_move_multi, tape_move_mono.
       repeat first [erewrite !Vector.nth_map2; eauto | erewrite !Vector.nth_map; eauto].

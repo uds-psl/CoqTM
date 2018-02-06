@@ -17,7 +17,7 @@ Structure inhabitedType :=
 Arguments InhabitedType type {class}.
 Existing Instance class | 0.
 
-Canonical Structure inhabitedType_CS (X : Type) {class : inhabitedC X} : inhabitedType := InhabitedType X.
+Canonical Structure inhabitedType_CS (X : Type) {class : inhabitedC X} : inhabitedType := @InhabitedType X class.
 
 (*
 Section Test.
@@ -67,7 +67,38 @@ Section Test2.
 
   (* Check, that inl and inr work *)
   Variable (A : inhabitedType) (B : Type).
+  Check someFunction A.
+
   Check someFunction (InhabitedType (A + B)).
   Check someFunction (InhabitedType (B + A)).
 End Test2.
 *)
+
+
+
+Require Import Shared.FiniteTypes.
+
+Print FinType.
+
+Record finInhabitedType :=
+  FinInhabitedType
+    {
+      type_finInhabit :> inhabitedType;
+      class_dec : eq_dec type_finInhabit;
+      class_finite : finTypeC (EqType type_finInhabit);
+      class_inhabited : inhabitedC type_finInhabit
+    }.
+
+Print finType_CS.
+
+Canonical Structure finInhabitedType_CS (X : Type) {p : eq_dec X} {class1 : finTypeC (EqType X)} {class2 : inhabitedC X} :=
+  @FinInhabitedType (InhabitedType X) _ class1 class2.
+
+Print Implicit finInhabitedType_CS.
+
+Section Tes3.
+  Variable F : finInhabitedType.
+
+  Check default : F.
+  Variable f1 f2 : F.
+  Check Dec (f1 = f2).

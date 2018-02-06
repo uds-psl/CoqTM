@@ -1,4 +1,5 @@
-Require Import Shared.Base Shared.FiniteTypes Prelim.
+Require Import Shared.Base Shared.FiniteTypes TM.Prelim.
+Require Import Shared.Vectors.Vectors.
 
 (** * Equality *)
 (** Introduce some Haskell style like notations. *)
@@ -75,6 +76,14 @@ Definition subrel X Y (R S: Rel X Y) := (forall x y, R x y -> S x y).
 
 Notation "R1 <<=2 R2" := (subrel R1 R2) (at level 60).
 Notation "R1 <<=3 R2" := (forall x y z, R1 x y z -> R2 x y z) (at level 60).
+
+Lemma subrel_and X Y (R1 R2 R3 : Rel X Y) :
+  R1 <<=2 R3 \/ R2 <<=2 R3 -> R1 ∩ R2 <<=2 R3.
+Proof. firstorder. Qed.
+
+Lemma subrel_or X Y (R1 R2 R3 : Rel X Y) :
+  R1 <<=2 R3 /\ R2 <<=2 R3 -> R1 ∪ R2 <<=2 R3.
+Proof. firstorder. Qed.
 
 Definition eqrel X Y (R S: Rel X Y) := (R <<=2 S /\ S <<=2 R) .
 

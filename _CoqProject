@@ -6,16 +6,10 @@
 -install none
 COQDOCFLAGS = "--charset utf-8 -s --parse-comments --with-header ./website/resources/header.html --with-footer ./website/resources/footer.html --index indexpage"
 
-# Alternative Vectors to the implementation in Coq's standard library
-MyVec/MyVec.v
-MyVec/MyFin.v
-
 # Basics
 TM/Prelim.v
 TM/Relations.v
 TM/TM.v
-TM/Retract.v
-TM/Inhabited.v
 
 # Programming combinators
 TM/Combinators/Combinators.v

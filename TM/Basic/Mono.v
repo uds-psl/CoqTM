@@ -61,7 +61,7 @@ Section test_char.
                               )
                  ).
   Proof.
-    hnf. intros intapes. destruct_tapes. cbn.
+    hnf. intros intapes. destruct_tapes. cbn; cbv [current_chars]; cbn.
     destruct (current h) eqn:E; cbn.
     - destruct (f e) eqn:Ef; cbn.
       + exists (mk_mconfig tc_true  [| h |]). cbn in *. repeat split; hnf; eauto.
@@ -213,8 +213,8 @@ Section read_char.
     Read_char ⊨c(1) read_char_R.
   Proof.
     intros t. destruct_tapes. cbn. destruct (current h) eqn:E.
-    - exists (mk_mconfig (inr e) [|h|]). unfold step. cbn. rewrite E. cbn. repeat (try split; auto; hnf).
-    - exists (mk_mconfig (inl false) [|h|]). unfold step. cbn. rewrite E. cbn. repeat (try split; auto; hnf).
+    - exists (mk_mconfig (inr e) [|h|]). unfold step. cbn; autounfold with tape; cbn. rewrite E. cbn. repeat (try split; auto; hnf).
+    - exists (mk_mconfig (inl false) [|h|]). unfold step. cbn; autounfold with tape; cbn. rewrite E. cbn. repeat (try split; auto; hnf).
   Qed.
 
 End read_char.

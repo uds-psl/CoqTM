@@ -178,7 +178,7 @@ Section Match.
       assert (halt e = true). eapply loop_fulfills_p in Hx'. cbn in Hx'. cbn in Hx'. destruct (halt e); auto. rewrite H in H2.
       remember (mk_mconfig (inr (existT (fun f : F => states (Mf f)) (p1 e) (start (Mf (p1 e)))))
                            (Vector.map2 (tape_move_mono (sig:=sig)) ctapes
-                                        (repeatVector n (None, N)))) as x2.
+                                        (Vector.const (None, N) n))) as x2.
       pose (M2 := (Mf (p1 e))).
       eapply loop_unlift with (unlift := unlift_2 (p1 e))
                                 (f := step (M := M2))

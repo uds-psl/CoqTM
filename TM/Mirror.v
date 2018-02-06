@@ -55,9 +55,9 @@ Section MirrorTM.
   Proof.
     intros H. unfold step in *. cbn in *. unfold Mirror_trans in *.
     destruct (trans (cstate ic, current_chars (ctapes ic))) as (q'&act') eqn:E.
-    destruct (trans (cstate ic, Vector.map (current (sig:=sig)) (mirror_tapes (ctapes ic)))) as (q''&act'') eqn:E2.
+    destruct (trans (cstate ic, current_chars (mirror_tapes (ctapes ic)))) as (q''&act'') eqn:E2.
     unfold mlift in *. destruct ic as (qi,ti), oc as (qo, to). cbn in *. inv H.
-    replace (Vector.map (current (sig:=sig)) (mirror_tapes ti)) with (Vector.map (current (sig:=sig)) ti) in E2.
+    replace (current_chars (mirror_tapes ti)) with (current_chars ti) in E2.
     rewrite E2 in E. inv E. f_equal. 
     - apply Vector.eq_nth_iff. intros ? k ->. erewrite !Vector.nth_map2; eauto.
       eapply Vector.eq_nth_iff with (p1 := k) in H2; eauto. unfold tape_move_mono, mirror_tapes, mirror_acts in *.
@@ -66,7 +66,7 @@ Section MirrorTM.
           (mirror_tape ((tape_move (tape_write ti[@k] o)) m)) in H2.
       + now apply mirror_tape_injective in H2.
       + generalize (ti[@k]) as t. intros t. destruct o, m, t; cbn; auto; destruct l; cbn; auto; now destruct l0.
-    - apply Vector.eq_nth_iff; intros ? k ->. now simpl_tape.
+    - apply Vector.eq_nth_iff; intros ? k ->. autounfold with tape. now simpl_tape.
   Qed.
                                      
   Lemma mirror_step' ic oc :

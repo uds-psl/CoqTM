@@ -310,14 +310,10 @@ Section LiftNM.
     unfold step in *. cbn in *.
     unfold reorder in *. cbn in *.
 
-    destruct (trans
-                (state1,
-                 Vector.map (Vector.nth (Vector.map (current (sig:=sig)) tapes1)) I))
-             as (q, act) eqn:E3.
+    destruct (trans (state1, Vector.map (Vector.nth (current_chars tapes1)) I)) as (q, act) eqn:E3.
     injection H; clear H; intros H1 H2; subst.
 
-    destruct (trans (state1, Vector.map (current (sig:=sig)) (Vector.map (Vector.nth tapes1) I)))
-             as (q', act') eqn:E4.
+    destruct (trans (state1, current_chars (Vector.map (Vector.nth tapes1) I))) as (q', act') eqn:E4.
 
     enough ((state2, act) = (q', act')) as X.
     {
@@ -347,7 +343,7 @@ Section LiftNM.
     intros HI H. unfold injectM in *.
     destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2.
     unfold step, reorder in *. cbn in *.
-    destruct (trans (state1, reorder I (Vector.map (current (sig:=sig)) tapes1))) as (q, act) eqn:E3.
+    destruct (trans (state1, reorder I (current_chars tapes1))) as (q, act) eqn:E3.
     inv H.
     erewrite Vector.nth_map2; eauto.
     replace ((inject_default I (None, N) act)[@k]) with (@None sig, N).
@@ -389,12 +385,12 @@ Section LiftNM.
     destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2. cbn in *.
     unfold step in *. cbn in *.
     unfold reorder in *. cbn in *.
-    destruct (trans (state1, Vector.map (current (sig:=sig)) (Vector.map (Vector.nth tapes1) I))) as (q, act) eqn:E3.
+    destruct (trans (state1, current_chars (Vector.map (Vector.nth tapes1) I))) as (q, act) eqn:E3.
     injection H. intros <- ->. cbn in *. clear H.
     destruct (trans
                 (state1,
                  Vector.map
-                   (Vector.nth (Vector.map (current (sig:=sig)) tapes1)) I)) as (q', act') eqn:E4.
+                   (Vector.nth (current_chars tapes1)) I)) as (q', act') eqn:E4.
     enough ((state2, act) = (q', act')) as X.
     {
       inversion X. subst. f_equal. apply Vector.eq_nth_iff. intros pos ? <-.
@@ -404,7 +400,7 @@ Section LiftNM.
                                   (prod (option sig) move) act' (tape sig) tapes1 (@tape_move_mono sig) (None, N));
         firstorder.
     }
-    rewrite <- E3, <- E4. f_equal. f_equal. now rewrite map_map_nth.
+    rewrite <- E3, <- E4. f_equal. f_equal. autounfold with tape. now rewrite map_map_nth.
   Qed.
 
 

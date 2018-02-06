@@ -4,6 +4,7 @@
  *)
 
 Require Export Prelim Relations.
+Require Import Shared.Vectors.Vectors.
 (*
 Require Import Vector.
 *)
@@ -181,7 +182,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   (** One step on each tape *)
   
   Definition tape_move_multi := fun (n : nat) (ts : tapes n) (actions : Vector.t (option sig * move) n)=>
-                                  map2 tape_move_mono ts actions.
+                                  Vector.map2 tape_move_mono ts actions.
 
   (** ** Configurations of TMs *)
   
@@ -632,11 +633,11 @@ Section MapTape.
   Proof. destruct t; cbn; reflexivity. Qed.
 
   Lemma mapTape_left t :
-    left (mapTape t) = map g (left t).
+    left (mapTape t) = List.map g (left t).
   Proof. destruct t; cbn; reflexivity. Qed.
 
   Lemma mapTape_right t :
-    right (mapTape t) = map g (right t).
+    right (mapTape t) = List.map g (right t).
   Proof. destruct t; cbn; reflexivity. Qed.
 
   Lemma mapTape_move_left t :
@@ -685,7 +686,7 @@ Hint Rewrite mapTape_id : tape.
 
 
 Lemma mapTape_local (sig tau : finType) (f : sig -> tau) t :
-  tape_local (mapTape f t) = map f (tape_local t).
+  tape_local (mapTape f t) = List.map f (tape_local t).
 Proof. destruct t; cbn; reflexivity. Qed.
 Hint Rewrite mapTape_local : tape.
 
@@ -753,3 +754,6 @@ Hint Rewrite tape_match_symbols_left : tape.
 Hint Rewrite tape_match_symbols_right : tape.
 Hint Rewrite tape_match_symbols_tape_local : tape.
 Hint Rewrite tape_match_symbols_tape_local_l : tape.
+
+Arguments current_chars : simpl never.
+Hint Unfold current_chars : tape.

@@ -4,18 +4,21 @@ Require Import TM.Code.CodeTM TM.Code.FinTM.
 Require Import TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Combinators.SequentialComposition.
 Require Import TM.Code.ChangeAlphabet.
-Require Import TM.Retract.
 Require Import TM.Basic.Mono.
+
+
+(* (* TODO: port to parameters *)
 
 (* First we derive ID and NOT and AND from FinTM *)
 Section ID.
-  Definition ID := UnaryFinTM (@id bool).
+  Definition ID := UnaryFinTM (@id bool) (fun _ => tt).
 
   Lemma ID_Computes :
     ID ⊨c(3) Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool).
   Proof.
     eapply RealiseIn_monotone.
-    - eapply UnaryFinTM_Computes.
+    - eapply RealiseIn_monotone. eapply UnaryFinTM_Computes. constructor.
+      eapply Computes_Rel_ignore_param. 
     - omega.
     - intros tin (yout&tout) H. auto.
   Qed.
@@ -33,31 +36,35 @@ Section ID.
 End ID.
 
 Section NOT.
-  Definition NOT := UnaryFinTM (negb).
+  Definition NOT := UnaryFinTM (negb) (fun _ => tt).
 
   Lemma NOT_Computes :
     NOT ⊨c(3) Computes_Rel Fin.F1 Fin.F1 _ _ (negb).
   Proof.
     eapply RealiseIn_monotone.
-    - eapply UnaryFinTM_Computes.
+    - eapply RealiseIn_monotone. eapply UnaryFinTM_Computes. constructor.
+      eapply Computes_Rel_ignore_param. 
     - omega.
     - intros tin (yout&tout) H. auto.
   Qed.
 End NOT.
 
 Section AND.
-  Definition AND := DualFinTM andb.
+  Definition AND := DualFinTM andb (fun _ _ => tt).
 
   Lemma AND_Computes :
     AND ⊨c(5)
         Computes_Rel Fin.F1 Fin.F1 _ _ (@id bool) ∩
-        Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _  andb.
+        Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ andb.
   Proof.
     eapply RealiseIn_monotone.
     - eapply DualFinTM_Computes.
     - omega.
-    - intros tin (yout&tout) H. auto.
+    - intros tin (yout&tout) (H1&H2). hnf in *. split; hnf.
+      + intros x Hx. now apply H1.
+      + intros x y Hx Hy; now apply H2.
   Qed.
+
 End AND.
 
 
@@ -240,3 +247,5 @@ Section AndComm.
   Qed.
 
 End AndComm.
+
+*)

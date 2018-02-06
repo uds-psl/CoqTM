@@ -5,7 +5,7 @@ Section Nop.
   Variable n : nat.
   Variable sig : finType.
 
-  Definition null_action m := repeatVector m (@None sig, N).
+  Definition null_action m := Vector.const (@None sig, N) m.
 
   Lemma tape_move_null_action m tapes :
     tape_move_multi tapes (null_action m) = tapes.

@@ -194,19 +194,22 @@ Section MapCode.
 End MapCode.
 
 
+Hint Unfold surjectTape injectTape : tape.
+
 
 Section Computes_Change_Alphabet.
 
-  Variable sig tau : finType.
+  Variable (sig tau : finType).
+  Variable (default : sig).
   Variable (f : sig -> tau) (g : tau -> option sig).
   Hypothesis retr : tight_retract f g.
-  Variable def : sig.
 
   Variable (X Y : Type) (cX : codeable sig X) (cY : codeable sig Y).
   Variable (func : X -> Y).
   Variable (n_tapes : nat).
   Variable (i1 i2 : Fin.t n_tapes).
   Variable (F : finType).
+  Variable (param : X -> F).
   Variable (pM : {M : mTM (sig^+) n_tapes & states M -> F}).
 
   Let retr' := retr' retr. 
@@ -215,53 +218,97 @@ Section Computes_Change_Alphabet.
   Notation "'g''" := (@TRetr_g _ _ retr').
 
   Definition ChangeAlphabet : { M : mTM (tau^+) n_tapes & states M -> F } :=
-    LiftSigmaTau.Lift pM (f') (g') (inr def).
+    LiftSigmaTau.Lift pM (f') (g') (inr default).
+
+
+  Hypothesis GoodCode : (forall x : X, ~ default el encode (sigma := sig) (func x)) \/ (forall t' : tau, exists s', g t' = Some s').
+
 
   Lemma ChangeAlphabet_Computes_WRealise :
-    (forall x : X, ~ def el encode (sigma := sig) (func x)) \/
-    (forall t' : tau, exists s', g t' = Some s') ->
     pM ⊫ Computes_Rel i1 i2 cX cY func ->
     ChangeAlphabet ⊫ Computes_Rel i1 i2 _ _ func.
   Proof.
-    intros HDef H. eapply WRealise_monotone.
+    intros H. eapply WRealise_monotone.
     - unfold ChangeAlphabet. eapply Lift_WRealise. apply tight_retract_strong. eapply retr'. eassumption.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
-      apply encodeTranslate_tau1 with (def := def) in HEnc1.
-      specialize (HComp HEnc1) as HEnc2. eapply encodeTranslate_tau2; eauto. destruct HDef; auto.
+      eapply encodeTranslate_tau1 in HEnc1; eauto.
+      specialize (HComp HEnc1) as Henc2. eapply encodeTranslate_tau2; eauto.
+      destruct GoodCode as [HDef | HDef]; auto.
+  Qed.
+  
+
+  Lemma ChangeAlphabet_Computes_WRealise_p :
+    pM ⊫ Computes_Rel_p i1 i2 cX cY func param ->
+    ChangeAlphabet ⊫ Computes_Rel_p i1 i2 _ _ func param.
+  Proof.
+    intros H. eapply WRealise_monotone.
+    - unfold ChangeAlphabet. eapply Lift_WRealise. apply tight_retract_strong. eapply retr'. eassumption.
+    - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
+      unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
+      eapply encodeTranslate_tau1 in HEnc1; eauto.
+      specialize (HComp HEnc1) as (HEnc2&HEnc2'). split; auto. eapply encodeTranslate_tau2; eauto.
+      destruct GoodCode as [HDef | HDef]; auto.
   Qed.
 
   Lemma ChangeAlphabet_Computes_RealiseIn (k : nat) :
-    (forall x : X, ~ def el encode (sigma := sig) (func x)) \/
-    (forall t' : tau, exists s', g t' = Some s') ->
     pM ⊨c(k) Computes_Rel i1 i2 cX cY func ->
     ChangeAlphabet ⊨c(k) Computes_Rel i1 i2 _ _ func.
   Proof.
-    intros HDef H. eapply RealiseIn_monotone.
+    intros H. eapply RealiseIn_monotone.
     - unfold ChangeAlphabet. eapply Lift_RealiseIn. apply tight_retract_strong. eapply retr'. eassumption.
     - omega.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
-      apply encodeTranslate_tau1 with (def := def) in HEnc1.
-      specialize (HComp HEnc1) as HEnc2. eapply encodeTranslate_tau2; eauto. destruct HDef; auto.
+      eapply encodeTranslate_tau1 in HEnc1; eauto.
+      specialize (HComp HEnc1) as HEnc2. eapply encodeTranslate_tau2; eauto.
+      destruct GoodCode as [HDef | HDef]; auto.
+  Qed.
+
+  Lemma ChangeAlphabet_Computes_RealiseIn_p (k : nat) :
+    pM ⊨c(k) Computes_Rel_p i1 i2 cX cY func param ->
+    ChangeAlphabet ⊨c(k) Computes_Rel_p i1 i2 _ _ func param.
+  Proof.
+    intros H. eapply RealiseIn_monotone.
+    - unfold ChangeAlphabet. eapply Lift_RealiseIn. apply tight_retract_strong. eapply retr'. eassumption.
+    - omega.
+    - hnf. intros tin (yout&tout) HComp. hnf in *. intros x. specialize (HComp x). intros HEnc1.
+      unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
+      eapply encodeTranslate_tau1 in HEnc1; eauto.
+      specialize (HComp HEnc1) as (HEnc2&HEnc2'). split; auto. eapply encodeTranslate_tau2; eauto.
+      destruct GoodCode as [HDef | HDef]; auto.
   Qed.
 
 End Computes_Change_Alphabet.
 
 Arguments ChangeAlphabet_Computes_WRealise
-          {sig} {tau} {f} {g} retr
-          def {X} {Y} {cX} {cY} func {n_tapes}
+          {sig} {tau} (default) {f} {g} retr
+          {X} {Y} {cX} {cY} func {n_tapes}
           i1 i2 F pM.
 
 Arguments ChangeAlphabet_Computes_RealiseIn
-          {sig} {tau} {f} {g} retr
-          def {X} {Y} {cX} {cY} func {n_tapes}
-          i1 i2 F pM k.
+          {sig} {tau} (default) {f} {g} retr
+          {X} {Y} {cX} {cY} func {n_tapes}
+          i1 i2 F pM.
 
+Arguments ChangeAlphabet_Computes_WRealise_p
+          {sig} {tau} (default) {f} {g} retr
+          {X} {Y} {cX} {cY} func {n_tapes}
+          i1 i2 F param pM.
+
+Arguments ChangeAlphabet_Computes_RealiseIn_p
+          {sig} {tau} (default) {f} {g} retr
+          {X} {Y} {cX} {cY} func {n_tapes}
+          i1 i2 F param pM.
+
+
+(*
+(* TODO *)
 Section Computes2_Change_Alphabet.
 
   Variable sig tau : finType.
   Variable (f : sig -> tau) (g : tau -> option sig).
+
   Hypothesis retr : tight_retract f g.
   Variable def : sig.
 
@@ -303,6 +350,7 @@ Section Computes2_Change_Alphabet.
 
 End Computes2_Change_Alphabet.
 
+
 Arguments ChangeAlphabet_Computes2_WRealise
           {sig} {tau} {f} {g} retr
           def {X} {Y} {Z} {cX} {cY} {cZ} func {n_tapes}
@@ -312,6 +360,4 @@ Arguments ChangeAlphabet_Computes2_RealiseIn
           {sig} {tau} {f} {g} retr
           def {X} {Y} {Z} {cX} {cY} {cZ} func {n_tapes}
           i1 i2 i3 {F} pM k.
-
-
-Hint Unfold ChangeAlphabet.surjectTape ChangeAlphabet.injectTape : tape.
+*)

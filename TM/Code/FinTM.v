@@ -4,19 +4,25 @@ Require Import TM.Combinators.Match TM.Combinators.SequentialComposition.
 Require Import TM.LiftMN.
 
 Section FinTM1.
+  Generalizable All Variables.
   Variable sig : finType.
   Variable f : sig -> sig.
 
-  Definition UnaryFinTM : { M : mTM (sig^+) 1 & states M -> unit } :=
+  Variable (F : inhabitedFinType) (param : sig -> F).
+
+  Check F : finType.
+  Check default : F.
+
+  Definition UnaryFinTM : { M : mTM (sig^+) 1 & states M ->  F } :=
     MATCH (Read_char _)
           (fun r1 =>
              match r1 with
-             | Some (inr r1') => Write (inr (f r1')) tt
-             | _ => mono_Nop _ tt
+             | Some (inr r1') => Write (inr (f r1')) (param r1')
+             | _ => mono_Nop _ (default : F)
              end).
   
   Lemma UnaryFinTM_Computes :
-    UnaryFinTM ⊨c(3) Computes_Rel Fin.F1 Fin.F1 _ _ f.
+    UnaryFinTM ⊨c(3) Computes_Rel_p Fin.F1 Fin.F1 _ _ f param.
   Proof.
     eapply RealiseIn_monotone.
     - unfold UnaryFinTM. eapply Match_RealiseIn.
@@ -31,7 +37,7 @@ Section FinTM1.
       destruct H as (y&t2&H1&H2). hnf in *. destruct y as [ [ | ] | ]; swap 1 2; hnf in *.
       + (* valid input *) destruct H1 as (H&H'). hnf in *. destruct H2 as (->&H2). subst.
         destruct_tapes. cbn in *. subst. cbn.
-        pose proof tape_local_current_cons H4 as H4'; rewrite H4' in H; inv H; clear H4'.
+        pose proof tape_local_current_cons H4 as H4'; rewrite H4' in H; inv H; clear H4'. split; auto.
         do 2 eexists. hnf; cbn. split; eauto. f_equal. eapply tape_local_right; eauto.
       + (* invalid input *) destruct H1 as (H&H'). hnf in *. destruct H2 as (->&->). subst. cbn in *.
         apply tape_local_current_cons in H4. destruct_tapes. cbn in *. congruence.
@@ -41,20 +47,22 @@ Section FinTM1.
   
 End FinTM1.
 
+
 Section FinTM2.
   Variable sig : finType.
   Variable f : sig -> sig -> sig.
+  Variable (F : inhabitedFinType) (param : sig -> sig -> F).
 
   Definition ReadAt1 : { M : mTM (sig^+) 2 & states M -> option (sig^+) } :=
     Inject (Read_char _) [| Fin.F1 |].
 
-  Definition Nop2 : { M : mTM (sig^+) 2 & states M -> FinType (EqType unit) } := Nop 2 _ tt.
+  Definition Nop2 : { M : mTM (sig^+) 2 & states M -> F } := Nop 2 _ default.
 
-  Definition UnaryFinTM2 : sig -> { M : mTM (sig^+) 2 & states M -> unit } :=
+  Definition UnaryFinTM2 : sig -> { M : mTM (sig^+) 2 & states M -> F } :=
     fun s : sig =>
-      Inject (UnaryFinTM (f s)) [| Fin.FS (Fin.F1) |].
+      Inject (UnaryFinTM (f s) (param s)) [| Fin.FS (Fin.F1) |].
 
-  Definition DualFinTM : { M : mTM (sig^+) 2 & states M -> unit } :=
+  Definition DualFinTM : { M : mTM (sig^+) 2 & states M -> F } :=
     MATCH (ReadAt1)
           (fun r1 =>
              match r1 with
@@ -65,7 +73,7 @@ Section FinTM2.
   Lemma DualFinTM_Computes :
     DualFinTM ⊨c(5)
               Computes_Rel Fin.F1 Fin.F1 _ _ (@id sig) ∩
-              Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ f.
+              Computes2_Rel_p Fin.F1 (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ f param.
   Proof.
     eapply RealiseIn_monotone.
     {
@@ -88,7 +96,8 @@ Section FinTM2.
       {
         hnf. intros x. destruct_tapes. cbn. intros C1. destruct C1 as (r1&r2&C1&C1'). cbn in *.
         erewrite tape_local_current_cons in H4; eauto. cbn in *. hnf in H4. destruct H4 as (H4&H5). hnf in H4, H5.
-        specialize (H5 Fin.F1 ltac:(vector_not_in)). cbn in H5. subst. repeat (hnf; econstructor; cbn); eauto.
+        specialize (H5 Fin.F1 ltac:(vector_not_in)). cbn in H4, H5. subst.
+        repeat (hnf; econstructor; cbn); eauto.
       }
       {
         intros x y C1 C2. cbn in *.
@@ -107,15 +116,17 @@ End FinTM2.
 Section FinTM2'.
   Variable sig : finType.
   Variable (f1 f2 : sig -> sig).
+  Variable (F : inhabitedFinType) (param : sig -> F).
+  Variable (param1 param2 : sig -> F).
 
   Definition UnaryParallelTM := 
-    Inject (UnaryFinTM f1) [|Fin.F1 (n := 1) |] ;;
-    Inject (UnaryFinTM f2) [|Fin.FS Fin.F1   |].
+    Inject (UnaryFinTM f1 param1) [|Fin.F1 (n := 1) |] ;;
+    Inject (UnaryFinTM f2 param2) [|Fin.FS Fin.F1   |].
 
   Lemma UnaryParallelTM_Computes :
     UnaryParallelTM ⊨c(7)
-         Computes_Rel (F := FinType (EqType unit)) (Fin.F1       ) (Fin.F1       ) _ _ f1 ∩
-         Computes_Rel (F := FinType (EqType unit)) (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ f2.
+         Computes_Rel (Fin.F1       ) (Fin.F1       ) _ _ f1 ∩
+         Computes_Rel_p (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ f2 param2.
   Proof.
     eapply RealiseIn_monotone.
     {
@@ -127,12 +138,12 @@ Section FinTM2'.
     }
     {
       hnf. intros tin (yout&tout) H. hnf in *.
-      destruct H as ((() & t') & (H1 & H2) & H3 & H4). hnf in H1, H2, H3, H4. destruct_tapes.
+      destruct H as ((y1 & t') & (H1 & H2) & H3 & H4). hnf in H1, H2, H3, H4. destruct_tapes.
       split.
       {
         hnf. intros x HE1.
         specialize (H2 (Fin.FS Fin.F1) ltac:(vector_not_in)). specialize (H4 (Fin.F1) ltac:(vector_not_in)).
-        cbn in *. subst. specialize (H1 _ HE1). congruence.
+        cbn in *. subst. specialize (H1 _ HE1) as (H1&H1'). congruence.
       }
       {
         hnf. intros y HE2.
