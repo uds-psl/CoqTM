@@ -3,7 +3,7 @@
     - definitions taken from Asperti, Riciotti "Formalizing Turing Machines" and accompanying Matita foramlisation
  *)
 
-Require Export Prelim Relations.
+Require Export TM.Prelim TM.Relations.
 Require Import Shared.Vectors.Vectors.
 (*
 Require Import Vector.
@@ -343,6 +343,10 @@ we are on the right extremity of a non-empty tape (right overflow). *)
         edestruct (H t) as (? & ? & ?). 
         exists x. eapply loop_ge; eauto.
   Qed.
+
+  Fact RealiseIn_WRealise n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
+    pM ⊨c(k) R -> pM ⊫ R.
+  Proof. now intros (?&?) % Realise_total. Qed.
 
   
   Fact RealiseIn_changeP n (M:mTM n) (F : finType) (f f' : states M -> F) (R : Rel (tapes _) (F * tapes _)) k :
@@ -757,3 +761,21 @@ Hint Rewrite tape_match_symbols_tape_local_l : tape.
 
 Arguments current_chars : simpl never.
 Hint Unfold current_chars : tape.
+
+
+
+(** * Automatisation of the generation of relations *)
+
+(* Create the smpl tactic databases *)
+Smpl Create TM_WRealise.
+Smpl Create TM_RealiseIn.
+
+(* This tactics apply exactly one tactic from the corresponding hint database *)
+Ltac smpl_WRealise := smpl TM_WRealise.
+Ltac smpl_RealiseIn := smpl TM_RealiseIn.
+
+(* Any Machine that realises a relation in constant time also weakly realises this relation. *)
+Smpl Add simple eapply RealiseIn_WRealise; smpl_RealiseIn : TM_WRealise.
+
+Smpl Add eassumption : TM_WRealise.
+Smpl Add eassumption : TM_RealiseIn.

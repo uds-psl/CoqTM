@@ -14,7 +14,7 @@ Section Composition.
 
   Definition If := MATCH pM1 (fun b => if b then pM2 else pM3).
 
-  Lemma If_WRealsie (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) :
+  Lemma If_WRealise (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) :
     pM1 ⊫ R1 ->
     pM2 ⊫ R2 ->
     pM3 ⊫ R3 ->
@@ -84,3 +84,8 @@ Section Composition.
   Qed.
     
 End Composition.
+
+Arguments If : simpl never.
+
+Smpl Add eapply If_RealiseIn; try smpl_RealiseIn : TM_RealiseIn.
+Smpl Add eapply If_WRealise; try smpl_WRealise : TM_WRealise.

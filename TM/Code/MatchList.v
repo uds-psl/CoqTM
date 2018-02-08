@@ -320,7 +320,7 @@ Section MatchList.
   Proof.
     eapply WRealise_monotone.
     {
-      unfold MatchList. eapply If_WRealsie.
+      unfold MatchList. eapply If_WRealise.
       - eapply Inject_WRealise. vector_dupfree. eapply Realise_WRealise, RealiseIn_Realise. eapply M1_Sem.
       - eapply Seq_WRealise.
         + eapply M3_WRealise.

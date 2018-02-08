@@ -82,14 +82,8 @@ Section MatchSum.
     Lemma ConstrSum_Sem (is_left:bool) : (ConstrSum is_left) ⊨c(9) (ConstrSum_Rel is_left).
     Proof.
       eapply RealiseIn_monotone.
-      {
-        eapply Seq_RealiseIn. eapply Move_Sem. eapply Seq_RealiseIn.
-        eapply Write_Sem. eapply Seq_RealiseIn. eapply Move_Sem.
-        eapply Seq_RealiseIn. eapply Write_Sem. eapply Move_Sem.
-      }
-      {
-        cbn. omega.
-      }
+      { unfold ConstrSum. smpl_RealiseIn. }
+      { cbn. omega. }
       {
         TMSimp. destruct is_left; cbn in *; subst; TMSimp.
         {
@@ -264,7 +258,7 @@ Section MapSum.
   Proof.
     eapply WRealise_monotone.
     {
-      unfold MapSum. eapply If_WRealsie.
+      unfold MapSum. eapply If_WRealise.
       - eapply LiftSigmaTau.Lift_WRealise.
         + eapply tight_retract_strong. cbn. refine (ChangeAlphabet.retr' _).
         + eapply Inject_WRealise.

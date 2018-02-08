@@ -35,3 +35,6 @@ Section Nop.
 
 End Nop.
 Arguments null_action {_ _}.
+
+
+Smpl Add simple eapply Nop_total : TM_RealiseIn.

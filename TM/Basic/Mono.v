@@ -71,6 +71,8 @@ Section test_char.
 
 End test_char.
 
+Smpl Add eapply test_chr_Sem : TM_RealiseIn.
+
 
 Section Write.
 
@@ -104,6 +106,9 @@ Section Write.
 
 End Write.
 
+Smpl Add eapply Write_Sem : TM_RealiseIn.
+
+
 Section Move.
 
   Variable sig : finType.
@@ -128,6 +133,9 @@ Section Move.
   Qed.
 
 End Move.
+
+
+Smpl Add eapply Move_Sem : TM_RealiseIn.
 
 
 (* write and move *)
@@ -157,6 +165,7 @@ Section WriteMove.
 
 End WriteMove.
 
+Smpl Add eapply WriteMove_Sem : TM_RealiseIn.
 
 
 (*
@@ -219,6 +228,8 @@ Section read_char.
 
 End read_char.
 
+Smpl Add eapply read_char_sem : TM_RealiseIn.
+
 Section Mono_Nop.
 
   Variable sig : finType.
@@ -241,3 +252,5 @@ Section Mono_Nop.
   Qed.
 
 End Mono_Nop.
+
+Smpl Add eapply mono_Nop_Sem : TM_RealiseIn.

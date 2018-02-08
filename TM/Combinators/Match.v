@@ -284,3 +284,9 @@ Section Match.
 
 End Match.
 (* Arguments MATCH {n} {sig} {F} pM1 {_} pMf : clear implicits. *)
+
+
+Arguments MATCH : simpl never.
+
+
+(* (* TODO XXX *) *)

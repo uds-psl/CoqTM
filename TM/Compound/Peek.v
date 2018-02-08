@@ -1,6 +1,7 @@
 Require Import TM.Prelim TM.TM.
 Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Match TM.Combinators.SequentialComposition.
+Require Import TM.Compound.TMTac.
 
 
 Section Peek.
@@ -8,12 +9,6 @@ Section Peek.
   Variable sig : finType.
   Variable F : finType.
   Variable f : sig -> F.
-
-  Definition peek_state := FinType (EqType (option (F + move))) % type.
-  Definition peek_start : peek_state := None.
-  Definition peek_Some (y : F) : peek_state := Some (inl y).
-  Definition peek_None (d : move) : peek_state := Some (inr d).
-
 
   Definition Peek : { M : mTM sig 1 & states M -> F + move } :=
     MATCH (Read_char _)
@@ -48,19 +43,74 @@ Section Peek.
 
   Definition Peek_Steps := 11.
 
+
+
+  Print Implicit Match_WRealise.
+
+  Ltac destruct_refine :=
+    match goal with [ |- ?H ] => idtac H end;
+    destruct _; refine _.
+
+  Ltac destruct_shelve e :=
+    cbn in e;
+    first
+      [
+        match type of e with
+        | ?A + ?B =>
+          destruct e as [?X | ?Y]; [destruct_shelve X | destruct_shelve Y]
+        | option ?A =>
+          destruct e as [?X | ]; [destruct_shelve X | shelve]
+        end
+      | shelve
+      ].
+
+  Ltac print_goal :=
+    match goal with
+    | [ |- ?H ] => idtac H
+    end.
+
+  Ltac print_type e := first [ let x := type of e in idtac x | idtac "Untyped:" e ].
+
+  Ltac smpl_match_case_solve_RealiseIn :=
+    eapply RealiseIn_monotone'; [smpl_RealiseIn | shelve].
+
+  Ltac smpl_match_RealiseIn :=
+      match goal with
+      | [ |- MATCH ?M1 ?M2 ⊨c(?k1) ?R] =>
+        is_evar R;
+          let tM2 := type of M2 in
+          match tM2 with
+          | ?F -> _ =>
+            eapply (Match_RealiseIn
+                      (F := FinType(EqType F))
+                      (R2 := ltac:(now (intros ?e; destruct_shelve e))));
+              [
+                try smpl_match_case_solve_RealiseIn
+              | intros ?e; repeat destruct _; try smpl_match_case_solve_RealiseIn
+              ]
+          end
+      end.
+
+  Smpl Add smpl_match_RealiseIn : TM_RealiseIn.
+
   Lemma Peek_RealisesIn :
     Peek ⊨c(Peek_Steps) Peek_Rel.
   Proof.
     unfold Peek_Steps. eapply RealiseIn_monotone.
-    - unfold Peek. eapply Match_RealiseIn.
+    {
+      unfold Peek. smpl_RealiseIn.
+
+      (* The automatic generated proof script could look like this: *)
+      (*
+      unfold Peek. eapply Match_RealiseIn.
       {
-        eapply read_char_sem.
+        eapply RealiseIn_monotone'. eapply read_char_sem. shelve.
       }
       {
         intros r1. cbn in r1. instantiate (2 := fun (b : option sig) => match b with Some r1' => _ | None => _ end).
-        destruct r1 as [ r1' | ].
+        destruct r1 as [ r1' | ]; (eapply RealiseIn_monotone'; [ | shelve]).
         {
-          eapply RealiseIn_monotone. eapply mono_Nop_Sem. omega. intros x y H. apply H.
+          eapply mono_Nop_Sem.
         }
         {
           eapply Seq_RealiseIn.
@@ -70,13 +120,13 @@ Section Peek.
           {
             eapply Match_RealiseIn.
             {
-              eapply read_char_sem.
+              eapply RealiseIn_monotone'. eapply read_char_sem. shelve.
             }
             {
               intros r2. cbn in r2. instantiate (2 := fun (b : option sig) => match b with Some r2' => _ | None => _ end).
-              destruct r2 as [ r2' | ].
+              destruct r2 as [ r2' | ]; (eapply RealiseIn_monotone'; [ | shelve]).
               {
-                eapply RealiseIn_monotone. eapply Move_Sem. shelve. intros x y H. apply H.
+                eapply RealiseIn_monotone'. eapply Move_Sem. shelve.
               }
               {
                 eapply Seq_RealiseIn.
@@ -86,16 +136,17 @@ Section Peek.
                 {
                   eapply Match_RealiseIn.
                   {
-                    eapply read_char_sem.
+                    eapply RealiseIn_monotone'. eapply read_char_sem. shelve.
                   }
                   {
-                    intros r3. cbn in r3. instantiate (2 := fun (b : option sig) => match b with Some r3' => _ | None => _ end).
-                    destruct r3 as [ r3' | ].
+                    intros r3. cbn in *.
+                    instantiate (2 := fun (b : option sig) => match b with Some r3' => _ | None => _ end).
+                    destruct r3 as [ r3' | ]; (eapply RealiseIn_monotone'; [ | shelve]).
                     {
                       eapply Move_Sem.
                     }
                     {
-                      eapply RealiseIn_monotone. eapply mono_Nop_Sem. omega. intros x y H. apply H.
+                      eapply mono_Nop_Sem.
                     }
                   }
                 }
@@ -104,31 +155,19 @@ Section Peek.
           }
         }
       }
-    - Unshelve. all: (cbn; omega).
-    - hnf. intros tin (yout&tout). intros H. hnf in H. destruct H as (r1&t1&(He&He')&H2); hnf in *; subst.
-      destruct (current _) eqn:E1; hnf in *.
-      {
-        destruct H2 as (->&->). split; auto. destruct (tout[@Fin.F1]); cbn in *; congruence.
-      }
-      {
-        destruct H2 as ((u1&t2)&H2&H3); hnf in *. destruct H2 as (->&H2); hnf in *; subst.
-        destruct H3 as (r1&H3); hnf in *. destruct H3 as (t3&(He&He')&H4); hnf in *; subst.
-        destruct (current (t3[@Fin.F1])) eqn:E2; hnf in *.
-        {
-          destruct H4 as (->&->). rewrite H2 in *. destruct (t1[@Fin.F1]); cbn in *; split; auto; congruence.
-        }
-        {
-          destruct H4 as ((u1&t2)&H4&H5); hnf in *. destruct H4 as (->&H4); hnf in *; subst.
-          destruct H5 as (r2&H5); hnf in *. destruct H5 as (t4&(He&He')&H5); hnf in *; subst.
-          destruct (current (t4[@Fin.F1])) eqn:E3; hnf in *.
-          {
-            destruct H5 as (->&H5). rewrite H2,H4,H5 in *. destruct (t1[@Fin.F1]); cbn in *; split; auto; congruence.
-          }
-          {
-            destruct H5 as (->&->). rewrite H2, H4 in *. destruct (t1[@Fin.F1]); cbn in *; split; auto; congruence.
-          }
-        }
-      }
+       *)
+    }
+    {
+      (* We have some shelved goals... *)
+      Unshelve.
+      11-12: constructor 1. all: cbn.
+      all: try omega.
+      4-7: constructor 1.
+      cbn. omega.
+    }
+    { (* The final proof is easy and can indeed be automated. *)
+      TMCrush; TMSolve 1.
+    }
   Qed.
 
 End Peek.

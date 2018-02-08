@@ -432,7 +432,6 @@ Section InitTape.
   Variable X : Type.
   Hypothesis codX : codeable sig X.
 
-
   Definition InitTape_Rel (x : X) : Rel (tapes sig^+ 1) (unit * tapes sig^+ 1) :=
     Mk_R_p (ignoreParam (fun _ tout => tape_encodes _ tout x)).
 
