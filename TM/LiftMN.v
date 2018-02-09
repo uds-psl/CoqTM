@@ -462,3 +462,10 @@ Section LiftNM.
   Qed.
 
 End LiftNM.
+
+Ltac smpl_TM_LiftN :=
+  match goal with
+  | [ |- Inject _ _ ⊫ _] => apply Inject_WRealise; [ vector_dupfree | ]
+  | [ |- Inject _ _ ⊨c(_) _] => apply Inject_RealisesIn; [ vector_dupfree | ]
+  end.
+Smpl Add smpl_TM_LiftN : TM_Correct.

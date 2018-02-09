@@ -767,17 +767,11 @@ Hint Unfold current_chars : tape.
 (** * Automatisation of the generation of relations *)
 
 (* Create the smpl tactic databases *)
-Smpl Create TM_WRealise.
-Smpl Create TM_RealiseIn.
+Smpl Create TM_Correct.
 
 (* This tactics apply exactly one tactic from the corresponding hint database *)
-Ltac smpl_WRealise := smpl TM_WRealise.
-Ltac smpl_RealiseIn := smpl TM_RealiseIn.
+Ltac TM_Correct := smpl TM_Correct.
 
-(*
-(* Any Machine that realises a relation in constant time also weakly realises this relation. *)
-Smpl Add simple eapply RealiseIn_WRealise; smpl_RealiseIn : TM_WRealise.
-*)
+Smpl Add progress eauto : TM_Correct.
 
-Smpl Add eassumption : TM_WRealise.
-Smpl Add eassumption : TM_RealiseIn.
+Smpl Add rewrite <- sigT_eta : TM_Correct.

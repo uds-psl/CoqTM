@@ -71,6 +71,3 @@ End Composition.
 Notation "A ;; B" := (Seq A B) (right associativity, at level 65).
 
 Arguments Seq : simpl never.
-
-Smpl Add eapply Seq_RealiseIn : TM_RealiseIn.
-Smpl Add eapply Seq_WRealise : TM_WRealise.

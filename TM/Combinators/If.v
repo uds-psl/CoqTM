@@ -86,6 +86,3 @@ Section Composition.
 End Composition.
 
 Arguments If : simpl never.
-
-Smpl Add eapply If_RealiseIn; (eapply RealiseIn_monotone'; [ | shelve]) : TM_RealiseIn.
-Smpl Add eapply If_WRealise : TM_WRealise.

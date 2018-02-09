@@ -34,7 +34,12 @@ Section Nop.
   Qed.
 
 End Nop.
+
 Arguments null_action {_ _}.
+Arguments Nop : simpl never.
 
-
-Smpl Add simple eapply Nop_total : TM_RealiseIn.
+Smpl Add
+     match goal with
+     | [ |- Nop _ ⊫ _] => eapply Nop_sem
+     | [ |- Nop _ ⊨c(_) _] => eapply Nop_total
+     end : TM_Correct. 

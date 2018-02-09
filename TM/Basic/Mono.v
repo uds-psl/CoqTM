@@ -71,7 +71,7 @@ Section test_char.
 
 End test_char.
 
-Smpl Add eapply test_chr_Sem : TM_RealiseIn.
+Arguments TEST_CHAR : simpl never.
 
 
 Section Write.
@@ -106,7 +106,7 @@ Section Write.
 
 End Write.
 
-Smpl Add eapply Write_Sem : TM_RealiseIn.
+Arguments Write : simpl never.
 
 
 Section Move.
@@ -134,8 +134,8 @@ Section Move.
 
 End Move.
 
+Arguments Move : simpl never.
 
-Smpl Add eapply Move_Sem : TM_RealiseIn.
 
 
 (* write and move *)
@@ -165,7 +165,7 @@ Section WriteMove.
 
 End WriteMove.
 
-Smpl Add eapply WriteMove_Sem : TM_RealiseIn.
+Arguments WriteMove : simpl never.
 
 
 (*
@@ -228,7 +228,8 @@ Section read_char.
 
 End read_char.
 
-Smpl Add eapply read_char_sem : TM_RealiseIn.
+Arguments read_char : simpl never.
+
 
 Section Mono_Nop.
 
@@ -253,4 +254,25 @@ Section Mono_Nop.
 
 End Mono_Nop.
 
-Smpl Add eapply mono_Nop_Sem : TM_RealiseIn.
+Arguments mono_Nop : simpl never.
+
+
+
+
+Ltac smpl_Correct_Basic :=
+  match goal with
+  | [ |- TEST_CHAR _ ⊫ _] => eapply RealiseIn_WRealise; eapply test_chr_Sem
+  | [ |- TEST_CHAR _ ⊨c(_) _] => eapply test_chr_Sem
+  | [ |- Write _ _ ⊫ _] => eapply RealiseIn_WRealise; eapply Write_Sem
+  | [ |- Write _ _ ⊨c(_) _] => eapply Write_Sem
+  | [ |- Move _ _ _ ⊫ _] => eapply RealiseIn_WRealise; eapply Move_Sem
+  | [ |- Move _ _ _ ⊨c(_) _] => eapply Move_Sem
+  | [ |- WriteMove _ _ ⊫ _] => eapply RealiseIn_WRealise; eapply WriteMove_Sem
+  | [ |- WriteMove _ _ ⊨c(_) _] => eapply WriteMove_Sem
+  | [ |- Read_char _ ⊫ _] => eapply RealiseIn_WRealise; eapply read_char_sem
+  | [ |- Read_char _ ⊨c(_) _] => eapply read_char_sem
+  | [ |- mono_Nop _ _ ⊫ _] => eapply RealiseIn_WRealise; eapply mono_Nop_Sem
+  | [ |- mono_Nop _ _ ⊨c(_) _] => eapply mono_Nop_Sem
+  end.
+
+Smpl Add smpl_Correct_Basic : TM_Correct.

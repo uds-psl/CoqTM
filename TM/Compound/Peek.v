@@ -1,6 +1,6 @@
 Require Import TM.Prelim TM.TM.
 Require Import TM.Basic.Mono.
-Require Import TM.Combinators.Match TM.Combinators.SequentialComposition.
+Require Import TM.Combinators.Combinators.
 Require Import TM.Compound.TMTac.
 
 
@@ -48,7 +48,7 @@ Section Peek.
     Peek ⊨c(Peek_Steps) Peek_Rel.
   Proof.
     unfold Peek_Steps. eapply RealiseIn_monotone.
-    - unfold Peek. repeat smpl_RealiseIn.
+    - unfold Peek. repeat TM_Correct.
     - Unshelve. 6,9: constructor 1. all: cbn. all: try omega. 4-7: constructor. cbn. constructor.
     - TMCrush; TMSolve 1.
   Qed.

@@ -36,7 +36,7 @@ Section MatchSum.
   Lemma MatchSum_Sem : MatchSum ⊨c(5) MatchSum_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold MatchSum. repeat smpl_RealiseIn. }
+    { unfold MatchSum. repeat TM_Correct. }
     { Unshelve. 8: constructor. all: try omega. 3: constructor. cbn. omega. }
     {
       intros tin (yout&tout) H. destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
@@ -73,7 +73,7 @@ Section MatchSum.
     Lemma ConstrSum_Sem (is_left:bool) : (ConstrSum is_left) ⊨c(9) (ConstrSum_Rel is_left).
     Proof.
       eapply RealiseIn_monotone.
-      { unfold ConstrSum. repeat smpl_RealiseIn. }
+      { unfold ConstrSum. repeat TM_Correct. }
       { cbn. omega. }
       {
         TMSimp. destruct is_left; cbn in *; subst; TMSimp.
@@ -246,15 +246,14 @@ Section MapSum.
       (ChangeAlphabet (inl (default : sigX)) _ M1)
       (ChangeAlphabet (inl (default : sigY)) _ M2).
 
+
+
   Lemma MapSum_Computes : MapSum ⊫ Computes_Rel inputTape outputTape _ _ map_sum.
   Proof.
     eapply WRealise_monotone.
     {
-      Smpl Add apply Inject_WRealise; [ vector_dupfree | ] : TM_WRealise.
-      unfold MapSum. repeat smpl_WRealise.
-      - unfold ChangeAlphabet. eapply Lift_WRealise; swap 1 2.
-        + smpl_WRealise. eapply RealiseIn_WRealise. eapply MatchSum_Sem.
-        + auto.
+      unfold MapSum. repeat TM_Correct.
+      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_WRealise. eapply MatchSum_Sem.
       - simple eapply (ChangeAlphabet_Computes_WRealise _ _ f).
         + eapply M1_Computes.
         + left. intros. cbn. intros (?&?&?) % in_map_iff. inv H.

@@ -259,3 +259,11 @@ Section LiftSigmaTau.
   Qed.
 
 End LiftSigmaTau.
+
+
+Ltac smpl_TM_LiftSigma :=
+  match goal with
+  | [ |- Lift _ _ _ _ ⊫ _] => eapply Lift_WRealise; swap 1 2
+  | [ |- Lift _ _ _ _ ⊨c(_) _] => eapply Lift_RealiseIn; swap 1 2
+  end.
+Smpl Add smpl_TM_LiftSigma : TM_Correct.
