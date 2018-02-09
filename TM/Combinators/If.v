@@ -87,5 +87,5 @@ End Composition.
 
 Arguments If : simpl never.
 
-Smpl Add eapply If_RealiseIn; try smpl_RealiseIn : TM_RealiseIn.
-Smpl Add eapply If_WRealise; try smpl_WRealise : TM_WRealise.
+Smpl Add eapply If_RealiseIn; (eapply RealiseIn_monotone'; [ | shelve]) : TM_RealiseIn.
+Smpl Add eapply If_WRealise : TM_WRealise.

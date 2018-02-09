@@ -7,7 +7,9 @@ Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 
 (* Basic pattern matching *)
 Section MatchSum.
+
   Variable X Y : Type.
+  
   Variable (sigX sigY : finType).
   Hypothesis (codX : codeable sigX X) (codY : codeable sigY Y).
 
@@ -29,37 +31,26 @@ Section MatchSum.
                  | _ => mono_Nop _ true (* invalid input *)
                  end).
 
+  Eval simpl in ltac:(intros ?e; destruct_shelve e) : (option (bool + (bool + (nat + nat)))) -> _.
+
   Lemma MatchSum_Sem : MatchSum ⊨c(5) MatchSum_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    {
-      unfold MatchSum. eapply Match_RealiseIn. cbn. eapply read_char_sem.
-      instantiate (2 := fun o : option (bool + (sigX+sigY))^+ =>
-                          match o with Some (inr (inl true)) => _ | Some (inr (inl false)) => _ | _ => _ end).
-      cbn. intros [ s | ]; cbn.
-      - destruct s as [ start | s]; cbn.
-        + eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
-        + destruct s as [cons | xy]; swap 1 2; cbn.
-          * eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
-          * destruct cons; (eapply Seq_RealiseIn; [eapply Write_Sem | eapply Move_Sem]).
-      - eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
-    }
-    { cbn. omega. }
+    { unfold MatchSum. repeat smpl_RealiseIn. }
+    { Unshelve. 8: constructor. all: try omega. 3: constructor. cbn. omega. }
     {
       intros tin (yout&tout) H. destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
       destruct_tapes; cbn in *.
       destruct h; cbn in *; TMSimp; eauto. destruct (map _) in H0; cbn in H0; congruence.
       destruct e; swap 1 2; cbn in *; TMSimp.
-      - destruct s; swap 1 2; cbn in *; TMSimp.
-        + destruct v; cbn in *; destruct (map _) in H0; cbn in *; congruence.
+      - destruct s; swap 1 2; TMSimp.
+        + destruct s; TMSimp; destruct v; cbn in *; inv H0.
         + destruct b; TMSimp.
           * destruct v as [vx|vy]; TMSimp. exists vx. split; auto.
             destruct (encode _) eqn:E; cbn; do 2 eexists; split; cbn; try rewrite E; cbn; auto.
           * destruct v as [vx|vy]; TMSimp. exists vy. split; auto.
             destruct (encode _) eqn:E; cbn; do 2 eexists; split; cbn; try rewrite E; cbn; auto.
-      - destruct v; cbn in *.
-        + destruct (map _) in H0; cbn in H0; inv H0.
-        + destruct (map _) in H0; cbn in H0; inv H0.
+      - destruct b; TMSimp; destruct v; TMSimp.
     }
   Qed.
 
@@ -82,7 +73,7 @@ Section MatchSum.
     Lemma ConstrSum_Sem (is_left:bool) : (ConstrSum is_left) ⊨c(9) (ConstrSum_Rel is_left).
     Proof.
       eapply RealiseIn_monotone.
-      { unfold ConstrSum. smpl_RealiseIn. }
+      { unfold ConstrSum. repeat smpl_RealiseIn. }
       { cbn. omega. }
       {
         TMSimp. destruct is_left; cbn in *; subst; TMSimp.
@@ -150,9 +141,10 @@ Section MatchOption.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold MatchOption. eapply LiftSigmaTau.Lift_RealiseIn.
-      - eapply tight_retract_strong. cbn. eapply (ChangeAlphabet.retr' retr').
+      unfold MatchOption.
+      eapply Lift_RealiseIn; swap 1 2. (* todo tac *)
       - eapply (MatchSum_Sem codX Encode_Unit).
+      - eapply tight_retract_strong. cbn. eapply (ChangeAlphabet.retr' retr').
     }
     { omega. }
     {
@@ -258,18 +250,17 @@ Section MapSum.
   Proof.
     eapply WRealise_monotone.
     {
-      unfold MapSum. eapply If_WRealise.
-      - eapply LiftSigmaTau.Lift_WRealise.
-        + eapply tight_retract_strong. cbn. refine (ChangeAlphabet.retr' _).
-        + eapply Inject_WRealise.
-          * vector_dupfree.
-          * eapply Realise_WRealise, RealiseIn_Realise. apply (MatchSum_Sem codX codY).
-      - eapply (ChangeAlphabet_Computes_WRealise (inl default) _ f).
+      Smpl Add apply Inject_WRealise; [ vector_dupfree | ] : TM_WRealise.
+      unfold MapSum. repeat smpl_WRealise.
+      - unfold ChangeAlphabet. eapply Lift_WRealise; swap 1 2.
+        + smpl_WRealise. eapply RealiseIn_WRealise. eapply MatchSum_Sem.
+        + auto.
+      - simple eapply (ChangeAlphabet_Computes_WRealise _ _ f).
         + eapply M1_Computes.
         + left. intros. cbn. intros (?&?&?) % in_map_iff. inv H.
-      - eapply (ChangeAlphabet_Computes_WRealise (inl default) _ g).
+      - simple eapply (ChangeAlphabet_Computes_WRealise _ _ g).
         + eapply M2_Computes.
-        + left. intros y. cbn. intros (?&?&?) % in_map_iff. inv H.
+        + left. intros. cbn. intros (?&?&?) % in_map_iff. inv H.
     }
     { clear M1_Computes M2_Computes M1 M2. hnf. intros tin (()&tout). intros H. destruct_tapes; cbn in *.
       intros s H4. destruct H; destruct H as (tmid&H1&H2); hnf in H1, H2; cbn in H1, H2.

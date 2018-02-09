@@ -774,8 +774,10 @@ Smpl Create TM_RealiseIn.
 Ltac smpl_WRealise := smpl TM_WRealise.
 Ltac smpl_RealiseIn := smpl TM_RealiseIn.
 
+(*
 (* Any Machine that realises a relation in constant time also weakly realises this relation. *)
 Smpl Add simple eapply RealiseIn_WRealise; smpl_RealiseIn : TM_WRealise.
+*)
 
 Smpl Add eassumption : TM_WRealise.
 Smpl Add eassumption : TM_RealiseIn.
