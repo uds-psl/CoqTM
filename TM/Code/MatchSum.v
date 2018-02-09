@@ -270,9 +270,9 @@ Section MapSum.
         { clear H2 H4. autounfold with tape in H1. simpl_tape in H1.
           eapply encodeTranslate_tau2 with (def := inr default).
           - left. cbn. intros (?&?&?) % in_map_iff. inv H.
-          - eapply (encodeTranslate_tau2 _) in H1.
-            eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
-            Unshelve. left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
+          - unshelve eapply (encodeTranslate_tau2 _) in H1.
+            + left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
+            + eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
         } 
         refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
       }
@@ -283,9 +283,9 @@ Section MapSum.
         { clear H2 H4. autounfold with tape in H1. simpl_tape in H1.
           eapply encodeTranslate_tau2 with (def := inr (default : sigZ)).
           - left. cbn. intros (?&?&?) % in_map_iff. inv H.
-          - eapply (encodeTranslate_tau2 _) in H1.
-            eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
-            Unshelve. left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
+          - unshelve eapply (encodeTranslate_tau2 _) in H1.
+            + left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
+            + eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
         } 
         refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
       }
