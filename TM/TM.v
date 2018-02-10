@@ -348,6 +348,12 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     pM ⊨c(k) R -> pM ⊫ R.
   Proof. now intros (?&?) % Realise_total. Qed.
 
+  Fact RealiseIn_terminatesIn n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
+    pM ⊨c(k) R -> projT1 pM ↓ (fun tin l => k <= l). 
+  Proof.
+    intros HRel. hnf. intros tin l HSteps. hnf in HRel. specialize (HRel tin) as (outc&HLoop&Rloop).
+    exists outc. eapply loop_ge; eauto.
+  Qed.
   
   Fact RealiseIn_changeP n (M:mTM n) (F : finType) (f f' : states M -> F) (R : Rel (tapes _) (F * tapes _)) k :
     RealiseIn (M; f) R k -> (forall s, f s = f' s) -> RealiseIn (M ; f') R k.
@@ -355,10 +361,16 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     destruct M. cbn in *. unfold RealiseIn. cbn. firstorder congruence.
   Qed.
 
-  Fact RealiseIn_strengthen n (M : mTM n) (F : finType) (f : states M -> F) (R1 R2 : Rel (tapes _) (F * tapes _)) k :
-    WRealise (M; f) R2 -> RealiseIn (M ; f) R1 k -> RealiseIn (M ; f) (R1 ∩ R2) k.
+  Fact RealiseIn_strengthen n (F : finType) (pM : { M : mTM n & states M -> F}) (R1 R2 : Rel (tapes _) (F * tapes _)) k :
+    WRealise pM R2 -> RealiseIn pM R1 k -> RealiseIn pM (R1 ∩ R2) k.
   Proof.
-    intros HwR HR t.  destruct (HR t) as (outc & ?). exists outc. firstorder.
+    intros HwR HR t. destruct (HR t) as (outc & ?). exists outc. firstorder.
+  Qed.
+
+  Fact WRealise_strengthen n (F : finType) (pM : { M : mTM n & states M -> F}) (R1 R2 : Rel (tapes _) (F * tapes _)) :
+    WRealise pM R2 -> WRealise pM R1 -> WRealise pM (R1 ∩ R2).
+  Proof.
+    intros HwR HR t. firstorder.
   Qed.
 
   (** ** Canonical relations *)
@@ -775,3 +787,9 @@ Ltac TM_Correct := smpl TM_Correct.
 Smpl Add progress eauto : TM_Correct.
 
 Smpl Add rewrite <- sigT_eta : TM_Correct.
+
+
+
+(* Auxiliary function to actually execute a machine *)
+Definition execTM (sig : finType) (n : nat) (M : mTM sig n) (steps : nat) (tapes : tapes sig n) :=
+  option_map (@ctapes _ _ _) (loopM steps (initc M tapes)).

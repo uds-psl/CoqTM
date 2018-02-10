@@ -66,6 +66,11 @@ Lemma functionalOn_functional X Y Z (T : Rel X Y) (R : Rel X Z) :
   functionalOn T R -> surjective T -> functional R.
 Proof. firstorder. Qed.
 
+Lemma functionalOn_intersect X Y Z (T : Rel X Y) (R1 R2 : Rel X Z) :
+  (functionalOn T R1 \/ functionalOn T R2) -> functionalOn T (R1 ∩ R2).
+Proof. firstorder. Qed.
+  
+
 Definition ignoreFirst X Y (R : Y -> Prop) : Rel X Y  := fun x y => R y.
 Notation "'↑' R" := (ignoreFirst R) (at level 40, format "'↑' R").
 
@@ -83,6 +88,14 @@ Proof. firstorder. Qed.
 
 Lemma subrel_or X Y (R1 R2 R3 : Rel X Y) :
   R1 <<=2 R3 /\ R2 <<=2 R3 -> R1 ∪ R2 <<=2 R3.
+Proof. firstorder. Qed.
+
+Lemma subrel_and2 X Y (R1 R2 R3 R4 : Rel X Y) :
+  R1 <<=2 R3 /\ R2 <<=2 R4 -> R1 ∩ R2 <<=2 R3 ∩ R4.
+Proof. firstorder. Qed.
+
+Lemma subrel_or2 X Y (R1 R2 R3 R4 : Rel X Y) :
+  R1 <<=2 R3 /\ R2 <<=2 R4 -> R1 ∪ R2 <<=2 R3 ∪ R4.
 Proof. firstorder. Qed.
 
 Definition eqrel X Y (R S: Rel X Y) := (R <<=2 S /\ S <<=2 R) .

@@ -97,11 +97,29 @@ Section Fix_Sig.
         forall (x : X), tin[@i] ≂ x -> tout[@j] ≂ f x /\ yout = param_fun x.
 
 
-    Lemma Computes_Rel_ignore_param  (f : X -> Y) (param_fun : X -> F) :
-      Computes_Rel_p f param_fun <<=2 Computes_Rel f.
-    Proof.
-      hnf. intros tin (?,tout) Comp. hnf in *. intros x HEnc. now specialize (Comp x HEnc) as (?&_).
-    Qed.
+    Section Computes_IgnoreParam.
+
+      Variable (f : X -> Y) (param_fun : X -> F).
+
+      Lemma Computes_Rel_ignore_param :
+        Computes_Rel_p f param_fun <<=2 Computes_Rel f.
+      Proof.
+        hnf. intros tin (?,tout) Comp. hnf in *. intros x HEnc. now specialize (Comp x HEnc) as (?&_).
+      Qed.
+
+      Variable pM : { M : mTM sig^+ n_tapes & states M -> F }.
+
+      Lemma Computes_IgnoreParam_WRealise :
+        pM ⊫ Computes_Rel_p f param_fun ->
+        pM ⊫ Computes_Rel f.
+      Proof. intros H. eapply WRealise_monotone; eauto using Computes_Rel_ignore_param. Qed.
+
+      Lemma Computes_IgnoreParam_RealiseIn k :
+        pM ⊨c(k) Computes_Rel_p f param_fun ->
+        pM ⊨c(k) Computes_Rel f.
+      Proof. intros H. eapply RealiseIn_monotone; eauto using Computes_Rel_ignore_param. Qed.
+
+    End Computes_IgnoreParam.
 
     Section Computes_Ext.
       Variable (f f' : X -> Y) (ext_fun : forall x, f x = f' x).
@@ -250,11 +268,29 @@ Section Fix_Sig.
           yout = param x y.
 
 
-    Lemma Computes2_Rel_ignore_param  (f : X -> Y -> Z) (param_fun : X -> Y -> F) :
-      Computes2_Rel_p f param_fun <<=2 Computes2_Rel f.
-    Proof.
-      hnf. intros tin (?,tout) Comp. hnf in *. intros x Hx y Hy. now specialize (Comp x Hx y Hy) as (?&_).
-    Qed.
+    Section Computes2_IgnoreParam.
+
+      Variable (f : X -> Y -> Z) (param_fun : X -> Y -> F).
+
+      Lemma Computes2_Rel_ignore_param :
+        Computes2_Rel_p f param_fun <<=2 Computes2_Rel f.
+      Proof.
+        hnf. intros tin (?,tout) Comp. hnf in *. intros x HEncX y HEncY. now specialize (Comp x HEncX) as (?&_).
+      Qed.
+
+      Variable pM : { M : mTM sig^+ n_tapes & states M -> F }.
+
+      Lemma Computes2_IgnoreParam_WRealise :
+        pM ⊫ Computes2_Rel_p f param_fun ->
+        pM ⊫ Computes2_Rel f.
+      Proof. intros H. eapply WRealise_monotone; eauto using Computes2_Rel_ignore_param. Qed.
+
+      Lemma Computes2_IgnoreParam_RealiseIn l :
+        pM ⊨c(l) Computes2_Rel_p f param_fun ->
+        pM ⊨c(l) Computes2_Rel f.
+      Proof. intros H. eapply RealiseIn_monotone; eauto using Computes2_Rel_ignore_param. Qed.
+
+    End Computes2_IgnoreParam.
 
 
     Section Computes2_Ext.
