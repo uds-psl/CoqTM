@@ -90,7 +90,7 @@ Ltac smpl_TM_Combinators :=
   | [ |- If _ _ _ ⊨c(_) _] => eapply If_RealiseIn
   | [ |- Seq _ _ ⊫ _] => eapply Seq_WRealise
   | [ |- Seq _ _ ⊨c(_) _] => eapply Seq_RealiseIn
-  | [ |- While _ ⊫ _] => eapply While_WRealise
+  | [ |- WHILE _ ⊫ _] => eapply While_WRealise
   end.
 
 Smpl Add smpl_TM_Combinators : TM_Correct.

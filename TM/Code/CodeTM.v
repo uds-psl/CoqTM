@@ -256,6 +256,83 @@ Section Fix_Sig.
       hnf. intros tin (?,tout) Comp. hnf in *. intros x Hx y Hy. now specialize (Comp x Hx y Hy) as (?&_).
     Qed.
 
+
+    Section Computes2_Ext.
+      Variable (f f' : X -> Y -> Z) (ext_fun : forall x y, f x y = f' x y).
+      Variable (paramFun paramFun' : X -> Y -> F) (ext_param : forall x y, paramFun x y = paramFun' x y).
+
+      Lemma Computes2_ext :
+        Computes2_Rel f' <<=2 Computes2_Rel f.
+      Proof.
+        intros tin (yout, tout) HRel. hnf. intros x EncX y EncY. specialize (HRel x EncX y EncY). congruence.
+      Qed.
+
+      Lemma Computes2_ext_p :
+        Computes2_Rel_p f' paramFun' <<=2 Computes2_Rel_p f paramFun.
+      Proof.
+        intros tin (yout, tout) HRel. hnf. intros x EncX y EncY. specialize (HRel x EncX y EncY). congruence.
+      Qed.
+
+      Variable pM : { M : mTM sig^+ n_tapes & states M -> F }.
+
+      Lemma Computes2_Ext_WRealise :
+        pM ⊫ Computes2_Rel f' ->
+        pM ⊫ Computes2_Rel f.
+      Proof.
+        intros H. eapply WRealise_monotone.
+        - eapply H.
+        - eapply Computes2_ext.
+      Qed.
+
+      Lemma Computes2_Ext_Realise :
+        pM ⊨ Computes2_Rel f' ->
+        pM ⊨ Computes2_Rel f.
+      Proof.
+        intros H. eapply Realise_monotone.
+        - eapply H.
+        - eapply Computes2_ext.
+      Qed.
+
+      Lemma Computes2_Ext_RealiseIn (l : nat) :
+        pM ⊨c(l) Computes2_Rel f' ->
+        pM ⊨c(l) Computes2_Rel f.
+      Proof.
+        intros H. eapply RealiseIn_monotone.
+        - eapply H.
+        - auto.
+        - eapply Computes2_ext.
+      Qed.
+
+      Lemma Computes2_Ext_WRealise_p :
+        pM ⊫ Computes2_Rel_p f' paramFun' ->
+        pM ⊫ Computes2_Rel_p f paramFun.
+      Proof.
+        intros H. eapply WRealise_monotone.
+        - eapply H.
+        - eapply Computes2_ext_p.
+      Qed.
+
+      Lemma Computes2_Ext_Realise_p :
+        pM ⊨ Computes2_Rel_p f' paramFun' ->
+        pM ⊨ Computes2_Rel_p f paramFun.
+      Proof.
+        intros H. eapply Realise_monotone.
+        - eapply H.
+        - eapply Computes2_ext_p.
+      Qed.
+
+      Lemma Computes2_Ext_RealiseIn_p (l : nat) :
+        pM ⊨c(l) Computes2_Rel_p f' paramFun' ->
+        pM ⊨c(l) Computes2_Rel_p f paramFun.
+      Proof.
+        intros H. eapply RealiseIn_monotone.
+        - eapply H.
+        - auto.
+        - eapply Computes2_ext_p.
+      Qed.
+
+    End Computes2_Ext.
+
   End Computes2.
 
 End Fix_Sig.

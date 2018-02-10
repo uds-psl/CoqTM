@@ -25,7 +25,7 @@ Section MatchNat.
                  | _ => mono_Nop _ true (* invalid input *)
                  end).
 
-  Lemma MatchSum_Sem : MatchNat ⊨c(5) MatchNat_Rel.
+  Lemma MatchNat_Sem : MatchNat ⊨c(5) MatchNat_Rel.
   Proof.
     eapply RealiseIn_monotone.
     {

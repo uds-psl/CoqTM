@@ -38,8 +38,13 @@ End Nop.
 Arguments null_action {_ _}.
 Arguments Nop : simpl never.
 
-Smpl Add
-     match goal with
-     | [ |- Nop _ ⊫ _] => eapply Nop_sem
-     | [ |- Nop _ ⊨c(_) _] => eapply Nop_total
-     end : TM_Correct. 
+
+Ltac smpl_TM_Nop :=
+  match goal with
+  | [ |- Nop _ _ _ ⊫ _] => eapply Nop_sem
+  | [ |- Nop _ _ _ ⊨c(_) _] => eapply Nop_total
+  end.
+
+
+Smpl Add smpl_TM_Nop : TM_Correct. 
+
