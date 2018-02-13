@@ -4,8 +4,6 @@ Require Import TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Compound.TMTac.
 
 
-(* Nat.add is not tail-recursive *)
-
 Definition is_zero (n : nat) :=
   match n with
   | 0 => true
@@ -20,7 +18,7 @@ Definition is_not_zero (n : nat) :=
 
 Lemma is_zero_correct (n : nat) :
   is_not_zero n = true <-> n <> 0.
-Proof. destruct n; cbn; split; auto. Qed.
+Proof. destruct n; cbn; split; congruence. Qed.
 
 
 Lemma MatchNat_Computes_Pred :
@@ -36,6 +34,114 @@ Proof.
     + specialize (H _ HEncN) as (n'&?&?). inv H. auto.
     + specialize (H _ HEncN) as (n'&?); auto.
 Qed.
+
+
+
+(* Tail recursive funktions over [nat] *)
+Section FoldNat.
+
+  Variable Y : finType.
+  Variable f : nat -> nat.
+
+  Fixpoint natTailRec (x y : nat) {struct x} : nat :=
+    match x with
+    | 0 => y
+    | S x' => natTailRec x' (f y)
+    end.
+
+  Variable M1 : { M : mTM (bool^+) 1 & states M -> unit }.
+  Hypothesis M1_computes : M1 ⊫ Computes_Rel Fin.F1 Fin.F1 _ _ f.
+
+  Definition natTailRec_step (x y : nat) : nat :=
+    match x with
+    | 0 => y
+    | S _ => f y
+    end.
+
+
+  Definition TailRec_step : { M : mTM _ 2 & states M -> bool * unit } :=
+    If (Inject MatchNat [|Fin.F1|])
+       (Inject M1 [|Fin.FS Fin.F1|];; Nop _ _ (true, tt))
+       (Nop _ _ (false, tt)).
+  
+
+  Definition TailRec : { M : mTM _ 2 & states M -> unit } := WHILE TailRec_step.
+
+
+  (** Correctness *)
+
+  Definition tailRec_step_param : nat -> bool * unit := fun n => (is_not_zero n, tt).
+
+  Lemma TailRec_step_Computes :
+    TailRec_step ⊫ Computes_Rel_p (Fin.F1) (Fin.F1) _ _ pred tailRec_step_param ∩
+                   Computes2_Rel (Fin.F1) (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ natTailRec_step.
+  Proof.
+    eapply WRealise_monotone.
+    {
+      unfold TailRec_step. repeat TM_Correct.
+      eapply  RealiseIn_WRealise. eapply MatchNat_Sem.
+    }
+    {
+      intros tin (yout, tout). split.
+      - intros n HEn. destruct H; hnf in H.
+        + destruct H as (tmid&(H1&H2)&([]&t)&H3&->&->); hnf in H1, H2, H3. simpl_not_in.
+          specialize (H1 n). spec_assert H1 as (n'&->&H1). { unfold reorder. now simpl_vector. } cbn in *. split; auto.
+          destruct H3 as (H3&H4); hnf in H3, H4. simpl_not_in. rewrite <- H2, H4 in *; clear H2 H4. auto.
+        + destruct H as (tmid&(H1&H2)&->&->); hnf in H1, H2. simpl_not_in. specialize (H1 n).
+          spec_assert H1 as (->&H1). { unfold reorder. now simpl_vector. } cbn. auto.
+      - intros n m HEn Hem. destruct H; hnf in H.
+        + destruct H as (tmid&(H1&H2)&([]&t)&H3&->&->); hnf in H1, H2, H3. simpl_not_in.
+          specialize (H1 n). spec_assert H1 as (n'&->&H1). { unfold reorder. now simpl_vector. } cbn in *. auto.
+          destruct H3 as (H3&H4); hnf in H3, H4. simpl_not_in. rewrite <- H2, H4 in *; clear H2 H4. auto.
+        + destruct H as (tmid&(H1&H2)&->&->); hnf in H1, H2. simpl_not_in. specialize (H1 n). spec_assert H1 as (->&H1).
+          { unfold reorder. now simpl_vector. } cbn in *. rewrite H2 in *; clear H2. auto.
+    }
+  Qed.
+
+  
+  Lemma natTailRec_eta (x y : nat) :
+    natTailRec (Init.Nat.pred x) (natTailRec_step x y) = natTailRec x y.
+  Proof. destruct x, y; cbn; omega. Qed.
+
+
+  Lemma TailRec_Computes :
+    TailRec ⊫ Computes2_Rel (Fin.F1) (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ natTailRec.
+  Proof.
+    eapply WRealise_monotone.
+    {
+      unfold TailRec. TM_Correct. eapply TailRec_step_Computes.
+    }
+    {
+      hnf. intros tin ((), tout) H. destruct H as (tmid&H1&H2&H3).
+      revert tout H2 H3. induction H1 as [ tin | tin tmid tout H1 H2 IH]; intros; hnf in *; intros.
+      - specialize (H2 _ H) as (H2&H2'). specialize (H3 _ _ H H0). cbn in *.
+        unfold tailRec_step_param in *. destruct x, y; cbn in *; inv H2'; auto.
+      - cbn in *. destruct H1 as (()&H11&H12).
+        hnf in H11, H12. specialize (H11 x H) as (H11&H11'). specialize (H12 x y H H4).
+        specialize (IH _ H0 H3). specialize (IH _ _ H11 H12). rewrite natTailRec_eta in IH. auto.
+    }
+  Qed.
+
+
+  (** Termination *)
+
+  Variable M1_runtime : nat -> nat.
+  Hypothesis M1_terminates : projT1 M1 ↓ (fun tin k => exists x, tin[@Fin.F1] ≂ x /\ M1_runtime x <= k).
+
+  Lemma TailRec_step_terminates :
+    projT1 TailRec_step ↓ (fun tin k => exists x, tin[@Fin.F1] ≂ x /\ 7 + M1_runtime x <= k).
+  Proof.
+    unfold TailRec_step.
+    eapply TerminatesIn_monotone.
+    {
+      eapply If_terminatesIn.
+      (* XXX To complicated *)
+    }
+
+
+End FoldNat.
+
+
 
 
 Definition Add_step : { M : mTM _ 2 & states M -> bool * unit } :=

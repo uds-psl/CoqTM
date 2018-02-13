@@ -35,10 +35,10 @@ Section Composition.
     projT1 pM2 ↓ T2 ->
     projT1 pM3 ↓ T3 ->
     projT1 If ↓ (fun (t : tapes sig n) (i : nat) =>
-            exists (i1 i2 : nat) (b : bool) (y : tapes sig n),
-              i > i1 + i2 /\
-              (R1 t (b, y) /\ b = true /\ T1 t i1 /\ T2 y i2 \/
-                                                  R1 t (b, y) /\ b = false /\ T1 t i1 /\ T3 y i2)).
+                   exists (i1 i2 : nat) (b : bool) (y : tapes sig n),
+                     i > i1 + i2 /\
+                     (R1 t (b, y) /\ b = true /\ T1 t i1 /\ T2 y i2 \/
+                      R1 t (b, y) /\ b = false /\ T1 t i1 /\ T3 y i2)).
   Proof.
     intros. eapply TerminatesIn_monotone.
     - eapply (Match_TerminatesIn (R1 := R1) (T := fun b => if b then T2 else T3) ); eauto.
