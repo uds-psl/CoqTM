@@ -299,48 +299,32 @@ End Test.
 
 
 
-
 Lemma Add_terminatesIn :
-  projT1 Add ↓ (fun tin steps => exists x y : nat, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ step_count x = steps).
+  projT1 Add ↓ (fun tin steps => exists x y : nat, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ step_count x <= steps).
 Proof.
-  eapply While_terminatesIn.
+  eapply While_TerminatesIn.
   {
-    eapply WRealise_strengthen.
-    - eapply RealiseIn_WRealise. apply Add_step_Computes.
-    - eapply WRealise_R_mTM.
+    eapply RealiseIn_WRealise. eapply Add_step_Computes.
   }
   {
     eapply RealiseIn_terminatesIn. eapply Add_step_Computes.
   }
   {
-    eapply functionalOn_intersect. left. eapply functional_functionalOn. eapply R_canonical_functional.
-  }
-  {
-    intros tin ? (m&n&HEncM&HEncN&<-).
-    pose proof (Add_step_Computes tin) as (outc&H1&H2&H3).
-    hnf in H1, H2, H3. specialize (H2 _ HEncM) as (H2&H2'); specialize (H3 _ _ HEncM HEncN) as (H3&H3').
-    exists (ctapes outc), (fst (projT2 Add_step (cstate outc))), (snd (projT2 Add_step (cstate outc))), 12. do 2 split.
-    - hnf. exists outc, 12. split; auto; split; auto. now rewrite <- surjective_pairing.
-    - split.
-      + hnf. intros ? <- % (tape_encodes_injective HEncM). split; auto. now rewrite <- surjective_pairing.
-      + hnf. intros ? ? <- % (tape_encodes_injective HEncM) <- % (tape_encodes_injective HEncN). split; auto.
-        now rewrite <- surjective_pairing.
+    intros tin i (m&n&HEncM&HEncN&Hi). exists 12. split.
     - omega.
-    - destruct (fst _) eqn:E1.
-      +
+    - intros [ | ] () tout (HComp1&HComp2).
+      + specialize (HComp1 _ HEncM) as (HComp1&HComp1'). specialize (HComp2 _ _ HEncM HEncN) as (HComp2&HComp2').
+        unfold add_step__p1, add_step__p2, add_step__f, is_not_zero in *.
         destruct m as [ | m'].
         {
-          (* m must have been [false]! *)
-          exfalso. cbn in H2, H3, H3'. unfold add_step__p2 in H3'. cbn in H3'.
-          enough (fst (projT2 Add_step (cstate outc)) = false) as L.
-          { enough (true = false) by congruence. now rewrite <- E1, <- L. }
-          unfold finType_CS in *; cbn in *. now rewrite H3'.
+          (* m must have been [false], since [m] is [0]. *)
+          exfalso. congruence.
         }
         {
-          replace (12 + 1) with 13 by reflexivity. eexists. split.
-          * exists m', (add_step__f (S m') n). repeat split. eauto. eauto.
-          * cbn. constructor.
+          eexists. split.
+          - do 2 eexists. split. eauto. split. eauto. eauto.
+          - cbn -[plus]. cbn -[plus] in Hi. rewrite Hi. omega.
         }
-      + apply step_count_ge_12.
+      + rewrite <- Hi. eapply step_count_ge_12.
   }
 Qed.

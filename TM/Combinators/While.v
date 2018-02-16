@@ -142,6 +142,36 @@ Section While.
     Variable (R : Rel (tapes sig n) (bool * F * tapes sig n)).
     Variable (T T' : Rel (tapes sig n) nat).
 
+    Lemma While_TerminatesIn :
+      pM ⊫ R ->
+      projT1 pM ↓ T ->
+      (forall (tin : tapes sig n) (i : nat),
+          T' tin i ->
+          exists i1,
+            T tin i1 /\
+            forall b yout tout,
+              R tin (b, yout, tout) ->
+              if b
+              then exists i2, T' tout i2 /\ i1 + S i2 <= i
+              else i1 <= i) ->
+      While ↓(T').
+    Proof.
+      intros Realise_M Term_M Hyp tin i. revert tin. apply complete_induction with (x:=i); clear i; intros i IH tin.
+      intros HT1. specialize (Hyp _ _ HT1) as (i1&Ht1&HT2).
+      pose proof (Term_M _ _ Ht1) as (oconf&Hloop).
+      specialize (Realise_M _ _ _ Hloop).
+      specialize (HT2 (fst (projT2 pM (cstate oconf))) (snd (projT2 pM (cstate oconf))) (ctapes oconf)).
+      rewrite <- surjective_pairing in HT2. specialize (HT2 Realise_M).
+      destruct (projT2 pM (cstate oconf)) as [bout yout] eqn:E1.
+      destruct bout; cbn in *.
+      - destruct HT2 as (i2&HT2&Hi).
+        specialize (IH i2 ltac:(omega) _ HT2) as (oconf2&Hloop2).
+        exists oconf2. eapply loop_ge with (k1 := i1 + (1 + i2)). omega.
+        eapply While_true_merge; eauto.
+      - exists oconf. eapply loop_ge with (k1 := i1); eauto.
+        eapply While_false_merge; eauto.
+    Qed.
+
     Lemma While_terminatesIn :
       pM ⊫ R ->
       projT1 pM ↓(T) ->
@@ -173,3 +203,6 @@ Section While.
 
 End While.
 (* Arguments While {n} {sig} M _. *)
+
+
+Arguments WHILE : simpl never.
