@@ -25,6 +25,20 @@ Section Composition.
     firstorder.
   Qed.
 
+  Lemma Seq_TerminatesIn (R1 : Rel (tapes sig n) (F * tapes sig n)) (T1 T2 : Rel (tapes sig n) nat) :
+    pM1 ⊫ R1 ->
+    projT1 pM1 ↓ T1 ->
+    projT1 pM2 ↓ T2 ->
+    projT1 Seq ↓ (fun tin i => exists i1 i2, i1 + S i2 <= i /\ T1 tin i1 /\
+                                    forall tout yout, R1 tin (yout, tout) -> T2 tout i2).
+  Proof.
+    intros HRealise HTerm1 HTerm2.
+    eapply TerminatesIn_monotone.
+    - eapply Match_TerminatesIn; eauto. instantiate (1 := fun _ => T2). auto.
+    - intros tin i (i1&i2&Hi&HT1&HT2). exists i1, i2; repeat split; auto.
+  Qed.
+
+
   Lemma Seq_terminatesIn (R1 : Rel _ (F * _)) T1 T2:
     functionalOn T1 R1 ->
     pM1 ⊫ R1 ->
@@ -35,7 +49,7 @@ Section Composition.
               R1 x (f, y) /\ T1 x j /\ T2 y k /\ j + k < i).
   Proof.
     intros.
-    eapply TerminatesIn_monotone. eapply (Match_TerminatesIn (R1 := R1) (T := fun _ => T2) ); eauto.
+    eapply TerminatesIn_monotone. eapply (Match_TerminatesIn' (R1 := R1) (T := fun _ => T2) ); eauto.
     intros ? ? (? & ? & ? & ? & ? & ? & ? & ?). eexists _, _, _, _. eauto.
   Qed.
 

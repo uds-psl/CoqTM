@@ -27,7 +27,25 @@ Section Composition.
     - hnf. intros H2 (f& t). intros ([ | ]& (y & H3&H3')). left. hnf. eauto. right. hnf. eauto.
   Qed.
 
+  Lemma If_TerminatesIn (R1 : Rel (tapes sig n) (bool * tapes sig n)) (T1 T2 T3 : Rel (tapes sig n) nat) :
+    pM1 ⊫ R1 ->
+    projT1 pM1 ↓ T1 ->
+    projT1 pM2 ↓ T2 ->
+    projT1 pM3 ↓ T3 ->
+    projT1 If ↓ (fun tin i => exists i1 i2, i1 + S i2 <= i /\ T1 tin i1 /\
+                                    forall tout (b:bool),
+                                      R1 tin (b, tout) ->
+                                      if b then T2 tout i2
+                                           else T3 tout i2).
+  Proof.
+    intros HRelalise HTerm1 HTerm2 HTerm3.
+    eapply TerminatesIn_monotone.
+    - eapply Match_TerminatesIn; cbn; eauto. instantiate (1 := fun f => if f then T2 else T3). intros [ | ]; cbn; auto.
+    - intros tin k (i1&i2&Hi&HT1&HT2). exists i1, i2. repeat split; eauto.
+      intros tout b HRel. specialize (HT2 tout b HRel). destruct b; auto.
+  Qed.
 
+  
   Lemma If_terminatesIn (R1 : Rel _ (bool * _)) T1 T2 T3 :
     functionalOn T1 R1 ->
     pM1 ⊫ R1 ->
@@ -41,7 +59,7 @@ Section Composition.
                       R1 t (b, y) /\ b = false /\ T1 t i1 /\ T3 y i2)).
   Proof.
     intros. eapply TerminatesIn_monotone.
-    - eapply (Match_TerminatesIn (R1 := R1) (T := fun b => if b then T2 else T3) ); eauto.
+    - eapply (Match_TerminatesIn' (R1 := R1) (T := fun b => if b then T2 else T3) ); eauto.
       now destruct f.
     - intros t i (i1 & i2 & b & y & Hi & [(? & ? & ? & ?) | (? & ? & ? & ?)]); cbv -[plus];
         repeat eexists; eauto;

@@ -112,10 +112,10 @@ Proof.
   - inv pos.
   - dependent destruct V.
     dependent destruct pos; cbn in *; subst.
-    + now rewrite Vector_replace_nth.
+    + now rewrite replace_nth.
     + decide (x = V0[@p]); subst.
       * exfalso. eapply H. eapply Vector_nth_In; eauto.
-      * erewrite Vector_replace_nth2; auto.
+      * erewrite replace_nth2; auto.
 Qed.
 
 Lemma inject_correct m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m) :
@@ -137,8 +137,8 @@ Proof.
   intros. induction H as [ | m index indices H1 H2 IH]; cbn in *.
   - reflexivity.
   - decide (index = pos) as [->|d].
-    + now rewrite Vector_replace_nth.
-    + rewrite IH. now rewrite Vector_replace_nth2.
+    + now rewrite replace_nth.
+    + rewrite IH. now rewrite replace_nth2.
 Qed.
 
 Lemma inject_correct_id m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) :
@@ -154,9 +154,9 @@ Proof.
   intros H. revert V k. induction H as [ | m index indices H1 H2 IH]; intros V0 k HI.
   - cbn in *. reflexivity.
   - dependent destruct V0. unfold not_indices in *. cbn in *.
-    decide (index = k) as [->|H]. rewrite Vector_replace_nth.
+    decide (index = k) as [->|H]. rewrite replace_nth.
     + exfalso. apply HI. constructor.
-    + rewrite Vector_replace_nth2; auto. apply IH; auto. intros ?. apply HI; auto. constructor; auto.
+    + rewrite replace_nth2; auto. apply IH; auto. intros ?. apply HI; auto. constructor; auto.
 Qed.
 
 Lemma inject_default_not_index m n Z (indices : Vector.t (Fin.t n) m) (def : Z) (V : Vector.t Z m) (k : Fin.t n) :
@@ -232,8 +232,8 @@ Proof.
   - simpl. rewrite <- nop_fix. f_equal. now apply Vector.const_nth.
   - dependent destruct acts. rename h into act. rename t into acts. cbn. 
     decide (index = pos) as [->|d].
-    + now rewrite !Vector_replace_nth.
-    + rewrite !Vector_replace_nth2; auto. now apply IH.
+    + now rewrite !replace_nth.
+    + rewrite !replace_nth2; auto. now apply IH.
 Qed.
 
 

@@ -126,18 +126,41 @@ Section FoldNat.
   (** Termination *)
 
   Variable M1_runtime : nat -> nat.
-  Hypothesis M1_terminates : projT1 M1 ↓ (fun tin k => exists x, tin[@Fin.F1] ≂ x /\ M1_runtime x <= k).
+  Hypothesis M1_terminates : projT1 M1 ↓ (fun tin k => exists y, tin[@Fin.F1] ≂ y /\ M1_runtime y <= k).
 
   Lemma TailRec_step_terminates :
-    projT1 TailRec_step ↓ (fun tin k => exists x, tin[@Fin.F1] ≂ x /\ 7 + M1_runtime x <= k).
+    projT1 TailRec_step ↓ (fun tin k => exists x y, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ 8 + M1_runtime y <= k).
   Proof.
     unfold TailRec_step.
     eapply TerminatesIn_monotone.
     {
-      eapply If_terminatesIn.
-      (* XXX To complicated *)
+      eapply If_TerminatesIn.
+      - eapply Inject_WRealise. vector_dupfree. eapply RealiseIn_WRealise. eapply MatchNat_Computes_Pred.
+      - eapply Inject_Terminates. vector_dupfree. eapply RealiseIn_terminatesIn. eapply MatchNat_Computes_Pred.
+      - eapply Seq_TerminatesIn.
+        + eapply Inject_WRealise. vector_dupfree. eapply M1_computes.
+        + eapply Inject_Terminates. vector_dupfree. eapply M1_terminates.
+        + eapply RealiseIn_terminatesIn. repeat TM_Correct.
+      - eapply RealiseIn_terminatesIn. repeat TM_Correct.
     }
+    {
+      intros tin i (x&y&HT1&HT2&HT3).
+      exists 5. exists (2 + M1_runtime y). repeat split.
+      - omega.
+      - hnf. omega.
+      - intros tout b (H1&H2).
+        hnf in H1. specialize (H1 x). cbn in H1. specialize (H1 ltac:(eauto)) as (H1&H1').
+        hnf in H2. simpl_not_in.
+        destruct b.
+        + exists (M1_runtime y), 0. repeat split.
+          * omega.
+          * hnf. eexists. split. cbn. rewrite <- H2. eauto. omega.
+          * intros. omega.
+        + omega.
+    }
+  Qed.
 
+  (* TODO weiter verallgemeinierte Version implementieren... *)
 
 End FoldNat.
 

@@ -250,8 +250,20 @@ Section Match.
     - cbn. firstorder.      
   Qed.
 
+  Lemma Match_TerminatesIn (R1 : Rel _ (F * _)) T1 T2 :
+    pM1 ⊫ R1 -> M1 ↓ T1 -> (forall f : F, Mf f ↓(T2 f)) ->
+    Match ↓ (fun tin i => exists i1 i2, i1 + S i2 <= i /\ T1 tin i1 /\ forall tout yout, R1 tin (yout, tout) -> T2 yout tout i2).
+  Proof.
+    intros Real1 Term1 Term2.
+    hnf. intros tin i. intros (i1&i2&Hi&T3&T4).
+    hnf in Term1. specialize (Term1 _ _ T3) as (outc1&Hloop1).
+    hnf in Real1. specialize (Real1 _ _ _ Hloop1).
+    specialize (T4 _ _ Real1).
+    specialize (Term2 (p1 (cstate outc1))). hnf in Term2. specialize (Term2 _ _ T4) as (outc2&Hloop2).
+    exists (lift_confR outc2). eapply loop_ge with (k1:=i1+(1+i2)). omega. eapply Match_merge; eauto.
+  Qed.
 
-  Lemma Match_TerminatesIn (R1 : Rel _ (F * _)) T1 T :
+  Lemma Match_TerminatesIn' (R1 : Rel _ (F * _)) T1 T :
     functionalOn T1 R1 ->
     pM1 ⊫ R1 ->
     M1 ↓(T1) ->
