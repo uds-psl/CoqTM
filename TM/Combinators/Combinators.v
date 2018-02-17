@@ -86,11 +86,15 @@ Ltac smpl_TM_Combinators :=
   match goal with
   | [ |- MATCH _ _ ⊫ _] => smpl_match_WRealise
   | [ |- MATCH _ _ ⊨c(_) _] => smpl_match_RealiseIn
+  | [ |- projT1 (MATCH _ _) ↓ _] => eapply Match_TerminatesIn
   | [ |- If _ _ _ ⊫ _] => eapply If_WRealise
   | [ |- If _ _ _ ⊨c(_) _] => eapply If_RealiseIn
+  | [ |- projT1 (If _ _ _) ↓ _] => eapply If_TerminatesIn
   | [ |- Seq _ _ ⊫ _] => eapply Seq_WRealise
   | [ |- Seq _ _ ⊨c(_) _] => eapply Seq_RealiseIn
+  | [ |- projT1 (Seq _ _) ↓ _] => eapply Seq_TerminatesIn
   | [ |- WHILE _ ⊫ _] => eapply While_WRealise
+  | [ |- projT1 (WHILE _) ↓ _] => eapply While_TerminatesIn
   end.
 
 Smpl Add smpl_TM_Combinators : TM_Correct.

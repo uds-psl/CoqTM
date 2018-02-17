@@ -776,7 +776,7 @@ Hint Unfold current_chars : tape.
 
 
 
-(** * Automatisation of the generation of relations *)
+(** Automatisation of the generation of relations *)
 
 (* Create the smpl tactic databases *)
 Smpl Create TM_Correct.
@@ -785,7 +785,7 @@ Smpl Create TM_Correct.
 Ltac TM_Correct := smpl TM_Correct.
 
 Smpl Add progress eauto : TM_Correct.
-
+(* todo: get rid of that *)
 Smpl Add rewrite <- sigT_eta : TM_Correct.
 
 
@@ -793,3 +793,6 @@ Smpl Add rewrite <- sigT_eta : TM_Correct.
 (* Auxiliary function to actually execute a machine *)
 Definition execTM (sig : finType) (n : nat) (M : mTM sig n) (steps : nat) (tapes : tapes sig n) :=
   option_map (@ctapes _ _ _) (loopM steps (initc M tapes)).
+
+Definition execTM_p (sig : finType) (n : nat) (F : finType) (pM : { M : mTM sig n & states M -> F }) (steps : nat) (tapes : tapes sig n) :=
+  option_map (fun x => (ctapes x, projT2 pM (cstate x))) (loopM steps (initc (projT1 pM) tapes)).

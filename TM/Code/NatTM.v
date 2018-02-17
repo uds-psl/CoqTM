@@ -134,14 +134,9 @@ Section FoldNat.
     unfold TailRec_step.
     eapply TerminatesIn_monotone.
     {
-      eapply If_TerminatesIn.
-      - eapply Inject_WRealise. vector_dupfree. eapply RealiseIn_WRealise. eapply MatchNat_Computes_Pred.
-      - eapply Inject_Terminates. vector_dupfree. eapply RealiseIn_terminatesIn. eapply MatchNat_Computes_Pred.
-      - eapply Seq_TerminatesIn.
-        + eapply Inject_WRealise. vector_dupfree. eapply M1_computes.
-        + eapply Inject_Terminates. vector_dupfree. eapply M1_terminates.
-        + eapply RealiseIn_terminatesIn. repeat TM_Correct.
-      - eapply RealiseIn_terminatesIn. repeat TM_Correct.
+      repeat TM_Correct.
+      - eapply RealiseIn_WRealise, MatchNat_Computes_Pred.
+      - eapply RealiseIn_terminatesIn, MatchNat_Computes_Pred.
     }
     {
       intros tin i (x&y&HT1&HT2&HT3).
@@ -288,13 +283,13 @@ Section Test.
   Let t3 := midtape [inl START] (inr true) (map inr [true; true; false] ++ [inl STOP]).
   Let t4 := midtape [inl START] (inr true) (map inr [true; true; true; false] ++ [inl STOP]).
 
-  Compute execTM (projT1 Add) (step_count 0) [|t0; t0|].
-  Compute execTM (projT1 Add) (step_count 0) [|t0; t4|].
-  Compute execTM (projT1 Add) (step_count 1) [|t1; t3|].
-  Compute execTM (projT1 Add) (step_count 2) [|t2; t3|].
-  Compute execTM (projT1 Add) (step_count 3) [|t3; t3|].
-  Compute execTM (projT1 Add) (step_count 3) [|t3; t4|].
-  Compute execTM (projT1 Add) (step_count 4) [|t4; t0|].
+  Compute execTM_p Add (step_count 0) [|t0; t0|].
+  Compute execTM_p Add (step_count 0) [|t0; t4|].
+  Compute execTM_p Add (step_count 1) [|t1; t3|].
+  Compute execTM_p Add (step_count 2) [|t2; t3|].
+  Compute execTM_p Add (step_count 3) [|t3; t3|].
+  Compute execTM_p Add (step_count 3) [|t3; t4|].
+  Compute execTM_p Add (step_count 4) [|t4; t0|].
 End Test.
 
 

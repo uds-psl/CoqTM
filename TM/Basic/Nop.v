@@ -43,6 +43,7 @@ Ltac smpl_TM_Nop :=
   match goal with
   | [ |- Nop _ _ _ ⊫ _] => eapply Nop_sem
   | [ |- Nop _ _ _ ⊨c(_) _] => eapply Nop_total
+  | [ |- projT1 (Nop _ _ _) ↓ _] => eapply RealiseIn_terminatesIn, Nop_total
   end.
 
 

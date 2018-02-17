@@ -237,8 +237,8 @@ Section Match.
 
   Lemma Match_RealiseIn
         (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) k1 k2:
-    projT1 pM1 ⊨c(projT2 pM1, k1) R1 ->
-    (forall f : F, Mf f ⊨c(projT2 (pMf f), k2) R2 f) ->
+    pM1 ⊨c(k1) R1 ->
+    (forall f : F, pMf f ⊨c(k2) R2 f) ->
     MATCH ⊨c(1 + k1 + k2) (⋃_f (R1 |_ f) ∘ R2 f).
   Proof.
     intros HR1 HR2 t.
