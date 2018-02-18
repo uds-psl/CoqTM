@@ -536,6 +536,7 @@ Section MirrorTape.
 End MirrorTape.
 
 Arguments mirror_tapes : simpl never.
+Hint Unfold mirror_tapes : tape.
 
 Hint Rewrite mirror_tape_left : tape.
 Hint Rewrite mirror_tape_right : tape.

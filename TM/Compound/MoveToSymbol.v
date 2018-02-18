@@ -196,7 +196,7 @@ Section move_to_symbol.
 
   Function MoveToSymbol_TermTime (t : tape sig) { measure rlength t } : nat :=
     match t with
-    | midtape ls m rs => if f m then 4 else S (S (S (S (MoveToSymbol_TermTime (tape_move_right t)))))
+    | midtape ls m rs => if f m then 4 else 4 + (MoveToSymbol_TermTime (tape_move_right t))
     | _ => 4
     end.
   Proof.
@@ -206,7 +206,7 @@ Section move_to_symbol.
 
   (* Idee: Lösung des Problems kanonische Relation ranklatschen, damit die relation funktional wird. *)
   Lemma MoveToSymbol_terminates :
-    projT1 MoveToSymbol ↓ (fun tin k => k = MoveToSymbol_TermTime (tin[@Fin.F1])).
+    projT1 MoveToSymbol ↓ (fun tin k => MoveToSymbol_TermTime (tin[@Fin.F1]) <= k).
   Proof.
     eapply While_terminatesIn.
     1-2: eapply Realise_total; eapply M1_RealiseIn.
@@ -214,14 +214,14 @@ Section move_to_symbol.
       eapply functional_functionalOn. apply M1_Rel_functional.
     }
     {
-      intros tin k ->. destruct_tapes. cbn.
-      destruct h eqn:E; cbn.
-      - rewrite MoveToSymbol_TermTime_equation. exists [|h|], false. cbn. do 2 eexists; split; eauto.
-      - rewrite MoveToSymbol_TermTime_equation. exists [|h|], false. cbn. do 2 eexists; split; eauto.
-      - rewrite MoveToSymbol_TermTime_equation. exists [|h|], false. cbn. do 2 eexists; split; eauto.
+      intros tin k Hk. destruct_tapes. cbn in *.
+      destruct h eqn:E; rewrite MoveToSymbol_TermTime_equation in *; cbn in *.
+      - exists [|h|], false. do 2 eexists. cbn. split; eauto.
+      - exists [|h|], false. do 2 eexists. cbn. split; eauto.
+      - exists [|h|], false. do 2 eexists. cbn. split; eauto.
       - destruct (f e) eqn:E2; cbn.
-        + rewrite MoveToSymbol_TermTime_equation. exists [|h|], false. cbn. rewrite E2. do 2 eexists; split; eauto 6.
-        + rewrite MoveToSymbol_TermTime_equation. exists [|tape_move_right h|], true. cbn. rewrite E2.
+        + exists [|h|], false. cbn. do 2 eexists; split; eauto 6.
+        + exists [|tape_move_right h|], true. cbn.
           destruct l0; rewrite E; cbn in *; do 2 eexists; split; eauto 7.
     }
   Qed.
@@ -298,7 +298,7 @@ Section move_to_symbol.
 
   Function MoveToSymbol_L_TermTime (t : tape sig) { measure llength t } : nat :=
     match t with
-    | midtape ls m rs => if f m then 4 else S (S (S (S (MoveToSymbol_L_TermTime (tape_move_left t)))))
+    | midtape ls m rs => if f m then 4 else 4 + (MoveToSymbol_L_TermTime (tape_move_left t))
     | _ => 4
     end.
   Proof.
@@ -317,11 +317,11 @@ Section move_to_symbol.
   Qed.
 
   Lemma MoveToSymbol_L_terminates :
-    projT1 MoveToSymbol_L ↓ (fun tin k => k = MoveToSymbol_L_TermTime (tin[@Fin.F1])).
+    projT1 MoveToSymbol_L ↓ (fun tin k => MoveToSymbol_L_TermTime (tin[@Fin.F1]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     - eapply Mirror_Terminates. eapply MoveToSymbol_terminates.
-    - cbn. intros tin k. intros ->. destruct_tapes; cbn. now apply MoveToSymbol_TermTime_mirror.
+    - cbn. intros tin k Hk. destruct_tapes; cbn. rewrite <- Hk. unfold mirror_tapes. rewrite MoveToSymbol_TermTime_mirror. cbn. auto.
   Qed.
 
 End move_to_symbol.

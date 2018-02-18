@@ -93,6 +93,7 @@ Section Copy.
           erewrite IHstr1; eauto. destruct tr; simpl_list; cbn; eauto. destruct l0; cbn; auto.
   Qed.
 
+
   Lemma MoveToSymbol_right t str1 str2 x :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
@@ -161,6 +162,54 @@ Section Copy.
     simpl_tape in L. repeat spec_assert L by auto.
     erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L; simpl_tape; eauto.
     simpl_tape in *. auto.
+  Qed.
+
+
+  (* Termination times *)
+
+  (* The termination times of CopySymbols and MoveTosymbol only differ in the factors *)
+
+  Lemma CopySymbols_TermTime_local t r1 sym r2 :
+    tape_local t = r1 ++ sym :: r2 ->
+    stop sym = true ->
+    CopySymbols_TermTime stop t <= 8 + 8 * length r1.
+  Proof.
+    revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite CopySymbols_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; try congruence. inv HEnc.
+      rewrite CopySymbols_TermTime_equation. destruct (stop a).
+      + omega.
+      + apply Nat.add_le_mono_l. replace (8 * S (|r1|)) with (8 + 8 * |r1|) by omega.
+        eapply IHr1; eauto. cbn. now simpl_tape.
+  Qed.
+
+  Lemma MoveToSymbols_TermTime_local t r1 sym r2 :
+    tape_local t = r1 ++ sym :: r2 ->
+    stop sym = true ->
+    MoveToSymbol_TermTime stop t <= 4 + 4 * length r1.
+  Proof.
+    revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; try congruence. inv HEnc.
+      rewrite MoveToSymbol_TermTime_equation. destruct (stop a).
+      + omega.
+      + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
+        eapply IHr1; eauto. cbn. now simpl_tape.
+  Qed.
+
+
+  Lemma MoveToSymbols_TermTime_local_l t r1 sym r2 :
+    tape_local_l t = r1 ++ sym :: r2 ->
+    stop sym = true ->
+    MoveToSymbol_L_TermTime stop t <= 4 + 4 * length r1.
+  Proof.
+    revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_L_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; try congruence. inv HEnc.
+      rewrite MoveToSymbol_L_TermTime_equation. destruct (stop a).
+      + omega.
+      + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
+        eapply IHr1; eauto. cbn. now simpl_tape.
   Qed.
   
 End Copy.
