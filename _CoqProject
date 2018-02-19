@@ -29,6 +29,7 @@ TM/Code/CodeTM.v
 TM/Code/FinTM.v
 TM/Code/ChangeAlphabet.v
 TM/Code/BoolTM.v
+TM/Code/Copy.v
 TM/Code/MatchSum.v
 TM/Code/MatchProd.v
 TM/Code/MatchList.v
