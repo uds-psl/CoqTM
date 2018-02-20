@@ -1,5 +1,4 @@
 Require Import Prelim TM.TM.
-Require Import TM.LiftMN.
 
 Ltac dec_pos P := let H := fresh in destruct (Dec P) as [_ | H]; [ | now contradiction H].
 Ltac dec_neg P := let H := fresh in destruct (Dec P) as [H | _]; [now contradiction H | ].
@@ -46,30 +45,29 @@ Ltac inv_pair :=
   | [ |- (_, _) = (_, _) ] => f_equal
   end.
 
-
-Lemma simpl_not_in_helper1 :
-  not_indices (n := 2) [|Fin.F1|] (Fin.FS Fin.F1).
-Proof. vector_not_in. Qed.
-
-Lemma simpl_not_in_helper2 :
-  not_indices (n := 2) [|Fin.FS Fin.F1|] (Fin.F1).
-Proof. vector_not_in. Qed.
-
-  
-Ltac simpl_not_in :=
+Ltac destruct_param_tape_pair :=
   match goal with
-  | [ H1: forall i : Fin.t 2, not_indices [|Fin.F1|] i -> _ |- _] =>
-    specialize (H1 (Fin.FS Fin.F1) simpl_not_in_helper1)
-  | [ H1: forall i : Fin.t 2, not_indices [|Fin.FS Fin.F1|] i -> _ |- _] =>
-    specialize (H1 Fin.F1 simpl_not_in_helper2)
+  | [ x : _ * tapes _ _ |- _] =>
+    let ymid := fresh "ymid" in
+    let tmid := fresh "tmid" in
+    destruct x as (ymid&tmid)
   end.
+
+Ltac destruct_unit :=
+  repeat match goal with
+         | [ x : unit |- _ ] => destruct x
+         end.
 
 
 (* Simplifies the goal without making any decissions *)
 Tactic Notation "TMSimp" tactic(T) :=
   repeat progress
          (
-           hnf in *;
+           try smpl_Rel;
+           try destruct_param_tape_pair; destruct_unit;
+           try match goal with
+               | [ H : FinType _ |- _] => cbn in H
+               end;
            cbn in *;
            intros;
            subst;

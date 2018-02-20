@@ -1,12 +1,11 @@
 Require Import TM.Prelim TM.Relations TM.TM.
 
-(* TYPO: s/indices/indexes/g *)
+Definition reorder m n Z (indexes : Vector.t (Fin.t n) m) (V : Vector.t Z n) : Vector.t Z m :=
+  Vector.map (Vector.nth V) indexes.
 
-Definition reorder m n Z (indices : Vector.t (Fin.t n) m) (V : Vector.t Z n) : Vector.t Z m :=
-  Vector.map (Vector.nth V) indices.
 
-Lemma reorder_nth m n Z (indices : Vector.t (Fin.t n) m) (V : Vector.t Z n) (k : Fin.t m) :
-  (reorder indices V) [@ k] = V [@ (indices [@ k])].
+Lemma reorder_nth m n Z (indexes : Vector.t (Fin.t n) m) (V : Vector.t Z n) (k : Fin.t m) :
+  (reorder indexes V) [@ k] = V [@ (indexes [@ k])].
 Proof. now apply Vector.nth_map. Qed.
 
 Section lift_gen.
@@ -14,32 +13,32 @@ Section lift_gen.
   Variable n : nat.
   Variable X Z : Type.
   Variable m : nat.
-  Variable indices : Vector.t (Fin.t n) m.
+  Variable indexes : Vector.t (Fin.t n) m.
 
   Definition lift_gen (R : Rel (Vector.t X m) (Vector.t X m)) : Rel (Vector.t X n) (Vector.t X n) :=
-    fun x y => R (reorder indices x) (reorder indices y).
+    fun x y => R (reorder indexes x) (reorder indexes y).
 
   Definition lift_gen_p (R : Rel (Vector.t X m) (Z * Vector.t X m)) : Rel (Vector.t X n) (Z * Vector.t X n) :=
-    fun x p => let (z,y) := p in R (reorder indices x) (z, reorder indices y).
+    fun x p => let (z,y) := p in R (reorder indexes x) (z, reorder indexes y).
 
-  Definition not_indices :=
-    (fun x : Fin.t n => ~ Vector.In x indices).
+  Definition not_indexes :=
+    (fun x : Fin.t n => ~ Vector.In x indexes).
 
   Definition lift_gen_eq (R : Rel (Vector.t X m) (Vector.t X m)) : Rel (Vector.t X n) (Vector.t X n) :=
-    lift_gen R ∩ Eq_in (not_indices).
+    lift_gen R ∩ Eq_in (not_indexes).
 
   Definition lift_gen_eq_p (R : Rel (Vector.t X m) (Z * Vector.t X m)) : Rel (Vector.t X n) (Z * Vector.t X n) :=
-    lift_gen_p R ∩ ignoreParam (Eq_in not_indices).
+    lift_gen_p R ∩ ignoreParam (Eq_in not_indexes).
 
   Variable (sig : finType).
   Variable (M1 : mTM sig m).
   Variable T : (tapes sig m) -> nat -> Prop.
 
-  Definition liftT_gen_eq : (tapes sig n) -> nat -> Prop := fun t k => T (reorder indices t) k.
+  Definition liftT_gen_eq : (tapes sig n) -> nat -> Prop := fun t k => T (reorder indexes t) k.
   
 End lift_gen.
 
-Arguments not_indices : simpl never.
+Arguments not_indexes : simpl never.
 
 
 
@@ -51,12 +50,12 @@ Qed.
 
 Definition vect_zip (X Y : Type) (m : nat) (vx : Vector.t X m) (vy : Vector.t Y m) : Vector.t (X * Y) m := Vector.map2 pair vx vy.
 
-Fixpoint inject m n Z (indices : Vector.t ((Fin.t n)) m) (init : Vector.t Z n) (V : Vector.t Z m)
+Fixpoint inject m n Z (indexes : Vector.t ((Fin.t n)) m) (init : Vector.t Z n) (V : Vector.t Z m)
            : Vector.t Z n.
-  destruct indices.
+  destruct indexes.
   - apply init.
   - rename n0 into m. remember (S m) as Sm. destruct V eqn:E; inversion HeqSm; subst.
-    pose (x := inject _ _ _ indices init t). exact (Vector.replace x h h0).
+    pose (x := inject _ _ _ indexes init t). exact (Vector.replace x h h0).
 Defined.
 
 (*
@@ -104,9 +103,9 @@ End Test.
 *)
 
 
-Lemma inject_correct_Some m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m) pos new_pos :
-  dupfree indices ->
-  indices[@pos] = new_pos -> (inject indices init V) [@new_pos] = V[@pos].
+Lemma inject_correct_Some m n Z (indexes : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m) pos new_pos :
+  dupfree indexes ->
+  indexes[@pos] = new_pos -> (inject indexes init V) [@new_pos] = V[@pos].
 Proof.
   intros. induction H; cbn in *.
   - inv pos.
@@ -118,50 +117,50 @@ Proof.
       * erewrite replace_nth2; auto.
 Qed.
 
-Lemma inject_correct m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m) :
-  dupfree indices -> reorder indices (inject indices init V) = V.
+Lemma inject_correct m n Z (indexes : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m) :
+  dupfree indexes -> reorder indexes (inject indexes init V) = V.
 Proof.
   intros H. unfold reorder. apply Vector.eq_nth_iff. intros p ? <-.
   erewrite Vector.nth_map; eauto. erewrite inject_correct_Some; eauto.
 Qed.
 
 
-Definition inject_default m n Z (indices : Vector.t ((Fin.t n)) m) (def : Z) (V : Vector.t Z m) :=
-  inject indices (Vector.const def n) V.
+Definition inject_default m n Z (indexes : Vector.t ((Fin.t n)) m) (def : Z) (V : Vector.t Z m) :=
+  inject indexes (Vector.const def n) V.
 
 
-Lemma inject_correct_id_Some m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) pos :
-  dupfree indices ->
-  init[@pos] = (inject indices init (reorder indices init))[@pos].
+Lemma inject_correct_id_Some m n Z (indexes : Vector.t (Fin.t n) m) (init : Vector.t Z n) pos :
+  dupfree indexes ->
+  init[@pos] = (inject indexes init (reorder indexes init))[@pos].
 Proof.
-  intros. induction H as [ | m index indices H1 H2 IH]; cbn in *.
+  intros. induction H as [ | m index indexes H1 H2 IH]; cbn in *.
   - reflexivity.
   - decide (index = pos) as [->|d].
     + now rewrite replace_nth.
     + rewrite IH. now rewrite replace_nth2.
 Qed.
 
-Lemma inject_correct_id m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) :
-  dupfree indices -> init = (inject indices init (reorder indices init)).
+Lemma inject_correct_id m n Z (indexes : Vector.t (Fin.t n) m) (init : Vector.t Z n) :
+  dupfree indexes -> init = (inject indexes init (reorder indexes init)).
 Proof.
   intros H. apply Vector.eq_nth_iff. intros p ? <-. now apply inject_correct_id_Some.
 Qed.
 
-Lemma inject_not_index m n Z (indices : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m) (k : Fin.t n) :
-  dupfree indices ->
-  not_indices indices k -> (inject indices init V)[@k] = init[@k].
+Lemma inject_not_index m n Z (indexes : Vector.t (Fin.t n) m) (init : Vector.t Z n) (V : Vector.t Z m) (k : Fin.t n) :
+  dupfree indexes ->
+  not_indexes indexes k -> (inject indexes init V)[@k] = init[@k].
 Proof.
-  intros H. revert V k. induction H as [ | m index indices H1 H2 IH]; intros V0 k HI.
+  intros H. revert V k. induction H as [ | m index indexes H1 H2 IH]; intros V0 k HI.
   - cbn in *. reflexivity.
-  - dependent destruct V0. unfold not_indices in *. cbn in *.
+  - dependent destruct V0. unfold not_indexes in *. cbn in *.
     decide (index = k) as [->|H]. rewrite replace_nth.
     + exfalso. apply HI. constructor.
     + rewrite replace_nth2; auto. apply IH; auto. intros ?. apply HI; auto. constructor; auto.
 Qed.
 
-Lemma inject_default_not_index m n Z (indices : Vector.t (Fin.t n) m) (def : Z) (V : Vector.t Z m) (k : Fin.t n) :
-  dupfree indices ->
-  not_indices indices k -> (inject_default indices def V)[@k] = def.
+Lemma inject_default_not_index m n Z (indexes : Vector.t (Fin.t n) m) (def : Z) (V : Vector.t Z m) (k : Fin.t n) :
+  dupfree indexes ->
+  not_indexes indexes k -> (inject_default indexes def V)[@k] = def.
 Proof.
   intros. unfold inject_default. rewrite inject_not_index; auto. apply Vector.const_nth.
 Qed.
@@ -214,21 +213,21 @@ End Map_Algebra.
 Lemma inject_execute_step
       (m n : nat)
       (pos : Fin.t n)
-      (indices : Vector.t (Fin.t n) m)
+      (indexes : Vector.t (Fin.t n) m)
       (Act : Type)
       (acts : Vector.t Act m)
       (Tape  : Type)
       (tapes : Vector.t Tape n)
       (step : Tape -> Act -> Tape)
       (nop : Act) :
-  dupfree indices ->
+  dupfree indexes ->
   (forall t : Tape, step t nop = t) ->
-  step (tapes[@pos]) ((inject_default indices nop acts)[@pos]) =
-  (inject indices tapes
-          (Vector.map2 step (reorder indices tapes) acts))[@pos].
+  step (tapes[@pos]) ((inject_default indexes nop acts)[@pos]) =
+  (inject indexes tapes
+          (Vector.map2 step (reorder indexes tapes) acts))[@pos].
 Proof.
   intros H_dupfree nop_fix. 
-  induction H_dupfree as [ | m index indices H1 H2 IH].
+  induction H_dupfree as [ | m index indexes H1 H2 IH].
   - simpl. rewrite <- nop_fix. f_equal. now apply Vector.const_nth.
   - dependent destruct acts. rename h into act. rename t into acts. cbn. 
     decide (index = pos) as [->|d].
@@ -336,7 +335,7 @@ Section LiftNM.
   Qed.
 
   Lemma sim_eq_step (c1 c2 : mconfig sig (states injectM) n) (k : Fin.t n) :
-    not_indices I k -> 
+    not_indexes I k -> 
     step (M := injectM) c1 = c2 ->
     (ctapes c1)[@k] = (ctapes c2)[@k].
   Proof.
@@ -352,7 +351,7 @@ Section LiftNM.
   Qed.
 
   Lemma sim_eq_loop (c1 c2 : mconfig sig (states injectM) n) (i : nat) (k : Fin.t n) :
-    not_indices I k -> 
+    not_indexes I k -> 
     loopM (M := injectM) i c1 = Some c2 ->
     (ctapes c1)[@k] = (ctapes c2)[@k].
   Proof.
@@ -465,10 +464,60 @@ End LiftNM.
 
 Arguments Inject : simpl never.
 
+
+(** * Tactical support *)
+
+
+Lemma smpl_dupfree_helper1 (n : nat) :
+  dupfree [|Fin.F1 (n := n)|].
+Proof. vector_dupfree. Qed.
+
+Lemma smpl_dupfree_helper2 (n : nat) :
+  dupfree [|Fin.FS (Fin.F1 (n := n))|].
+Proof. vector_dupfree. Qed.
+
+
+Ltac smpl_dupfree :=
+  match goal with
+  | [ |- dupfree [|Fin.F1 |] ] => apply smpl_dupfree_helper1
+  | [ |- dupfree [|Fin.FS |] ] => apply smpl_dupfree_helper2
+  | [ |- dupfree _ ] => now vector_dupfree
+  end.
+
+
 Ltac smpl_TM_LiftN :=
   match goal with
-  | [ |- Inject _ _ ⊫ _] => apply Inject_WRealise; [ vector_dupfree | ]
-  | [ |- Inject _ _ ⊨c(_) _] => apply Inject_RealisesIn; [ vector_dupfree | ]
-  | [ |- projT1 (Inject _ _) ↓ _] => apply Inject_Terminates; [ vector_dupfree | ]
+  | [ |- Inject _ _ ⊫ _] => apply Inject_WRealise; [ smpl_dupfree | ]
+  | [ |- Inject _ _ ⊨c(_) _] => apply Inject_RealisesIn; [ smpl_dupfree | ]
+  | [ |- projT1 (Inject _ _) ↓ _] => apply Inject_Terminates; [ smpl_dupfree | ]
   end.
 Smpl Add smpl_TM_LiftN : TM_Correct.
+
+
+Lemma simpl_not_in_helper1 :
+  not_indexes (n := 2) [|Fin.F1|] (Fin.FS Fin.F1).
+Proof. vector_not_in. Qed.
+
+Lemma simpl_not_in_helper2 :
+  not_indexes (n := 2) [|Fin.FS Fin.F1|] (Fin.F1).
+Proof. vector_not_in. Qed.
+
+
+Ltac simpl_not_in :=
+  match goal with
+  | [ H: forall i : Fin.t 2, not_indexes [|Fin.F1|] i -> _ |- _] =>
+    specialize (H (Fin.FS Fin.F1) simpl_not_in_helper1)
+  | [ H: forall i : Fin.t 2, not_indexes [|Fin.FS Fin.F1|] i -> _ |- _] =>
+    specialize (H Fin.F1          simpl_not_in_helper2)
+  end.
+
+
+Ltac smpl_Rel_LiftN :=
+  match goal with
+  | [ H : lift_gen_eq_p _ _ _ _ |- _] => hnf in H
+  | [ H : liftT_gen_eq  _ _ _ _ |- _] => hnf in H
+  end.
+
+
+Smpl Add simpl_not_in  : smpl_Rel.
+Smpl Add smpl_Rel_LiftN : smpl_Rel.

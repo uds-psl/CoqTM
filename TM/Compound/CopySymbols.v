@@ -98,9 +98,7 @@ End Test.
       (cbn; omega).
     }
     {
-      TMCrush repeat simpl_not_in; TMSolve 1.
-      all: cbn in *; try congruence; eauto; subst.
-      all: TMCrush idtac; TMSolve 6.
+      intros tin (yout, tout). TMCrush; TMSolve 6.
     }
   Qed.
 
@@ -207,20 +205,19 @@ End Test.
         all: cbn in *; rewrite CopySymbols_Fun_equation in *; auto. inv H0. cbn. now rewrite E.
       }
       {
-        TMSimp. destruct x as [], y1 as [].
-        destruct h3; cbn in *; TMSimp repeat inv_pair.
-        - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
-        - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
-        - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
-        - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; try congruence.
-          clear H2. inv H2'. rewrite H2'' in *. spec_assert IH2; [now auto| ]. clear H0.
+        TMSimp. destruct h3; cbn in *; TMSimp repeat inv_pair.
+        - destruct H0 as [ [H0 (s&H0')] | [ [H0 (s&H0'&H0'')] | [ H0 ] ] ]; congruence.
+        - destruct H0 as [ [H0 (s&H0')] | [ [H0 (s&H0'&H0'')] | [ H0 ] ] ]; congruence.
+        - destruct H0 as [ [H0 (s&H0')] | [ [H0 (s&H0'&H0'')] | [ H0 ] ] ]; congruence.
+        - destruct H0 as [ [H0 (s&H0')] | [ [H0 (s&H0'&H0'')] | [ H0 ] ] ]; try congruence.
+          clear H0. inv H0'. rewrite H0'' in *. spec_assert IH2; [now auto| ]. clear H2.
           destruct h; cbn in *.
-          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H2''. cbn. auto.
-          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H2''. cbn. auto.
-          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H2''. cbn. auto.
+          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H0''. cbn. auto.
+          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H0''. cbn. auto.
+          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H0''. cbn. auto.
           + destruct (f e) eqn:E; cbn in *.
-            * inv H. destruct l0; cbn in *; inv H1; auto; rewrite CopySymbols_Fun_equation; cbn; rewrite H2''; cbn; auto.
-            * inv H. destruct l0; cbn in *; inv H1; auto; rewrite CopySymbols_Fun_equation; cbn; rewrite H2''; cbn; auto.
+            * inv H. destruct l0; cbn in *; inv H1; auto; rewrite CopySymbols_Fun_equation; cbn; rewrite H0''; cbn; auto.
+            * inv H. destruct l0; cbn in *; inv H1; auto; rewrite CopySymbols_Fun_equation; cbn; rewrite H0''; cbn; auto.
       }
     }
   Qed.

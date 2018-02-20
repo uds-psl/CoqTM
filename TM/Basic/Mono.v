@@ -228,7 +228,7 @@ Section read_char.
 
 End read_char.
 
-Arguments read_char : simpl never.
+Arguments Read_char : simpl never.
 
 
 Section Mono_Nop.
@@ -280,3 +280,16 @@ Ltac smpl_TM_Mono :=
   end.
 
 Smpl Add smpl_TM_Mono : TM_Correct.
+
+
+Ltac smpl_Rel_mono :=
+  match goal with
+  | [ H : Mk_R_p _ _ _ |- _] => hnf in H
+  | [ H : Write_R _ _ _ _ |- _] => hnf in H
+  | [ H : Move_R _ _ _ _ |- _] => hnf in H
+  | [ H : WriteMove _ _ _ _ |- _] => hnf in H
+  | [ H : read_char_R _ _ |- _] => hnf in H
+  | [ H : mono_Nop_R _ _ _ |- _] => hnf in H
+  end.
+
+Smpl Add smpl_Rel_mono : smpl_Rel.

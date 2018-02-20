@@ -46,7 +46,9 @@ Section move_to_symbol.
            ).  
 
   Lemma M1_Rel_functional : functional M1_Rel.
-  Proof. hnf. TMCrush cbn [Vector.nth] in *; auto. Qed.
+  Proof.
+    unfold M1_Rel. repeat intro. TMCrush; auto.
+  Qed.
 
   Lemma M1_RealiseIn :
     M1 ⊨c(3) M1_Rel.
@@ -65,7 +67,7 @@ Section move_to_symbol.
       (cbn; omega).
     }
     {
-      unfold M1_Rel, M1_Fun.
+      unfold M1_Rel, M1_Fun. intros tin (yout, tout).
       TMCrush idtac; TMSolve 6.
     }
   Qed.
@@ -163,13 +165,9 @@ Section move_to_symbol.
         all: TMCrush idtac; TMSolve 6.
       }
       {
-        TMCrush ( cbn [Vector.nth] in * ); TMSolve 6.
-        all:
-          try now
-              (
-                rewrite MoveToSymbol_Fun_equation; TMSimp; auto
-              ).
-        all: erewrite <- MoveToSymbol_M1_false; eauto.
+        TMSimp. TMCrush; TMSolve 6.
+        - eapply MoveToSymbol_M1_false; eauto.
+        - eapply MoveToSymbol_M1_false; eauto.
       }
     }
   Qed.
