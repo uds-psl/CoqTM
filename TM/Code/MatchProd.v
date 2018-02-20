@@ -228,8 +228,6 @@ Section Projection.
     unfold M1. eapply TerminatesIn_monotone.
     {
       repeat TM_Correct.
-      - eapply CopySymbols_WRealise.
-      - eapply CopySymbols_terminates.
     }
     {
       cbn -[plus mult]. intros tin k. intros ((x&y)&HEncXY&Ht).
@@ -258,8 +256,6 @@ Section Projection.
       repeat TM_Correct.
       - apply M1_WRealise.
       - apply M1_Terminates.
-      - apply MoveToSymbol_L_WRealise.
-      - apply MoveToSymbol_L_terminates.
     }
     {
       cbn -[plus mult]. intros tin k. intros ((x&y)&HEncXY&Ht). cbn -[plus mult].

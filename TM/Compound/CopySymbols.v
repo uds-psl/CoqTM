@@ -79,8 +79,8 @@ End Test.
     ).
 
   Lemma M1_Rel_functional : functional M1_Rel.
-  Proof. hnf. unfold M1_Rel, M1_Fun. TMCrush (cbn [Vector.nth] in *); TMSolve 1. Qed.
-
+  Proof. hnf. unfold M1_Rel, M1_Fun. TMCrush ( cbn [Vector.nth] in * ); TMSolve 1. Qed.
+  
   Lemma M1_RealiseIn :
     M1 ⊨c(7) M1_Rel.
   Proof.
@@ -109,7 +109,7 @@ End Test.
    * Execute M1 in a loop until M1 returned [ None ] or [ Some true ]
    *)
   Definition CopySymbols : { M : mTM sig 2 & states M -> unit } := WHILE M1.
-      
+  
   Definition rlength (t : tape sig) :=
     match t with
     | niltape _ => 0
@@ -136,14 +136,14 @@ End Test.
     destruct rs; cbn. omega. omega.
   Qed.
 
-(* (* Test *)
+  (* (* Test *)
 End CopySymbols.
 Section Test.
   Let f := fun x => Dec (x = L) : bool.
   Compute CopySymbols_Fun f (midtape [L; N; R] N [R; N; L; N], niltape _).
   Compute it (M1_Fun f) 4 (midtape [L; N; R] N [R; N; L; N], niltape _).
 End Test.
-*)
+   *)
 
   (*
   Lemma M1_Fun_M2_None t :
@@ -187,7 +187,7 @@ End Test.
     - destruct _x; rewrite MoveToSymbol_Fun_equation; cbn; auto.
   Qed.
 
-*)
+   *)
   
   Definition CopySymbols_Rel : Rel (tapes sig 2) (unit * tapes sig 2) :=
     ignoreParam (fun tin tout => ((tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = CopySymbols_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]))).
@@ -260,10 +260,19 @@ End Test.
     }
   Qed.
   
-    
+  
   (** Move to left *)
 
   Definition CopySymbols_L := Mirror CopySymbols.
 
   
 End CopySymbols.
+
+
+Ltac smpl_TM_CopySymbols :=
+  match goal with
+  | [ |- CopySymbols  _ _ ⊫ _ ] => eapply CopySymbols_WRealise
+  | [ |- projT1 (CopySymbols _ _) ↓ _ ] => eapply CopySymbols_terminates
+  end.
+
+Smpl Add smpl_TM_CopySymbols : TM_Correct.

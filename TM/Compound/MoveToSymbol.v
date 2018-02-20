@@ -75,7 +75,7 @@ Section move_to_symbol.
    * Execute M1 in a loop until M1 returned [ None ] or [ Some true ]
    *)
   Definition MoveToSymbol : { M : mTM sig 1 & states M -> bool } := WHILE M1.
-      
+  
   Definition rlength (t : tape sig) :=
     match t with
     | niltape _ => 0
@@ -158,12 +158,12 @@ Section move_to_symbol.
       induction H as [x | x y z IH1 _ IH2].
       {
         TMCrush idtac; TMSolve 6.
-        all: repeat progress (unfold M1_Fun, M1_Rel, MoveToSymbol_Rel, Mk_R_p in *).
+        all: repeat progress ( unfold M1_Fun, M1_Rel, MoveToSymbol_Rel, Mk_R_p in * ).
         all: try rewrite MoveToSymbol_Fun_equation; auto.
         all: TMCrush idtac; TMSolve 6.
       }
       {
-        TMCrush (cbn [Vector.nth] in *); TMSolve 6.
+        TMCrush ( cbn [Vector.nth] in * ); TMSolve 6.
         all:
           try now
               (
@@ -188,7 +188,7 @@ Section move_to_symbol.
   Proof.
     intros H. remember (niltape sig) as N. functional induction MoveToSymbol_Fun t; subst; try congruence.
     - specialize (IHt0 H). destruct rs; cbn in *; congruence.
-    (* - specialize (IHt0 H). destruct rs; cbn in *; congruence. *)
+      (* - specialize (IHt0 H). destruct rs; cbn in *; congruence. *)
   Qed.
 
 
@@ -226,8 +226,8 @@ Section move_to_symbol.
     }
   Qed.
   
-    
-    
+  
+  
 
   (** Move to left *)
 
@@ -310,7 +310,7 @@ Section move_to_symbol.
   Proof.
     functional induction MoveToSymbol_L_TermTime t; cbn; auto;
       simpl_tape in *; cbn in *;
-      rewrite MoveToSymbol_TermTime_equation.
+        rewrite MoveToSymbol_TermTime_equation.
     - now rewrite e0.
     - now rewrite e0, IHn.
     - destruct t; cbn; auto.
@@ -325,3 +325,13 @@ Section move_to_symbol.
   Qed.
 
 End move_to_symbol.
+
+Ltac smpl_TM_MoveToSymbol :=
+  match goal with
+  | [ |- MoveToSymbol   _ ⊫ _ ] => eapply MoveToSymbol_WRealise
+  | [ |- MoveToSymbol_L _ ⊫ _ ] => eapply MoveToSymbol_L_WRealise
+  | [ |- projT1 (MoveToSymbol   _) ↓ _ ] => eapply MoveToSymbol_terminates
+  | [ |- projT1 (MoveToSymbol_L _) ↓ _ ] => eapply MoveToSymbol_L_terminates
+  end.
+
+Smpl Add smpl_TM_MoveToSymbol : TM_Correct.
