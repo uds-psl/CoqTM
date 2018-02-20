@@ -118,13 +118,13 @@ Section MatchList.
       split.
       {
         destruct_tapes; cbn in *.
-        destruct h; cbn in *; TMSimp; eauto. destruct (map _) in H0; cbn in H0; congruence.
-        destruct e; swap 1 2; cbn in *; TMSimp.
-        - destruct s; swap 1 2; cbn in *; TMSimp.
+        destruct h; cbn in *; TMSimp hnf in *; eauto. destruct (map _) in H0; cbn in H0; congruence.
+        destruct e; swap 1 2; cbn in *; TMSimp hnf in *.
+        - destruct s; swap 1 2; cbn in *; TMSimp hnf in *.
           + destruct lst; cbn in *; inv H0.
           + destruct b; cbn in *; TMSimp; unfold encode_list in *.
-            * destruct lst; TMSimp. eauto.
-            * destruct lst; TMSimp. eexists; split; eauto.
+            * destruct lst; TMSimp hnf in *. eauto.
+            * destruct lst; TMSimp hnf in *. eexists; split; eauto.
         - destruct lst; cbn in *; inv H0; eauto.
       }
       {
@@ -206,28 +206,25 @@ Section MatchList.
     }
     {
       hnf. intros. hnf. destruct y. intros head tail.
-      TMSimp repeat progress simpl_not_in. destruct u.
-      destruct h1; cbn in *; inv H0; [ do 2 destruct (map _); cbn in H3; congruence | inv H3]. clear H1. 
+      TMSimp.
+      destruct H0 as (r1&r2&HE1&HE2). cbn in *.
+      destruct h1; cbn in *; inv HE1; [ do 2 destruct (map _); cbn in H3; congruence | inv H3]. clear H. 
       split.
       - 
-        epose proof CopySymbols_cons_first H (head := head) (tail := tail) (rs' := x1) as L1. cbn in *.
-        spec_assert L1.
+        epose proof CopySymbols_cons_first H1 (head := head) (tail := tail) (rs' := r2) as L1. cbn in *.
+        simpl_tape in L1. spec_assert L1.
         {
-          destruct (encode head); cbn.
-          - destruct (encode_list codX tail); cbn; auto.
-          - f_equal. now rewrite !List.map_app, <- app_assoc.
+          inv HE2. now simpl_list.
         }
         hnf.
         do 2 eexists; split; cbn.
         + eapply tape_match_left_right.
         + erewrite <- L1. destruct h2; cbn in *; auto. destruct (encode_list _); cbn in *; congruence. destruct l; cbn; auto.
       -
-        epose proof CopySymbols_cons_second H (head := head) (tail := tail) (rs' := x1) as L1. cbn in *.
+        epose proof CopySymbols_cons_second H1 (head := head) (tail := tail) (rs' := r2) as L1. cbn in *.
         spec_assert L1.
         {
-          destruct (encode head); cbn.
-          - destruct (encode_list codX tail); cbn; auto.
-          - f_equal. now rewrite !List.map_app, <- app_assoc.
+          inv HE2. simpl_tape. now simpl_list.
         }
         hnf. now rewrite !map_rev, List.map_map in *.
     }
@@ -266,10 +263,11 @@ Section MatchList.
     }
     {
       subst R1 M2 R2 M3 R3. hnf. intros. hnf. destruct y. intros head tail.
-      TMSimp repeat progress simpl_not_in. destruct u.
-      destruct h3; cbn in *; inv H0; [destruct (encode _); cbn in H3; congruence | inv H3]. clear H1.
-      specialize (H head tail). spec_assert H by (hnf; do 2 eexists; hnf; split; cbn; eauto). destruct H as (H1&H1').
-      split; eauto. hnf; unfold tape_encodes_r; cbn in *. clear b H2 H1.
+      TMSimp. clear_trivial_eqs.
+      destruct H0 as (r1&r2&HE1&HE2). cbn in *.
+      destruct h1; cbn in *; inv HE1; [destruct (encode _); cbn in HE2; congruence | inv HE2]. clear H.
+      specialize (H1 head tail). spec_assert H1 by (hnf; do 2 eexists; hnf; split; cbn; eauto). destruct H1 as (H1&H1').
+      split; eauto. hnf; unfold tape_encodes_r; cbn in *. clear b H5.
       rewrite tape_match_left_right in *. unfold finType_CS in *; rewrite H1' in *.
 
       assert (tape_local_l (tape_move_mono h4 (Some (inl STOP), L)) =
@@ -329,9 +327,11 @@ Section MatchList.
     }
     {
       subst R1 M2 R2 M3 R3. cbn.
+      intros tin (yout&tout).
       TMSimp repeat progress simpl_not_in.
-      destruct b, H; TMSimp repeat progress simpl_not_in.
-      - specialize (H lst). spec_assert H as (head&tail&->) by (do 2 eexists; split; cbn; eauto).
+      destruct yout, H; TMSimp.
+      - specialize (H _ H0) as (head&tail&->).
+        destruct H0 as (r1&r2&HE1&HE2).
         specialize (H1 head tail).
         spec_assert H1 as (H1&H1').
         {
@@ -340,11 +340,7 @@ Section MatchList.
         do 2 eexists; repeat split; eauto.
       - auto.
       - congruence.
-      - assert (lst = nil) as ->.
-        {
-          eapply H. cbn. hnf; do 2 eexists; split; cbn; eauto.
-        }
-        split; eauto. hnf. do 2 eexists; split; cbn in *; eauto.
+      - now assert (lst = nil) as -> by auto.
     }
   Qed.
 
