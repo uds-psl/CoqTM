@@ -21,32 +21,61 @@ Coercion Rel3_is_Rel : Rel3 >-> Rel.
 Definition fun_to_Rel F B Z  (R : F -> Rel B Z) : Rel (F * B) Z := fun p z => let (f,b) := p in R f b z.
 Notation "'⇑' R" := (fun_to_Rel R) (at level 30, format "'⇑' R").
 
-Definition Univ_rel {X Y : Type} : X -> Y -> Prop := fun x y => True.
-Definition Empty_rel {X Y : Type} : X -> Y -> Prop := fun x y => False.
+Definition Univ_rel {X Y : Type} : Rel X Y := fun x y => True.
+Definition Empty_rel {X Y : Type} : Rel X Y := fun x y => False.
+
+Arguments Univ_rel {X Y} x y /.
+Arguments Empty_rel {X Y} x y /.
+
+(* This is the behaviour I want *)
+Goal True.
+Proof.
+  assert (Univ_rel 0 0) as H by (hnf;auto); assert (Empty_rel 0 0) as H' by give_up.
+  pose (R := Univ_rel (X := nat) (Y := nat)).
+  cbn in *.
+Abort.
 
 Definition rcomp X Y Z (R : Rel X Y) (S : Rel Y Z) : Rel X Z :=
   fun x z => exists y, R x y /\ S y z.
 Notation "R1 '∘' R2" := (rcomp R1 R2) (at level 40, left associativity).
+Arguments rcomp {X Y Z} (R S) x y /.
+
+Goal (Univ_rel (X := nat) (Y := nat) ∘ Univ_rel) 42 42.
+Proof. cbn [Univ_rel]. cbn [rcomp]. cbn [Univ_rel]. exists 42. auto. Qed.
+
 
 Definition runion X Y (R : Rel X Y) (S : Rel X Y) : Rel X Y := fun x y => R x y \/ S x y.
 Notation "R '∪' S" := (runion R S) (at level 42).
+Arguments runion { X Y } ( R S ) x y /.
 
 Definition rintersection X Y (R : Rel X Y) (S : Rel X Y) : Rel X Y := fun x y => R x y /\ S x y.
 Notation "R '∩' S" := (rintersection R S) (at level 41).
+Arguments rintersection { X Y } ( R S ) x y /.
+
+
+Goal (Univ_rel ∪ Univ_rel) 42 42.
+Proof. cbn. auto. Qed.
+
 
 Definition rimplication X Y (R : Rel X Y) (S : Rel X Y) : Rel X Y := fun x y => R x y -> S x y.
 Notation "R '⊂' S" := (rimplication R S) (at level 41).
-
-Definition Rsnd1 {X Y} : Rel (Y * X) X := fun p x2 => snd p = x2.
-Definition Rsnd2 {X Y} : Rel X (Y * X) := fun x1 p => x1 = snd p.
+Arguments rimplication { X Y } ( R S ) x y /.
 
 Definition ignoreParam X Y Z (R : Rel X Z) : Rel X (Y * Z)  := fun x '(y,z) => R x z.
+Arguments ignoreParam {X Y Z} ( R ) x y /.
+
 Definition hideParam X Y Z (R : Rel X Z) : Rel (Y * X) Z := fun '(_,x) z => R x z.
+Arguments hideParam {X Y Z} ( R ) x y /.
 
-Definition finite_rel_union (X Y : Type) (F : Type) (R : F -> Rel X Y) : Rel X Y := 
+Definition rUnion (X Y : Type) (F : Type) (R : F -> Rel X Y) : Rel X Y := 
   fun x y => exists f, R f x y.
+Notation "'⋃_' f R" := (rUnion (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋃_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
+Arguments rUnion { X Y F } ( R ) x y /.
 
-Notation "'⋃_' f R" := (finite_rel_union (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋃_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
+Definition rIntersection (X Y : Type) (F : Type) (R : F -> Rel X Y) : Rel X Y := 
+  fun x y => forall f, R f x y.
+Notation "'⋂_' f R" := (rUnion (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋂_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
+Arguments rIntersection { X Y F } ( R ) x y /.
 
 
 Definition surjective X Z (R : Rel X Z) :=
@@ -73,9 +102,11 @@ Proof. firstorder. Qed.
 
 Definition ignoreFirst X Y (R : Y -> Prop) : Rel X Y  := fun x y => R y.
 Notation "'↑' R" := (ignoreFirst R) (at level 40, format "'↑' R").
+Arguments ignoreFirst { X Y } ( R ) x y /.
 
 Definition rprod X Y Z (R : Rel X Y) (S : Rel X Z) : Rel X (Y * Z) := fun x '(y,z) =>  R x y /\ S x z.
 Notation "R '⊗' S" := (rprod R S) (at level 41).
+Arguments rprod { X Y Z } ( R S ) x y /.
 
 Definition subrel X Y (R S: Rel X Y) := (forall x y, R x y -> S x y).
 
@@ -104,9 +135,14 @@ Notation "R '=2' S"  := (eqrel R S) (at level 70).
 
 Definition rif X Y (R1 R2 : Rel X Y) : Rel X (bool * Y) := ((fun x p => let (b,z) := p in if b : bool  then R1 x z else R2 x z)).
 Notation "'if?' R1 '!' R2" := (rif R1 R2) (at level 60).
+Arguments rif { X Y } ( R1 R2 ) x y /.
+
+Goal rif (Empty_rel) (Univ_rel) 42 (false, 42).
+Proof. cbn. auto. Qed.
 
 Definition restrict X Y Z (R : Rel X (Y * Z)) f : Rel X Z := (fun x1 x2 => R x1 (f, x2)).
 Notation "R '|_' f" := (restrict R f) (at level 30, format "R '|_' f").
+Arguments restrict { X Y Z } ( R f ) x y /.
 
 Lemma rif_restrict X Y (R1 R2 : Rel X Y) b : (if? R1 ! R2) |_b =2 if b then R1 else R2.
 Proof.
@@ -161,7 +197,10 @@ Section Fix_X2.
 
 End Fix_X2.
 
+Arguments Eq_in { X n } P x y / : rename.
+
 Definition IdR (X : Type) : Rel X X := eq.
+Arguments IdR { X } x y /.
 
 Lemma ignore_hideParam X Y Z A (R1 : Rel X Y) (R2 : Rel Y Z) (a : A):
   ignoreParam (Y := A) R1 ∘ hideParam R2 =2 R1 ∘ R2.
@@ -169,8 +208,6 @@ Proof.
   split; intros ? ?; cbn; firstorder; try destruct x0; firstorder.
   exists (a, x0). firstorder.
 Qed.
-
-Hint Unfold Eq_in.
 
 
 
@@ -426,25 +463,6 @@ Proof.
   split; intros ? ? ?; hnf in *; firstorder congruence.
 Qed.
 
-Definition finite_rel_intersection (X Y : Type) (F : finType) (R : F -> Rel X Y) : Rel X Y := 
-  List.fold_right (fun f R' => rintersection (R f) R' ) (fun x y => True) (elem F).
-Notation "'⋂_' f R" := (finite_rel_intersection (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋂_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
-
-Lemma finite_rel_intersection_spec' (F : finType) (X Y : Type)  (R : F -> Rel X Y) x y A :
-  (forall f, f el A -> R f x y) <-> List.fold_right (fun f R' => rintersection (R f) R' ) (fun x y => True) A x y.
-Proof.
-  induction A; firstorder congruence.
-Qed.
-
-Lemma finite_rel_intersection_spec (F : finType) (X Y : Type)  (R : F -> X -> Y -> Prop) x y :
-  (forall f, R f x y) <-> finite_rel_intersection R x y.
-Proof.
-  unfold finite_rel_union. split.
-  intros ?.
-  - unfold finite_rel_intersection. rewrite <- finite_rel_intersection_spec'. firstorder.
-  - intros. unfold finite_rel_intersection in H. rewrite <- finite_rel_intersection_spec' in H.
-    eapply H. eauto.
-Qed.
 
 Coercion Fin.of_nat_lt : lt >-> Fin.t.
 
@@ -485,46 +503,4 @@ Qed.
 
 Definition rfix X Y Z (R : Rel X Z) (p : Y) : Rel X (Y*Z) := (fun x '(y, z) => y = p /\ R x z).
 Notation "R '||_' f" := (rfix R f) (at level 30, format "R '||_' f").
-
-
-
-(** * Automatic relations destructor *)
-
-
-Smpl Create smpl_Rel.
-
-Ltac smpl_Rel := smpl smpl_Rel; repeat smpl_Rel.
-
-
-(* destruct/unfolds all hypothesis of form R a b, where R is a relation generated by a relational operator defined here *)
-Ltac smpl_Rel_basic :=
-  match goal with
-  | [ H : Univ_rel _ _  |- _] => clear H
-  | [ H : Empty_rel _ _ |- _] => hnf in H; now absurd H
-  | [ H : rcomp _ _ _ _ |- _] =>
-    let y := fresh "y" in
-    let H1 := fresh "H" in
-    let H2 := fresh "H" in
-    hnf in H; destruct H as (y&H1&H2)
-  | [ H : runion        _ _ _ _ |- _] => hnf in H
-  | [ H : rintersection _ _ _ _ |- _] =>
-    let H1 := fresh H in
-    let H2 := fresh H in
-    hnf in H; destruct H as (H1&H2)
-  | [ H : rimplication _ _ _ _ |- _] => hnf in H
-  | [ H : ignoreParam _ _ _|- _] => hnf in H
-  | [ H : hideParam _ _ _|- _] => hnf in H
-  | [ H : finite_rel_union _ _ _|- _] =>
-    let y := fresh "y" in
-    let H1 := fresh "H" in
-    let H2 := fresh "H" in
-    hnf in H; destruct H as (y&H1&H2)
-  | [ H : rif _ _ _ _ |- _] => hnf in H
-  | [ H : restrict _ _ _ _ |- _] => hnf in H
-  | [ H : IdR _ _ |- _] => hnf in H; try subst H
-  | [ H : rfix _ _ _ _ |- _] => hnf in H
-  | [ H : Eq_in _ _ _ |- _] => hnf in H
-  | _ => fail "No basic relation found to unfold"
-  end.
-
-Smpl Add smpl_Rel_basic : smpl_Rel.
+Arguments rfix { X Y Z } ( R p ) x y /.

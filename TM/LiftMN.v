@@ -29,16 +29,24 @@ Section lift_gen.
 
   Definition lift_gen_eq_p (R : Rel (Vector.t X m) (Z * Vector.t X m)) : Rel (Vector.t X n) (Z * Vector.t X n) :=
     lift_gen_p R ∩ ignoreParam (Eq_in not_indexes).
-
-  Variable (sig : finType).
-  Variable (M1 : mTM sig m).
-  Variable T : (tapes sig m) -> nat -> Prop.
-
-  Definition liftT_gen_eq : (tapes sig n) -> nat -> Prop := fun t k => T (reorder indexes t) k.
-  
 End lift_gen.
 
 Arguments not_indexes : simpl never.
+Arguments lift_gen { n X m } ( indexes R ) x y /.
+Arguments lift_gen_eq { n X m } ( indexes R ) x y /.
+Arguments lift_gen_eq_p { n X Z m } ( indexes R ) x y /.
+
+
+Section liftT_gen.
+  Variable n m : nat.
+  Variable indexes : Vector.t (Fin.t n) m.
+  Variable (sig : finType).
+  Variable T : (tapes sig m) -> nat -> Prop.
+
+  Definition liftT_gen : Rel (tapes sig n) nat := fun t k => T (reorder indexes t) k.
+End liftT_gen.
+
+Arguments liftT_gen { n m } ( indexes ) { sig } ( T ) x y /.
 
 
 
@@ -453,7 +461,7 @@ Section LiftNM.
 
   Lemma Inject_Terminates T :
     projT1 pM ↓ T ->
-    projT1 Inject ↓ liftT_gen_eq I T.
+    projT1 Inject ↓ liftT_gen I T.
   Proof.
     intros H initTapes k Term. hnf in *.
     specialize (H (reorder I initTapes) k Term) as (outc&H).
@@ -510,14 +518,3 @@ Ltac simpl_not_in :=
   | [ H: forall i : Fin.t 2, not_indexes [|Fin.FS Fin.F1|] i -> _ |- _] =>
     specialize (H Fin.F1          simpl_not_in_helper2)
   end.
-
-
-Ltac smpl_Rel_LiftN :=
-  match goal with
-  | [ H : lift_gen_eq_p _ _ _ _ |- _] => hnf in H
-  | [ H : liftT_gen_eq  _ _ _ _ |- _] => hnf in H
-  end.
-
-
-Smpl Add simpl_not_in  : smpl_Rel.
-Smpl Add smpl_Rel_LiftN : smpl_Rel.

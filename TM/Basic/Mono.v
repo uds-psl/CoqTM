@@ -27,6 +27,8 @@ Section Mk_Mono.
 
 End Mk_Mono.
 
+Arguments Mk_R_p { sig F } ( R ) x y /.
+
 Section test_char.
 
   Variable sig : finType.
@@ -107,6 +109,8 @@ Section Write.
 End Write.
 
 Arguments Write : simpl never.
+Arguments Write_R { sig } c { F } p x y / : rename.
+
 
 
 Section Move.
@@ -135,6 +139,7 @@ Section Move.
 End Move.
 
 Arguments Move : simpl never.
+Arguments Move_R { sig } ( D ) { F } ( p ) x y / : rename.
 
 
 
@@ -166,6 +171,7 @@ Section WriteMove.
 End WriteMove.
 
 Arguments WriteMove : simpl never.
+Arguments WriteMove_R { sig } act { F } p x y / : rename.
 
 
 (*
@@ -229,6 +235,7 @@ Section read_char.
 End read_char.
 
 Arguments Read_char : simpl never.
+Arguments read_char_R sig x y /.
 
 
 Section Mono_Nop.
@@ -255,6 +262,7 @@ Section Mono_Nop.
 End Mono_Nop.
 
 Arguments mono_Nop : simpl never.
+Arguments mono_Nop_R { sig F } ( p ) x y / : rename.
 
 
 Ltac smpl_TM_Mono :=
@@ -280,16 +288,3 @@ Ltac smpl_TM_Mono :=
   end.
 
 Smpl Add smpl_TM_Mono : TM_Correct.
-
-
-Ltac smpl_Rel_mono :=
-  match goal with
-  | [ H : Mk_R_p _ _ _ |- _] => hnf in H
-  | [ H : Write_R _ _ _ _ |- _] => hnf in H
-  | [ H : Move_R _ _ _ _ |- _] => hnf in H
-  | [ H : WriteMove _ _ _ _ |- _] => hnf in H
-  | [ H : read_char_R _ _ |- _] => hnf in H
-  | [ H : mono_Nop_R _ _ _ |- _] => hnf in H
-  end.
-
-Smpl Add smpl_Rel_mono : smpl_Rel.

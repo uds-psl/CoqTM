@@ -46,6 +46,11 @@ Section lift_sigma_tau.
 
 End lift_sigma_tau.
 
+Arguments lift_sigma_tau { n sig tau } ( g def R ) x y /.
+Arguments lift_sigma_tau_p { n sig tau } ( g def ) { Z } ( R ) x y /.
+Arguments lift_sigma_tau_T { n sig tau } ( g def T ) x y /.
+
+
 Section InjectTape.
 
   Variable sig tau : finType.
@@ -261,24 +266,3 @@ Section LiftSigmaTau.
 End LiftSigmaTau.
 
 Arguments Lift : simpl never.
-
-
-(** * Tactical support *)
-
-
-Ltac smpl_TM_LiftSigma :=
-  match goal with
-  | [ |- Lift _ _ _ _ ⊫ _] => eapply Lift_WRealise; swap 1 2
-  | [ |- Lift _ _ _ _ ⊨c(_) _] => eapply Lift_RealiseIn; swap 1 2
-  | [ |- projT1 (Lift _ _ _ _) ↓ _] => eapply Lift_TerminatesIn; swap 1 2
-  end.
-Smpl Add smpl_TM_LiftSigma : TM_Correct.
-
-
-Ltac smpl_Rel_LiftSigma :=
-  match goal with
-  | [ H : lift_sigma_tau_p _ _ _ |- _] => hnf in H
-  | [ H : lift_sigma_tau_T _ _ _ |- _] => hnf in H
-  end.
-
-Smpl Add smpl_Rel_LiftSigma : smpl_Rel.

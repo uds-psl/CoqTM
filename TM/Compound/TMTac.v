@@ -1,4 +1,5 @@
-Require Import Prelim TM.TM.
+Require Import TM.Prelim TM.TM.
+Require Import TM.LiftMN. (* for [simpl_not_in] *)
 
 Ltac dec_pos P := let H := fresh in destruct (Dec P) as [_ | H]; [ | now contradiction H].
 Ltac dec_neg P := let H := fresh in destruct (Dec P) as [H | _]; [now contradiction H | ].
@@ -63,8 +64,8 @@ Ltac destruct_unit :=
 Tactic Notation "TMSimp" tactic(T) :=
   repeat progress
          (
-           try smpl_Rel;
            try destruct_param_tape_pair; destruct_unit;
+           repeat simpl_not_in;
            try match goal with
                | [ H : FinType _ |- _] => cbn in H
                end;
