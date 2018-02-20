@@ -42,14 +42,21 @@ Section MatchNat.
     }
     { cbn. omega. }
     {
-      intros tin (yout&tout) H. destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
+      intros tin (yout&tout) H. cbn in yout.
+      destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
       destruct_tapes; cbn in *.
-      destruct h; cbn in *; TMSimp; eauto. destruct (map _) in H0; cbn in H0; congruence.
-      destruct e; swap 1 2; cbn in *; TMSimp.
-      - destruct b; TMSimp cbn in *.
-        + destruct n; cbn in *; inv H0. eexists. split. eauto. destruct n; cbn; do 2 eexists; split; cbn; eauto.
-        + destruct n; cbn in *; inv H0. split. eauto. do 2 eexists; split; cbn; eauto.
-      - destruct n; cbn in *; inv H0.
+      destruct h; cbn in *; TMSimp; eauto.
+      - destruct H as (?&?&?&?). cbn in *. destruct (map _) in H0; cbn in H0; congruence.
+      - destruct H as (?&?&?&?). cbn in *. destruct (map _) in H0; cbn in H0; congruence.
+      - destruct H as (?&?&?&?). cbn in *. destruct (map _) in H0; cbn in H0; congruence.
+      - destruct e; swap 1 2; cbn in *; TMSimp.
+        destruct b; TMSimp cbn in *.
+        + destruct H1 as (?&?&?&?). cbn in *.
+          destruct n; cbn in *; inv H1. eexists. split. eauto. destruct n; cbn; do 2 eexists; split; cbn; eauto.
+        + destruct H as (?&?&?&?). cbn in *.
+          destruct n; cbn in *; inv H0. eexists. split. eauto.
+          hnf. do 2 eexists; split; cbn; eauto.
+        + destruct H as (?&?&?&?). cbn in *. destruct n; cbn in *; inv H0.
     }
   Qed.
 
@@ -73,8 +80,20 @@ Section MatchNat.
       }
       { cbn. omega. }
       {
-        TMSimp cbn in *. simpl_tape. destruct h; cbn in *; inv H0. destruct n; cbn in *; congruence. clear H.
-        cbn. destruct n; cbn in *; inv H2; do 2 eexists; split; cbn; eauto.
+        intros tin (yout, tout). TMCrush.
+        - destruct H0 as (r1&r2&He1&He2).
+          destruct h0; cbn in *; try congruence.
+          destruct (map _) in He2; cbn in *; congruence.
+          simpl_tape in *.
+          destruct l; cbn in *; try congruence. subst.
+          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
+        - destruct H0 as (r1&r2&He1&He2).
+          destruct h0; cbn in *; try congruence.
+          destruct (map _) in He2; cbn in *; congruence.
+          simpl_tape in *.
+          destruct l; cbn in *; try congruence. subst.
+          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
+          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
       }
     Qed.
 
@@ -96,8 +115,9 @@ Section MatchNat.
       }
       { cbn. omega. }
       {
-        TMSimp cbn in *. simpl_tape. destruct h; cbn in *; inv H0. destruct n; cbn in *; congruence. clear H.
-        cbn. destruct n; cbn in *; inv H2; do 2 eexists; split; cbn; f_equal.
+        intros tin (yout, tout). TMSimp. simpl_tape.
+        destruct H0 as (r1&r2&HE1&HE2). cbn in *.
+        do 2 eexists; split; cbn; eauto.
       }
     Qed.
 

@@ -559,7 +559,7 @@ Section InitTape.
     - eapply Seq_RealiseIn. eapply WriteStr_Rev_Sem.
       eapply Seq_RealiseIn; eapply Move_Sem.
     - cbn. simpl_list. cbn. omega.
-    - intros tin (()&tout). hnf. TMSimp; subst. destruct u, H1.
+    - intros tin (()&tout). hnf. TMSimp; subst.
       destruct h1; cbn in *; inv H; cbn.
       + destruct (encode x) eqn:E; cbn; do 2 eexists; split; hnf; cbn; try rewrite E; simpl_list; cbn; eauto.
       + destruct (encode x) eqn:E; cbn; do 2 eexists; split; hnf; cbn; try rewrite E; simpl_list; cbn; eauto.
