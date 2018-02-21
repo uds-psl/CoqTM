@@ -41,16 +41,18 @@ Section MatchSum.
     {
       intros tin (yout&tout) H. destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
       destruct_tapes; cbn in *.
-      destruct h; cbn in *; TMSimp; eauto. destruct (map _) in H0; cbn in H0; congruence.
-      destruct e; swap 1 2; cbn in *; TMSimp.
-      - destruct s; swap 1 2; TMSimp.
-        + destruct s; TMSimp; destruct v; cbn in *; inv H0.
-        + destruct b; TMSimp.
+      destruct h; cbn in *; TMSimp hnf in *; eauto. destruct (map _) in H0; cbn in H0; congruence.
+      destruct e; swap 1 2; cbn in *; TMSimp hnf in *.
+      - destruct s; swap 1 2; TMSimp hnf in *.
+        + destruct s; TMSimp hnf in *.
+          destruct v; cbn in *; inv H0.
+          destruct v; cbn in *; inv H0.
+        + destruct b; TMSimp hnf in *.
           * destruct v as [vx|vy]; TMSimp. exists vx. split; auto.
             destruct (encode _) eqn:E; cbn; do 2 eexists; split; cbn; try rewrite E; cbn; auto.
           * destruct v as [vx|vy]; TMSimp. exists vy. split; auto.
             destruct (encode _) eqn:E; cbn; do 2 eexists; split; cbn; try rewrite E; cbn; auto.
-      - destruct b; TMSimp; destruct v; TMSimp.
+      - destruct b; TMSimp hnf in *; destruct v; TMSimp hnf in *.
     }
   Qed.
 
@@ -76,21 +78,22 @@ Section MatchSum.
       { unfold ConstrSum. repeat TM_Correct. }
       { cbn. omega. }
       {
-        TMSimp. destruct is_left; cbn in *; subst; TMSimp.
+        TMSimp. destruct is_left; intros tin (yout&tout); TMSimp.
         {
           rewrite tape_match_right_left.
-          destruct h; cbn in *; TMSimp.
-          - destruct (encode _) in H0; cbn in *; congruence.
-          - destruct (encode x) as [ | eX eXs] eqn:E;
-              cbn in *; inv H0; cbv [tape_encodes_r]; cbn; rewrite E; cbn;
-                (destruct x0; cbn; eauto).
+          destruct H0 as (r1&r2&HE1&HE2).
+          destruct h0; cbn in *; inv HE1. destruct (encode x); cbn in HE2; inv HE2. clear H0.
+          do 2 eexists; split; cbn.
+          - cbn. f_equal.
+          - destruct (encode x); cbn in *; eauto. f_equal. eauto. f_equal. rewrite HE2. cbn. f_equal.
         }
         {
-          destruct h; cbn in *; TMSimp.
-          - destruct (encode _) in H0; cbn in *; congruence.
-          - destruct (encode y) as [ | eX eXs] eqn:E;
-              cbn in *; inv H0; cbv [tape_encodes_r]; cbn; rewrite E; cbn;
-                (destruct x; cbn; eauto).
+          rewrite tape_match_right_left.
+          destruct H0 as (r1&r2&HE1&HE2).
+          destruct h0; cbn in *; inv HE1. destruct (encode y); cbn in HE2; inv HE2. clear H0.
+          do 2 eexists; split; cbn.
+          - cbn. f_equal.
+          - destruct (encode y); cbn in *; eauto. f_equal. eauto. f_equal. rewrite HE2. cbn. f_equal.
         }
       }
     Qed.
