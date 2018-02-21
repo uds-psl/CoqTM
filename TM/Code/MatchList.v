@@ -277,16 +277,22 @@ Section MatchList.
         destruct h4; cbn in *; try congruence. subst. apply tape_match_symbols_tape_local_l.
       }
 
-      epose proof (MoveToSymbol_L_left (stop := stop_X') _ _ L1) as (L2&L3).
-      epose proof (MoveToSymbol_L_right (stop := stop_X') _ _ L1) as L4.
+      epose proof (MoveToSymbol_L_correct (stop := stop_X') _ _ L1) as (L2&L3).
 
       cbn in *. rewrite H1' in *.
       progress unfold finType_CS in *.
       do 2 eexists; hnf; split; cbn in *; eauto.
       + erewrite tape_left_move_right; eauto.
+        rewrite <- tape_local_mirror' in L2.
+        eapply tape_local_current_cons in L2.
+        simpl_tape in L2. eauto.
       + erewrite tape_local_move_right; eauto.
-        eapply tape_local_iff. do 2 eexists. split; eauto. split.
-        eapply L3. rewrite L4. cbn. rewrite tape_match_symbols_right. cbn. now rewrite rev_involutive.
+        eapply tape_local_iff. do 2 eexists.
+        rewrite <- tape_local_mirror' in L2.
+        eapply tape_local_current_cons in L2.
+        split; eauto. split.
+        simpl_tape in L2. eauto.
+        rewrite L3. cbn. rewrite tape_match_symbols_right. cbn. now rewrite rev_involutive.
 
       Unshelve.
       2,3,4: cbn; trivial.
