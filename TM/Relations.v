@@ -74,7 +74,7 @@ Arguments rUnion { X Y F } ( R ) x y /.
 
 Definition rIntersection (X Y : Type) (F : Type) (R : F -> Rel X Y) : Rel X Y := 
   fun x y => forall f, R f x y.
-Notation "'⋂_' f R" := (rUnion (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋂_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
+Notation "'⋂_' f R" := (rIntersection (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋂_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
 Arguments rIntersection { X Y F } ( R ) x y /.
 
 
@@ -501,6 +501,7 @@ Proof.
 Qed.
 
 
-Definition rfix X Y Z (R : Rel X Z) (p : Y) : Rel X (Y*Z) := (fun x '(y, z) => y = p /\ R x z).
+Definition rfix X Y Z (R : Rel X Z) (p : Y) : Rel X (Y*Z) := (fun x '(y, z) =>
+y = p /\ R x z).
 Notation "R '||_' f" := (rfix R f) (at level 30, format "R '||_' f").
 Arguments rfix { X Y Z } ( R p ) x y /.

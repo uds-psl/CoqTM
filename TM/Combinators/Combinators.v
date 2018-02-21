@@ -2,6 +2,39 @@
 Require Export Match If SequentialComposition While.
 
 
+(* Simple operator to fix the parameter *)
+
+Section Return.
+
+  Variable (sig : finType) (n : nat).
+  Variable F : finType.
+  Variable pM : { M : mTM sig n & states M -> F }.
+  Variable F' : finType.
+  Variable p : F'.
+
+  Definition Return := (projT1 pM; fun _ => p).
+
+  Lemma Return_WRealise R :
+    pM ⊫ R ->
+    Return ⊫ (⋃_f (R |_ f)) ||_ p.
+  Proof. intros. intros tin k outc HLoop. hnf. split; hnf; eauto. exists (projT2 pM (cstate outc)). hnf. eauto. Qed.
+
+  Lemma Return_RealiseIn R k :
+    pM ⊨c(k) R ->
+    Return ⊨c(k) (⋃_f (R |_ f)) ||_ p.
+  Proof. firstorder. Qed.
+
+  Lemma Return_Terminates T :
+    projT1 pM ↓ T ->
+    projT1 Return ↓ T.
+  Proof. firstorder. Qed.
+
+End Return.
+
+Arguments Return : simpl never.
+
+
+
 (** * Tactical support *)
 
 
@@ -95,6 +128,9 @@ Ltac smpl_TM_Combinators :=
   | [ |- projT1 (Seq _ _) ↓ _] => eapply Seq_TerminatesIn
   | [ |- WHILE _ ⊫ _] => eapply While_WRealise
   | [ |- projT1 (WHILE _) ↓ _] => eapply While_TerminatesIn
+  | [ |- Return _ _ ⊫ _] => eapply Return_WRealise
+  | [ |- Return _ _ ⊨c(_) _] => eapply Return_RealiseIn
+  | [ |- projT1 (Return _ _) ↓ _] => eapply Return_Terminates
   end.
 
 Smpl Add smpl_TM_Combinators : TM_Correct.
