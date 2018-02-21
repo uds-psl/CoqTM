@@ -110,19 +110,16 @@ Section Projection.
       - eapply CopySymbols_WRealise.
     }
     {
-      hnf. intros. hnf. destruct y. intros (inputX, inputY).
-      TMSimp repeat progress simpl_not_in || cbn [Vector.nth] in *. destruct u.
-      destruct h1; cbn in *; inv H0; [ do 2 destruct (encode _); cbn in H2; congruence | ]. clear H1.
-      (*
-      erewrite List.map_app, !List.map_map, <- app_assoc in H3; cbn in H3.
-       *)
+      hnf. intros tin ((),tout) H. cbn in *. intros (inputX, inputY). TMSimp.
+      destruct H0 as (r1&r2&HE1&HE2).
+      destruct h1; cbn in *; inv HE1; [ do 2 destruct (encode _); cbn in HE2; congruence | ]. clear H0.
       split.
-      - pose proof CopySymbols_pair_first'' H2 H as L1.
+      - pose proof CopySymbols_pair_first'' HE2 H as L1.
         destruct h3; cbn in *; try (destruct (encode inputY); cbn in L1; congruence).
         destruct l; cbn in *.
         + hnf. do 2 eexists. split; cbn; eauto.
         + hnf. do 2 eexists. split; cbn; eauto.
-      - pose proof (CopySymbols_pair_second'' H2 H) as ->. now rewrite !map_rev.
+      - pose proof (CopySymbols_pair_second'' HE2 H) as ->. now rewrite !map_rev.
     }
   Qed.
 
@@ -146,10 +143,6 @@ Section Projection.
             tout[@Fin.FS Fin.F1] ≂ fst xy
       ).
 
-  (* Θ (18 + (4+?)*(?+1)*|enocode (fst x)|) *)
-
-  (* TODO: add the above lemmas to Prelim.v bzw. CodeTM.v and add them to the tape database *)
-
   Lemma Proj_WRealise : Proj ⊫ Proj_Rel.
   Proof.
     eapply WRealise_monotone.
@@ -163,39 +156,38 @@ Section Projection.
       - eapply MoveToSymbol_L_WRealise.
     }
     {
-      hnf. intros. hnf. destruct y. intros (inputX, inputY).
-      TMSimp repeat progress simpl_not_in || cbn [Vector.nth] in *. destruct u.
-      destruct h3; cbn in *; inv H0; [do 2 destruct (encode _); cbn in H3; congruence | ]. clear H1. clear M1 R1. 
-      specialize (H (inputX, inputY)). spec_assert H by (hnf; do 2 eexists; hnf; split; cbn; eauto). destruct H as (H1&H1').
-      split; eauto. hnf; unfold tape_encodes_r; cbn in *. clear b H2 H1 h H3.
-      rewrite tape_match_left_right in *. unfold finType_CS in *; rewrite H1'.
-
+      hnf. intros tin ((), tout) H. intros (inputX, inputY).
+      TMSimp. clear H4 H5. clear_trivial_eqs. specialize (H1 _ H0) as (H1&H2). simpl_tape in H2. cbn in *.
+      split; eauto.
+      
       destruct (encode inputX) as [ | cs cX'] eqn:E1; cbn in *.
-      - do 2 eexists; hnf; split; cbn; hnf; rewrite MoveToSymbol_L_Fun_equation; cbn; eauto.
-      - repeat ( rewrite <- !app_assoc in *; cbn in * ).
+      - unfold finType_CS in *. do 2 eexists; hnf; split; cbn; hnf.
+        rewrite H2. cbn. 
+        rewrite MoveToSymbol_L_Fun_equation; cbn; eauto.
+        rewrite H2, E1. cbn. 
+        rewrite MoveToSymbol_L_Fun_equation; cbn; eauto.
+      - repeat ( rewrite <- !app_assoc in *; cbn in H2 ).
 
         assert (tape_local_l (tape_move_mono h4 (Some (inl STOP), L)) =
                 (rev (map inr (map inl cX')) ++ [inr (inl cs)]) ++ inl START :: left h2) as L1.
         {
           repeat ( rewrite <- !app_assoc in *; cbn in * ).
-          destruct h4; cbn in *; try (destruct cX'; cbn in *; congruence). subst. apply tape_match_symbols_tape_local_l.
+          destruct h4; cbn in *; rewrite H2; cbn; auto.
+          subst. now simpl_tape.
         }
         
-        (* TODO: This is a little mess! *)
-        epose proof MoveToSymbol_L_left (stop := stop_X) _ _ L1 as (L2&L3). Unshelve. all: eauto.
-        Focus 2.
-        rewrite <- !map_rev, List.map_map. intros x [ (?&<-&?) % in_map_iff | [ <- | H]] % in_app_iff; cbn; auto.
-        epose proof MoveToSymbol_L_right (stop := stop_X) _ _ L1 as L4. Unshelve. all: eauto.
-        Focus 2.
-        rewrite <- !map_rev, List.map_map. intros x [ (?&<-&?) % in_map_iff | [ <- | H]] % in_app_iff; cbn; auto.
-        cbn in *. rewrite H1' in *. cbn in *.
-        do 2 eexists; hnf; split; cbn; eauto.
-        + erewrite tape_left_move_right; eauto.
-        + erewrite tape_local_move_right; eauto.
-          eapply tape_local_iff. do 2 eexists. split; eauto. split.
-          eapply L3. unfold finType_CS in *. rewrite L4. cbn.
-          rewrite tape_match_symbols_right. cbn.
-          rewrite rev_app_distr; cbn. rewrite <- !map_rev, rev_involutive. eauto.
+        unshelve epose proof MoveToSymbol_L_correct (stop := stop_X) _ _ L1 as (L2&L3); eauto.
+        + rewrite <- !map_rev, List.map_map. intros x [ (?&<-&?) % in_map_iff | [ <- | H]] % in_app_iff; cbn; auto.
+        + rewrite !List.map_map, List.rev_app_distr, <- List.app_assoc, !List.rev_involutive in L3. cbn in *.
+          rewrite H2 in L1, L2, L3.
+          rewrite <- !tape_local_mirror' in L1, L2.
+          do 2 eexists; split; cbn.
+          * unfold finType_CS in *. rewrite H2. erewrite tape_left_move_right; eauto.
+            eapply tape_local_current_cons in L2. now simpl_tape in L2.
+          * unfold finType_CS in *. rewrite H2. erewrite tape_local_move_right; eauto.
+            eapply tape_local_iff. do 2 eexists. split; eauto. split.
+            eapply tape_local_current_cons in L2; simpl_tape in L2. eauto.
+            rewrite L3. simpl_tape. rewrite E1. cbn. f_equal. now rewrite List.map_map.
     }
   Qed.
 

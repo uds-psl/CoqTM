@@ -94,33 +94,11 @@ Section Copy.
   Qed.
 
 
-  Lemma MoveToSymbol_right t str1 str2 x :
+  Lemma MoveToSymbol_correct t str1 str2 x :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local t = str1 ++ x :: str2 ->
-    right (MoveToSymbol_Fun stop t) = str2 /\
-    current (MoveToSymbol_Fun stop t) = Some x.
-  Proof.
-    intros H H0. destruct t as [ | r rs | l ls | ls m rs]; cbn in *.
-    1,3: rewrite MoveToSymbol_Fun_equation; cbn; destruct str1; cbn in *; try congruence.
-    1: destruct str1; cbn in *; congruence.
-    revert m ls str1 H. revert rs.
-    refine (@size_induction _ (@length sig) _ _); intros [ | s rs'] IH; intros.
-    - rewrite MoveToSymbol_Fun_equation; cbn. destruct str1; cbn in *; inv H1.
-      + rewrite H0. cbn. auto.
-      + destruct str1; cbn in *; congruence.
-    - rewrite MoveToSymbol_Fun_equation; cbn.
-      destruct (stop m) eqn:E1.
-      + cbn. destruct str1; cbn in *; inv H1; eauto. specialize (H _ ltac:(eauto)). congruence.
-      + destruct str1; cbn in *; inv H1.
-        * congruence.
-        * eapply IH; cbn; eauto.
-  Qed.
-
-  Lemma MoveToSymbol_left t str1 str2 x :
-    (forall x, List.In x str1 -> stop x = false) ->
-    (stop x = true) ->
-    tape_local t = str1 ++ x :: str2 ->
+    tape_local (MoveToSymbol_Fun stop t) = x :: str2 /\
     left (MoveToSymbol_Fun stop t) = rev str1 ++ left t.
   Proof.
     intros H H0. destruct t as [ | r rs | l ls | ls m rs]; cbn in *.
@@ -139,31 +117,19 @@ Section Copy.
         * simpl_list. eapply IH; cbn; eauto.
   Qed.
 
-  Corollary MoveToSymbol_L_left t str1 str2 x :
+  Corollary MoveToSymbol_L_correct t str1 str2 x :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local_l t = str1 ++ x :: str2 ->
-    left (MoveToSymbol_L_Fun stop t) = str2 /\
-    current (MoveToSymbol_L_Fun stop t) = Some x.
-  Proof.
-    intros. pose proof (@MoveToSymbol_right (mirror_tape t) str1 str2 x) as L.
-    simpl_tape in L. repeat spec_assert L by auto. destruct L as (L1,L2).
-    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L1, L2; simpl_tape; eauto.
-    simpl_tape in *. auto.
-  Qed.
-
-  Corollary MoveToSymbol_L_right t str1 str2 x :
-    (forall x, List.In x str1 -> stop x = false) ->
-    (stop x = true) ->
-    tape_local_l t = str1 ++ x :: str2 ->
+    tape_local_l (MoveToSymbol_L_Fun stop t) = x :: str2 /\
     right (MoveToSymbol_L_Fun stop t) = rev str1 ++ right t.
   Proof.
-    intros. pose proof (@MoveToSymbol_left (mirror_tape t) str1 str2 x) as L.
-    simpl_tape in L. repeat spec_assert L by auto.
-    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L; simpl_tape; eauto.
-    simpl_tape in *. auto.
+    intros. pose proof (@MoveToSymbol_correct (mirror_tape t) str1 str2 x) as L.
+    simpl_tape in L. repeat spec_assert L by auto. destruct L as (L1,L2).
+    simpl_tape in *. split; auto.
+    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L1, L2; simpl_tape in *; eauto.
+    erewrite MoveToSymbol_mirror' in L2; eauto. 2: symmetry; eapply mirror_tape_involution. now simpl_tape in *.
   Qed.
-
 
   (* Termination times *)
 
