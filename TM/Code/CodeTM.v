@@ -23,30 +23,36 @@ Section Fix_Sig.
     Check sig^+.
     Check tapes sig^+ 42.
     Check (sig + bool) % type.
-    *)
+     *)
 
     Definition START : bool := false.
     Definition STOP  : bool := true.
 
+    Definition tape_encodes_l (t : tape sig^+) (x : X) (r1 r2 : list sig^+) :=
+      left t = inl START :: r1 /\ tape_local t = encode x ++ inl STOP :: r2.
+
     Definition tape_encodes_r (t : tape sig^+) (x : X) (r1 r2 : list sig^+) :=
-      left t = encode START ++ r1 /\ tape_local t = encode x ++ encode STOP ++ r2.
+      right t = inl STOP :: r2 /\ tape_local_l t = rev (encode x) ++ inl START :: r1.
 
     Definition tape_encodes (t : tape sig^+) (x : X) : Prop :=
-      exists r1 r2 : list sig^+, tape_encodes_r t x r1 r2.
+      exists r1 r2 : list (sig^+), tape_encodes_l t x r1 r2.
 
-    Lemma tape_encodes_r_injective (t : tape sig^+) (x1 x2 : X) (r1 r2 s1 s2 : list sig^+) :
-      tape_encodes_r t x1 r1 r2 -> tape_encodes_r t x2 s1 s2 -> x1 = x2 /\ r1 = s1 /\ r2 = s2.
+    Definition tape_encodes' (t : tape sig^+) (x : X) : Prop :=
+      exists r1 r2 : list (sig^+), tape_encodes_r t x r1 r2.
+
+    Lemma tape_encodes_l_injective (t : tape sig^+) (x1 x2 : X) (r1 r2 s1 s2 : list sig^+) :
+      tape_encodes_l t x1 r1 r2 -> tape_encodes_l t x2 s1 s2 -> x1 = x2 /\ r1 = s1 /\ r2 = s2.
     Proof.
       intros (H2&H2') (H1&H1'). rewrite H2 in H1; clear H2. rewrite H2' in H1'. clear H2'. cbn in *.
       eapply encode_map_injective in H1' as (->&H2). inv H1. inv H2. tauto. eapply retract_inr.
     Qed.
-
+    
     Notation "t '≂' x" := (tape_encodes t x) (at level 70, no associativity).
 
     Lemma tape_encodes_injective (t : tape sig^+) (x1 x2 : X) :
       t ≂ x1 -> t ≂ x2 -> x1 = x2.
     Proof.
-      intros (r1&r2&H2) (s1&s2&H1). eapply tape_encodes_r_injective; eauto.
+      intros (r1&r2&H2) (s1&s2&H1). eapply tape_encodes_l_injective; eauto.
     Qed.
 
   End Tape_Encodes.
@@ -68,7 +74,7 @@ Section Fix_Sig.
       intros HExt (r1&r2&HE1&HE2). exists r1, r2. split; cbn.
       - exact HE1.
       - rewrite HE2. cbn. f_equal. erewrite map_ext. f_equal. eapply HExt. auto.
-      Unset Printing Implicit.
+        Unset Printing Implicit.
     Qed.
 
     Lemma tape_encodes_ext' (t1 t2 : tape sig^+) (x : X) :
@@ -486,7 +492,7 @@ Section Test_Computes_Gen2.
   Qed.
 
 End Test_Computes_Gen2.
-*)
+ *)
 
 
 (* Write a value to a tape *)
@@ -550,7 +556,7 @@ Section InitTape.
 
   Definition InitTape (x : X) : { M : mTM sig^+ 1 & states M -> unit } :=
     Write_String L tt (List.rev (inl START :: List.map inr (encode (codeable := codX) x) ++ [inl STOP]));; Move _ R tt;; Move _ R tt.
-                 
+  
 
   Lemma InitTape_Sem (x : X) :
     InitTape x ⊨c(12 + 4 * |encode x|) InitTape_Rel x.
@@ -587,4 +593,4 @@ Section Test_InitTape_Gen0.
   Qed.
   
 End Test_InitTape_Gen0.
-*)
+ *)

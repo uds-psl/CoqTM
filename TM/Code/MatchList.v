@@ -170,10 +170,10 @@ Section MatchList.
     tape_local (tl') = map inr (encode tail) ++ (inl STOP :: rs').
   Proof.
     intros. destruct tail as [ | ctail tail'] eqn:E1; cbn in *.
-    - refine (CopySymbols_pair_first _ _ H0 H).
+    - refine (proj1 (CopySymbols_pair_first _ _ H0 H)).
       + rewrite List.map_map. intros x (? & <- & ?) % in_map_iff. cbn. trivial.
       + cbn. trivial.
-    - refine (CopySymbols_pair_first _ _ H0 H).
+    - refine (proj1 (CopySymbols_pair_first _ _ H0 H)).
       + rewrite List.map_map. intros x (? & <- & ?) % in_map_iff. cbn. trivial.
       + cbn. trivial.
   Qed.
@@ -287,10 +287,10 @@ Section MatchList.
         eapply tape_local_current_cons in L2.
         simpl_tape in L2. eauto.
       + erewrite tape_local_move_right; eauto.
-        eapply tape_local_iff. do 2 eexists.
+        eapply tape_local_cons_iff.
         rewrite <- tape_local_mirror' in L2.
         eapply tape_local_current_cons in L2.
-        split; eauto. split.
+        split; eauto. 
         simpl_tape in L2. eauto.
         rewrite L3. cbn. rewrite tape_match_symbols_right. cbn. now rewrite rev_involutive.
 

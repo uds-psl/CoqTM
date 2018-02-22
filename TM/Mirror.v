@@ -162,3 +162,17 @@ Section MirrorTM.
   Qed.
 
 End MirrorTM.
+
+
+Arguments Mirror : simpl never.
+Arguments Mirror_R { n sig F } R x y /.
+
+
+Ltac smpl_TM_Mirror :=
+  match goal with
+  | [ |- Mirror _ ⊫ _ ] => eapply Mirror_WRealise
+  | [ |- Mirror _ ⊨c(_) _ ] => eapply Mirror_RealiseIn
+  | [ |- projT1 (Mirror _) ↓ _ ] => eapply Mirror_Terminates
+  end.
+
+Smpl Add smpl_TM_Mirror : TM_Correct.

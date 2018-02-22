@@ -1,8 +1,5 @@
-Require Import Prelim.
-Require Import List.
-
-Global Definition Bool_Fin := FinType (EqType bool).
-
+Require Import TM.Prelim.
+Require Import Coq.Lists.List.
 
 (** * Codeable Class **)
 
@@ -405,7 +402,7 @@ Section Encode_Nat.
     - cbn in *. destruct m; cbn in *. congruence. f_equal. apply IHn. congruence.
   Qed.
 
-  Global Instance Encode_Nat : codeable Bool_Fin nat.
+  Global Instance Encode_Nat : codeable (FinType (EqType bool)) nat.
   Proof.
     eapply Encode_Map.
     - eapply Encode_Cast.
@@ -435,7 +432,7 @@ Section Encode_Fin'.
     hnf. intros x1 x2. apply fin_to_nat_injective.
   Qed.
 
-  Local Instance Encode_Fin' : codeable Bool_Fin (Fin.t n).
+  Local Instance Encode_Fin' : codeable (FinType (EqType bool)) (Fin.t n).
   Proof.
     eapply Encode_Cast; [ | eapply cast_Fin ]. apply Encode_Nat.
   Defined.

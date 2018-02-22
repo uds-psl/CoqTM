@@ -185,7 +185,7 @@ Section Projection.
           * unfold finType_CS in *. rewrite H2. erewrite tape_left_move_right; eauto.
             eapply tape_local_current_cons in L2. now simpl_tape in L2.
           * unfold finType_CS in *. rewrite H2. erewrite tape_local_move_right; eauto.
-            eapply tape_local_iff. do 2 eexists. split; eauto. split.
+            eapply tape_local_cons_iff. split; eauto.
             eapply tape_local_current_cons in L2; simpl_tape in L2. eauto.
             rewrite L3. simpl_tape. rewrite E1. cbn. f_equal. now rewrite List.map_map.
     }

@@ -580,18 +580,35 @@ Section Tape_Local.
     tape_local t = x :: xs -> current t = Some x.
   Proof. destruct t eqn:E; cbn; congruence. Qed.
 
+  Lemma tape_local_l_current_cons (x : sig) (xs : list sig) (t : tape sig) :
+    tape_local t = x :: xs -> current t = Some x.
+  Proof. destruct t eqn:E; cbn; congruence. Qed.
+
   Lemma tape_local_right (x : sig) (xs : list sig) (t : tape sig) :
     tape_local t = x :: xs -> right t = xs.
   Proof. destruct t eqn:E; cbn; congruence. Qed.
 
-  Lemma tape_local_iff (t : tape sig) (xs : list sig) :
-    (tape_local t = xs /\ xs <> []) <-> (exists x xs', xs = x :: xs' /\ current t = Some x /\ right t = xs').
+  Lemma tape_local_l_left (x : sig) (xs : list sig) (t : tape sig) :
+    tape_local_l t = x :: xs -> left t = xs.
+  Proof. destruct t eqn:E; cbn; congruence. Qed.
+
+  Lemma tape_local_cons_iff (t : tape sig) (x : sig) (xs : list sig) :
+    tape_local t = x :: xs <-> current t = Some x /\ right t = xs.
   Proof.
-    split.
-    - intros (H1&H2). destruct t eqn:E; cbn in *; try congruence. eauto.
-    - intros (x&xs'&->&H1&<-). split. destruct t eqn:E; cbn in *; congruence. discriminate.
+    split; intros H.
+    - destruct t; cbn in *; inv H. eauto.
+    - destruct t; cbn in *; inv H; inv H0. eauto.
   Qed.
 
+  Lemma tape_local_l_cons_iff (t : tape sig) (x : sig) (xs : list sig) :
+    tape_local_l t = x :: xs <-> current t = Some x /\ left t = xs.
+  Proof.
+    split; intros H.
+    - destruct t; cbn in *; inv H. eauto.
+    - destruct t; cbn in *; inv H; inv H0. eauto.
+  Qed.
+
+  
   Lemma tape_local_nil (t : tape sig) :
     tape_local t = [] <-> current t = None.
   Proof.
@@ -605,6 +622,13 @@ Section Tape_Local.
     inv H. destruct xs; cbn; auto.
   Qed.
 
+  Lemma tape_local_l_move_left (t : tape sig) (x : sig) (xs : list sig) :
+    tape_local_l t = x :: xs -> tape_local_l (tape_move_left t) = xs.
+  Proof.
+    intro H. destruct t eqn:E; cbn in *; try congruence.
+    inv H. destruct xs; cbn; auto.
+  Qed.
+  
   Lemma tape_left_move_right (t : tape sig) (x : sig) :
     current t = Some x -> left (tape_move_right t) = x :: left t.
   Proof. intros H. destruct t; cbn in *; try congruence. inv H. destruct l0; cbn; reflexivity. Qed.
@@ -618,7 +642,9 @@ End Tape_Local.
 Hint Rewrite tape_local_mirror  : tape.
 Hint Rewrite tape_local_mirror' : tape.
 Hint Rewrite tape_local_current_cons using auto : tape.
+Hint Rewrite tape_local_l_current_cons using auto : tape.
 Hint Rewrite tape_local_right        using auto : tape.
+Hint Rewrite tape_local_l_left        using auto : tape.
 Hint Rewrite tape_left_move_right    using auto : tape.
 Hint Rewrite tape_right_move_left    using auto : tape.
 
