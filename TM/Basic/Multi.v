@@ -43,22 +43,28 @@ Section MovePar.
   
 End MovePar.
 
+Arguments MovePar_R { sig } ( D1 D2 ) { F } ( def ) x y /.
+Arguments MovePar : simpl never.
+
+
 (* Copy the current symbol from tape 0 to tape 1 *)
 Section Copy.
   Variable sig : finType.
+
+  Variable f : sig -> sig.
 
   Definition Copy_char : { M : mTM sig 2 & states M -> bool} :=
     MATCH (Inject (Read_char sig) [|Fin.F1|])
           (fun s : option sig =>
              match s with
                None =>  Nop _ _ false
-             | Some s => Inject (Write s true) [|Fin.FS Fin.F1|]
+             | Some s => Inject (Write (f s) true) [|Fin.FS Fin.F1|]
              end).
 
   Definition Copy_char_R :=
     (if? (fun t t' : tapes sig 2 =>
             exists c, current t[@Fin.F1] = Some c /\
-                 t'[@Fin.FS Fin.F1] = tape_write t[@Fin.FS Fin.F1] (Some c) /\
+                 t'[@Fin.FS Fin.F1] = tape_write t[@Fin.FS Fin.F1] (Some (f c)) /\
                  t[@Fin.F1] = t'[@Fin.F1])
          ! (fun t t' => current t[@Fin.F1] = None) ∩ (@IdR _)).
 
@@ -91,6 +97,9 @@ Section Copy.
 
 End Copy.
 
+Arguments Copy_char_R { sig } ( f ) x y /.
+Arguments Copy_char : simpl never.
+
 
 (* Read a char at an arbitrary tape *)
 Section ReadChar.
@@ -116,3 +125,22 @@ Section ReadChar.
   Qed.
 
 End ReadChar.
+
+Arguments ReadChar_multi : simpl never.
+Arguments ReadChar_multi_R { sig n } ( k ) x y /.
+
+
+Ltac smpl_TM_Multi :=
+  match goal with
+  | [ |- MovePar _ _ _ _ ⊫ _ ] => eapply RealiseIn_WRealise; eapply MovePar_Sem
+  | [ |- MovePar _ _ _ _ ⊨c(_) _ ] => eapply MovePar_Sem
+  | [ |- projT1 (MovePar _ _ _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply MovePar_Sem
+  | [ |- Copy_char _ ⊫ _ ] => eapply RealiseIn_WRealise; eapply Copy_char_Sem
+  | [ |- Copy_char _ ⊨c(_) _ ] => eapply Copy_char_Sem
+  | [ |- projT1 (Copy_char _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply Copy_char_Sem
+  | [ |- ReadChar_multi _ _ ⊫ _ ] => eapply RealiseIn_WRealise; eapply ReadChar_multi_Sem
+  | [ |- ReadChar_multi _ _ ⊨c(_) _ ] => eapply ReadChar_multi_Sem
+  | [ |- projT1 (ReadChar_multi _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply ReadChar_multi_Sem
+  end.
+
+Smpl Add smpl_TM_Multi : TM_Correct.

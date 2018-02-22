@@ -3,10 +3,11 @@
 Require Import TM.Code.CodeTM.
 Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 
+Require Import TM.Basic.Mono TM.Basic.Multi.
 Require Import TM.Combinators.Combinators.
-Require Import TM.Basic.Mono.
 Require Import TM.Compound.TMTac.
 Require Import TM.Mirror.
+Require Import TM.LiftMN.
 
 Section Copy.
 
@@ -81,7 +82,7 @@ Section Copy.
     (stop x = true) ->
     tape_local (fst tltr) = str1 ++ x :: str2 ->
     (tl', tr') = CopySymbols_Fun stop id tltr ->
-    left tr' = rev str1 ++ left (snd tltr).
+    tape_local_l tr' = x :: rev str1 ++ left (snd tltr).
   Proof.
     intros H H0. destruct tltr as [tl tr]. intros H1 E0.
     destruct tl as [ | r rs | l ls | ls m rs]; cbn in *.
@@ -223,18 +224,6 @@ Section Copy_code.
 
 
   
-  (*
-  Definition MoveToSymbol_Code :=
-    MoveToSymbol stop;;
-    MATCH (Read_char _)
-    (fun s => match s with
-           | Some (inl true) => mono_Nop _ tt (* encoding is empty *)
-           | Some (inl false) => Move _ L tt (* encoding is not empty *)
-           | _ => mono_Nop _ tt (* this can't happen *)
-           end).
-   *)
-
-
   Lemma MoveToSymbol_Code_WRealise :
     MoveToSymbol_Code ⊫ MoveToSymbol_Code_Rel.
   Proof.
@@ -275,6 +264,10 @@ Section Copy_code.
       eapply Nat.add_le_mono. omega. cbn. simpl_list. omega.
     }
   Qed.
+
+
+
+  
 
 
 
@@ -337,21 +330,19 @@ Section Copy_code.
   Qed.
 
   Lemma MoveToSymbol_Code_L_Terminates :
-    projT1 MoveToSymbol_Code ↓
-           (fun tin k => exists x : X, tin[@Fin.F1] ≂ x /\ 4 + 4 * length (encode x) <= k).
+    projT1 MoveToSymbol_Code_L ↓
+           (fun tin k => exists x : X, tape_encodes' _ tin[@Fin.F1] x /\ 4 + 4 * length (encode x) <= k).
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold MoveToSymbol_Code. repeat TM_Correct. }
+    { unfold MoveToSymbol_Code_L. repeat TM_Correct. }
     {
       intros tin k. intros (x&HEncX&HTx).
       destruct HEncX as (r1&r2&HE1&HE2).
-      pose proof MoveToSymbols_TermTime_local (stop := stop) HE2 ltac:(trivial).
+      pose proof MoveToSymbols_TermTime_local_l (stop := stop) HE2 ltac:(trivial).
       rewrite <- HTx. progress unfold finType_CS in *. rewrite H.
       eapply Nat.add_le_mono. omega. cbn. simpl_list. omega.
     }
   Qed.
-
-
   
 
 
@@ -364,7 +355,7 @@ Section Copy_code.
             tape_encodes_l _ tin[@Fin.F1] x r1 r2 ->
             left tout[@Fin.F1] = rev (encode x) ++ inl START :: r1 /\
             tape_local tout[@Fin.F1] = inl STOP :: r2 /\
-            left tout[@Fin.FS Fin.F1] = rev (encode x) ++ left tin[@Fin.FS Fin.F1]
+            tape_local_l tout[@Fin.FS Fin.F1] = inl STOP :: rev (encode x) ++ left tin[@Fin.FS Fin.F1]
       ).
 
   Lemma CopySymbols_Code_WRealise :
@@ -383,7 +374,8 @@ Section Copy_code.
         unshelve epose proof CopySymbols_pair_second (stop := stop) as L.
         specialize L with (4 := H). cbn in L. specialize L with (3 := HE2).
         spec_assert L by eauto. spec_assert L by eauto.
-        cbn in *. rewrite E1 in *. cbn. split; auto.
+
+        cbn in *. rewrite E1 in *. cbn. repeat split; auto.
         rewrite HE1 in *. auto.
       - unshelve epose proof CopySymbols_pair_first (stop := stop) as L.
         specialize L with (4 := H). cbn in L. specialize L with (3 := HE2).
@@ -401,17 +393,283 @@ Section Copy_code.
     }
   Qed.
 
-  (* TODO: Termination *)
-
+  Lemma CopySymbols_Code_Terminates :
+    projT1 CopySymbols_Code ↓ (fun tin k => exists x : X, tin[@Fin.F1] ≂ x /\ 8 + 8 * length (encode x) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold CopySymbols_Code. repeat TM_Correct. }
+    {
+      intros tin k (x&HencX&Hk). rewrite <- Hk.
+      destruct HencX as (r1&r2&HEnc1&HEnc2).
+      epose proof CopySymbols_TermTime_local (stop := stop) HEnc2 ltac:(trivial) as L.
+      rewrite L.
+      eapply Nat.add_le_mono. omega. cbn. simpl_list. omega.
+    }
+  Qed.
+  
   (* TODO: Gespiegelte Variante *)
                  
 End Copy_code.
 
+
 Arguments MoveToSymbol_Code : simpl never.
+Arguments MoveToSymbol_Code_L : simpl never.
 Arguments CopySymbols_Code : simpl never.
 
 Arguments MoveToSymbol_Code_Rel { sig X encX } x y /.
+Arguments MoveToSymbol_Code_L_Rel { sig X encX } x y /.
 Arguments CopySymbols_Code_Rel { sig X encX } x y /.
+
+
+
+Section MoveToOtherSide.
+
+  Variable sig : finType.
+  Variable X : Type.
+  Variable encX : codeable sig X.
+
+  Definition dontStop : sig -> bool := fun _ => false.
+
+  Definition MoveToRightCode :=
+    MoveToSymbol_Code dontStop;;
+    Move _ L tt.
+
+  Definition MoveToRightCode_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
+    Mk_R_p (
+        ignoreParam (
+        fun tin tout =>
+          forall (x : X) r1 r2,
+            tape_encodes_l _ tin x r1 r2 ->
+            tape_encodes_r _ tout x r1 r2
+          )
+      ).
+
+  Lemma MoveToRightCode_WRealse :
+    MoveToRightCode ⊫ MoveToRightCode_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold MoveToRightCode. repeat TM_Correct. eapply MoveToSymbol_Code_WRealise. eauto. }
+    {
+      intros tin ((), tout) H. TMSimp. clear_trivial_eqs.
+      specialize (H _ _ _ H0) as ((L1&L2) % tape_local_l_cons_iff & L3).
+      hnf. hnf in H0. destruct H0 as (HE1&HE2).
+      split.
+      - erewrite tape_right_move_left; eauto. f_equal. auto.
+      - erewrite tape_local_l_move_left; eauto. eapply tape_local_l_cons_iff; eauto.
+    }
+  Qed.
+
+  Lemma MoveToRightCode_Terminates :
+    projT1 MoveToRightCode ↓
+           (fun tin k => exists x : X, tin[@Fin.F1] ≂ x /\ 6 + 4 * length (encode x) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    {
+      unfold MoveToRightCode. repeat TM_Correct. 
+      - apply MoveToSymbol_Code_WRealise; auto.
+      - apply MoveToSymbol_Code_Terminates; auto.
+    }
+    {
+      intros tin k (x&HEncX&Hk).
+      exists (4 + 4 * length (encode x)), 1. repeat split.
+      - omega.
+      - exists x. split. auto. omega.
+      - auto.
+    }
+  Qed.
+  
+    
+
+  Definition MoveToLeftCode :=
+    MoveToSymbol_Code_L dontStop;;
+    Move _ R tt.
+
+  Definition MoveToLeftCode_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
+    Mk_R_p (
+        ignoreParam (
+        fun tin tout =>
+          forall (x : X) r1 r2,
+            tape_encodes_r _ tin x r1 r2 ->
+            tape_encodes_l _ tout x r1 r2
+          )
+      ).
+
+  Lemma MoveToLeftCode_WRealse :
+    MoveToLeftCode ⊫ MoveToLeftCode_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold MoveToLeftCode. repeat TM_Correct. eapply MoveToSymbol_Code_L_WRealise. eauto. }
+    {
+      intros tin ((), tout) H. TMSimp. clear_trivial_eqs.
+      specialize (H _ _ _ H0) as (L1 & (L2&L3)% tape_local_cons_iff).
+      hnf. hnf in H0. destruct H0 as (HE1&HE2).
+      split.
+      - erewrite tape_left_move_right; eauto. f_equal. auto.
+      - erewrite tape_local_move_right; eauto. eapply tape_local_cons_iff; eauto.
+    }
+  Qed.
+
+  
+  Lemma MoveToLeftCode_Terminates :
+    projT1 MoveToLeftCode ↓
+           (fun tin k => exists x : X, tape_encodes' _ tin[@Fin.F1] x /\ 6 + 4 * length (encode x) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    {
+      unfold MoveToLeftCode. repeat TM_Correct. 
+      - apply MoveToSymbol_Code_L_WRealise; auto.
+      - apply MoveToSymbol_Code_L_Terminates.
+    }
+    {
+      intros tin k (x&HEncX&Hk).
+      exists (4 + 4 * length (encode x)), 1. repeat split.
+      - omega.
+      - exists x. split. auto. omega.
+      - auto.
+    }
+  Qed.
+
+
+
+  (** Copy values from one tape to another tape *)
+
+  Local Definition CopyValue :=
+    Inject (WriteMove (Some (inl START), R) tt) [|Fin.FS Fin.F1|];;
+    CopySymbols_Code dontStop;;
+    MovePar _ L L tt.
+
+  Definition CopyValue_Rel : Rel (tapes (sig^+) 2) (unit * tapes (sig^+) 2) :=
+    ignoreParam (
+        fun tin tout =>
+          forall (x : X) r1 r2,
+            tape_encodes_l _ tin [@Fin.F1       ] x r1 r2 ->
+            tape_encodes_r _ tout[@Fin.F1       ] x r1 r2 /\
+            tape_encodes'  _ tout[@Fin.FS Fin.F1] x
+      ).
+
+  Lemma CopyValue_WRealise :
+    CopyValue ⊫ CopyValue_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold CopyValue. repeat TM_Correct. eapply CopySymbols_Code_WRealise; auto. }
+    {
+      intros tin ((), tout) H. TMSimp. clear_trivial_eqs.
+      specialize (H1 _ _ _ H0) as (L1 & (L2&L3) % tape_local_cons_iff & (L4 & L5) % tape_local_l_cons_iff).
+      destruct H0 as (HE1&HE2). split.
+      - hnf. split.
+        + subst. erewrite tape_right_move_left; eauto.
+        + erewrite tape_local_l_move_left; eauto. apply tape_local_l_cons_iff. eauto.
+      - hnf. do 2 eexists. hnf. split.
+        + erewrite tape_right_move_left; eauto.
+        + erewrite tape_local_l_move_left; swap 1 2.
+          * eapply tape_local_l_cons_iff. split. eapply L4. eapply L5.
+          * cbn. f_equal. simpl_tape. auto.
+    }
+  Qed.
+
+  Lemma CopyValue_Terminates :
+    projT1 CopyValue ↓ (fun tin k => exists x, tin[@Fin.F1] ≂ x /\ 14 + 8 * length (encode x) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    {
+      unfold CopyValue. repeat TM_Correct. 
+      - apply CopySymbols_Code_WRealise; auto.
+      - apply CopySymbols_Code_Terminates.
+    }
+    {
+      intros tin k. intros (x&HEnc&Hk).
+      exists 1, (12 + 8 * length (encode x)). repeat split.
+      - omega.
+      - hnf. omega.
+      - intros tout () (H1&H2). hnf in H1, H2. simpl_not_in.
+        exists (8 + 8 * length (encode x)), 3. repeat split.
+        + omega.
+        + exists x. repeat split; eauto. unfold finType_CS in *. rewrite <- H2. auto.
+        + intros ? ? ?. omega.
+    }
+  Qed.
+
+
+  Definition CopyValue' :=
+    CopyValue;; (* 14 + 8 * length (encode x) *)
+    Inject MoveToLeftCode [|Fin.F1|];; (* 6 + 4 * length (encode x) *)
+    Inject MoveToLeftCode [|Fin.FS Fin.F1|]. (* 6 + 4 * length (encode x) *)
+
+  Definition CopyValue'_Rel : Rel (tapes (sig^+) 2) (unit * tapes (sig^+) 2) :=
+    ignoreParam (
+        fun tin tout =>
+          forall (x : X),
+            tape_encodes _ tin [@Fin.F1       ] x ->
+            tout[@Fin.F1] = tin[@Fin.F1] /\
+            tape_encodes _ tout[@Fin.FS Fin.F1] x
+      ).
+
+  Lemma CopyValue'_WRealise :
+    CopyValue' ⊫ CopyValue'_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    {
+      unfold CopyValue'. repeat TM_Correct.
+      - eapply CopyValue_WRealise.
+      - eapply MoveToLeftCode_WRealse.
+      - eapply MoveToLeftCode_WRealse.
+    }
+    {
+      intros tin ((), yout). TMSimp.
+      destruct H0 as (r1&r2&HE).
+      specialize (H _ _ _ HE) as (H&H').
+      destruct H' as (r1'&r2'&HE').
+      specialize (H1 _ _ _ H).
+      specialize (H2 _ _ _ HE').
+      split.
+      - eapply tape_encodes_l_injective; eauto.
+      - hnf; eauto.
+    }
+  Qed.
+  
+  Lemma CopyValue'_Terminates :
+    projT1 CopyValue' ↓ (fun tin k => exists x, tin[@Fin.F1] ≂ x /\ 28 + 16 * length (encode x) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    {
+      unfold CopyValue'. repeat TM_Correct.
+      - eapply CopyValue_WRealise.
+      - eapply CopyValue_Terminates.
+      - eapply MoveToLeftCode_WRealse.
+      - eapply MoveToLeftCode_Terminates.
+      - eapply MoveToLeftCode_Terminates.
+    }
+    {
+      intros tin k (x&HEncX&Hk).
+      exists (14 + 8 * length (encode x)), (13 + 8 * length (encode x)). repeat split.
+      - omega.
+      - eauto.
+      - intros tout () H.
+        destruct HEncX as (r1&r2&HE).
+        hnf in H. specialize (H _ _ _ HE) as (L1&L2).
+        exists (6 + 4 * length (encode x)), (6 + 4 * length (encode x)). repeat split.
+        + omega.
+        + hnf. exists x. split. cbn. do 2 eexists. eauto. omega.
+        + intros tout' () (H1&H2).
+          hnf in H1, H2. simpl_not_in. cbn in H1.
+          specialize (H1 _ _ _ L1). hnf.
+          exists x. split. cbn. rewrite <- H2. eauto. omega.
+    }
+  Qed.
+  
+
+End MoveToOtherSide.
+
+Arguments MoveToRightCode : simpl never.
+Arguments MoveToLeftCode : simpl never.
+Arguments CopyValue : simpl never.
+Arguments CopyValue' : simpl never.
+
+
+(* todo: Arguments, smpl, etc. *)
+
+
+
 
 Ltac smpl_TM_CopyMoveCode :=
   match goal with

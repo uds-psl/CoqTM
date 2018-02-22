@@ -40,7 +40,30 @@ Section Fix_Sig.
     Definition tape_encodes' (t : tape sig^+) (x : X) : Prop :=
       exists r1 r2 : list (sig^+), tape_encodes_r t x r1 r2.
 
-    Lemma tape_encodes_l_injective (t : tape sig^+) (x1 x2 : X) (r1 r2 s1 s2 : list sig^+) :
+    
+    Lemma tape_encodes_l_injective (t1 t2 : tape sig^+) (x : X) (r1 r2 : list sig^+) :
+      tape_encodes_l t1 x r1 r2 ->
+      tape_encodes_l t2 x r1 r2 ->
+      t1 = t2.
+    Proof.
+      intros (HE1&HE2) (HE1'&HE2').
+      destruct t1; cbn in *; try congruence.
+      now apply app_cons_not_nil in HE2.
+      destruct t2; cbn in *; congruence.
+    Qed.
+
+    Lemma tape_encodes_r_injective (t1 t2 : tape sig^+) (x : X) (r1 r2 : list sig^+) :
+      tape_encodes_r t1 x r1 r2 ->
+      tape_encodes_r t2 x r1 r2 ->
+      t1 = t2.
+    Proof.
+      intros (HE1&HE2) (HE1'&HE2').
+      destruct t1; cbn in *; try congruence.
+      now apply app_cons_not_nil in HE2.
+      destruct t2; cbn in *; congruence.
+    Qed.
+
+    Lemma tape_encodes_l_functional (t : tape sig^+) (x1 x2 : X) (r1 r2 s1 s2 : list sig^+) :
       tape_encodes_l t x1 r1 r2 -> tape_encodes_l t x2 s1 s2 -> x1 = x2 /\ r1 = s1 /\ r2 = s2.
     Proof.
       intros (H2&H2') (H1&H1'). rewrite H2 in H1; clear H2. rewrite H2' in H1'. clear H2'. cbn in *.
@@ -49,10 +72,10 @@ Section Fix_Sig.
     
     Notation "t '≂' x" := (tape_encodes t x) (at level 70, no associativity).
 
-    Lemma tape_encodes_injective (t : tape sig^+) (x1 x2 : X) :
+    Lemma tape_encodes_functional (t : tape sig^+) (x1 x2 : X) :
       t ≂ x1 -> t ≂ x2 -> x1 = x2.
     Proof.
-      intros (r1&r2&H2) (s1&s2&H1). eapply tape_encodes_l_injective; eauto.
+      intros (r1&r2&H2) (s1&s2&H1). eapply tape_encodes_l_functional; eauto.
     Qed.
 
   End Tape_Encodes.

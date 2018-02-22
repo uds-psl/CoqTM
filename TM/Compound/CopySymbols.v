@@ -236,7 +236,7 @@ End Test.
 
 
   Lemma CopySymbols_terminates :
-    projT1 CopySymbols ↓ (fun tin k => k = CopySymbols_TermTime (tin[@Fin.F1])).
+    projT1 CopySymbols ↓ (fun tin k => CopySymbols_TermTime (tin[@Fin.F1]) <= k).
   Proof.
     eapply While_terminatesIn.
     1-2: eapply Realise_total; eapply M1_RealiseIn.
@@ -244,15 +244,15 @@ End Test.
       eapply functional_functionalOn. apply M1_Rel_functional.
     }
     {
-      intros tin k ->. destruct_tapes. cbn.
-      destruct h eqn:E; cbn.
-      - rewrite CopySymbols_TermTime_equation. exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6; congruence.
-      - rewrite CopySymbols_TermTime_equation. exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6; congruence.
-      - rewrite CopySymbols_TermTime_equation. exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6; congruence.
+      intros tin k Hk. destruct_tapes. cbn.
+      destruct h eqn:E; cbn in *; rewrite CopySymbols_TermTime_equation in *.
+      - exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6. congruence. omega.
+      - exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6. congruence. omega.
+      - exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6. congruence. omega.
       - destruct (f e) eqn:E2; cbn.
-        + rewrite CopySymbols_TermTime_equation. exists [|h; tape_write h0 (Some (g e))|], false. cbn. rewrite E2.
-          do 2 eexists; repeat split; eauto 7; try congruence.
-        + rewrite CopySymbols_TermTime_equation. exists [|tape_move_right h; tape_move_mono h0 (Some (g e), R)|], true. cbn. rewrite E2.
+        + exists [|h; tape_write h0 (Some (g e))|], false. cbn.
+          do 2 eexists; repeat split; eauto 7; try congruence. omega.
+        + exists [|tape_move_right h; tape_move_mono h0 (Some (g e), R)|], true. cbn.
           destruct l0; rewrite E; cbn in *; do 2 eexists; repeat split; eauto 7.
     }
   Qed.

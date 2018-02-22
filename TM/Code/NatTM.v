@@ -43,42 +43,42 @@ Section FoldNat.
   Variable Y : finType.
   Variable f : nat -> nat.
 
-  Fixpoint natTailRec (x y : nat) {struct x} : nat :=
+  Fixpoint iter (x y : nat) {struct x} : nat :=
     match x with
     | 0 => y
-    | S x' => natTailRec x' (f y)
+    | S x' => iter x' (f y)
     end.
 
   Variable M1 : { M : mTM (bool^+) 1 & states M -> unit }.
   Hypothesis M1_computes : M1 ⊫ Computes_Rel Fin.F1 Fin.F1 _ _ f.
 
-  Definition natTailRec_step (x y : nat) : nat :=
+  Definition iter_step (x y : nat) : nat :=
     match x with
     | 0 => y
     | S _ => f y
     end.
 
 
-  Definition TailRec_step : { M : mTM _ 2 & states M -> bool * unit } :=
+  Definition Iter_step : { M : mTM _ 2 & states M -> bool * unit } :=
     If (Inject MatchNat [|Fin.F1|])
        (Inject M1 [|Fin.FS Fin.F1|];; Nop _ _ (true, tt))
        (Nop _ _ (false, tt)).
   
 
-  Definition TailRec : { M : mTM _ 2 & states M -> unit } := WHILE TailRec_step.
+  Definition Iter : { M : mTM _ 2 & states M -> unit } := WHILE Iter_step.
 
 
   (** Correctness *)
 
   Definition tailRec_step_param : nat -> bool * unit := fun n => (is_not_zero n, tt).
 
-  Lemma TailRec_step_Computes :
-    TailRec_step ⊫ Computes_Rel_p (Fin.F1) (Fin.F1) _ _ pred tailRec_step_param ∩
-                   Computes2_Rel (Fin.F1) (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ natTailRec_step.
+  Lemma Iter_step_Computes :
+    Iter_step ⊫ Computes_Rel_p (Fin.F1) (Fin.F1) _ _ pred tailRec_step_param ∩
+                   Computes2_Rel (Fin.F1) (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ iter_step.
   Proof.
     eapply WRealise_monotone.
     {
-      unfold TailRec_step. repeat TM_Correct.
+      unfold Iter_step. repeat TM_Correct.
       eapply  RealiseIn_WRealise. eapply MatchNat_Sem.
     }
     {
@@ -99,17 +99,17 @@ Section FoldNat.
   Qed.
 
   
-  Lemma natTailRec_eta (x y : nat) :
-    natTailRec (Init.Nat.pred x) (natTailRec_step x y) = natTailRec x y.
+  Lemma iter_eta (x y : nat) :
+    iter (Init.Nat.pred x) (iter_step x y) = iter x y.
   Proof. destruct x, y; cbn; omega. Qed.
 
 
-  Lemma TailRec_Computes :
-    TailRec ⊫ Computes2_Rel (Fin.F1) (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ natTailRec.
+  Lemma Iter_Computes :
+    Iter ⊫ Computes2_Rel (Fin.F1) (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ _ iter.
   Proof.
     eapply WRealise_monotone.
     {
-      unfold TailRec. TM_Correct. eapply TailRec_step_Computes.
+      unfold Iter. TM_Correct. eapply Iter_step_Computes.
     }
     {
       hnf. intros tin ((), tout) H. destruct H as (tmid&H1&H2&H3).
@@ -118,7 +118,7 @@ Section FoldNat.
         unfold tailRec_step_param in *. destruct x, y; cbn in *; inv H2'; auto.
       - cbn in *. destruct H1 as (()&H11&H12).
         hnf in H11, H12. specialize (H11 x H) as (H11&H11'). specialize (H12 x y H H4).
-        specialize (IH _ H0 H3). specialize (IH _ _ H11 H12). rewrite natTailRec_eta in IH. auto.
+        specialize (IH _ H0 H3). specialize (IH _ _ H11 H12). rewrite iter_eta in IH. auto.
     }
   Qed.
 
@@ -128,10 +128,10 @@ Section FoldNat.
   Variable M1_runtime : nat -> nat.
   Hypothesis M1_terminates : projT1 M1 ↓ (fun tin k => exists y, tin[@Fin.F1] ≂ y /\ M1_runtime y <= k).
 
-  Lemma TailRec_step_terminates :
-    projT1 TailRec_step ↓ (fun tin k => exists x y, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ 8 + M1_runtime y <= k).
+  Lemma Iter_step_terminates :
+    projT1 Iter_step ↓ (fun tin k => exists x y, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ 8 + M1_runtime y <= k).
   Proof.
-    unfold TailRec_step.
+    unfold Iter_step.
     eapply TerminatesIn_monotone.
     {
       repeat TM_Correct.
@@ -154,6 +154,8 @@ Section FoldNat.
         + omega.
     }
   Qed.
+
+  
 
   (* TODO weiter verallgemeinierte Version implementieren... *)
 
