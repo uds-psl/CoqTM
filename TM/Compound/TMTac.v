@@ -77,8 +77,7 @@ Tactic Notation "TMSimp" tactic(T) :=
            match goal with
            | [ H : _ ::: _ = [||]  |- _ ] => inv H
            | [ H : [||] = _ ::: _ |- _ ] => inv H
-           | [ H : _ ::: _ = _ ::: _ |- _ ] => inv H
-           | [ |- (_ ::: _) = (_ ::: _) ] => f_equal
+           | [ H : _ ::: _ = _ ::: _ |- _ ] => apply VectorSpec.cons_inj in H
 
            | [ H : _ ::  _ = []  |- _ ] => inv H
            | [ H : [] = _ :: _ |- _ ] => inv H
@@ -88,7 +87,6 @@ Tactic Notation "TMSimp" tactic(T) :=
            | [ H : Some _ = Some _ |- _ ] => inv H
            | [ H : None   = Some _ |- _ ] => inv H
            | [ H : Some _ = None   |- _ ] => inv H
-           | [ |- Some _ = Some _ ] => f_equal
 
            | [ H : _ /\ _ |- _] => destruct H
            | [ H : ex ?P |- _] => destruct H
@@ -125,6 +123,8 @@ Tactic Notation "TMSimp" := TMSimp idtac.
 Tactic Notation "TMSolve" int_or_var(k) :=
   repeat progress first [
            match goal with
+           | [ |- (_ ::: _) = (_ ::: _) ] => f_equal
+           | [ |- Some _ = Some _ ] => f_equal
            | [ |- _ /\ _ ] => split
            end
            || congruence

@@ -139,10 +139,10 @@ Section Iter1.
 
   (** Correctness *)
 
-  Definition tailRec_step_param : nat -> bool * unit := fun n => (is_not_zero n, tt).
+  Definition iter_step_param : nat -> bool * unit := fun n => (is_not_zero n, tt).
 
   Lemma Iter_step_Computes :
-    Iter_step ⊫ Computes_Rel_p (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ pred tailRec_step_param ∩
+    Iter_step ⊫ Computes_Rel_p (Fin.FS Fin.F1) (Fin.FS Fin.F1) _ _ pred iter_step_param ∩
                    Computes2_Rel (Fin.F1) (Fin.FS Fin.F1) (Fin.F1) _ _ _ iter_step.
   Proof.
     eapply WRealise_monotone.
@@ -177,7 +177,7 @@ Section Iter1.
       hnf. intros tin ((), tout) H. destruct H as (tmid&H1&H2&H3).
       induction H1 as [ tin | tin tmid1 tmid2 HStar _ IH]; intros; hnf in *; intros.
       - specialize (H2 _ H0) as (H2&H2'). specialize (H3 _ _ H H0).
-        unfold tailRec_step_param in H2'. destruct y; cbn in H2'; try congruence.
+        unfold iter_step_param in H2'. destruct y; cbn in H2'; try congruence.
         cbn. auto.
       - cbn in *. do 2 spec_assert IH; auto.
         destruct HStar as (() & HStar1&HStar2).
@@ -337,3 +337,142 @@ Section Test.
   Compute execTM_p Add (step_count 0) [|t4; t0|].
 End Test.
 *)
+
+
+
+Section Iter2.
+
+  Variable f : nat -> nat -> nat.
+
+  Definition iter2 (s x y : nat) := iter (fun z => f z x) s y.
+
+  Fixpoint tail_iter2 (s x y : nat) {struct y} : nat :=
+    match y with
+    | O => s
+    | S y' => tail_iter2 (f s x) x y'
+    end.
+
+  Lemma tail_iter2_iter2 (s x y : nat) :
+    iter2 s x y = tail_iter2 s x y.
+  Proof. revert s. induction y as [ | y' IH]; intros; cbn in *; eauto. Qed.
+  
+  Variable n : nat.
+  Variable M1 : { M : mTM (bool^+) n & states M -> unit }.
+  Variable (i1 i2 : Fin.t n).
+  Hypothesis i_disj: i1 <> i2.
+  Hypothesis M1_computes : M1 ⊫ Computes2_Rel i1 i2 i1 _ _ _ f.
+
+  (* step function of the accumulator *)
+  Definition iter2_step (s x y : nat) : nat :=
+    match y with
+    | O => s
+    | S y' => f s x
+    end.
+
+  Notation "'injF' x" := (Fin.FS (Fin.FS x)) (at level 30).
+  
+  Local Definition indexes_M1 : Vector.t (Fin.t (S (S n))) n :=
+    Vector.map (fun k => injF k) (Fin_initVect _).
+
+  Local Lemma injF_injective (k1 k2 : Fin.t n) :
+    injF k1 = injF k2 -> k1 = k2.
+  Proof. now intros H % Fin.FS_inj % Fin.FS_inj. Qed.
+
+
+  Local Lemma indexes_M1_dupfree : dupfree indexes_M1.
+  Proof.
+    apply dupfree_map_injective.
+    - now intros k1 k2 H % injF_injective.
+    - apply Fin_initVect_dupfree.
+  Qed.
+
+  Local Lemma indexes_M1_notIn0 : not_indexes indexes_M1 Fin.F1.
+  Proof. unfold indexes_M1. intros (k&H1&H2) % vect_in_map_iff. inv H1. Qed.
+
+  Local Lemma indexes_M1_notIn1 : not_indexes indexes_M1 (Fin.FS Fin.F1).
+  Proof. unfold indexes_M1. intros (k&H1&H2) % vect_in_map_iff. inv H1. Qed.
+
+  Local Lemma indexes_M1_reorder_nth (X : Type) (t1 t2 : X) ts k :
+    (reorder indexes_M1 (t1 ::: t2 ::: ts))[@k] = ts[@k].
+  Proof.
+    unfold indexes_M1. unfold reorder. erewrite !VectorSpec.nth_map; eauto.
+    cbn. now rewrite Fin_initVect_nth.
+  Qed.
+
+
+  Local Lemma i1_notIn_f01 : not_indexes [|Fin.F1; injF i2|] (injF i1).
+  Proof.
+    (* XXX: This should have been solved with the [vector_not_in] tactic *)
+    intros H.
+    apply In_cons in H as [? | ?]; try congruence.
+    apply In_cons in H as [? | ?]; try congruence.
+    apply injF_injective in H. eauto. inv H.
+  Qed.
+  
+  
+  (* XXX: This machine could be space-inefficient, as it may always appends new copies of [m] to tape [2+i2] *)
+  (* Idea: Before executing the step machine, insert a special start marker to said tape and move to this marker after each use. *)
+  (* Other idea: "destructing with remembering" ("overwritten" symbol) *)
+  Definition Iter2_step : { M : mTM (bool^+) (S (S n)) & states M -> bool * unit } :=
+    Inject (CopyValue' _) [| Fin.F1; injF i2 |];; (* Copy value [m] from tape 0 to tape 2+i2, where it is the second input of [M1] *)
+    If (Inject MatchNat [|Fin.FS Fin.F1|]) (* Do pattern matching over [n] *)
+       (Return (Inject M1 indexes_M1) (true, tt)) (* Execute [M1] *)
+       (Nop _ _ (false, tt)). (* In case, [n] is [O], break. *)
+
+
+  (* The step function has three inputs and two outputs. *)
+  Lemma Iter2_step_Computes :
+    Iter2_step ⊫
+               (fun tin '(yout, tout) =>
+                  forall (a x y : nat),
+                    tin[@injF i1] ≂ a ->
+                    tin[@Fin.F1] ≂ x ->
+                    tin[@Fin.FS Fin.F1] ≂ y ->
+                    yout = iter_step_param y /\
+                    tout[@Fin.F1] = tin[@Fin.F1] /\
+                    tout[@Fin.FS Fin.F1] ≂ pred y /\
+                    tout[@injF i1] ≂ iter2_step a x y).
+  Proof.
+    eapply WRealise_monotone.
+    {
+      unfold Iter2_step. repeat TM_Correct.
+      - apply CopyValue'_WRealise.
+      - eapply RealiseIn_WRealise. apply MatchNat_Sem.
+      - apply Inject_WRealise.
+        + apply indexes_M1_dupfree.
+        + apply M1_computes.
+    }
+    {
+      intros tin (yout, tout) H.
+      intros a x y HEncA HEncX HEncY.
+      TMSimp.
+      specialize (H _ HEncX) as (->&H).
+      pose proof (H1 (Fin.FS Fin.F1)) as L1. spec_assert L1. intros ?. vector_not_in. cbn in L1. subst.
+      pose proof (H1 (injF i1) i1_notIn_f01) as L1. cbn in L1. (* I use this later... *)
+      destruct H0; TMSimp.
+      - specialize (H0 _ HEncY) as (y'&->&HEncY'). unfold iter_step_param. split; auto.
+        rewrite !indexes_M1_reorder_nth in H3.
+        pose proof (H4 Fin.F1 ltac:(vector_not_in)) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
+        pose proof (H4 (injF i1) ltac:(vector_not_in)) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
+        pose proof (H4 (injF i2) ltac:(vector_not_in)) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
+        pose proof (H5 _ indexes_M1_notIn0) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
+        pose proof (H5 _ indexes_M1_notIn1) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
+        unfold finType_CS in *. rewrite L1 in *.
+        specialize (H3 a x HEncA H). cbn.
+        repeat split; auto.
+      - specialize (H0 _ HEncY) as (->&HencY').
+        unfold iter_step_param. cbn.
+        pose proof (H3 Fin.F1 ltac:(vector_not_in)) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
+        pose proof (H3 (injF i1) ltac:(vector_not_in)) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
+        unfold finType_CS in *. now rewrite <- L1.
+    }
+  Qed.
+  
+
+End Iter2.
+
+Compute iter2 add 0 7 6.
+
+Lemma iter2_mult_aux s x y :
+  iter2 tail_plus s x y = tail_mult_acc s x y.
+Proof. rewrite tail_iter2_iter2. revert s. induction y as [ | y' IH]; intros; cbn in *; auto. Qed.
