@@ -506,6 +506,18 @@ Section MirrorTape.
     mirror_tape (tape_move_right t) = tape_move_left (mirror_tape t).
   Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
 
+  Lemma mirror_tape_inv_midtape t r1 r2 x :
+    mirror_tape t = midtape r1 x r2 -> t = midtape r2 x r1.
+  Proof. intros. destruct t; cbn in *; congruence. Qed.
+
+  Lemma mirror_tape_inv_leftof t rs x :
+    mirror_tape t = leftof rs x -> t = rightof rs x.
+  Proof. intros. destruct t; cbn in *; congruence. Qed.
+
+  Lemma mirror_tape_inv_rightof t ls x :
+    mirror_tape t = rightof ls x -> t = leftof ls x.
+  Proof. intros. destruct t; cbn in *; congruence. Qed.
+
   Definition mirror_tapes (t : tapes sig n) : tapes sig n := Vector.map mirror_tape t.
 
   Lemma mirror_tapes_involution (t : tapes sig n) :
@@ -636,6 +648,23 @@ Section Tape_Local.
   Lemma tape_right_move_left (t : tape sig) (x : sig) :
     current t = Some x -> right (tape_move_left t) = x :: right t.
   Proof. intros H. destruct t; cbn in *; try congruence. inv H. destruct l; cbn; reflexivity. Qed.
+
+  
+  Lemma midtape_tape_local_cons_left t r1 r2 x :
+    left t = r1 /\ tape_local t = x :: r2 <-> t = midtape r1 x r2.
+  Proof.
+    split.
+    - intros (H1&H2). destruct t; cbn in *; congruence.
+    - intros H1. destruct t; cbn in *; inv H1. auto.
+  Qed.
+
+  Lemma midtape_tape_local_l_cons_right t r1 r2 x :
+    tape_local_l t = x :: r1 /\ right t = r2 <-> t = midtape r1 x r2.
+  Proof.
+    split.
+    - intros (H1&H2). destruct t; cbn in *; congruence.
+    - intros H1. destruct t; cbn in *; inv H1. auto.
+  Qed.
 
 End Tape_Local.
 

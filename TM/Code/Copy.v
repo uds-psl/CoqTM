@@ -63,8 +63,7 @@ Section Copy.
     (stop x = true) ->
     tape_local (fst tltr) = str1 ++ x :: str2 ->
     (tl', tr') = CopySymbols_Fun stop id tltr ->
-    tape_local tl' = x :: str2 /\
-    left tl' = rev str1 ++ left (fst tltr).
+    tl' = midtape (rev str1 ++ left (fst tltr)) x str2.
   Proof.
     intros H H0. destruct tltr as [tl tr]. intros H1 E0.
     destruct tl as [ | r rs | l ls | ls m rs]; cbn in *.
@@ -100,13 +99,20 @@ Section Copy.
           erewrite IHstr1; eauto. destruct tr; simpl_list; cbn; eauto. destruct l0; cbn; auto.
   Qed.
 
+  Lemma CopySymbols_pair_correct tltr str1 x str2 tl' tr':
+    (forall x, List.In x str1 -> stop x = false) ->
+    (stop x = true) ->
+    tape_local (fst tltr) = str1 ++ x :: str2 ->
+    (tl', tr') = CopySymbols_Fun stop id tltr ->
+    tl' = midtape (rev str1 ++ left (fst tltr)) x str2 /\
+    tape_local_l tr' = x :: rev str1 ++ left (snd tltr).
+  Proof. eauto using CopySymbols_pair_first, CopySymbols_pair_second. Qed.
 
   Lemma MoveToSymbol_correct t str1 str2 x :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local t = str1 ++ x :: str2 ->
-    tape_local (MoveToSymbol_Fun stop t) = x :: str2 /\
-    left (MoveToSymbol_Fun stop t) = rev str1 ++ left t.
+    MoveToSymbol_Fun stop t = midtape (rev str1 ++ left t) x str2.
   Proof.
     intros H H0. destruct t as [ | r rs | l ls | ls m rs]; cbn in *.
     1,3: rewrite MoveToSymbol_Fun_equation; cbn; destruct str1; cbn in *; try congruence.
@@ -128,17 +134,15 @@ Section Copy.
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local_l t = str1 ++ x :: str2 ->
-    tape_local_l (MoveToSymbol_L_Fun stop t) = x :: str2 /\
-    right (MoveToSymbol_L_Fun stop t) = rev str1 ++ right t.
+    MoveToSymbol_L_Fun stop t = midtape str2 x (rev str1 ++ right t).
   Proof.
     intros. pose proof (@MoveToSymbol_correct (mirror_tape t) str1 str2 x) as L.
-    simpl_tape in L. repeat spec_assert L by auto. destruct L as (L1,L2).
-    simpl_tape in *. split; auto.
-    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L1, L2; simpl_tape in *; eauto.
-    erewrite MoveToSymbol_mirror' in L2; eauto. 2: symmetry; eapply mirror_tape_involution. now simpl_tape in *.
+    simpl_tape in L. repeat spec_assert L by auto.
+    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L; simpl_tape in *; eauto.
+    now apply mirror_tape_inv_midtape in L.
   Qed.
 
-  (* Termination times *)
+  (** Termination times *)
 
   (* The termination times of CopySymbols and MoveTosymbol only differ in the factors *)
 
@@ -208,7 +212,6 @@ Section Copy_code.
   Proof. cbn. intros (?&<-&?) % in_map_iff. cbn. eapply stop_X_notInX; eauto. Qed.
 
 
-
   Definition MoveToSymbol_Code := Return (MoveToSymbol stop) tt.
 
   Definition MoveToSymbol_Code_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
@@ -217,8 +220,7 @@ Section Copy_code.
             fun tin tout =>
               forall (x : X) r1 r2,
                 tape_encodes_l _ tin x r1 r2 ->
-                tape_local_l tout = inl STOP :: rev (encode x) ++ inl START :: r1 /\
-                right tout = r2
+                tout = midtape (rev (encode x) ++ inl START :: r1) (inl STOP) r2
           )
       ).
 
@@ -234,18 +236,10 @@ Section Copy_code.
       destruct H0 as (HE1&HE2).
       unfold finType_CS in *.
       destruct (encode x) eqn:E1.
-      - eapply (MoveToSymbol_correct (stop := stop)) in HE2 as (L1&L2); eauto.
-        split; eauto. cbn in *.
-        + eapply tape_local_cons_iff in L1 as (L1&L1').
-          eapply tape_local_l_cons_iff. split; eauto.
-          rewrite E1. cbn. unfold finType_CS in *. rewrite HE1 in L2. congruence.
-        + eapply tape_local_cons_iff in L1 as (L1&L1'). eauto.
-      - eapply (MoveToSymbol_correct (stop := stop)) in HE2 as (L1&L2); eauto.
-        split; eauto. cbn in *.
-        + eapply tape_local_cons_iff in L1 as (L1&L1').
-          eapply tape_local_l_cons_iff. split; eauto.
-          rewrite E1. cbn. unfold finType_CS in *. rewrite HE1 in L2. congruence.
-        + eapply tape_local_cons_iff in L1 as (L1&L1'). eauto.
+      - eapply (MoveToSymbol_correct (stop := stop)) in HE2; eauto. unfold finType_CS in *. rewrite HE2.
+        cbn in *. rewrite HE1, E1. cbn. trivial.
+      - eapply (MoveToSymbol_correct (stop := stop)) in HE2; eauto. unfold finType_CS in *. rewrite HE2.
+        + cbn in *. rewrite HE1, E1. cbn. trivial.
         + intros ? [-> | ?]; eapply (@stop_notInX x); unfold finType_CS in *; rewrite E1; eauto.
     }
   Qed.
@@ -267,29 +261,7 @@ Section Copy_code.
 
 
 
-  
-
-
-
   Definition MoveToSymbol_Code_L := Return (MoveToSymbol_L stop) tt.
-
-  (*
-  Definition MoveToSymbol_Code_L := Mirror MoveToSymbol_Code.
-
-  Lemma MoveToSymbol_Code_L_WRealise :
-    MoveToSymbol_Code_L ⊫ MoveToSymbol_Code_L_Rel.
-  Proof.
-    eapply WRealise_monotone.
-    { unfold MoveToSymbol_Code_L. repeat TM_Correct. eapply MoveToSymbol_Code_WRealise. }
-    {
-      intros tin (yout, tout) H. hnf in *.
-      intros x r1 r2 (HE1&HE2).
-      specialize (H x r1 r2). spec_assert H.
-      { hnf. simpl_tape. split; auto. 
-
-      specialize H with (1 := HE2).
-    }
-   *)
 
   Definition MoveToSymbol_Code_L_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
     Mono.Mk_R_p (
@@ -297,8 +269,7 @@ Section Copy_code.
             fun tin tout =>
               forall (x : X) r1 r2,
                 tape_encodes_r _ tin x r1 r2 ->
-                left tout = r1 /\
-                tape_local tout = inl START :: encode x ++ inl STOP :: r2
+                tout = midtape r1 (inl START) (encode x ++ inl STOP :: r2)
           )
       ).
 
@@ -313,18 +284,11 @@ Section Copy_code.
       destruct H0 as (HE1&HE2).
       unfold finType_CS in *.
       destruct (encode x) eqn:E1.
-      - eapply (MoveToSymbol_L_correct (stop := stop)) in HE2 as (L1&L2); eauto.
-        split; eauto. cbn in *.
-        + eapply tape_local_l_cons_iff in L1 as (L1&L1'). eauto.
-        + eapply tape_local_l_cons_iff in L1 as (L1&L1'). unfold finType_CS in *. cbn in *. rewrite E1. cbn.
-          eapply tape_local_cons_iff. split; auto. unfold finType_CS in *. congruence.
+      - eapply (MoveToSymbol_L_correct (stop := stop)) in HE2; eauto.
+        + unfold finType_CS in *. rewrite HE2. cbn in *. rewrite E1, HE1. cbn. trivial.
         + cbn. auto.
-      - eapply (MoveToSymbol_L_correct (stop := stop)) in HE2 as (L1&L2); eauto.
-        split; eauto. cbn in *.
-        + eapply tape_local_l_cons_iff in L1 as (L1&L1'). eauto.
-        + eapply tape_local_l_cons_iff in L1 as (L1&L1'). unfold finType_CS in *. cbn in *. rewrite E1. cbn.
-          eapply tape_local_cons_iff. split; auto. unfold finType_CS in *.
-          rewrite rev_app_distr, rev_involutive in L2. cbn in L2. rewrite L2. congruence.
+      - eapply (MoveToSymbol_L_correct (stop := stop)) in HE2; eauto.
+        + unfold finType_CS in *. rewrite HE2. cbn in *. rewrite E1, HE1. cbn. simpl_list. cbn. trivial.
         + intros ? [ -> | ? ] % in_rev; eapply (@stop_notInX x); unfold finType_CS; rewrite E1; auto.
     }
   Qed.
@@ -353,8 +317,7 @@ Section Copy_code.
         fun tin tout =>
           forall x r1 r2,
             tape_encodes_l _ tin[@Fin.F1] x r1 r2 ->
-            left tout[@Fin.F1] = rev (encode x) ++ inl START :: r1 /\
-            tape_local tout[@Fin.F1] = inl STOP :: r2 /\
+            tout[@Fin.F1] = midtape (rev (encode x) ++ inl START :: r1) (inl STOP) r2 /\
             tape_local_l tout[@Fin.FS Fin.F1] = inl STOP :: rev (encode x) ++ left tin[@Fin.FS Fin.F1]
       ).
 
@@ -367,29 +330,18 @@ Section Copy_code.
       intros tin ((), tout). TMSimp. clear_trivial_eqs.
       destruct H0 as (HE1&HE2).
       destruct (encode x) eqn:E1.
-      - unshelve epose proof CopySymbols_pair_first (stop := stop) as L.
+      - unshelve epose proof CopySymbols_pair_correct (stop := stop) as L.
         specialize L with (4 := H). cbn in L. specialize L with (3 := HE2).
-        spec_assert L by eauto. spec_assert L as (L1&L2) by eauto.
-
-        unshelve epose proof CopySymbols_pair_second (stop := stop) as L.
-        specialize L with (4 := H). cbn in L. specialize L with (3 := HE2).
-        spec_assert L by eauto. spec_assert L by eauto.
-
-        cbn in *. rewrite E1 in *. cbn. repeat split; auto.
-        rewrite HE1 in *. auto.
-      - unshelve epose proof CopySymbols_pair_first (stop := stop) as L.
+        spec_assert L by eauto. spec_assert L as (->&L) by eauto.
+        cbn. unfold finType_CS in *. cbn in *.
+        rewrite E1, HE1. cbn. split; auto.
+      - unshelve epose proof CopySymbols_pair_correct (stop := stop) as L.
         specialize L with (4 := H). cbn in L. specialize L with (3 := HE2).
         spec_assert L.
         { intros ? [-> | ?]; eapply (@stop_notInX x); unfold finType_CS in *; rewrite E1; eauto. }
-        spec_assert L as (L1&L2) by eauto.
-
-        unshelve epose proof CopySymbols_pair_second (stop := stop) as L.
-        specialize L with (4 := H). cbn in L. specialize L with (3 := HE2).
-        spec_assert L.
-        { intros ? [-> | ?]; eapply (@stop_notInX x); unfold finType_CS in *; rewrite E1; eauto. }
-        spec_assert L by eauto.
-        cbn in *. rewrite E1 in *. cbn. split; auto.
-        rewrite HE1 in *. auto.
+        spec_assert L as (->&L) by eauto.
+        cbn. unfold finType_CS in *. cbn in *.
+        rewrite E1, HE1. cbn. split; auto.
     }
   Qed.
 
@@ -451,11 +403,9 @@ Section MoveToOtherSide.
     { unfold MoveToRightCode. repeat TM_Correct. eapply MoveToSymbol_Code_WRealise. eauto. }
     {
       intros tin ((), tout) H. TMSimp. clear_trivial_eqs.
-      specialize (H _ _ _ H0) as ((L1&L2) % tape_local_l_cons_iff & L3).
+      specialize (H _ _ _ H0) as ->. cbn.
       hnf. hnf in H0. destruct H0 as (HE1&HE2).
-      split.
-      - erewrite tape_right_move_left; eauto. f_equal. auto.
-      - erewrite tape_local_l_move_left; eauto. eapply tape_local_l_cons_iff; eauto.
+      simpl_tape; auto.
     }
   Qed.
 
@@ -501,11 +451,9 @@ Section MoveToOtherSide.
     { unfold MoveToLeftCode. repeat TM_Correct. eapply MoveToSymbol_Code_L_WRealise. eauto. }
     {
       intros tin ((), tout) H. TMSimp. clear_trivial_eqs.
-      specialize (H _ _ _ H0) as (L1 & (L2&L3)% tape_local_cons_iff).
+      specialize (H _ _ _ H0) as ->. cbn.
       hnf. hnf in H0. destruct H0 as (HE1&HE2).
-      split.
-      - erewrite tape_left_move_right; eauto. f_equal. auto.
-      - erewrite tape_local_move_right; eauto. eapply tape_local_cons_iff; eauto.
+      simpl_tape; auto.
     }
   Qed.
 
@@ -554,16 +502,15 @@ Section MoveToOtherSide.
     { unfold CopyValue. repeat TM_Correct. eapply CopySymbols_Code_WRealise; auto. }
     {
       intros tin ((), tout) H. TMSimp. clear_trivial_eqs.
-      specialize (H1 _ _ _ H0) as (L1 & (L2&L3) % tape_local_cons_iff & (L4 & L5) % tape_local_l_cons_iff).
-      destruct H0 as (HE1&HE2). split.
+      specialize (H1 _ _ _ H0) as (-> & (L1&L2) % tape_local_l_cons_iff). cbn.
+      destruct H0 as (HE1&HE2).
+      simpl_tape in *. split.
       - hnf. split.
-        + subst. erewrite tape_right_move_left; eauto.
-        + erewrite tape_local_l_move_left; eauto. apply tape_local_l_cons_iff. eauto.
-      - hnf. do 2 eexists. hnf. split.
+        + subst. simpl_tape. auto.
+        + simpl_tape. auto.
+      - hnf. do 2 eexists. split.
         + erewrite tape_right_move_left; eauto.
-        + erewrite tape_local_l_move_left; swap 1 2.
-          * eapply tape_local_l_cons_iff. split. eapply L4. eapply L5.
-          * cbn. f_equal. simpl_tape. auto.
+        + erewrite tape_local_l_move_left; eauto. eapply tape_local_l_cons_iff; eauto.
     }
   Qed.
 
@@ -667,7 +614,6 @@ Arguments CopyValue' : simpl never.
 
 
 (* todo: Arguments, smpl, etc. *)
-
 
 
 
