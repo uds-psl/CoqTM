@@ -20,8 +20,8 @@ Section MatchNat.
   Definition MatchNat : { M : mTM bool^+ 1 & states M -> bool } :=
     MATCH (Read_char _)
           (fun o => match o with
-                 | Some (inr true)  => Write (inl START) tt;; Move _ R true  (* inl *)
-                 | Some (inr false) => mono_Nop _ false (* inr *)
+                 | Some (inr true)  => Write (inl START) tt;; Move _ R true  (* S *)
+                 | Some (inr false) => mono_Nop _ false (* O *)
                  | _ => mono_Nop _ true (* invalid input *)
                  end).
 
