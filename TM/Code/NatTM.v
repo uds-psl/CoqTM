@@ -48,7 +48,7 @@ Qed.
 Fixpoint tail_mult_acc (a m n : nat) {struct n} :=
   match n with
   | O => a
-  | S n' => tail_mult_acc (tail_plus a m) m n'
+  | S n' => tail_mult_acc (a + m) m n'
   end.
 
 Definition tail_mult (m n : nat) := tail_mult_acc 0 m n.
@@ -58,7 +58,7 @@ Lemma mult_tail_mult_aux (a m n : nat) :
 Proof.
   revert a m. induction n as [ | n' IH]; intros.
   - cbn. omega.
-  - cbn. rewrite <- IH. rewrite <- plus_tail_plus. rewrite Nat.mul_succ_r. omega.
+  - cbn. rewrite <- IH. rewrite Nat.mul_succ_r. omega.
 Qed.
 
 Lemma mult_tail_mult (m n : nat) :
@@ -71,7 +71,7 @@ Print pow.
 Fixpoint tail_pow_acc (a m n : nat) {struct n} : nat :=
   match n with
   | O => a
-  | S n' => tail_pow_acc (tail_mult a m) m n'
+  | S n' => tail_pow_acc (a * m) m n'
   end.
 
 Definition tail_pow (m n : nat) := tail_pow_acc 1 m n.
@@ -81,7 +81,7 @@ Lemma pow_tail_pow_aux (a m n : nat) :
 Proof.
   revert a m. induction n as [ | n' IH]; intros.
   - cbn. omega.
-  - cbn. rewrite <- IH. rewrite <- mult_tail_mult. eapply Nat.mul_assoc.
+  - cbn. rewrite <- IH. eapply Nat.mul_assoc.
 Qed.
 
 Lemma pow_tail_pow (m n : nat) :
@@ -304,6 +304,15 @@ Proof.
     + intros tin ((), tout) H. hnf in *. auto.
 Qed.
 
+Lemma Add_WRealise :
+  Add ⊫ Computes2_Rel (Fin.F1) (Fin.FS Fin.F1) (Fin.F1) _ _ _ plus.
+Proof.
+  eapply Computes2_Ext_WRealise.
+  - apply plus_tail_plus.
+  - apply Add_WRealise'.
+Qed.
+
+
 Lemma Add_Terminates :
   projT1 Add ↓ (fun tin k => exists x y, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ 6 + 12 * y <= k).
 Proof.
@@ -355,6 +364,7 @@ Section Iter2.
   Lemma tail_iter2_iter2 (s x y : nat) :
     iter2 s x y = tail_iter2 s x y.
   Proof. revert s. induction y as [ | y' IH]; intros; cbn in *; eauto. Qed.
+
   
   Variable n : nat.
   Variable M1 : { M : mTM (bool^+) n & states M -> unit }.
@@ -368,6 +378,12 @@ Section Iter2.
     | O => s
     | S y' => f s x
     end.
+
+
+  Lemma tail_iter2_step_pred_eta s x y :
+    tail_iter2 (iter2_step s x y) x (pred y) = tail_iter2 s x y.
+  Proof. destruct y; cbn; auto. Qed.
+
 
   Notation "'injF' x" := (Fin.FS (Fin.FS x)) (at level 30).
   
@@ -399,14 +415,18 @@ Section Iter2.
     cbn. now rewrite Fin_initVect_nth.
   Qed.
 
-
-  Local Lemma i1_notIn_f01 : not_indexes [|Fin.F1; injF i2|] (injF i1).
+  Local Lemma i1_notIn_0_i2 : not_indexes [|Fin.F1; injF i2|] (injF i1).
   Proof.
     (* XXX: This should have been solved with the [vector_not_in] tactic *)
     intros H.
     apply In_cons in H as [? | ?]; try congruence.
     apply In_cons in H as [? | ?]; try congruence.
     apply injF_injective in H. eauto. inv H.
+  Qed.
+
+  Local Lemma i2_notIn_i1 : not_indexes [|injF i1|] (injF i2).
+  Proof.
+    intros [H % injF_injective | H] % In_cons; auto. inv H.
   Qed.
   
   
@@ -420,20 +440,23 @@ Section Iter2.
        (Nop _ _ (false, tt)). (* In case, [n] is [O], break. *)
 
 
+  Definition Iter2_step_Rel :=
+    fun tin '(yout, tout) =>
+      forall (s x y : nat),
+        tin[@injF i1] ≂ s ->
+        tin[@Fin.F1] ≂ x ->
+        tin[@Fin.FS Fin.F1] ≂ y ->
+        yout = iter_step_param y /\
+        tout[@Fin.F1] = tin[@Fin.F1] /\
+        tout[@Fin.FS Fin.F1] ≂ pred y /\
+        tout[@injF i1] ≂ iter2_step s x y.
+
+
   (* The step function has three inputs and two outputs. *)
   Lemma Iter2_step_Computes :
-    Iter2_step ⊫
-               (fun tin '(yout, tout) =>
-                  forall (a x y : nat),
-                    tin[@injF i1] ≂ a ->
-                    tin[@Fin.F1] ≂ x ->
-                    tin[@Fin.FS Fin.F1] ≂ y ->
-                    yout = iter_step_param y /\
-                    tout[@Fin.F1] = tin[@Fin.F1] /\
-                    tout[@Fin.FS Fin.F1] ≂ pred y /\
-                    tout[@injF i1] ≂ iter2_step a x y).
+    Iter2_step ⊫ Iter2_step_Rel.
   Proof.
-    eapply WRealise_monotone.
+    unfold Iter2_step_Rel. eapply WRealise_monotone.
     {
       unfold Iter2_step. repeat TM_Correct.
       - apply CopyValue'_WRealise.
@@ -448,7 +471,7 @@ Section Iter2.
       TMSimp.
       specialize (H _ HEncX) as (->&H).
       pose proof (H1 (Fin.FS Fin.F1)) as L1. spec_assert L1. intros ?. vector_not_in. cbn in L1. subst.
-      pose proof (H1 (injF i1) i1_notIn_f01) as L1. cbn in L1. (* I use this later... *)
+      pose proof (H1 (injF i1) i1_notIn_0_i2) as L1. cbn in L1. (* I use this later... *)
       destruct H0; TMSimp.
       - specialize (H0 _ HEncY) as (y'&->&HEncY'). unfold iter_step_param. split; auto.
         rewrite !indexes_M1_reorder_nth in H3.
@@ -457,22 +480,128 @@ Section Iter2.
         pose proof (H4 (injF i2) ltac:(vector_not_in)) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
         pose proof (H5 _ indexes_M1_notIn0) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
         pose proof (H5 _ indexes_M1_notIn1) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
-        unfold finType_CS in *. rewrite L1 in *.
-        specialize (H3 a x HEncA H). cbn.
-        repeat split; auto.
+        unfold finType_CS in *. rewrite L1 in *. now specialize (H3 a x HEncA H).
       - specialize (H0 _ HEncY) as (->&HencY').
         unfold iter_step_param. cbn.
         pose proof (H3 Fin.F1 ltac:(vector_not_in)) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
-        pose proof (H3 (injF i1) ltac:(vector_not_in)) as L2. cbn in L2. rewrite <- L2 in *. clear L2.
+        pose proof (H3 (injF i1) ltac:(vector_not_in)) as L2. cbn in L2. unfold finType_CS in *. rewrite <- L2 in *. clear L2.
         unfold finType_CS in *. now rewrite <- L1.
     }
   Qed.
   
 
+  Definition Iter2_loop := WHILE Iter2_step.
+
+  Definition Iter2_loop_Rel : Rel (tapes (bool^+) (S (S n))) (unit * tapes (bool^+) (S (S n))) :=
+    ignoreParam (
+        fun tin tout =>
+          forall (s x y : nat),
+            tin[@injF i1] ≂ s ->
+            tin[@Fin.F1] ≂ x ->
+            tin[@Fin.FS Fin.F1] ≂ y ->
+            tout[@Fin.F1] = tin[@Fin.F1] /\
+            tout[@injF i1] ≂ tail_iter2 s x y
+      ).
+
+  Lemma Iter2_loop_WRealise :
+    Iter2_loop ⊫ Iter2_loop_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    {
+      unfold Iter2_loop. repeat TM_Correct. apply Iter2_step_Computes.
+    }
+    {
+      intros tin ((), tout) H. intros s x y HEncS HEncX HEncY.
+      hnf in H. destruct H as (tmid2&HStar&HLastStep).
+      revert s HEncS x HEncX y HEncY.
+      induction HStar as [ tin | tin tmid1 tmid2 HStar _ IH]; intros.
+      - hnf in HLastStep. specialize (HLastStep s x y HEncS HEncX HEncY) as (H1&H2&H3&H4).
+        cbv in H1. destruct y; inv H1. auto.
+      - hnf in HLastStep. spec_assert IH; eauto.
+        hnf in HStar. destruct HStar as (()&HStar). hnf in HStar.
+        specialize (HStar _ _ _ HEncS HEncX HEncY) as (H1&H2&H3&H4).
+        specialize (IH _ H4). unfold finType_CS in *. rewrite H2 in *. specialize (IH _ HEncX). specialize (IH _ H3) as (IH1&IH2).
+        now rewrite tail_iter2_step_pred_eta in IH2.
+    }
+  Qed.
+
+
+  Definition Iter2 (s : nat) : { M : mTM (bool^+) (S (S n)) & states M -> unit } :=
+    Inject (InitTape _ s) [|injF i1|];; (* Write [s] to tape [2+i1] *)
+    Iter2_loop;; (* Execute the loop *)
+    Inject (CopyValue' _) [|injF i1; Fin.F1|]. (* Copy the result (in tape [2+i1]) to tape [0] *)
+
+  Lemma Iter2_Computes' (s : nat) :
+    Iter2 s ⊫ Computes2_Rel Fin.F1 (Fin.FS Fin.F1) Fin.F1 _ _ _ (tail_iter2 s).
+  Proof.
+    eapply WRealise_monotone.
+    {
+      unfold Iter2. repeat TM_Correct.
+      - eapply RealiseIn_WRealise. apply InitTape_Sem.
+      - apply Iter2_loop_WRealise.
+      - apply CopyValue'_WRealise.
+    }
+    {
+      intros tin ((), tout) H. intros x y HEncX HEncY.
+      hnf in H. destruct H as ((()&tmid)&(HEncS&HInject)&H). cbn in *.
+      destruct H as ((()&tmid2)&HComp&(HCopy&HInject2)). cbn in *.
+      pose proof HInject Fin.F1 ltac:(vector_not_in) as L1. cbn in L1. unfold finType_CS in *. try rewrite <- L1 in *.
+      pose proof HInject (Fin.FS Fin.F1) ltac:(vector_not_in) as L2. cbn in L2. unfold finType_CS in *. try rewrite <- L2 in *.
+      pose proof HInject _ i2_notIn_i1 as L3. cbn in L3. unfold finType_CS in *.
+      specialize (HComp s x y HEncS HEncX HEncY) as (_&HRes).
+      now specialize (HCopy _ HRes) as (_&Res').
+    }
+  Qed.
+
+  Lemma Iter2_Computes (s : nat) :
+    Iter2 s ⊫ Computes2_Rel Fin.F1 (Fin.FS Fin.F1) (Fin.F1) _ _ _ (iter2 s).
+  Proof. eapply Computes2_Ext_WRealise. apply tail_iter2_iter2. apply Iter2_Computes'. Qed.
+
+
 End Iter2.
 
-Compute iter2 add 0 7 6.
 
-Lemma iter2_mult_aux s x y :
-  iter2 tail_plus s x y = tail_mult_acc s x y.
+(** Define and Instantiate Mult and Power now *)
+
+
+Definition Mult := Iter2 Add ltac:(getFin 0) ltac:(getFin 1) 0.
+
+Lemma iter2_mult s x y :
+  iter2 plus s x y = tail_mult_acc s x y.
 Proof. rewrite tail_iter2_iter2. revert s. induction y as [ | y' IH]; intros; cbn in *; auto. Qed.
+
+Lemma mult_iter2 x y :
+  x * y = iter2 plus 0 x y.
+Proof. rewrite iter2_mult. rewrite <- mult_tail_mult_aux. cbn. omega. Qed.
+
+Lemma Mult_WRealise :
+  Mult ⊫ Computes2_Rel ltac:(getFin 0) ltac:(getFin 1) ltac:(getFin 0) _ _ _ mult.
+Proof.
+  eapply Computes2_Ext_WRealise.
+  - apply mult_iter2.
+  - unfold Mult. apply Iter2_Computes.
+    + intros H. inv H.
+    + apply Add_WRealise.
+Qed.
+
+
+Definition Power := Iter2 Mult ltac:(getFin 0) ltac:(getFin 1) 1.
+
+Lemma iter2_power s x y :
+  iter2 mult s x y = tail_pow_acc s x y.
+Proof. rewrite tail_iter2_iter2. revert s. induction y as [ | y' IH]; intros; cbn in *; auto. Qed.
+
+Lemma power_iter2 x y :
+  x ^ y = iter2 mult 1 x y.
+Proof. rewrite iter2_power. rewrite <- pow_tail_pow_aux. cbn. omega. Qed.
+
+
+Lemma Power_WRealise :
+  Power ⊫ Computes2_Rel ltac:(getFin 0) ltac:(getFin 1) ltac:(getFin 0) _ _ _ pow.
+Proof.
+  eapply Computes2_Ext_WRealise.
+  - apply power_iter2.
+  - unfold Power. apply Iter2_Computes.
+    + intros H. inv H.
+    + apply Mult_WRealise.
+Qed.
