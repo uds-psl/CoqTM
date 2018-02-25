@@ -170,12 +170,10 @@ Section MatchList.
     tape_local (tl') = map inr (encode tail) ++ (inl STOP :: rs').
   Proof.
     intros. destruct tail as [ | ctail tail'] eqn:E1; cbn in *.
-    - refine (proj1 (CopySymbols_pair_first _ _ H0 H)).
+    - unshelve erewrite (CopySymbols_pair_first (stop := stop_X') (tltr := tltr) (x := inr (inl false)) _ _ H0 H); eauto.
       + rewrite List.map_map. intros x (? & <- & ?) % in_map_iff. cbn. trivial.
-      + cbn. trivial.
-    - refine (proj1 (CopySymbols_pair_first _ _ H0 H)).
+    - unshelve erewrite (CopySymbols_pair_first (stop := stop_X') (tltr := tltr) (x := inr (inl true)) _ _ H0 H); eauto.
       + rewrite List.map_map. intros x (? & <- & ?) % in_map_iff. cbn. trivial.
-      + cbn. trivial.
   Qed.
 
   Lemma CopySymbols_cons_second (head : X) (tail : list X) tltr tl' tr' rs' :
@@ -184,12 +182,12 @@ Section MatchList.
     left tr' = map inr (map inr (rev (encode head : list sigX))) ++ left (snd tltr).
   Proof.
     intros. rewrite !map_rev. destruct tail as [ | ctail tail'] eqn:E1; cbn in *.
-    - refine (CopySymbols_pair_second _ _ H0 H).
-      + rewrite List.map_map. intros x (? & <- & ?) % in_map_iff. cbn. trivial.
-      + cbn. trivial.
-    - refine (CopySymbols_pair_second _ _ H0 H).
-      + rewrite List.map_map. intros x (? & <- & ?) % in_map_iff. cbn. trivial.
-      + cbn. trivial.
+    - unshelve epose proof (CopySymbols_pair_second (stop := stop_X') (tltr := tltr) (x := inr (inl false)) _ _ H0 H) as L; eauto.
+      + intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
+      + apply tape_local_l_cons_iff in L as (L1&L2). rewrite L2. trivial.
+    - unshelve epose proof (CopySymbols_pair_second (stop := stop_X') (tltr := tltr) (x := inr (inl true)) _ _ H0 H) as L; eauto.
+      + intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
+      + apply tape_local_l_cons_iff in L as (L1&L2). rewrite L2. trivial.
   Qed.
   
   Lemma M2_WRealise : M2 ⊫ R2.
@@ -277,22 +275,13 @@ Section MatchList.
         destruct h4; cbn in *; try congruence. subst. apply tape_match_symbols_tape_local_l.
       }
 
-      epose proof (MoveToSymbol_L_correct (stop := stop_X') _ _ L1) as (L2&L3).
-
+      epose proof (MoveToSymbol_L_correct (stop := stop_X') _ _ L1) as L2.
+      simpl_tape in L2. 
       cbn in *. rewrite H1' in *.
       progress unfold finType_CS in *.
       do 2 eexists; hnf; split; cbn in *; eauto.
-      + erewrite tape_left_move_right; eauto.
-        rewrite <- tape_local_mirror' in L2.
-        eapply tape_local_current_cons in L2.
-        simpl_tape in L2. eauto.
-      + erewrite tape_local_move_right; eauto.
-        eapply tape_local_cons_iff.
-        rewrite <- tape_local_mirror' in L2.
-        eapply tape_local_current_cons in L2.
-        split; eauto. 
-        simpl_tape in L2. eauto.
-        rewrite L3. cbn. rewrite tape_match_symbols_right. cbn. now rewrite rev_involutive.
+      + rewrite L2. cbn. simpl_tape. eauto.
+      + rewrite L2. cbn. simpl_tape. rewrite rev_involutive. eauto.
 
       Unshelve.
       2,3,4: cbn; trivial.

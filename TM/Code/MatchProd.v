@@ -36,13 +36,11 @@ Section Projection.
     tape_local (tl') = map inr (map inr inputY) ++ (inl STOP :: rs').
   Proof.
     intros. destruct inputY as [ | csy inputY'] eqn:E1; cbn in *.
-    - eapply CopySymbols_pair_first; cbn; eauto.
-      + rewrite app_nil_r. intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
-      + trivial.
-    - eapply CopySymbols_pair_first with (str1 := map inr (map inl inputX)); cbn; eauto.
-      + intros x. rewrite !List.map_map. intros (?&<-&?) % in_map_iff. cbn. trivial.
-      + simpl_list. intuition.
-      + now rewrite map_app, <- app_assoc in H.
+    - unshelve erewrite (CopySymbols_pair_first (stop := stop_X) (tltr := tltr) (x := inl STOP) _ _ H H0); eauto.
+      rewrite app_nil_r. intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
+    - rewrite map_app, <- app_assoc in H. cbn in H.
+      unshelve erewrite (CopySymbols_pair_first (stop := stop_X) (tltr := tltr) (x := inr (inr csy)) _ _ H H0); cbn; eauto.
+      intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
   Qed.
 
   Lemma CopySymbols_pair_first'' (inputX : list sigX) (inputY : list sigY) ls m rs tr tl' tr' rs' :
@@ -59,14 +57,13 @@ Section Projection.
     left tr' = map inr (map inl (rev inputX)) ++ left (snd tltr).
   Proof.
     intros. rewrite !map_rev. destruct inputY as [ | csy inputY'] eqn:E1; cbn in *.
-    - rewrite app_nil_r in H.
-      eapply CopySymbols_pair_second; cbn; eauto.
-      + intros ? (? & <- & (? & <- & ?) % in_map_iff) % in_map_iff. cbn. trivial.
-      + cbn. trivial.
-    - eapply CopySymbols_pair_second with (str1 := map inr (map inl inputX)); cbn; eauto; swap 2 3.
-      + intros x. rewrite !List.map_map. intros (?&<-&?) % in_map_iff. cbn. trivial.
-      + rewrite map_app, <- app_assoc in H. eapply H.
-      + trivial.
+    - unshelve epose proof (CopySymbols_pair_second (stop := stop_X) (tltr := tltr) (x := inl STOP) _ _ H H0) as L; eauto.
+      + rewrite app_nil_r. intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
+      + apply tape_local_l_cons_iff in L as (L1&L2). rewrite L2. rewrite app_nil_r. trivial.
+    - rewrite map_app, <- app_assoc in H. cbn in H.
+      unshelve epose proof (CopySymbols_pair_second (stop := stop_X) (tltr := tltr) (x := inr (inr csy)) _ _ H H0) as L; eauto.
+      + intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
+      + apply tape_local_l_cons_iff in L as (L1&L2). rewrite L2. trivial.
   Qed.
   
   Lemma CopySymbols_pair_second'' (inputX : list sigX) (inputY : list sigY) ls m rs tr tl' tr' rs' :
@@ -176,18 +173,13 @@ Section Projection.
           subst. now simpl_tape.
         }
         
-        unshelve epose proof MoveToSymbol_L_correct (stop := stop_X) _ _ L1 as (L2&L3); eauto.
+        unshelve epose proof MoveToSymbol_L_correct (stop := stop_X) _ _ L1 as L; eauto.
         + rewrite <- !map_rev, List.map_map. intros x [ (?&<-&?) % in_map_iff | [ <- | H]] % in_app_iff; cbn; auto.
-        + rewrite !List.map_map, List.rev_app_distr, <- List.app_assoc, !List.rev_involutive in L3. cbn in *.
-          rewrite H2 in L1, L2, L3.
-          rewrite <- !tape_local_mirror' in L1, L2.
+        + unfold finType_CS in *. rewrite H2. cbn in L. rewrite H2 in L. rewrite L.
           do 2 eexists; split; cbn.
-          * unfold finType_CS in *. rewrite H2. erewrite tape_left_move_right; eauto.
-            eapply tape_local_current_cons in L2. now simpl_tape in L2.
-          * unfold finType_CS in *. rewrite H2. erewrite tape_local_move_right; eauto.
-            eapply tape_local_cons_iff. split; eauto.
-            eapply tape_local_current_cons in L2; simpl_tape in L2. eauto.
-            rewrite L3. simpl_tape. rewrite E1. cbn. f_equal. now rewrite List.map_map.
+          * unfold finType_CS in *. simpl_tape. eauto.
+          * unfold finType_CS in *. simpl_tape. rewrite E1. cbn.
+            rewrite rev_app_distr, <- app_assoc. cbn. f_equal. rewrite rev_involutive. eauto.
     }
   Qed.
 
@@ -228,6 +220,7 @@ Section Projection.
         replace 11 with (3+8) by omega. replace (S (3 + 8)) with (4 + 8) by omega.
         rewrite <- Nat.add_assoc. apply Nat.add_le_mono_l. cbn [fst].
         eapply CopySymbols_TermTime_pair. eauto.
+      - omega.
       - intros tout (). intros H. hnf.
         exists 1, 1. repeat split.
         + omega.

@@ -616,7 +616,7 @@ Arguments CopyValue' : simpl never.
 (* todo: Arguments, smpl, etc. *)
 
 
-
+(*
 Ltac smpl_TM_CopyMoveCode :=
   match goal with
   | [ |- MoveToSymbol_Code    _ ⊫ _ ] => eapply MoveToSymbol_Code_WRealise
@@ -625,3 +625,4 @@ Ltac smpl_TM_CopyMoveCode :=
   end.
 
 Smpl Add smpl_TM_CopyMoveCode : TM_Correct.
+*)
