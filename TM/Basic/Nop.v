@@ -23,12 +23,14 @@ Section Nop.
 
   Definition Nop := (nop; fun _ => f).
 
-  Lemma Nop_total: Nop ⊨c(0) (↑ (=f) ⊗ (@IdR _)).
+  Definition Nop_Rel : Rel (tapes sig n) (F * tapes sig n) := (@IdR _) ||_ f.
+
+  Lemma Nop_total : Nop ⊨c(0) Nop_Rel.
   Proof.
     intros ?. exists (initc nop input). cbn. firstorder.
   Qed.
 
-  Lemma Nop_sem: Nop ⊫ (↑ (=f) ⊗ (@IdR _)).
+  Lemma Nop_sem: Nop ⊫ Nop_Rel.
   Proof.
     intros ? ? ? ?. hnf. destruct i; cbn in *; now inv H.
   Qed.
@@ -38,6 +40,7 @@ End Nop.
 Arguments null_action {_ _}.
 Arguments Nop : simpl never.
 
+Arguments Nop_Rel {n sig F} (f) x y/.
 
 Ltac smpl_TM_Nop :=
   match goal with
@@ -46,6 +49,4 @@ Ltac smpl_TM_Nop :=
   | [ |- projT1 (Nop _ _ _) ↓ _] => eapply RealiseIn_terminatesIn, Nop_total
   end.
 
-
-Smpl Add smpl_TM_Nop : TM_Correct. 
-
+Smpl Add smpl_TM_Nop : TM_Correct.

@@ -100,9 +100,11 @@ Lemma functionalOn_intersect X Y Z (T : Rel X Y) (R1 R2 : Rel X Z) :
 Proof. firstorder. Qed.
   
 
-Definition ignoreFirst X Y (R : Y -> Prop) : Rel X Y  := fun x y => R y.
-Notation "'↑' R" := (ignoreFirst R) (at level 40, format "'↑' R").
-Arguments ignoreFirst { X Y } ( R ) x y /.
+Definition ignoreFirst X Y Z (R : Rel X Z) : Rel X (Y*Z) := fun x '(y,z) => R x z.
+Arguments ignoreFirst { X Y Z } ( R ) x y /.
+
+Definition ignoreSecond X Y Z (R : Rel X Y) : Rel X (Y*Z) := fun x '(y,z) => R x y.
+Arguments ignoreSecond { X Y Z } ( R ) x y /.
 
 Definition rprod X Y Z (R : Rel X Y) (S : Rel X Z) : Rel X (Y * Z) := fun x '(y,z) =>  R x y /\ S x z.
 Notation "R '⊗' S" := (rprod R S) (at level 41).
@@ -445,18 +447,6 @@ Proof.
   cbv. firstorder; destruct *; firstorder.
 Qed.
 
-Lemma function_restrict X Y (R : Rel X X) c :
-  (↑ (fun y : Y => y = c) ⊗ R)|_c =2 R.
-Proof.
-  split; intros ? ? ?; firstorder.
-Qed.
-
-Lemma function_restrict2 X Y (R : Rel X X) c c' : c <> c' ->
-  (↑ (fun y : Y => y = c') ⊗ R)|_c =2 Empty_rel.
-Proof.
-  split; intros ? ? ?; firstorder.
-Qed.
-                
 Lemma compose_id X Y (R : Rel X Y) :
   R ∘ (@IdR _) =2 R.
 Proof.
@@ -489,16 +479,6 @@ Proof.
   intros ? ? ? ? ? ?. split; intros ? ? ?; unfold rifb;
                         destruct b; firstorder. 
 Qed.      
-
-Lemma hideParam_restrict X Y Z I F (R1 : Rel X Y) (R2 : Rel Y Z) f (y' : I):
-  ignoreParam (Y := I) R1 ∘ hideParam (↑ (fun y : F => y = f) ⊗ R2) =2 ↑ (fun y : F => y = f) ⊗ (R1 ∘ R2).
-Proof.                                                                
-  split; intros ? ? ?.
-  - firstorder. destruct y, x0. cbn in *. firstorder. 
-  - cbv in H. destruct y. firstorder. subst. cbv.
-    eexists (_, x0). firstorder.
-    Unshelve. eassumption.
-Qed.
 
 
 Definition rfix X Y Z (R : Rel X Z) (p : Y) : Rel X (Y*Z) := (fun x '(y, z) =>
