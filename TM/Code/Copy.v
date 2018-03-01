@@ -1,7 +1,7 @@
 (* Helper functions for verifying machines using CopySymbols and MoveToSymbol *)
 
 Require Import TM.Code.CodeTM.
-Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
+Require Export TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 
 Require Import TM.Basic.Mono TM.Basic.Multi.
 Require Import TM.Combinators.Combinators.
@@ -213,7 +213,7 @@ Section Copy_code.
 
 
   Definition MoveToSymbol_Code := Return (MoveToSymbol stop) tt.
-
+ 
   Definition MoveToSymbol_Code_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
     Mono.Mk_R_p (
         ignoreParam (

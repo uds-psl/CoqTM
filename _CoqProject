@@ -34,6 +34,7 @@ TM/Code/MatchSum.v
 TM/Code/MatchProd.v
 TM/Code/MatchList.v
 TM/Code/MatchNat.v
+TM/Code/NatCounter.v
 TM/Code/NatTM.v
 
 # Basic Machines

@@ -93,6 +93,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     intros []; now cbv.
   Qed.
   
+  
   (** ** Definition of Multitape Turing Machines *)
 
   Record mTM (tapes_no:nat) : Type :=
@@ -649,22 +650,30 @@ Section Tape_Local.
     current t = Some x -> right (tape_move_left t) = x :: right t.
   Proof. intros H. destruct t; cbn in *; try congruence. inv H. destruct l; cbn; reflexivity. Qed.
 
+  Lemma midtape_tape_local_cons t r2 x :
+    tape_local t = x :: r2 <-> t = midtape (left t) x r2.
+  Proof.
+    split.
+    - intros H1. destruct t; cbn in *; congruence.
+    - intros H1. destruct t; cbn in *; inv H1. auto.
+  Qed.
   
   Lemma midtape_tape_local_cons_left t r1 r2 x :
     left t = r1 /\ tape_local t = x :: r2 <-> t = midtape r1 x r2.
+  Proof. rewrite midtape_tape_local_cons. intuition subst; cbn; auto. Qed.
+
+  
+  Lemma midtape_tape_local_l_cons t r1 x :
+    tape_local_l t = x :: r1 <-> t = midtape r1 x (right t).
   Proof.
     split.
-    - intros (H1&H2). destruct t; cbn in *; congruence.
+    - intros H1. destruct t; cbn in *; congruence.
     - intros H1. destruct t; cbn in *; inv H1. auto.
   Qed.
-
+  
   Lemma midtape_tape_local_l_cons_right t r1 r2 x :
     tape_local_l t = x :: r1 /\ right t = r2 <-> t = midtape r1 x r2.
-  Proof.
-    split.
-    - intros (H1&H2). destruct t; cbn in *; congruence.
-    - intros H1. destruct t; cbn in *; inv H1. auto.
-  Qed.
+  Proof. rewrite midtape_tape_local_l_cons. intuition subst; cbn; auto. Qed.
 
 End Tape_Local.
 
