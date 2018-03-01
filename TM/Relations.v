@@ -100,11 +100,11 @@ Lemma functionalOn_intersect X Y Z (T : Rel X Y) (R1 R2 : Rel X Z) :
 Proof. firstorder. Qed.
   
 
-Definition ignoreFirst X Y Z (R : Rel X Z) : Rel X (Y*Z) := fun x '(y,z) => R x z.
-Arguments ignoreFirst { X Y Z } ( R ) x y /.
+Definition ignoreFirst X P1 P2 Z (R : Rel X (P2 * Z)) : Rel X ((P1*P2)*Z) := fun x '((p1, p2), z) => R x (p2, z).
+Arguments ignoreFirst { X P1 P2 Z } ( R ) x y /.
 
-Definition ignoreSecond X Y Z (R : Rel X Y) : Rel X (Y*Z) := fun x '(y,z) => R x y.
-Arguments ignoreSecond { X Y Z } ( R ) x y /.
+Definition ignoreSecond X P1 P2 Z (R : Rel X (P1 * Z)) : Rel X ((P1*P2)*Z) := fun x '((p1, p2), z) => R x (p1, z).
+Arguments ignoreSecond { X P1 P2 Z } ( R ) x y /.
 
 Definition rprod X Y Z (R : Rel X Y) (S : Rel X Z) : Rel X (Y * Z) := fun x '(y,z) =>  R x y /\ S x z.
 Notation "R '⊗' S" := (rprod R S) (at level 41).
