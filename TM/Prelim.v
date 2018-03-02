@@ -1,4 +1,5 @@
 Require Export Shared.FiniteTypes.FinTypes Shared.FiniteTypes.BasicFinTypes Shared.FiniteTypes.CompoundFinTypes Shared.FiniteTypes.VectorFin.
+Require Export Shared.Vectors.FinNotation.
 Require Export Shared.Retracts.
 Require Export Shared.Inhabited.
 Require Export Shared.Base.
