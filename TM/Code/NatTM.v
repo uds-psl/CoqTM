@@ -494,14 +494,14 @@ Section Iter2.
   Qed.
 
 
-  Definition Iter2_step : { M : mTM (bool^+) (S n) & states M -> bool * unit } :=
+  Definition Iter2_Step : { M : mTM (bool^+) (S n) & states M -> bool * unit } :=
     If (Inject CountDown [|Fin0|])
        (Return (Inject M1 indexes_M1) (true, tt))
        (Nop _ _ (false, tt)).
 
 
   (* The step function has three inputs and three outputs. *)
-  Definition Iter2_step_Rel : Rel (tapes (bool^+) (S n)) ((bool * unit) * tapes (bool^+) (S n)) :=
+  Definition Iter2_Step_Rel : Rel (tapes (bool^+) (S n)) ((bool * unit) * tapes (bool^+) (S n)) :=
     ignoreSecond (
         if? (fun tin tout => (* case S *)
                forall (x x' y s : nat) r1 r2,
@@ -525,12 +525,12 @@ Section Iter2.
             )
       ).
 
-  Lemma Iter2_step_Computes :
-    Iter2_step ⊫ Iter2_step_Rel.
+  Lemma Iter2_Step_WRealise :
+    Iter2_Step ⊫ Iter2_Step_Rel.
   Proof.
-    unfold Iter2_step_Rel. eapply WRealise_monotone.
+    unfold Iter2_Step_Rel. eapply WRealise_monotone.
     {
-      unfold Iter2_step. repeat TM_Correct.
+      unfold Iter2_Step. repeat TM_Correct.
       - eapply RealiseIn_WRealise. apply CountDown_Sem.
       - apply Inject_WRealise.
         + apply indexes_M1_dupfree.
@@ -555,9 +555,9 @@ Section Iter2.
   Qed.
   
 
-  Definition Iter2_loop := WHILE Iter2_step.
+  Definition Iter2_Loop := WHILE Iter2_Step.
 
-  Definition Iter2_loop_Rel : Rel (tapes (bool^+) (S n)) (unit * tapes (bool^+) (S n)) :=
+  Definition Iter2_Loop_Rel : Rel (tapes (bool^+) (S n)) (unit * tapes (bool^+) (S n)) :=
     ignoreParam (
         fun tin tout =>
           forall (x x' y s : nat) r1 r2,
@@ -569,12 +569,12 @@ Section Iter2.
             tout[@Fin.FS i2] ≂ tail_iter2 s x' y
       ).
 
-  Lemma Iter2_loop_WRealise :
-    Iter2_loop ⊫ Iter2_loop_Rel.
+  Lemma Iter2_Loop_WRealise :
+    Iter2_Loop ⊫ Iter2_Loop_Rel.
   Proof.
     eapply WRealise_monotone.
     {
-      unfold Iter2_loop. repeat TM_Correct. apply Iter2_step_Computes.
+      unfold Iter2_Loop. repeat TM_Correct. apply Iter2_Step_WRealise.
     }
     {
       intros tin ((), tout) H. intros x x' y s r1 r2 HEncX HEncY HEncS .
@@ -593,7 +593,7 @@ Section Iter2.
 
   Definition Iter2 (s : nat) : { M : mTM (bool^+) (S n) & states M -> unit } :=
     Inject (InitTape _ s) [|Fin.FS i2|];; (* Write [s] to the tape for [s] *)
-    Iter2_loop. (* Execute the loop. *)
+    Iter2_Loop. (* Execute the loop. *)
 
 
   Lemma Iter2_Computes' (s : nat) : Iter2 s ⊫ Computes2_Rel Fin0 (Fin.FS i1) (Fin.FS i2) _ _ _ (tail_iter2 s).
@@ -602,7 +602,7 @@ Section Iter2.
     {
       unfold Iter2. repeat TM_Correct.
       - eapply RealiseIn_WRealise. apply InitTape_Sem.
-      - apply Iter2_loop_WRealise.
+      - apply Iter2_Loop_WRealise.
     }
     {
       intros tin ((), tout) H. intros x y HEncX HEncY.
@@ -617,7 +617,126 @@ Section Iter2.
   Lemma Iter2_Computes (s : nat) : Iter2 s ⊫ Computes2_Rel Fin0 (Fin.FS i1) (Fin.FS i2) _ _ _ (iter2 s).
   Proof. eapply Computes2_Ext_WRealise. apply tail_iter2_iter2. apply Iter2_Computes'. Qed.
 
-  (* TODO: Termination *)
+
+  (** Termination *)
+
+  Variable M1_runtime : nat -> nat -> nat.
+  Hypothesis M1_terminates : projT1 M1 ↓ (fun tin k => exists a b, tin[@i1] ≂ a /\ tin[@i2] ≂ b /\ M1_runtime a b <= k).
+
+
+  Lemma Iter2_Step_Terminates :
+    projT1 Iter2_Step ↓ (fun tin i => exists s x x' y r1 r2,
+                             counterIs_rest tin[@Fin0] x x' r1 r2 /\
+                             tin[@Fin.FS i1] ≂ y /\
+                             tin[@Fin.FS i2] ≂ s /\
+                             match x' with
+                             | O => 4
+                             | S _ => 4 + M1_runtime y s
+                             end <= i).
+  Proof.
+    eapply TerminatesIn_monotone.
+    {
+      unfold Iter2_Step. repeat TM_Correct. 
+      - eapply RealiseIn_WRealise. apply CountDown_Sem.
+      - eapply RealiseIn_terminatesIn. apply CountDown_Sem.
+      - apply Inject_Terminates.
+        + apply indexes_M1_dupfree.
+        + apply M1_terminates.
+    }
+    {
+      intros tin i. intros (s&x&x'&y&r1&r2&HEncX&HEncY&HEncS&Hi).
+      destruct x' as [ | x''] eqn:En'.
+      - exists 3, 0. repeat split.
+        + omega.
+        + cbn. omega.
+        + intros tout b H. cbn in H. destruct b; cbn.
+          * destruct H as (HComp&HInject). rewrite !indexes_M1_reorder_nth.
+            specialize (HComp _ _ _ _ HEncX) as (?&?&_). exfalso; congruence.
+          * omega.
+      - exists 3, (M1_runtime y s). repeat split.
+        + omega.
+        + cbn. omega.
+        + intros tout b H. cbn in H. destruct b; cbn.
+          * destruct H as (HComp&HInject). rewrite !indexes_M1_reorder_nth.
+            specialize (HComp _ _ _ _ HEncX) as (?&H&_). inv H.
+            pose proof (HInject (Fin.FS i1) ltac:(vector_not_in)) as L1; rewrite <- L1 in *; clear L1.
+            pose proof (HInject (Fin.FS i2) ltac:(vector_not_in)) as L1; rewrite <- L1 in *; clear L1.
+            eauto.
+          * omega.
+    }
+  Qed.
+  
+  Fixpoint Iter2_steps (a x y : nat) { struct x } : nat :=
+    match x with
+    | O => 4
+    | S x' => 5 + M1_runtime y a + Iter2_steps (f y a) x' y
+    end.
+
+  Lemma Iter2_steps_ge4 (a x y : nat) :
+    4 <= Iter2_steps a x y.
+  Proof. destruct x; cbn; omega. Qed.
+
+
+  Lemma Iter2_Loop_Terminates :
+    projT1 Iter2_Loop ↓ (fun tin i => exists (s x x' y : nat) r1 r2, 
+                        counterIs_rest tin[@Fin0] x x' r1 r2 /\
+                        tin[@Fin.FS i1] ≂ y /\
+                        tin[@Fin.FS i2] ≂ s /\
+                        Iter2_steps s x' y <= i).
+  Proof.
+    unfold Iter2_Loop. repeat TM_Correct.
+    { apply Iter2_Step_WRealise. }
+    { eapply Iter2_Step_Terminates. }
+    {
+      intros tin i (s&x&x'&y&r1&r2&HEncM&HEncN&HEncS&Hi).
+      destruct x'.
+      - eexists. repeat split.
+        + do 5 eexists. repeat split; cbn; eauto.
+        + intros b () tout H. cbn in H; destruct b; cbn in *; auto.
+          exfalso. specialize (H _ _ _ _ _ _ HEncM HEncN HEncS) as (n''&?&?). congruence.
+      - eexists. repeat split.
+        + do 5 eexists. repeat split; cbn -[add mult]; eauto.
+        + intros b () tout H. cbn -[add mult] in H; destruct b; cbn -[add mult] in *; auto.
+          * specialize (H _ _ _ _ _ _ HEncM HEncN HEncS) as (n''&H1&H2&H3&H4). inv H1. rewrite H3.
+            eexists. repeat split.
+            -- do 6 eexists. repeat split; eauto.
+            -- omega.
+          * specialize (H _ _ _ _ _ _ HEncM HEncN HEncS) as (H1&H2). inv H1.
+    }
+  Qed.
+
+
+  Lemma Iter2_Terminates' (s : nat) : 
+    projT1 (Iter2 s) ↓ (fun tin i => exists (x x' y : nat) r1 r2, 
+                            counterIs_rest tin[@Fin0] x x' r1 r2 /\
+                            tin[@Fin.FS i1] ≂ y /\
+                            17 + 4 * s + Iter2_steps s x' y <= i).
+  Proof.
+    eapply TerminatesIn_monotone.
+    {
+      unfold Iter2. repeat TM_Correct.
+      - eapply RealiseIn_WRealise. apply InitTape_Sem.
+      - eapply RealiseIn_terminatesIn. apply InitTape_Sem.
+      - apply Iter2_Loop_Terminates.
+    }
+    {
+      intros tin i. intros (x&x'&y&r1&r2&HEncX&HEncY&Hi).
+      exists (16 + 4 * s), (Iter2_steps s x' y). repeat split.
+      - omega.
+      - rewrite encode_nat_correct. cbn -[add mult]. rewrite app_length. rewrite repeat_length. cbn [length]. omega.
+      - intros tout (). cbn. intros (HEncS&HInject).
+        pose proof (HInject Fin0 ltac:(vector_not_in)) as L1. rewrite <- L1 in *. clear L1.
+        pose proof (HInject (Fin.FS i1) i1_notIn_i2) as L1. rewrite <- L1 in *. clear L1.
+        do 6 eexists. repeat split; eauto.
+    }
+  Qed.
+
+  Lemma Iter2_Terminates (s : nat) :
+    projT1 (Iter2 s) ↓ (fun tin k => exists x y, tin[@Fin0] ≂ x /\ tin[@Fin.FS i1] ≂ y /\ 17 + 4 * s + Iter2_steps s x y <= k).
+  Proof.
+    eapply TerminatesIn_monotone. eapply Iter2_Terminates'. intros tin i (x&y&HEncX&HEncY&Hi).
+    destruct HEncX as (r1&r2&HEncX % tape_encodes_l_natCounterIsM). do 5 eexists. repeat split; eauto; omega.
+  Qed.
 
 End Iter2.
 
@@ -648,6 +767,9 @@ Proof.
     + intros H. inv H.
     + apply Add_WRealise.
 Qed.
+
+
+(* TODO: Terminierung von Mult mit direkter Formel *)
 
 
 (* To define power, [Mult] has to reset the value [m], like [Add]; and the result must be copied to the tape of [n]. *)
