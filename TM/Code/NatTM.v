@@ -7,30 +7,25 @@ Require Import Coq.Init.Nat.
 
 
 
-(*
- * This definition of [tail_plus] differs from the definition of [tail_plus] in the standard library,
- * only that it is recursive over the second number.
- *)
-
-Fixpoint tail_plus (m n : nat) { struct n } : nat :=
-  match n with
-  | O => m
-  | S n' => tail_plus (S m) n'
+Fixpoint tail_plus (m n : nat) { struct m } : nat :=
+  match m with
+  | O => n
+  | S m' => tail_plus m' (S n)
   end.
 
 Lemma plus_tail_plus (m n : nat) :
   m + n = tail_plus m n.
 Proof.
-  revert m. induction n as [ | n' IH ]; intros.
+  revert n. induction m as [ | m' IH ]; intros.
   - cbn. omega.
   - cbn.  rewrite <- IH. omega.
 Qed.
 
 
-Fixpoint tail_mult_acc (a m n : nat) {struct n} :=
-  match n with
+Fixpoint tail_mult_acc (a m n : nat) {struct m} :=
+  match m with
   | O => a
-  | S n' => tail_mult_acc (a + m) m n'
+  | S m' => tail_mult_acc (a + n) m' n
   end.
 
 Definition tail_mult (m n : nat) := tail_mult_acc 0 m n.
@@ -38,9 +33,9 @@ Definition tail_mult (m n : nat) := tail_mult_acc 0 m n.
 Lemma mult_tail_mult_aux (a m n : nat) :
   a + m * n = tail_mult_acc a m n.
 Proof.
-  revert a m. induction n as [ | n' IH]; intros.
+  revert a n. induction m as [ | m' IH]; intros.
   - cbn. omega.
-  - cbn. rewrite <- IH. rewrite Nat.mul_succ_r. omega.
+  - cbn. rewrite <- IH. omega.
 Qed.
 
 Lemma mult_tail_mult (m n : nat) :
@@ -78,15 +73,15 @@ Section Computes2_Reset.
   Variable (X Y Z : Type) (encX : codeable sig X) (encY : codeable sig Y) (encZ : codeable sig Z).
 
   
-  (* The 0th tape is the first input and the output. The 1st tape is the second input and doesn't change. *)
+  (* The 0th tape is the first input and doesn't change. The 1st tape is the second input and the output. *)
   Definition Computes2_Reset_Rel (f : X -> Y -> Z) : Rel (tapes (sig^+) n) (unit * tapes (sig^+) n) :=
     ignoreParam (
         fun tin tout =>
           forall (x : X) (y : Y),
             tin[@i1] ≂ x ->
             tin[@i2] ≂ y ->
-            tout[@i1] ≂ f x y /\
-            tout[@i2] = tin[@i2]
+            tout[@i1] = tin[@i1] /\
+            tout[@i2] ≂ f x y
       ).
 
   Section Computes2_Reset_Ext.
@@ -121,24 +116,24 @@ Section Iter1.
   Variable f : nat -> nat.
 
   (* [x] is the accu. We iterate over [y]. *)
-  Fixpoint iter (x y : nat) {struct y} : nat :=
-    match y with
-    | 0 => x
-    | S y' => iter (f x) y'
+  Fixpoint iter (x y : nat) {struct x} : nat :=
+    match x with
+    | 0 => y
+    | S x' => iter x' (f y)
     end.
 
   Variable M1 : { M : mTM (bool^+) 1 & states M -> unit }.
   Hypothesis M1_computes : M1 ⊫ Computes_Rel Fin.F1 Fin.F1 _ _ f.
 
   Definition Iter_Step : { M : mTM _ 2 & states M -> bool * unit } :=
-    If (Inject CountDown [|Fin.FS Fin.F1|])
-       (Return (Inject M1 [|Fin.F1|]) (true, tt))
+    If (Inject CountDown [|Fin0|])
+       (Return (Inject M1 [|Fin1|]) (true, tt))
        (Nop _ _ (false, tt)).
 
   
   Definition Iter : { M : mTM _ 2 & states M -> unit } := WHILE Iter_Step.
 
-  Definition Iter_Reset := Iter;; Inject Reset [|Fin.FS Fin.F1|].
+  Definition Iter_Reset := Iter;; Inject Reset [|Fin0|].
   
 
   (** Correctness *)
@@ -147,17 +142,17 @@ Section Iter1.
   Definition Iter_Step_Rel : Rel (tapes (bool^+) 2) ((bool * unit) * tapes (bool^+) 2) :=
     ignoreSecond (
         if? (fun tin tout =>
-               forall m n n' r1 r2,
-                 tin[@Fin.F1] ≂ m ->
-                 counterIs_rest tin[@Fin.FS Fin.F1] n n' r1 r2 ->
-                 exists n'', n' = S n'' /\
-                        tout[@Fin.F1] ≂ f m /\
-                        counterIs_rest tout[@Fin.FS Fin.F1] n n'' r1 r2)
+               forall m m' n r1 r2,
+                 counterIs_rest tin[@Fin0] m m' r1 r2 ->
+                 tin[@Fin1] ≂ n ->
+                 exists m'', m' = S m'' /\
+                        counterIs_rest tout[@Fin0] m m'' r1 r2 /\
+                        tout[@Fin1] ≂ f n)
             ! (fun tin tout =>
-                 forall m n n' r1 r2,
-                   tin[@Fin.F1] ≂ m ->
-                   counterIs_rest tin[@Fin.FS Fin.F1] n n' r1 r2 ->
-                   n' = 0 /\ tout = tin)
+                 forall m m' n r1 r2,
+                   counterIs_rest tin[@Fin0] m m' r1 r2 ->
+                   tin[@Fin1] ≂ n ->
+                   m' = 0 /\ tout = tin)
       ).
 
 
@@ -170,8 +165,8 @@ Section Iter1.
     }
     {
       intros tin (yout, tout) H. TMSimp. destruct H; TMSimp inv_pair; clear_trivial_eqs.
-      - specialize (H _ _ _ _ H3) as (n''&->&H). eexists. repeat split; eauto.
-      - specialize (H _ _ _ _ H2) as (->&H). eexists. repeat split. repeat f_equal. auto.
+      - specialize (H _ _ _ _ H2) as (n''&->&H). eexists. repeat split; eauto.
+      - specialize (H _ _ _ _ H0) as (->&H). eexists. repeat split. repeat f_equal. auto.
     }
   Qed.
 
@@ -179,11 +174,11 @@ Section Iter1.
   Definition Iter_Rel : Rel (tapes bool^+ 2) (unit * tapes bool^+ 2) :=
     ignoreParam (
         fun tin tout =>
-          forall m n n' r1 r2,
-            tin[@Fin.F1] ≂ m ->
-            counterIs_rest tin[@Fin.FS Fin.F1] n n' r1 r2 ->
-            tout[@Fin.F1] ≂ iter m n' /\
-            counterIs_rest tout[@Fin.FS Fin.F1] n 0 r1 r2
+          forall m m' n r1 r2,
+            counterIs_rest tin[@Fin0] m m' r1 r2 ->
+            tin[@Fin1] ≂ n ->
+            counterIs_rest tout[@Fin0] m 0 r1 r2 /\
+            tout[@Fin1] ≂ iter m' n
       ).
 
 
@@ -203,22 +198,22 @@ Section Iter1.
     }
   Qed.
 
-  Lemma Iter_Computes : Iter ⊫ Computes2_Rel Fin.F1 (Fin.FS Fin.F1) Fin.F1 _ _ _ iter.
+  Lemma Iter_Computes : Iter ⊫ Computes2_Rel Fin0 Fin1 Fin1 _ _ _ iter.
   Proof.
     eapply WRealise_monotone. apply Iter_WRealise.
     intros tin ((), tout) H. intros m n HEncM HEncN. hnf in H.
-    destruct HEncN as (r1&r2&HEncN). apply tape_encodes_l_natCounterIsM in HEncN.
-    now specialize (H m n n r1 r2 HEncM HEncN) as (?&?).
+    destruct HEncM as (r1&r2&HEncM % tape_encodes_l_natCounterIsM).
+    now specialize (H m m n r1 r2 HEncM HEncN) as (?&?).
   Qed.
 
   Definition Iter_Reset_Rel : Rel (tapes bool^+ 2) (unit * tapes bool^+ 2) :=
     ignoreParam (
         fun tin tout =>
-          forall m n n' r1 r2,
-            tin[@Fin.F1] ≂ m ->
-            counterIs_rest tin[@Fin.FS Fin.F1] n n' r1 r2 ->
-            tout[@Fin.F1] ≂ iter m n' /\
-            counterIs_rest tout[@Fin.FS Fin.F1] n n r1 r2
+          forall m m' n r1 r2,
+            counterIs_rest tin[@Fin0] m m' r1 r2 ->
+            tin[@Fin1] ≂ n ->
+            counterIs_rest tout[@Fin0] m m r1 r2 /\
+            tout[@Fin1] ≂ iter m' n
       ).
 
   Lemma Iter_Reset_WRealise : Iter_Reset ⊫ Iter_Reset_Rel.
@@ -230,16 +225,16 @@ Section Iter1.
     - intros tin ((), tout) H. intros m n n' r1 r2 HEncM HEncN. hnf in H.
       destruct H as ((()&tmid) & H1 & H2 & H3). cbn in *. simpl_not_in. rewrite H3 in *.
       specialize (H1 _ _ _ _ _ HEncM HEncN) as (H1&H1'). rewrite <- H3 in *.
-      specialize (H2 _ _ _ _ H1'). split; auto.
+      specialize (H2 _ _ _ _ H1). split; auto.
   Qed.
 
-  Lemma Iter_Reset_Computes : Iter_Reset ⊫ Computes2_Reset_Rel Fin.F1 (Fin.FS Fin.F1) _ _ _ iter.
+  Lemma Iter_Reset_Computes : Iter_Reset ⊫ Computes2_Reset_Rel Fin0 Fin1 _ _ _ iter.
   Proof.
     eapply WRealise_monotone. eapply Iter_Reset_WRealise.
     intros tin ((), tout) H. intros m n HEncM HEncN. hnf in H.
-    destruct HEncN as (r1 & r2 & HEncN % tape_encodes_l_natCounterIsM).
+    destruct HEncM as (r1 & r2 & HEncM % tape_encodes_l_natCounterIsM).
     specialize (H _ _ _ _ _ HEncM HEncN) as (H1&H2). split; auto.
-    eapply counterIs_rest_injective in H2; eauto.
+    eapply counterIs_rest_injective in H1; eauto.
   Qed.
 
 
@@ -251,12 +246,12 @@ Section Iter1.
   Print Iter_Step.
 
   Lemma Iter_Step_Terminates :
-    projT1 Iter_Step ↓ (fun tin i => exists m n n' r1 r2,
-                            tin[@Fin.F1] ≂ m /\
-                            counterIs_rest tin[@(Fin.FS Fin.F1)] n n' r1 r2 /\
-                            match n' with
+    projT1 Iter_Step ↓ (fun tin i => exists m m' n r1 r2,
+                            counterIs_rest tin[@Fin0] m m' r1 r2 /\
+                            tin[@Fin1] ≂ n /\
+                            match m' with
                             | O => 4
-                            | S y' => 4 + M1_runtime m
+                            | S y' => 4 + M1_runtime n
                             end <= i).
   Proof.
     eapply TerminatesIn_monotone.
@@ -266,41 +261,41 @@ Section Iter1.
       - eapply RealiseIn_terminatesIn. apply CountDown_Sem.
     }
     {
-      intros tin i. intros (m&n&n'&r1&r2&HEncM&HEncN&Hi).
-      destruct n' as [ | n''] eqn:En'.
+      intros tin i. intros (m&m'&n&r1&r2&HEncM&HEncN&Hi).
+      destruct m' as [ | n''] eqn:En'.
       - exists 3, 0. repeat split.
         + omega.
         + cbn. omega.
         + intros tout b H. cbn in H. destruct b; cbn.
-          * destruct H as (H1&H2). simpl_not_in. rewrite <- H2 in *. specialize (H1 _ _ _ _ HEncN) as (?&?&_). exfalso; congruence.
+          * destruct H as (H1&H2). simpl_not_in. rewrite <- H2 in *. specialize (H1 _ _ _ _ HEncM) as (?&?&_). exfalso; congruence.
           * omega.
-      - exists 3, (M1_runtime m). repeat split.
+      - exists 3, (M1_runtime n). repeat split.
         + omega.
         + cbn. omega.
         + intros tout b H. cbn in H. destruct b; cbn.
-          * destruct H as (H1&H2). simpl_not_in. rewrite <- H2 in *. specialize (H1 _ _ _ _ HEncN) as (?&?&?H); inv H. eauto.
+          * destruct H as (H1&H2). simpl_not_in. rewrite <- H2 in *. specialize (H1 _ _ _ _ HEncM) as (?&?&?H); inv H. eauto.
           * omega.
     }
   Qed.
   
-  Fixpoint Iter_steps (m n : nat) { struct n } : nat :=
-    match n with
+  Fixpoint Iter_steps (m n : nat) { struct m } : nat :=
+    match m with
     | O => 4
-    | S n' => 5 + M1_runtime m + Iter_steps (f m) n'
+    | S m' => 5 + M1_runtime n + Iter_steps m' (f n)
     end.
 
   Lemma Iter_steps_ge4 (m n : nat) :
     4 <= Iter_steps m n.
-  Proof. destruct n; cbn; omega. Qed.
+  Proof. destruct m; cbn; omega. Qed.
 
 
   Lemma Iter_steps_homogene (m n k : nat) :
     (forall x, M1_runtime x <= k) ->
-    Iter_steps m n <= 4 + (5 + k) * n.
+    Iter_steps m n <= 4 + (5 + k) * m.
   Proof.
-    revert m. induction n as [ | n' IH]; intros; cbn -[add mult] in *.
+    revert n. induction m as [ | m' IH]; intros; cbn -[add mult] in *.
     - omega.
-    - specialize (IH (f m) H). pose proof (H (f m)) as H1. pose proof (H m) as H2.
+    - specialize (IH (f n) H). pose proof (H (f n)) as H1. pose proof (H n) as H2.
       rewrite !Nat.mul_succ_r.
       rewrite !Nat.mul_add_distr_r in *.
       rewrite !Nat.add_assoc in *.
@@ -308,17 +303,17 @@ Section Iter1.
   Qed.
 
   Lemma Iter_Terminates' :
-    projT1 Iter ↓ (fun tin i => exists m n n' r1 r2, 
-                       tin[@Fin.F1] ≂ m /\
-                       counterIs_rest tin[@Fin.FS Fin.F1] n n' r1 r2 /\
-                       Iter_steps m n' <= i).
+    projT1 Iter ↓ (fun tin i => exists m m' n r1 r2, 
+                       counterIs_rest tin[@Fin0] m m' r1 r2 /\
+                       tin[@Fin1] ≂ n /\
+                       Iter_steps m' n <= i).
   Proof.
     unfold Iter. repeat TM_Correct.
     { apply Iter_Step_WRealise. }
     { eapply Iter_Step_Terminates. }
     {
-      intros tin i (m&n&n'&r1&r2&HEncM&HEncN&Hi).
-      destruct n'.
+      intros tin i (m&m'&n&r1&r2&HEncM&HEncN&Hi).
+      destruct m'.
       - eexists. repeat split.
         + do 5 eexists. repeat split; cbn; eauto.
         + intros b () tout H. cbn in H; destruct b; cbn in *; auto.
@@ -335,45 +330,45 @@ Section Iter1.
   Qed.
 
   Lemma Iter_Terminates :
-    projT1 Iter ↓ (fun tin k => exists x y, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ Iter_steps x y <= k).
+    projT1 Iter ↓ (fun tin k => exists x y, tin[@Fin0] ≂ x /\ tin[@Fin1] ≂ y /\ Iter_steps x y <= k).
   Proof.
     eapply TerminatesIn_monotone. eapply Iter_Terminates'. intros tin i (m&n&HEncM&HEncN&Hi).
-    destruct HEncN as (r1&r2&HEncN % tape_encodes_l_natCounterIsM). do 5 eexists. repeat split; eauto; omega.
+    destruct HEncM as (r1&r2&HEncM % tape_encodes_l_natCounterIsM). do 5 eexists. repeat split; eauto; omega.
   Qed.
 
 
   Lemma Iter_Reset_Terminates' :
-    projT1 Iter_Reset ↓ (fun tin i => exists m n n' r1 r2, 
-                             tin[@Fin.F1] ≂ m /\
-                             counterIs_rest tin[@Fin.FS Fin.F1] n n' r1 r2 /\
-                             11 + Iter_steps m n' + 4 * n <= i).
+    projT1 Iter_Reset ↓ (fun tin i => exists m m' n r1 r2, 
+                             counterIs_rest tin[@Fin0] m m' r1 r2 /\
+                             tin[@Fin1] ≂ n /\
+                             11 + Iter_steps m' n + 4 * m <= i).
   Proof.
     eapply TerminatesIn_monotone.
     - unfold Iter_Reset. repeat TM_Correct.
       + apply Iter_WRealise.
       + apply Iter_Terminates'.
       + apply Reset_Terminates.
-    - intros tin i (m&n&n'&r1&r2&HEncM&HEncN&Hi).
-      exists (Iter_steps m n'), (10 + 4 * n). repeat split.
+    - intros tin i (m&m'&n&r1&r2&HEncM&HEncN&Hi).
+      exists (Iter_steps m' n), (10 + 4 * m). repeat split.
       + rewrite <- Hi. clear_all. apply Nat.eq_le_incl. omega.
       + do 5 eexists. repeat split. eauto. eauto. omega.
       + intros tout () H. cbn -[plus mult]. hnf in H. specialize (H _ _ _ _ _ HEncM HEncN) as (H1&H2).
-        destruct H2 as (k&->&H2&H2'). do 5 eexists. repeat split. eauto. eauto. omega.
+        destruct H1 as (k&->&H1&H1'). do 5 eexists. repeat split. eauto. eauto. omega.
   Qed.
 
   Lemma Iter_Reset_Terminates :
-    projT1 Iter_Reset ↓ (fun tin i => exists m n, tin[@Fin.F1] ≂ m /\ tin[@Fin.FS Fin.F1] ≂ n /\ 11 + Iter_steps m n + 4 * n <= i).
+    projT1 Iter_Reset ↓ (fun tin i => exists m n, tin[@Fin.F1] ≂ m /\ tin[@Fin.FS Fin.F1] ≂ n /\ 11 + Iter_steps m n + 4 * m <= i).
   Proof.
     eapply TerminatesIn_monotone. eapply Iter_Reset_Terminates'. intros tin i (m&n&HEncM&HEncN&Hi).
-    destruct HEncN as (r1&r2&HEncN % tape_encodes_l_natCounterIsM). do 5 eexists. repeat split; eauto; omega.
+    destruct HEncM as (r1&r2&HEncM % tape_encodes_l_natCounterIsM). do 5 eexists. repeat split; eauto; omega.
   Qed.
 
 End Iter1.
 
 
-Lemma add_steps : forall m n, Iter_steps S (fun _ => 5) m n = 4 + 10 * n.
+Lemma add_steps : forall m n, Iter_steps S (fun _ => 5) m n = 4 + 10 * m.
 Proof.
-  intros m n. revert m. induction n as [ | n' IH]; intros; cbn -[plus mult] in *.
+  intros m n. revert n. induction m as [ | m' IH]; intros; cbn -[plus mult] in *.
   - omega.
   - rewrite IH. omega.
 Qed.
@@ -383,12 +378,12 @@ Definition Add := Iter_Reset Constr_S.
 Lemma tail_add_iter (m n : nat) :
   tail_plus m n = iter S m n.
 Proof.
-  revert m. induction n; intros; cbn in *.
-  omega. rewrite IHn. omega.
+  revert n. induction m; intros; cbn in *.
+  omega. rewrite IHm. omega.
 Qed.
 
 Lemma Add_WRealise' :
-  Add ⊫ Computes2_Reset_Rel (Fin.F1) (Fin.FS Fin.F1) _ _ _ tail_plus.
+  Add ⊫ Computes2_Reset_Rel Fin0 Fin1 _ _ _ tail_plus.
 Proof.
   eapply Computes2_Reset_Ext_WRealise.
   - refine tail_add_iter.
@@ -399,7 +394,7 @@ Proof.
 Qed.
 
 Lemma Add_WRealise :
-  Add ⊫ Computes2_Reset_Rel (Fin.F1) (Fin.FS Fin.F1) _ _ _ plus.
+  Add ⊫ Computes2_Reset_Rel Fin0 Fin1 _ _ _ plus.
 Proof.
   eapply Computes2_Reset_Ext_WRealise.
   - apply plus_tail_plus.
@@ -408,7 +403,7 @@ Qed.
 
 
 Lemma Add_Terminates :
-  projT1 Add ↓ (fun tin k => exists x y, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ 15 + 14 * y <= k).
+  projT1 Add ↓ (fun tin i => exists x y, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ 15 + 14 * x <= i).
 Proof.
   eapply TerminatesIn_monotone.
   - unfold Add. apply Iter_Reset_Terminates.
@@ -429,15 +424,15 @@ Section Test.
   Let t3 := midtape [inl START] (inr true) (map inr [true; true; false] ++ [inl STOP]).
   Let t4 := midtape [inl START] (inr true) (map inr [true; true; true; false] ++ [inl STOP]).
 
-  Let step_count n := 6 + 12 * n.
+  Let add_step_count m := 15 + 14 * m.
 
-  Compute execTM_p Add (step_count 0) [|t0; t0|].
-  Compute execTM_p Add (step_count 4) [|t0; t4|].
-  Compute execTM_p Add (step_count 3) [|t1; t3|].
-  Compute execTM_p Add (step_count 3) [|t2; t3|].
-  Compute execTM_p Add (step_count 3) [|t3; t3|].
-  Compute execTM_p Add (step_count 4) [|t3; t4|].
-  Compute execTM_p Add (step_count 0) [|t4; t0|].
+  Compute execTM_p Add (add_step_count 0) [|t0; t0|].
+  Compute execTM_p Add (add_step_count 0) [|t0; t4|].
+  Compute execTM_p Add (add_step_count 1) [|t1; t3|].
+  Compute execTM_p Add (add_step_count 2) [|t2; t3|].
+  Compute execTM_p Add (add_step_count 3) [|t3; t3|].
+  Compute execTM_p Add (add_step_count 3) [|t3; t4|].
+  Compute execTM_p Add (add_step_count 4) [|t4; t0|].
 End Test.
 *)
 
