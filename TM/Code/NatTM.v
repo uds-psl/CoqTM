@@ -399,10 +399,12 @@ Proof.
 Qed.
 
 
+Definition add_step_count x := 15 + 14 * x.
+
 Lemma Add_Terminates :
-  projT1 Add ↓ (fun tin i => exists x y, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ 15 + 14 * x <= i).
+  projT1 Add ↓ (fun tin i => exists x y, tin[@Fin.F1] ≂ x /\ tin[@Fin.FS Fin.F1] ≂ y /\ add_step_count x <= i).
 Proof.
-  eapply TerminatesIn_monotone.
+  unfold add_step_count. eapply TerminatesIn_monotone.
   - unfold Add. apply Iter_Reset_Terminates.
     + eapply RealiseIn_WRealise. apply Constr_S_Sem.
     + eapply TerminatesIn_monotone. eapply RealiseIn_terminatesIn. apply Constr_S_Sem.
@@ -420,8 +422,6 @@ Section Test.
   Let t2 := midtape [inl START] (inr true) (map inr [true; false] ++ [inl STOP]).
   Let t3 := midtape [inl START] (inr true) (map inr [true; true; false] ++ [inl STOP]).
   Let t4 := midtape [inl START] (inr true) (map inr [true; true; true; false] ++ [inl STOP]).
-
-  Let add_step_count m := 15 + 14 * m.
 
   Compute execTM_p Add (add_step_count 0) [|t0; t0|].
   Compute execTM_p Add (add_step_count 0) [|t0; t4|].
@@ -676,6 +676,31 @@ Section Iter2.
     4 <= Iter2_steps a x y.
   Proof. destruct x; cbn; omega. Qed.
 
+  Lemma Iter2_steps_homogene (a x y k : nat) :
+    (forall z, M1_runtime y z <= k) ->
+    Iter2_steps a x y <= 4 + (5 + k) * x.
+  Proof.
+    revert a y. induction x as [ | x' IH]; intros; cbn -[add mult] in *.
+    - omega.
+    - specialize (IH (f y a) y H). pose proof (H (f y a)) as H1. pose proof (H a) as H2.
+      rewrite !Nat.mul_succ_r.
+      rewrite !Nat.mul_add_distr_r in *.
+      rewrite !Nat.add_assoc in *.
+      omega. (* Oh [omega], my dear [omega]! *)
+  Qed.
+
+  Lemma Iter2_steps_homogene' (a x y k : nat) :
+    (forall z, M1_runtime y z = k) ->
+    Iter2_steps a x y = 4 + (5 + k) * x.
+  Proof.
+    revert a y. induction x as [ | x' IH]; intros; cbn -[add mult] in *.
+    - omega.
+    - specialize (IH (f y a) y H). pose proof (H (f y a)) as H1. pose proof (H a) as H2.
+      rewrite !Nat.mul_succ_r.
+      rewrite !Nat.mul_add_distr_r in *.
+      rewrite !Nat.add_assoc in *.
+      omega. (* Oh [omega], my dear [omega]! *)
+  Qed.
 
   Lemma Iter2_Loop_Terminates :
     projT1 Iter2_Loop ↓ (fun tin i => exists (s x x' y : nat) r1 r2, 
@@ -769,7 +794,31 @@ Proof.
 Qed.
 
 
-(* TODO: Terminierung von Mult mit direkter Formel *)
+Definition mult_step_count x y := 21 + (20 + 14 * y) * x.
+
+Lemma mult_steps x y :
+  17 + 4 * 0 + Iter2_steps add (fun x0 _ : nat => add_step_count x0) 0 x y = mult_step_count x y.
+Proof.
+  rewrite Iter2_steps_homogene' with (k := 15 + 14 * y); swap 1 2.
+  - intros. unfold add_step_count. trivial.
+  - rewrite !Nat.add_assoc. cbn. omega. (* Thanks, [omega] ! *)
+Qed.
+
+
+Lemma Mult_Terminates :
+  projT1 Mult ↓ (fun tin i => exists x y, tin[@Fin0] ≂ x /\ tin[@Fin1] ≂ y /\ mult_step_count x y <= i).
+Proof.
+  eapply TerminatesIn_monotone.
+  - unfold Mult. eapply Iter2_Terminates with (i1 := Fin0).
+    + congruence.
+    + eapply Add_WRealise.
+    + eapply Add_Terminates.
+  - intros tin i (x&y&HEncX&HEncY&Hk). do 2 eexists. split. eauto. split. eauto. rewrite <- Hk. apply Nat.eq_le_incl.
+    apply mult_steps.
+Qed.
+
+
+
 
 
 (* To define power, [Mult] has to reset the value [m], like [Add]; and the result must be copied to the tape of [n]. *)
