@@ -149,7 +149,7 @@
       \MS{wr\_mv}  & \from \Tape \to (\Option(\Sigma) \times \Move) \to \Tape \\
       \MS{current} & \from \Tape \to \Option(\Sigma)
     \end{alignat*}
-    we the \textbf{step function} $\MS{step}_M \from \MS{Conf}_M \to \MS{Conf}_M$:
+    we define the \textbf{step function} $\MS{step}_M \from \MS{Conf}_M \to \MS{Conf}_M$:
     \begin{alignat*}{2}
       \MS{step}_M &~(\MS{tapes}, q) &~:=~& \mlet{(q', \MS{actions}) := \gamma_M(q, \map~\MS{current}~\MS{tapes})}{ \\
                   &                 &~  ~& (q', \map_2~\MS{wr\_mv}~\MS{tapes}~\MS{actions})}
@@ -190,8 +190,8 @@
     Let $R \subseteq (\Tape^n) \times (F \times \Tape^n)$ and $f \from Q_M \to F$, for a finite $F$.\\
     \begin{multline*}
       \mathbf{M \VDash_f R} :=
-      \forall (t_{in} : \Tape^n)~(n:\Nat)~(q_{out}:Q_M)~(t_{out} : \Tape^n). \\
-      M(t_{in}) \triangleright^n (q_{out}, t_{out}) \rightarrow
+      \forall (t_{in} : \Tape^n)~(i:\Nat)~(q_{out}:Q_M)~(t_{out} : \Tape^n). \\
+      M(t_{in}) \triangleright^i (q_{out}, t_{out}) \rightarrow
       \left(t_{in}, \left(f(q_{out}), t_{out} \right) \right) \in R.
     \end{multline*}
     Then we say that $M$ \textbf{realises} $R$.
@@ -206,8 +206,8 @@
     Let $T \subseteq (\Tape^n) \times \Nat$.
     \[
       \mathbf{M \downarrow T} :=
-      \forall (t_{in},~n) \in T.~
-      \exists c_{out},~M(t_{in}) \triangleright^n c_{out}
+      \forall (t_{in},~i) \in T.~
+      \exists c_{out},~M(t_{in}) \triangleright^i c_{out}
     \]
     We say that $M$ \textbf{terminates in} $T$.
   \end{definition}
