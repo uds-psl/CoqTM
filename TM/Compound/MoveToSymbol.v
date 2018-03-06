@@ -47,7 +47,7 @@ Section move_to_symbol.
 
   Lemma M1_Rel_functional : functional M1_Rel.
   Proof.
-    unfold M1_Rel. repeat intro. TMCrush; auto.
+    unfold M1_Rel. repeat intro. TMCrush destruct_tapes; TMSolve 1.
   Qed.
 
   Lemma M1_RealiseIn :

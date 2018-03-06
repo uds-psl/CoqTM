@@ -72,7 +72,6 @@ Tactic Notation "TMSimp" tactic(T) :=
            cbn in *;
            intros;
            subst;
-           destruct_tapes;
            try T;
            match goal with
            | [ H : _ ::: _ = [||]  |- _ ] => inv H
@@ -99,6 +98,10 @@ Tactic Notation "TMSimp" tactic(T) :=
            end
          ).
 
+
+Tactic Notation "TMSimp" := TMSimp idtac.
+
+
 Tactic Notation "TMBranche" :=
   (
     match goal with
@@ -117,8 +120,6 @@ Tactic Notation "TMBranche" :=
     | [ H : _ \/ _ |- _] => destruct H
     end
   ).
-
-Tactic Notation "TMSimp" := TMSimp idtac.
 
 Tactic Notation "TMSolve" int_or_var(k) :=
   repeat progress first [

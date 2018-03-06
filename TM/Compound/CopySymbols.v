@@ -79,7 +79,7 @@ End Test.
     ).
 
   Lemma M1_Rel_functional : functional M1_Rel.
-  Proof. hnf. unfold M1_Rel, M1_Fun. TMCrush ( cbn [Vector.nth] in * ); TMSolve 1. Qed.
+  Proof. hnf. unfold M1_Rel, M1_Fun. TMCrush destruct_tapes; TMSolve 1. Qed.
   
   Lemma M1_RealiseIn :
     M1 ⊨c(7) M1_Rel.
@@ -98,7 +98,7 @@ End Test.
       (cbn; omega).
     }
     {
-      intros tin (yout, tout) H. TMCrush; TMSolve 6.
+      intros tin (yout, tout) H. TMCrush destruct_tapes; TMSolve 6.
     }
   Qed.
 
@@ -201,11 +201,11 @@ End Test.
       hnf. intros tin (y1&tout) H. hnf in *. destruct H as (t1&H&H2). hnf in *.
       induction H as [x | x y z IH1 _ IH2].
       {
-        TMCrush idtac; TMSolve 6.
+        TMCrush destruct_tapes; TMSolve 6.
         all: cbn in *; rewrite CopySymbols_Fun_equation in *; auto. inv H0. cbn. now rewrite E.
       }
       {
-        TMSimp. destruct h3; cbn in *; TMSimp repeat inv_pair.
+        TMSimp destruct_tapes. destruct h3; cbn in *; TMSimp repeat inv_pair.
         - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
         - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
         - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
