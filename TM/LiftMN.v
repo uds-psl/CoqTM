@@ -473,6 +473,78 @@ End LiftNM.
 Arguments Inject : simpl never.
 
 
+
+(* Indexes vector for adding a fixed number [m] of additional tapes at the begin. *)
+Section AddTapes.
+
+  Variable n : nat.
+
+  Eval simpl in Fin.L 4 (Fin1 : Fin.t 10).
+  Check @Fin.L.
+  Search Fin.L.
+  Eval simpl in Fin.R 4 (Fin1 : Fin.t 10).
+  Check @Fin.R.
+  Search Fin.R.
+
+  Lemma Fin_L_injective (m : nat) (i1 i2 : Fin.t n) :
+    Fin.L m i1 = Fin.L m i2 -> i1 = i2.
+  Proof.
+    induction n as [ | n' IH].
+    - dependent destruct i1.
+    - dependent destruct i1; dependent destruct i2; cbn in *; auto; try congruence.
+      apply Fin.FS_inj in H. now apply IH in H as ->.
+  Qed.
+
+  Lemma Fin_R_injective (m : nat) (i1 i2 : Fin.t n) :
+    Fin.R m i1 = Fin.R m i2 -> i1 = i2.
+  Proof.
+    induction m as [ | n' IH]; cbn.
+    - auto.
+    - intros H % Fin.FS_inj. auto.
+  Qed.
+
+
+  Definition add_tapes (m : nat) : Vector.t (Fin.t (m + n)) n :=
+    Vector.map (fun k => Fin.R m k) (Fin_initVect _).
+
+
+  Lemma add_tapes_dupfree (m : nat) : dupfree (add_tapes m).
+  Proof.
+    apply dupfree_map_injective.
+    - apply Fin_R_injective.
+    - apply Fin_initVect_dupfree.
+  Qed.
+
+  Lemma add_tapes_reorder_nth (X : Type) (m : nat) (ts : Vector.t X (m + n)) k :
+    (reorder (add_tapes m) ts)[@k] = ts[@Fin.R m k].
+  Proof.
+    unfold add_tapes. unfold reorder. erewrite !VectorSpec.nth_map; eauto.
+    cbn. now rewrite Fin_initVect_nth.
+  Qed.
+  
+
+  Definition app_tapes (m : nat) : Vector.t (Fin.t (n + m)) n :=
+    Vector.map (Fin.L _) (Fin_initVect _).
+
+  Lemma app_tapes_dupfree (m : nat) : dupfree (app_tapes m).
+  Proof.
+    apply dupfree_map_injective.
+    - apply Fin_L_injective.
+    - apply Fin_initVect_dupfree.
+  Qed.
+
+  Lemma app_tapes_reorder_nth (X : Type) (m : nat) (ts : Vector.t X (n + m)) k :
+    (reorder (app_tapes m) ts)[@k] = ts[@Fin.L m k].
+  Proof.
+    unfold app_tapes. unfold reorder. erewrite !VectorSpec.nth_map; eauto.
+    cbn. now rewrite Fin_initVect_nth.
+  Qed.
+
+
+End AddTapes.
+
+
+
 (** * Tactical support *)
 
 
@@ -489,7 +561,9 @@ Ltac smpl_dupfree :=
   match goal with
   | [ |- dupfree [|Fin.F1 |] ] => apply smpl_dupfree_helper1
   | [ |- dupfree [|Fin.FS |] ] => apply smpl_dupfree_helper2
-  | [ |- dupfree _ ] => now vector_dupfree
+  | [ |- dupfree (add_tapes _ _)] => apply add_tapes_dupfree
+  | [ |- dupfree (app_tapes _ _)] => apply app_tapes_dupfree
+  | [ |- dupfree _ ] => now vector_dupfree (* fallback tactic *)
   end.
 
 
@@ -503,18 +577,116 @@ Smpl Add smpl_TM_LiftN : TM_Correct.
 
 
 Lemma simpl_not_in_helper1 :
-  not_indexes (n := 2) [|Fin.F1|] (Fin.FS Fin.F1).
+  not_indexes (n := 2) [|Fin0|] Fin1.
 Proof. vector_not_in. Qed.
 
 Lemma simpl_not_in_helper2 :
-  not_indexes (n := 2) [|Fin.FS Fin.F1|] (Fin.F1).
+  not_indexes (n := 2) [|Fin1|] Fin0.
 Proof. vector_not_in. Qed.
 
 
-Ltac simpl_not_in :=
-  match goal with
-  | [ H: forall i : Fin.t 2, not_indexes [|Fin.F1|] i -> _ |- _] =>
-    specialize (H (Fin.FS Fin.F1) simpl_not_in_helper1)
-  | [ H: forall i : Fin.t 2, not_indexes [|Fin.FS Fin.F1|] i -> _ |- _] =>
-    specialize (H Fin.F1          simpl_not_in_helper2)
+Ltac is_nat n :=
+  match n with
+  | O => idtac
+  | S ?n => idtac
+  | _ => fail 1 "Not a number"
   end.
+
+(*
+Eval cbn in ltac:(is_nat 42; idtac "yes!").
+*)
+
+Ltac do_n_times n t :=
+  match n with
+  | O => idtac
+  | (S ?n') =>
+    t n';
+    do_n_times n' t
+  end.
+
+(*
+Eval cbn in ltac:(do_n_times 42 ltac:(fun a => idtac a)).
+*)
+
+
+
+(* Support for [app_tapes] *)
+
+(*
+ * The tactic [simpl_not_in_add_tapes] specialises hypothesises of the form 
+ * [H : forall i : Fin.t _, not_indexes (add_tapes _ m) i -> _]
+ * with [i := Fin0], ..., [i := Fin(m-1)] and proves [not_index (add_tapes _ m) i.
+ *)
+
+Ltac simpl_not_in_add_tapes_step H m' :=
+  let H' := fresh H in
+  unshelve epose proof (H ltac:(getFin m') _) as H';
+  [ hnf; unfold add_tapes, Fin_initVect; cbn [tabulate Vector.map Fin.L Fin.R]; vector_not_in
+  | cbn [Fin.L Fin.R] in H'
+  ].
+ 
+Ltac simpl_not_in_add_tapes_loop H m :=
+  do_n_times m ltac:(simpl_not_in_add_tapes_step H); clear H.
+
+Ltac simpl_not_in_add_tapes :=
+  repeat match goal with
+         | [ H : forall i : Fin.t _, not_indexes (add_tapes _ ?m) i -> _ |- _] =>
+           simpl_not_in_add_tapes_loop H m
+         | [ H : context [ (reorder (add_tapes _ ?m) _)[@_]] |- _ ] =>
+           rewrite ! (add_tapes_reorder_nth (m := m)) in H; cbn in H
+         | [ |- context [ (reorder (add_tapes _ ?m) _)[@_]] ] =>
+           rewrite ! (add_tapes_reorder_nth (m := m)); cbn
+         end.
+
+(* Test *)
+Goal True.
+  assert (forall i : Fin.t 3, not_indexes (add_tapes _ 2) i -> i = i) by firstorder.
+  simpl_not_in_add_tapes. (* :-) *)
+Abort.
+
+Goal True.
+  assert (n : nat) by constructor.
+  assert (forall i : Fin.t (S n), not_indexes (add_tapes n 1) i -> True) by firstorder.
+  simpl_not_in_add_tapes.
+Abort.
+
+
+(* Support for [app_tapes] *)
+
+
+Ltac simpl_not_in_app_tapes_step H n m' :=
+  let H' := fresh H in
+  unshelve epose proof (H (Fin.R n ltac:(getFin m')) _) as H';
+  [ hnf; unfold app_tapes, Fin_initVect; cbn [tabulate Vector.map Fin.L Fin.R]; vector_not_in
+  | cbn [Fin.L Fin.R] in H'
+  ].
+
+Ltac simpl_not_in_app_tapes_loop H n m :=
+  do_n_times m ltac:(fun m' => simpl_not_in_app_tapes_step H n m'); clear H.
+
+Ltac simpl_not_in_app_tapes :=
+  repeat match goal with
+         | [ H : forall i : Fin.t _, not_indexes (app_tapes ?n ?m) i -> _ |- _] =>
+           simpl_not_in_app_tapes_loop H n m
+         | [ H : context [ (reorder (app_tapes ?n ?m) _)[@_]] |- _ ] =>
+           rewrite ! (add_tapes_reorder_nth (n := n) (m := m)) in H; cbn in H
+         | [ |- context [ (reorder (app_tapes ?n ?m) _)[@_]] ] =>
+           rewrite ! (add_tapes_reorder_nth (n := n) (m := m)); cbn
+         end.
+
+Goal True.
+  assert (forall i : Fin.t 10, not_indexes (app_tapes 8 _) i -> i = i) as HInj by firstorder.
+  simpl_not_in_app_tapes.
+Abort.
+
+
+(* TODO: generalise this tactic for arbitrary index vectors, like in [simpl_not_in_add_tapes] *)
+Ltac simpl_not_in :=
+  repeat match goal with
+         | [ H: forall i : Fin.t 2, not_indexes [|Fin0|] i -> _ |- _] =>
+           specialize (H Fin1 simpl_not_in_helper1)
+         | [ H: forall i : Fin.t 2, not_indexes [|Fin1|] i -> _ |- _] =>
+           specialize (H Fin0  simpl_not_in_helper2)
+         | _ => progress simpl_not_in_add_tapes
+         | _ => progress simpl_not_in_app_tapes
+         end.

@@ -65,7 +65,7 @@ Tactic Notation "TMSimp" tactic(T) :=
   repeat progress
          (
            try destruct_param_tape_pair; destruct_unit;
-           repeat simpl_not_in;
+           simpl_not_in;
            try match goal with
                | [ H : FinType _ |- _] => cbn in H
                end;
