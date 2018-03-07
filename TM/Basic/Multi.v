@@ -121,7 +121,7 @@ Section ReadChar.
     eapply VectorSpec.eq_nth_iff. intros p ? <-.
     decide (p = k) as [->|d].
     - now inv H0.
-    - eapply H2. vector_not_in. tauto.
+    - eapply H2. vector_not_in.
   Qed.
 
 End ReadChar.
