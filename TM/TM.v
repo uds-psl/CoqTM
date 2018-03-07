@@ -861,3 +861,30 @@ Definition execTM (sig : finType) (n : nat) (M : mTM sig n) (steps : nat) (tapes
 
 Definition execTM_p (sig : finType) (n : nat) (F : finType) (pM : { M : mTM sig n & states M -> F }) (steps : nat) (tapes : tapes sig n) :=
   option_map (fun x => (ctapes x, projT2 pM (cstate x))) (loopM steps (initc (projT1 pM) tapes)).
+
+
+
+
+
+(* An invariant for a tape that it is on the left before and after the execution of a machine *)
+Section InternalTape.
+
+  Variable sig : finType.
+
+  Definition isLeftMost (t : tape sig) :=
+    exists c rs, t = midtape nil c rs.
+
+  Lemma isLeftMost_iff_tape_local_cons (t : tape sig) :
+    isLeftMost t <-> (left t = nil /\ exists c rs, tape_local t = c :: rs).
+  Proof.
+    split.
+    - intros (c&rs&->). cbn. eauto.
+    - intros (H & c & rs & -> % midtape_tape_local_cons). rewrite H. hnf. eauto.
+  Qed.
+
+  Variable n : nat.
+
+  Definition InternalTape_Rel (i : Fin.t n) : Rel (tapes sig n) (tapes sig n) :=
+    fun tin tout => isLeftMost tin[@i] -> isLeftMost tout[@i].
+  
+End InternalTape.

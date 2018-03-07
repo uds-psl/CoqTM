@@ -56,17 +56,13 @@ Section SurjectInject.
   
 End SurjectInject.
 
-Lemma skipn_app (X : Type) (xs ys : list X) (n : nat) :
-  n = (| xs |) ->
-  skipn n (xs ++ ys) = ys.
-Proof.
-  intros ->. revert ys. induction xs; cbn; auto.
-Qed.
-  
+
 Corollary map_length_eq : forall (A B C : Type) (f : A -> C) (g : B -> C) (l1 : list A) (l2 : list B), map f l1 = map g l2 -> |l1| = |l2|.
 Proof.
   intros. erewrite <- map_length. symmetry. erewrite <- map_length. symmetry. rewrite H. reflexivity.
 Qed.
+
+
 
 Section MapCode.
   Variable sig tau : finType.
@@ -135,7 +131,7 @@ Section MapCode.
     
     exists (skipn 1 (left t)). exists (skipn (S (| (encode x) |)) (tape_local t)). hnf. cbn -[skipn]. split; [clear H2 | clear H1].
     - apply surject_cons in H1 as (s1&s2&H1&H2&H3). cbn in *. unfold surjectSymbols in *. unfold surject in *. cbn in *.
-      unfold retract_sum_g in H2. destruct s1. rewrite H1. congruence. destruct (g e); inv H2. 
+      unfold retract_sum_g in H2. destruct s1. rewrite H1. cbn. congruence. destruct (g e); inv H2. 
     - apply surject_app in H2 as (str1&str2&->&L1&L2). apply surject_cons in L2 as (t'&str3&->&L3&L4).
       rewrite map_map.
       unfold surject, retract_sum_g in L3. destruct t'; swap 1 2. destruct (g e); inv L3. inversion L3. rewrite H0 in *. clear H0 L3.

@@ -599,7 +599,7 @@ Section InitTape.
       eapply RealiseIn_monotone.
       - eapply Write_string_Sem.
       - simpl_list. omega.
-      - intros tin (()&tout); TMSimp; subst. clear H0. rename h0 into t. apply Tape_Write_String_L_right.
+      - intros tin (()&tout); TMSimp; subst. clear H0. apply Tape_Write_String_L_right.
     Qed.
 
   End Write_String_Rev.
@@ -623,9 +623,10 @@ Section InitTape.
     - eapply Seq_RealiseIn. eapply WriteStr_Rev_Sem.
       eapply Seq_RealiseIn; eapply Move_Sem.
     - cbn. simpl_list. cbn. omega.
-    - intros tin (()&tout). hnf. TMSimp; subst.
-      destruct h1; cbn in *; inv H; cbn.
-      + destruct (encode x) eqn:E; cbn; do 2 eexists; split; hnf; cbn; try rewrite E; simpl_list; cbn; eauto.
+    - intros tin (()&tout). hnf. TMSimp; clear_trivial_eqs; subst.
+      destruct_tapes; cbn in *. subst.
+      destruct h0; cbn in *; inv H; cbn.
+      + simpl_tape. destruct (encode x) eqn:E; cbn; do 2 eexists; split; hnf; cbn; try rewrite E; simpl_list; cbn; eauto.
       + destruct (encode x) eqn:E; cbn; do 2 eexists; split; hnf; cbn; try rewrite E; simpl_list; cbn; eauto.
   Qed.
 

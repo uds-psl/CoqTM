@@ -15,55 +15,6 @@ Require Import TM.LiftMN.
 
 (** Basic stuff that has something to do with the encoding of natural numbers *)
 
-Lemma app_comm_cons' (A : Type) (x y : list A) (a : A) :
-  x ++ a :: y = (x ++ [a]) ++ y.
-Proof. rewrite <- app_assoc. cbn. trivial. Qed.
-
-
-Lemma map_repeat (X Y : Type) (f : X -> Y) (n : nat) (a : X) :
-  map f (repeat a n) = repeat (f a) n.
-Proof. induction n; cbn in *; f_equal; auto. Qed.
-
-Lemma repeat_add_app (X : Type) (m n : nat) (a : X) :
-  repeat a (m + n) = repeat a m ++ repeat a n.
-Proof. induction m; cbn; f_equal; auto. Qed.
-
-Lemma repeat_S_cons (X : Type) (n : nat) (a : X) :
-  a :: repeat a n = repeat a n ++ [a].
-Proof.
-  replace (a :: repeat a n) with (repeat a (S n)) by trivial. replace (S n ) with (n+1) by omega.
-  rewrite repeat_add_app. cbn. trivial.
-Qed.
-
-Lemma repeat_app_eq (X : Type) (m n : nat) (a : X) :
-  repeat a n ++ repeat a m = repeat a m ++ repeat a n.
-Proof. rewrite <- !repeat_add_app. f_equal. omega. Qed.
-
-Lemma repeat_eq_iff (X : Type) (n : nat) (a : X) x :
-  x = repeat a n <-> length x = n /\ forall y, y el x -> y = a.
-Proof.
-  split.
-  {
-    intros ->. split. apply repeat_length. apply repeat_spec.
-  }
-  {
-    revert x. induction n; intros x (H1&H2); cbn in *.
-    - destruct x; cbn in *; congruence.
-    - destruct x; cbn in *; inv H1. f_equal.
-      + apply H2. auto.
-      + apply IHn. auto.
-  }
-Qed.
-
-Lemma rev_repeat (X : Type) (n : nat) (a : X) :
-  rev (repeat a n) = repeat a n.
-Proof.
-  apply repeat_eq_iff. split.
-  - rewrite rev_length. rewrite repeat_length. auto.
-  - intros y Hx % in_rev. eapply repeat_spec; eauto.
-Qed.
-
-
 Lemma encode_nat_correct (n : nat) :
   encode n = repeat true n ++ [false].
 Proof. induction n; cbn in *; f_equal; auto. Qed.
@@ -168,7 +119,7 @@ Proof.
   { unfold CountDown. repeat TM_Correct. }
   { Unshelve. 4,7: constructor. all: omega. }
   {
-    intros tin (yout, tout) H. hnf. TMSimp. clear_trivial_eqs.
+    intros tin (yout, tout) H. hnf. TMSimp destruct_tapes. clear_trivial_eqs.
     destruct h1; TMSimp; clear_trivial_eqs.
     - hnf in H. TMSimp. hnf in H. TMSimp. now apply app_cons_not_nil in H.
     - hnf in H. TMSimp. hnf in H. TMSimp. now apply app_cons_not_nil in H.
@@ -199,7 +150,7 @@ Proof.
   eapply WRealise_monotone.
   { unfold Reset. repeat TM_Correct. }
   {
-    intros tin ((), tout) H. intros m n r1 r2 HCount. TMSimp. clear_trivial_eqs. clear H1.
+    intros tin ((), tout) H. intros m n r1 r2 HCount. TMSimp destruct_tapes. clear_trivial_eqs. clear H1.
     hnf. cbn. exists 0. split. omega. cbn.
     hnf in HCount. destruct HCount as (k&->&H1&H2) .
     unfold finType_CS in *. cbn in *.
@@ -433,7 +384,7 @@ Section Iter1.
       - eapply RealiseIn_WRealise. apply CountDown_Sem.
     }
     {
-      intros tin (yout, tout) H. TMSimp. destruct H; TMSimp inv_pair; clear_trivial_eqs.
+      intros tin (yout, tout) H. TMSimp. destruct H; TMSimp (first [ inv_pair | destruct_tapes]); clear_trivial_eqs.
       - specialize (H _ _ _ _ H2) as (n''&->&H). eexists. repeat split; eauto.
       - specialize (H _ _ _ _ H0) as (->&H). eexists. repeat split. repeat f_equal. auto.
     }
