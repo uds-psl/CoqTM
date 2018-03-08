@@ -8,14 +8,16 @@ Require Import TM.Compound.TMTac.
 Section MatchNat.
 
   Definition MatchNat_Rel : Rel (tapes bool^+ 1) (bool * tapes bool^+ 1) :=
-    Mk_R_p (if? (fun (tin tout : tape bool^+) =>
-                   forall n : nat,
-                     tin ≂ n ->
-                     exists n' : nat, n = S n' /\ tout ≂ n')
-              ! (fun (tin tout : tape bool^+) =>
-                   forall n : nat,
-                     tin ≂ n ->
-                     n = O /\ tout ≂ O)).
+    Mk_R_p
+      (fun tin '(yout, tout) =>
+         forall (n : nat) s1 s2,
+           tin ≂{s1;s2} n ->
+           match n with
+           | O =>
+             tout ≂{s1;s2} O /\ yout = false
+           | S n' =>
+             tout ≂{S s1;s2} n' /\ yout = true
+           end).
 
   Definition MatchNat : { M : mTM bool^+ 1 & states M -> bool } :=
     MATCH (Read_char _)
@@ -45,18 +47,23 @@ Section MatchNat.
       intros tin (yout&tout) H. cbn in yout.
       destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
       destruct_tapes; cbn in *.
-      destruct h; cbn in *; TMSimp; eauto.
-      - destruct H as (?&?&?&?). cbn in *. destruct (map _) in H0; cbn in H0; congruence.
-      - destruct H as (?&?&?&?). cbn in *. destruct (map _) in H0; cbn in H0; congruence.
-      - destruct H as (?&?&?&?). cbn in *. destruct (map _) in H0; cbn in H0; congruence.
+      destruct h; cbn in *; TMSimp; clear_trivial_eqs.
+      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H3.
+      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H3.
+      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H3.
       - destruct e; swap 1 2; cbn in *; TMSimp.
         destruct b; TMSimp cbn in *.
-        + destruct H1 as (?&?&?&?). cbn in *.
-          destruct n; cbn in *; inv H1. eexists. split. eauto. destruct n; cbn; do 2 eexists; split; cbn; eauto.
-        + destruct H as (?&?&?&?). cbn in *.
-          destruct n; cbn in *; inv H0. eexists. split. eauto.
-          hnf. do 2 eexists; split; cbn; eauto.
-        + destruct H as (?&?&?&?). cbn in *. destruct n; cbn in *; inv H0.
+        + destruct H as (?&?&?&?&?&?). cbn in *.
+          destruct n; cbn in *; inv H3. split; auto.
+          hnf. do 2 eexists. split. shelve. split. shelve.
+          destruct n; cbn; do 2 eexists; split; cbn; eauto.
+          Unshelve. all: cbn; omega.
+        + destruct H as (?&?&?&?&?&?). cbn in *.
+          destruct n; cbn in *; inv H3. split; eauto.
+          hnf. do 2 eexists. split. shelve. split. shelve.
+          hnf. cbn. eauto.
+          Unshelve. all: cbn; omega.
+        + destruct H as (?&?&?&?&?&?). cbn in *. destruct n; cbn in *; inv H3.
     }
   Qed.
 
@@ -64,7 +71,14 @@ Section MatchNat.
   Section NatConstructor.
 
     Definition S_Rel : Rel (tapes bool^+ 1) (unit * tapes bool^+ 1) :=
-      Mk_R_p (ignoreParam (fun tin tout => forall n : nat, tin ≂ n -> tout ≂ S n)).
+      Mk_R_p (
+          ignoreParam (
+              fun tin tout =>
+                forall (n : nat) s1 s2,
+                  tin ≂{s1; s2} n ->
+                  tout ≂{S s1; s2} S n
+
+             )).
 
     Definition Constr_S : { M : mTM bool^+ 1 & states M -> unit } :=
       Move _ L tt;; WriteMove (Some (inr true), L) tt;; WriteMove (Some (inl START), R) tt.
@@ -81,21 +95,27 @@ Section MatchNat.
       { cbn. omega. }
       {
         intros tin (yout, tout). TMCrush.
-        - destruct H0 as (r1&r2&He1&He2).
+        - destruct H0 as (r1&r2&Hs1&Hs2&He1&He2).
           destruct h0; cbn in *; try congruence.
           destruct (map _) in He2; cbn in *; congruence.
           simpl_tape in *.
           destruct l; cbn in *; try congruence. subst.
-          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
-        - destruct H0 as (r1&r2&He1&He2).
+          hnf. do 2 eexists. split. shelve. split. shelve.
+          hnf. cbn. split; eauto. f_equal. eauto.
+          Unshelve. all: cbn; omega.
+        - destruct H0 as (r1&r2&Hs1&Hs2&He1&He2).
           destruct h0; cbn in *; try congruence.
           destruct (map _) in He2; cbn in *; congruence.
           simpl_tape in *.
-          destruct l; cbn in *; try congruence. subst.
-          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
-          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
+          destruct l0; cbn in *; inv He1.
+          hnf. do 2 eexists. split. shelve. split. shelve.
+          hnf. cbn. split. eauto. f_equal. eauto.
+          Unshelve. all: cbn in *; omega.
       }
     Qed.
+
+
+    (* TODO: Rand-Analyse *)
 
     Definition O_Rel : Rel (tapes bool^+ 1) (unit * tapes bool^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => forall n, tin ≂ n -> tout ≂ O)).
