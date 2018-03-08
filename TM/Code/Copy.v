@@ -610,11 +610,6 @@ Arguments CopyValue : simpl never.
 Arguments CopyValue' : simpl never.
 
 
-  Check MoveToSymbols_TermTime_local_l. 
-
-
-
-
 Section RestoreValue.
 
   Variable sig : finType.
@@ -681,21 +676,21 @@ Section RestoreValue.
 
   (* Restore the saved value from tape 1 to tape 0 *)
   Definition RestoreValue : { M : mTM (sig^+) 2 & states M -> unit } :=
-    Inject MoveToLeft [|Fin0|];; (* 14 + 4 * (|nil| + |encode x1|) *)
+    Inject MoveToLeft [|Fin0|];; (* 14 + 4 * (|s1| + |encode x1|) *)
     Inject (CopyValue' _) [|Fin1; Fin0|];; (* 28 + 16 * |encode x2| *)
     Inject MoveToLeft [|Fin1|]. (* 14 + 4 * (|nil| + |encode x2|) *)
-  (* 43 + 20 * (|encode xs|) *)
-  (* 58 + 4 * (|encode x1|) + 20 * (|encode x2|) *)
+  (* 43 + 20 * (|encode x2|) *)
+  (* 58 + 4 * |s1| + 4 * (|encode x1|) + 20 * (|encode x2|) *)
 
   Definition RestoreValue_Rel : Rel (tapes (sig^+) 2) (unit * tapes (sig^+) 2) :=
     ignoreParam (
         fun tin tout =>
-          forall x1 x2 r1 r2,
+          forall x1 x2 r1 r2 r3,
             (* x2 is the saved value, x1 is the value that is currently on the working tape *)
-            tin [@Fin0] ≂[nil;r1]  x1 ->
-            tin [@Fin1] ≂[nil;r2] x2 ->
-            tout[@Fin0] ≂[nil; skipn (S (|encode x2|)) (encode x1 ++ inl STOP :: r1)] x2 /\
-            tout[@Fin1] = midtape nil (inl START) (encode x2 ++ inl STOP :: r2)
+            tin [@Fin0] ≂[r1; r2] x1 ->
+            tin [@Fin1] ≂[nil; r3] x2 ->
+            tout[@Fin0] ≂[nil; skipn (S (S (|encode x2|))) (rev r1 ++ inl START :: encode x1 ++ inl STOP :: r2)] x2 /\
+            tout[@Fin1] = midtape nil (inl START) (encode x2 ++ inl STOP :: r3)
       ).
 
   Lemma RestoreValue_WRealise : RestoreValue ⊫ RestoreValue_Rel.
@@ -708,7 +703,7 @@ Section RestoreValue.
       - eapply MoveToLeft_WRealsie.
     }
     {
-      intros tin ((), tout) H. intros x1 x2 r1 r2 HEncX1 HEncX2. TMSimp. clear H4. (* TODO: clear -> simpl_not_in *)
+      intros tin ((), tout) H. intros x1 x2 r1 r2 r3 HEncX1 HEncX2. TMSimp. clear H4. (* TODO: clear -> simpl_not_in *)
       specialize (H _ _ _ HEncX1) as (H&H').
       specialize (H0 _ _ _ HEncX2) as (H0&H0'). rewrite H0 in *. clear H0.
       specialize (H2 _ _ _ HEncX2) as (H2&H2').
@@ -718,7 +713,10 @@ Section RestoreValue.
       destruct H0' as (HEncX2out1&HEncX2out2).
       split.
       - split. auto. unfold finType_CS in *. rewrite HEncX2out2. cbn. f_equal. f_equal.
-        apply tape_local_cons_iff in H' as (H'&H''). unfold finType_CS in *. rewrite H''. auto.
+        unfold finType_CS in *.
+        destruct (rev r1) eqn:E1; cbn in *.
+        + apply tape_local_cons_iff in H' as (H'&H''). unfold finType_CS in *. cbn in *. rewrite H''. auto.
+        + apply tape_local_cons_iff in H' as (H'&H''). unfold finType_CS in *. cbn in *. rewrite H''. auto.
       - apply midtape_tape_local_cons in H2' as ->. f_equal. auto.
     }
   Qed.
@@ -730,24 +728,24 @@ Section RestoreValue.
   Definition RestoreValue_Rel_size : Rel (tapes (sig^+) 2) (unit * tapes (sig^+) 2) :=
     ignoreParam (
         fun tin tout =>
-          forall x1 x2 s1 s2,
-            tin [@Fin0] ≂{0;s1} x1 ->
-            tin [@Fin1] ≂{0;s2} x2 ->
-            tout[@Fin0] ≂{0; |encode x1| + s1 - (|encode x2|)} x2 /\
-            isLeft tout[@Fin1] (S (|encode x2|) + s2)
+          forall x1 x2 s1 s2 s3,
+            tin [@Fin0] ≂{s1;s2} x1 ->
+            tin [@Fin1] ≂{0;s3} x2 ->
+            tout[@Fin0] ≂{0; s1 + |encode x1| + s2 - (|encode x2|)} x2 /\
+            isLeft tout[@Fin1] (S (|encode x2|) + s3)
       ).
 
   Lemma RestoreValue_WRealise_size : RestoreValue ⊫ RestoreValue_Rel_size.
   Proof.
     eapply WRealise_monotone. eapply RestoreValue_WRealise.
     {
-      intros tin ((), tout) H. intros x1 x2 s1 s2 HEncX1 HEncX2. TMSimp.
+      intros tin ((), tout) H. intros x1 x2 s1 s2 s3 HEncX1 HEncX2. TMSimp.
       destruct HEncX1 as (r1&r2&Hr1&Hr2&HEncX1). destruct HEncX2 as (r1'&r2'&Hr1'&Hr2'&HEncX2).
-      destruct r1, r1'; cbn in *; try omega. clear Hr1 Hr1'.
-      specialize (H _ _ _ _ HEncX1 HEncX2) as (H1&H2).
+      destruct r1'; cbn in *; try omega. clear Hr1'. unfold finType_CS in *.
+      specialize (H _ _ _ _ _ HEncX1 HEncX2) as (H1&H2).
       split.
       - hnf. exists nil. eexists. split. cbn. omega. split; swap 1 2. eauto.
-        rewrite skipn_length, app_length, map_length. cbn. omega.
+        rewrite skipn_length, app_length, rev_length. cbn. rewrite app_length, map_length. cbn. omega.
       - hnf. eexists. eexists. split; swap 1 2. eauto.
         rewrite app_length, map_length. cbn. omega.
     }
@@ -757,10 +755,10 @@ Section RestoreValue.
   Lemma RestoreValue_Terminates :
     projT1 RestoreValue ↓
            (fun tin i =>
-              exists x1 x2 s1 s2,
-                tin [@Fin0] ≂{0;s1} x1 /\
-                tin [@Fin1] ≂{0;s2} x2 /\
-                58 + 4 * (|encode x1|) + 20 * (|encode x2|) <= i).
+              exists x1 x2 s1 s2 s3,
+                tin [@Fin0] ≂{s1; s2} x1 /\
+                tin [@Fin1] ≂{0;  s3} x2 /\
+                58 + 4 * s1 + 4 * (|encode x1|) + 20 * (|encode x2|) <= i).
   Proof.
     eapply TerminatesIn_monotone.
     {
@@ -772,10 +770,10 @@ Section RestoreValue.
       - eapply MoveToLeft_Terminates.
     }
     {
-      intros tin i. intros (x&y&s1&s2&HEncX&HEncY&Hi).
+      intros tin i. intros (x&y&s1&s2&s3&HEncX&HEncY&Hi).
       destruct HEncX as (r1&r2&Hr1&Hr2&HEncX). destruct HEncY as (r1'&r2'&Hr1'&Hr2'&HEncY).
-      destruct r1, r1'; cbn -[plus mult] in *; try omega. clear Hr1 Hr1'.
-      exists (14 + 4 * |encode x|), (43 + 20 * (|encode y|)). repeat split.
+      destruct r1'; cbn -[plus mult] in *; try omega. clear Hr1'.
+      exists (14 + 4 * s1 + 4 * |encode x|), (43 + 20 * (|encode y|)). repeat split.
       - omega.
       - cbn -[plus mult]. do 3 eexists. split. eauto. cbn [length]. omega.
       - intros tmid1 () (H1&H2). simpl_not_in. rewrite H2 in *. clear H2.
