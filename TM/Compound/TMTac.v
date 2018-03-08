@@ -89,7 +89,15 @@ Tactic Notation "TMSimp" tactic(T) :=
            | [ H : Some _ = None   |- _ ] => inv H
 
            | [ H : _ /\ _ |- _] => destruct H
-           | [ H : ex ?P |- _] => destruct H
+           | [ H : ex ?P |- _] =>
+             match type of P with
+             | tapes _ _ -> Prop =>
+               let tmid := fresh "tmid" in
+               destruct H as (tmid&H)
+             | _ => (* probably some parameter *)
+               let ymid := fresh "ymid" in
+               destruct H as (ymid&H)
+             end
            | [ x : _ * _    |- _ ] => destruct x
 
            | [ H1: ?X = _, H2: context [ ?X ] |- _ ] => rewrite H1 in H2

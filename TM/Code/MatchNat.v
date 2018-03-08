@@ -10,13 +10,13 @@ Section MatchNat.
   Definition MatchNat_Rel : Rel (tapes bool^+ 1) (bool * tapes bool^+ 1) :=
     Mk_R_p
       (fun tin '(yout, tout) =>
-         forall (n : nat) s1 s2,
-           tin ≂{s1;s2} n ->
+         forall (n : nat) r1 r2,
+           tin ≂[r1;r2] n ->
            match n with
            | O =>
-             tout ≂{s1;s2} O /\ yout = false
+             tout ≂[r1;r2] O /\ yout = false
            | S n' =>
-             tout ≂{S s1;s2} n' /\ yout = true
+             tout ≂[inl START :: r1; r2] n' /\ yout = true
            end).
 
   Definition MatchNat : { M : mTM bool^+ 1 & states M -> bool } :=
@@ -44,29 +44,18 @@ Section MatchNat.
     }
     { cbn. omega. }
     {
-      intros tin (yout&tout) H. cbn in yout.
-      destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
-      destruct_tapes; cbn in *.
-      destruct h; cbn in *; TMSimp; clear_trivial_eqs.
-      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H2.
-      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H2.
-      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H2.
-      - destruct e; swap 1 2; cbn in *; TMSimp.
-        destruct b; TMSimp cbn in *.
-        + destruct H as (?&?&?&?&?&?). cbn in *.
-          destruct n; cbn in *; inv H4. split; auto.
-          hnf. do 2 eexists. split. shelve. split. shelve.
-          destruct n; cbn; do 2 eexists; split; cbn; eauto.
-          Unshelve. all: cbn; omega.
-        + destruct H as (?&?&?&?&?&?). cbn in *.
-          destruct n; cbn in *; inv H3. split; eauto.
-          hnf. do 2 eexists. split. shelve. split. shelve.
-          hnf. cbn. eauto.
-          Unshelve. all: cbn; omega.
-        + destruct H as (?&?&?&?&?&?). cbn in *. destruct n; cbn in *; inv H3.
+      intros tin (yout&tout) H. intros n r1 r2 HEncN. TMSimp.
+      destruct HEncN as (HE1&HE2).
+      destruct n; cbn in *.
+      - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. rewrite L in H0. clear L.
+        TMSimp. repeat split; auto.
+      - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. rewrite L in H0. clear L.
+        TMSimp. split; auto. split.
+        + simpl_tape. auto.
+        + try rewrite L. simpl_tape. cbn. apply tape_local_cons_iff in HE2 as (HE2&HE3). unfold finType_CS in *. rewrite HE3. auto.
     }
   Qed.
-
+  
   (* Constructors *)
   Section NatConstructor.
 
