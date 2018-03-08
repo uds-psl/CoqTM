@@ -71,14 +71,7 @@ Section MatchNat.
   Section NatConstructor.
 
     Definition S_Rel : Rel (tapes bool^+ 1) (unit * tapes bool^+ 1) :=
-      Mk_R_p (
-          ignoreParam (
-              fun tin tout =>
-                forall (n : nat) s1 s2,
-                  tin ≂{s1; s2} n ->
-                  tout ≂{S s1; s2} S n
-
-             )).
+      Mk_R_p (ignoreParam (fun tin tout => forall n : nat, tin ≂ n -> tout ≂ S n)).
 
     Definition Constr_S : { M : mTM bool^+ 1 & states M -> unit } :=
       Move _ L tt;; WriteMove (Some (inr true), L) tt;; WriteMove (Some (inl START), R) tt.
@@ -95,27 +88,21 @@ Section MatchNat.
       { cbn. omega. }
       {
         intros tin (yout, tout). TMCrush.
-        - destruct H0 as (r1&r2&Hs1&Hs2&He1&He2).
+        - destruct H0 as (r1&r2&He1&He2).
           destruct h0; cbn in *; try congruence.
           destruct (map _) in He2; cbn in *; congruence.
           simpl_tape in *.
           destruct l; cbn in *; try congruence. subst.
-          hnf. do 2 eexists. split. shelve. split. shelve.
-          hnf. cbn. split; eauto. f_equal. eauto.
-          Unshelve. all: cbn; omega.
-        - destruct H0 as (r1&r2&Hs1&Hs2&He1&He2).
+          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
+        - destruct H0 as (r1&r2&He1&He2).
           destruct h0; cbn in *; try congruence.
           destruct (map _) in He2; cbn in *; congruence.
           simpl_tape in *.
-          destruct l0; cbn in *; inv He1.
-          hnf. do 2 eexists. split. shelve. split. shelve.
-          hnf. cbn. split. eauto. f_equal. eauto.
-          Unshelve. all: cbn in *; omega.
+          destruct l; cbn in *; try congruence. subst.
+          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
+          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
       }
     Qed.
-
-
-    (* TODO: Rand-Analyse *)
 
     Definition O_Rel : Rel (tapes bool^+ 1) (unit * tapes bool^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => forall n, tin ≂ n -> tout ≂ O)).
