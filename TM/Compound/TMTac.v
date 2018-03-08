@@ -148,4 +148,9 @@ Tactic Notation "TMCrush" tactic(T) :=
            try TMBranche
          ).
 
-Tactic Notation "TMCrush" := TMCrush idtac.
+Tactic Notation "TMCrush" :=
+  repeat progress
+         (
+           TMSimp;
+           try TMBranche
+         ).

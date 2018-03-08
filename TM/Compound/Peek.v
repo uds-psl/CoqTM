@@ -43,14 +43,24 @@ Section Peek.
 
   Definition Peek_Steps := 11.
 
-
   Lemma Peek_RealisesIn :
     Peek ⊨c(Peek_Steps) Peek_Rel.
   Proof.
     unfold Peek_Steps. eapply RealiseIn_monotone.
     - unfold Peek. repeat TM_Correct.
     - Unshelve. 6,9: constructor 1. all: cbn. all: try omega. 4-7: constructor. cbn. constructor.
-    - intros tin (yout,tout). TMCrush; TMSolve 1.
+    - intros tin (yout,tout) H. TMCrush; TMSolve 1.
+      (*
+      Undo.
+      TMSimp. destruct (current _) eqn:E1.
+      + TMCrush; TMSolve 1.
+      + TMSimp. destruct (current (tape_move_left _)) eqn:E2.
+        * TMCrush; TMSolve 1.
+        * TMSimp.
+          destruct (current (tape_move_right (tape_move_left _))) eqn:E3.
+          -- TMCrush; TMSolve 1.
+          -- TMSimp idtac. destruct (tmid[@_]) eqn:E4; TMCrush; TMSolve 1.
+       *)
   Qed.
 
 End Peek.
