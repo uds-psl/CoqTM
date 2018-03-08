@@ -34,6 +34,12 @@ Section Fix_Sig.
     Definition tape_encodes_r (t : tape sig^+) (x : X) (r1 r2 : list sig^+) :=
       right t = inl STOP :: r2 /\ tape_local_l t = rev (encode x) ++ inl START :: r1.
 
+    Definition tape_encodes_size (t : tape sig^+) (x : X) (size1 size2 : nat) :=
+      exists (r1 r2 : list (sig^+)), length r1 <= size1 /\ length r2 <= size2 /\ tape_encodes_l t x r1 r2.
+
+    Definition tape_encodes'_size (t : tape sig^+) (x : X) (size1 size2 : nat) :=
+      exists (r1 r2 : list (sig^+)), length r1 <= size1 /\ length r2 <= size2 /\ tape_encodes_r t x r1 r2.
+
     Definition tape_encodes (t : tape sig^+) (x : X) : Prop :=
       exists r1 r2 : list (sig^+), tape_encodes_l t x r1 r2.
 
@@ -78,6 +84,29 @@ Section Fix_Sig.
       intros (r1&r2&H2) (s1&s2&H1). eapply tape_encodes_l_functional; eauto.
     Qed.
 
+    Lemma tape_encodes_size_monotone (t : tape sig^+) (x : X) (size1 size1' size2 size2' : nat) :
+      tape_encodes_size t x size1 size2 ->
+      size1 <= size1' ->
+      size2 <= size2' ->
+      tape_encodes_size t x size1' size2'.
+    Proof. intros (r1&r2&H1&H2&H3) H4 H5. hnf. exists r1, r2. split; [ | split; auto]; omega. Qed.
+
+    Lemma tape_encodes_l_tape_encodes (t : tape sig^+) (x : X) r1 r2 :
+      tape_encodes_l t x r1 r2 -> tape_encodes t x.
+    Proof. intros. hnf. eauto. Qed.
+
+    Lemma tape_encodes_r_tape_encodes' (t : tape sig^+) (x : X) r1 r2 :
+      tape_encodes_r t x r1 r2 -> tape_encodes' t x.
+    Proof. intros. hnf. eauto. Qed.
+
+    Lemma tape_encodes_size_tape_encodes (t : tape sig^+) (x : X) s1 s2 :
+      tape_encodes_size t x s1 s2 -> tape_encodes t x.
+    Proof. intros (r1&r2&HS1&HS2&HE). eauto using tape_encodes_l_tape_encodes. Qed.
+
+    Lemma tape_encodes'_size_tape_encodes' (t : tape sig^+) (x : X) s1 s2 :
+      tape_encodes'_size t x s1 s2 -> tape_encodes' t x.
+    Proof. intros (r1&r2&HS1&HS2&HE). eauto using tape_encodes_r_tape_encodes'. Qed.
+      
   End Tape_Encodes.
 
   Arguments tape_encodes : simpl never.
@@ -403,8 +432,14 @@ Section Fix_Sig.
 End Fix_Sig.
 
 Notation "t '≂' x" := (tape_encodes _ t x) (at level 70, no associativity).
+Notation "t '≂[' r1 ';' r2 ] x" := (tape_encodes_l _ t x r1 r2) (at level 70, no associativity, format "t  '≂[' r1 ;  r2 ]  x").
+Notation "t '≂{' r1 ';' r2 } x" := (tape_encodes_size _ t x r1 r2) (at level 70, no associativity, format "t  '≂{' r1 ;  r2 }  x").
+Notation "t '≃[' r1 ';' r2 ] x" := (tape_encodes_r _ t x r1 r2) (at level 70, no associativity, format "t  '≃[' r1 ;  r2 ]  x").
+Notation "t '≃{' r1 ';' r2 } x" := (tape_encodes'_size _ t x r1 r2) (at level 70, no associativity, format "t  '≃{' r1 ;  r2 }  x").
+
 
 Definition return_unit (X : Type) : X -> unit := fun _ => tt.
+
 
 
 (*
