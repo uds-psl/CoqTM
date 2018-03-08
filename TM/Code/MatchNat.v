@@ -48,13 +48,13 @@ Section MatchNat.
       destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
       destruct_tapes; cbn in *.
       destruct h; cbn in *; TMSimp; clear_trivial_eqs.
-      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H3.
-      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H3.
-      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H3.
+      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H2.
+      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H2.
+      - destruct H as (?&?&?&?&?&?). cbn in *. now apply app_cons_not_nil in H2.
       - destruct e; swap 1 2; cbn in *; TMSimp.
         destruct b; TMSimp cbn in *.
         + destruct H as (?&?&?&?&?&?). cbn in *.
-          destruct n; cbn in *; inv H3. split; auto.
+          destruct n; cbn in *; inv H4. split; auto.
           hnf. do 2 eexists. split. shelve. split. shelve.
           destruct n; cbn; do 2 eexists; split; cbn; eauto.
           Unshelve. all: cbn; omega.
@@ -87,20 +87,18 @@ Section MatchNat.
       }
       { cbn. omega. }
       {
-        intros tin (yout, tout). TMCrush.
-        - destruct H0 as (r1&r2&He1&He2).
-          destruct h0; cbn in *; try congruence.
-          destruct (map _) in He2; cbn in *; congruence.
-          simpl_tape in *.
-          destruct l; cbn in *; try congruence. subst.
-          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
-        - destruct H0 as (r1&r2&He1&He2).
-          destruct h0; cbn in *; try congruence.
-          destruct (map _) in He2; cbn in *; congruence.
-          simpl_tape in *.
-          destruct l; cbn in *; try congruence. subst.
-          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
-          hnf. do 2 eexists; split; cbn; eauto. f_equal. now rewrite <- He2.
+        intros tin (yout, tout) H. intros n HEncN.
+        TMSimp. clear H0 H4 H2 H3. simpl_tape.
+        destruct HEncN as (r1&r2&HE1&HE2).
+        destruct n as [ | n']; cbn in *.
+        - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as ->.
+          cbn. hnf. do 2 eexists. split.
+          + cbn. reflexivity.
+          + cbn. reflexivity.
+        - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(split; eauto)) as ->.
+          cbn. hnf. do 2 eexists. split.
+          + cbn. reflexivity.
+          + cbn. reflexivity.
       }
     Qed.
 

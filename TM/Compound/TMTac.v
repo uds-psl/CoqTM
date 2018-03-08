@@ -72,6 +72,7 @@ Tactic Notation "TMSimp" tactic(T) :=
            cbn in *;
            intros;
            subst;
+           unfold finType_CS in *;
            try T;
            match goal with
            | [ H : _ ::: _ = [||]  |- _ ] => inv H
