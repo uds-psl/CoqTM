@@ -499,7 +499,7 @@ Section MoveToOtherSideOfTheEncoding.
     { unfold CopyValue. repeat TM_Correct. eapply CopySymbols_Code_WRealise; auto. }
     {
       intros tin ((), tout) H. intros x r1 r2 HEncX. TMSimp; clear_trivial_eqs. clear H4 H5.
-      unfold finType_CS in *. rewrite <- !H1, !H2 in *. clear H1 H2. simpl_tape in H0.
+      clear H1 H2. simpl_tape in H0.
       specialize (H0 _ _ _ HEncX) as (L1&L2). rewrite L1, L2. clear L1 L2.
       destruct HEncX as (HE1&HE2). split.
       - hnf. split.
