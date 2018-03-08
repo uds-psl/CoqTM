@@ -79,8 +79,6 @@ Section Copy.
     now apply mirror_tape_inv_midtape in L.
   Qed.
 
-  Require Import FunInd.
-
   Lemma MoveToSymbol_correct_toRight' (t : tape sig) x str :
     tape_local t = x :: str ->
     right (tape_move_left (MoveToSymbol_Fun (fun _ => false) t)) = nil /\
@@ -163,6 +161,27 @@ Section Copy.
       + omega.
       + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
         eapply IHr1; eauto. cbn. now simpl_tape.
+  Qed.
+
+  
+  Lemma MoveToSymbol_TermTime_dontstop t :
+    MoveToSymbol_TermTime (fun x : sig => false) t <= 4 + 4 * (|tape_local t|).
+  Proof.
+    functional induction (MoveToSymbol_TermTime (fun _ => false) t); try congruence.
+    - cbn -[plus mult]. destruct rs.
+      + cbn -[plus mult] in *. omega.
+      + cbn -[plus mult] in *. omega.
+    - omega.
+  Qed.
+
+  Lemma MoveToSymbol_L_TermTime_dontstop t :
+    MoveToSymbol_L_TermTime (fun x : sig => false) t <= 4 + 4 * (|tape_local_l t|).
+  Proof.
+    functional induction (MoveToSymbol_L_TermTime (fun _ => false) t); try congruence.
+    - cbn -[plus mult]. destruct ls.
+      + cbn -[plus mult] in *. omega.
+      + cbn -[plus mult] in *. omega.
+    - omega.
   Qed.
   
 End Copy.
@@ -523,10 +542,10 @@ Section MoveToOtherSideOfTheEncoding.
   Definition CopyValue'_Rel : Rel (tapes (sig^+) 2) (unit * tapes (sig^+) 2) :=
     ignoreParam (
         fun tin tout =>
-          forall (x : X),
-            tape_encodes _ tin [@Fin.F1       ] x ->
-            tout[@Fin.F1] = tin[@Fin.F1] /\
-            tape_encodes _ tout[@Fin.FS Fin.F1] x
+          forall (x : X) r1 r2,
+            tin [@Fin0] ≂[r1; r2] x ->
+            tout[@Fin0] = tin[@Fin0] /\
+            tout[@Fin1] ≂[left tin[@Fin1]; skipn (S (|encode x|)) (right tin[@Fin1])] x
       ).
 
   Lemma CopyValue'_WRealise :
@@ -540,10 +559,9 @@ Section MoveToOtherSideOfTheEncoding.
       - eapply MoveToLeftCode_WRealse.
     }
     {
-      intros tin ((), yout) H. intros x HEncX. TMSimp.
+      intros tin ((), yout) H. intros x r1 r2 HEncX. TMSimp.
       unfold finType_CS in *. clear H3.
-      destruct HEncX as (r1&r2&HE).
-      specialize (H _ _ _ HE) as (L1&L2).
+      specialize (H _ _ _ HEncX) as (L1&L2).
       specialize (H0 _ _ _ L1).
       specialize (H1 _ _ _ L2).
       split.
@@ -591,6 +609,9 @@ Arguments CopyValue : simpl never.
 Arguments CopyValue' : simpl never.
 
 
+  Check MoveToSymbols_TermTime_local_l. 
+
+
 
 
 Section RestoreValue.
@@ -602,36 +623,66 @@ Section RestoreValue.
     Mk_R_p (
         ignoreParam (
             fun tin tout =>
-              forall x, tin ≂ x ->
-                   exists x rs, tout = midtape nil x rs
+              forall x r1 r2,
+                tin ≂[r1; r2] x ->
+                left tout = nil /\
+                tape_local tout = rev r1 ++ inl START :: encode x ++ inl STOP :: r2
           )
       ).
 
   Definition MoveToLeft :=
-    MoveToSymbol_L (fun _ : (sig^+) => false);;
-    Move _ R tt.
+    MoveToSymbol_L (fun _ : (sig^+) => false);; (* 4 + 4 * (S (S (|r1| + |encode x|))) *)
+    Move _ R tt. (* 1 *)
+  (* 14 + 4 * (|r1| + |encode x|) *)
 
   Lemma MoveToLeft_WRealsie : MoveToLeft ⊫ MoveToLeft_Rel.
   Proof.
     eapply WRealise_monotone.
     { unfold MoveToLeft. repeat TM_Correct. }
     {
-      intros tin ((), tout) H. intros x HEncX.
-      destruct H as ((ymid&tmid)&(H1&_)&_&H3). cbn in *. clear ymid. rewrite H1 in *. rewrite H3 in *. clear H1 H3.
-      destruct HEncX as (r1 & r2 & HE1 & HE2).
-      destruct (encode x) eqn:E1; cbn in *.
+      intros tin ((), tout) H. intros x r1 r2 HEncX.
+      TMSimp. clear H H2 H0 H1.
+      destruct HEncX as (HE1 & HE2).
+      destruct (encode x : list sig) eqn:E1; cbn in *; rewrite E1 in *; cbn in *.
       - apply midtape_tape_local_cons in HE2. unfold finType_CS in *. rewrite HE1 in HE2. rewrite HE2.
         pose proof MoveToSymbol_L_correct_toLeft (inl START :: r1) (inl STOP) r2 as (L1&L2).
-        cbn in L1, L2. rewrite <- app_assoc in L2. cbn in *.
-        destruct (tape_move_right _) eqn:E2; cbn in *; subst; try now apply app_cons_not_nil in L2. eauto.
+        unfold finType_CS in *. cbn in *. rewrite L1, L2. split; auto. simpl_list. cbn. simpl_list. cbn. auto.
       - apply midtape_tape_local_cons in HE2. unfold finType_CS in *. rewrite HE1 in HE2. rewrite HE2.
-        pose proof MoveToSymbol_L_correct_toLeft (inl START :: r1) e (l ++ inl STOP :: r2) as (L1&L2).
+        pose proof MoveToSymbol_L_correct_toLeft (inl START :: r1) (inr e) (map inr l ++ inl STOP :: r2) as (L1&L2).
         cbn in L1, L2. rewrite <- app_assoc in L2. cbn in *.
         destruct (tape_move_right _) eqn:E2; cbn in *; subst; try now apply app_cons_not_nil in L2. eauto.
     }
   Qed.
 
+  Lemma MoveToLeft_Terminates :
+    projT1 MoveToLeft ↓ (fun tin i => exists x r1 r2, tin[@Fin0] ≂[r1;r2] x /\ 14 + 4 * (|r1| + |encode x : list sig|) <= i).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold MoveToLeft. repeat TM_Correct. }
+    {
+      intros tin i (x&r1&r2&HEnc&Hi).
+      exists (12 + 4 * (|r1| + |encode x|)), 1. repeat split.
+      - omega.
+      - destruct HEnc as (HE1&HE2).
+        destruct (encode x : list sig) eqn:E1; cbn -[plus mult] in *; rewrite E1 in *; cbn -[plus mult] in *.
+        + apply tape_local_cons_iff in HE2 as (HE2&HE3).
+          apply (conj HE2) in HE1. apply tape_local_l_cons_iff in HE1.
+          pose proof MoveToSymbol_L_TermTime_dontstop tin[@Fin0] as L.
+          rewrite HE1 in L. cbn -[plus mult] in *. omega.
+        + apply tape_local_cons_iff in HE2 as (HE2&HE3).
+          apply (conj HE2) in HE1. apply tape_local_l_cons_iff in HE1.
+          pose proof MoveToSymbol_L_TermTime_dontstop tin[@Fin0] as L.
+          rewrite HE1 in L. cbn -[plus mult] in *. omega.
+      - intros _ _ _. omega.
+    }
+  Qed.
+    
+
 End RestoreValue.
+
+Arguments MoveToLeft : simpl never.
+
+    
 
 
 
