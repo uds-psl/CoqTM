@@ -142,6 +142,45 @@ Section Copy.
     now apply mirror_tape_inv_midtape in L.
   Qed.
 
+  Require Import FunInd.
+
+  Lemma MoveToSymbol_correct_toRight' (t : tape sig) x str :
+    tape_local t = x :: str ->
+    right (tape_move_left (MoveToSymbol_Fun (fun _ => false) t)) = nil /\
+    tape_local_l (tape_move_left (MoveToSymbol_Fun (fun _ => false) t)) = rev (tapeToList t).
+  Proof.
+    revert x str.
+    functional induction (MoveToSymbol_Fun (fun (_ : sig) => false) t); intros; try congruence.
+    - cbn in *. inv H. simpl_tape in *.
+      destruct str; cbn.
+      + rewrite MoveToSymbol_Fun_equation; cbn. simpl_list. cbn. auto.
+      + specialize (IHt0 _ _ ltac:(eauto)).
+      destruct IHt0 as (IH1&IH2). rewrite IH1, IH2. split; auto.
+      destruct str; cbn; simpl_list; cbn; simpl_list; auto.
+    - destruct t eqn:E; cbn in *; auto; congruence.
+  Qed.
+
+  Lemma MoveToSymbol_correct_toRight ls (x : sig) rs :
+    right (tape_move_left (MoveToSymbol_Fun (fun _ => false) (midtape ls x rs))) = nil /\
+    tape_local_l (tape_move_left (MoveToSymbol_Fun (fun _ => false) (midtape ls x rs))) = rev rs ++ x :: ls.
+  Proof.
+    pose proof @MoveToSymbol_correct_toRight' (midtape ls x rs) _ _ ltac:(cbn; eauto) as (L1&L2).
+    rewrite L1, L2. cbn. simpl_list. cbn. simpl_list. cbn. auto.
+  Qed.
+  
+  Corollary MoveToSymbol_L_correct_toLeft ls (x : sig) rs :
+    left (tape_move_right (MoveToSymbol_L_Fun (fun _ => false) (midtape ls x rs))) = nil /\
+    tape_local (tape_move_right (MoveToSymbol_L_Fun (fun _ => false) (midtape ls x rs))) = rev ls ++ x :: rs.
+  Proof.
+    intros. pose proof (@MoveToSymbol_correct_toRight rs x ls) as L.
+    simpl_tape in L. repeat spec_assert L by auto.
+    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun _ _))) in L; simpl_tape in *; eauto.
+    cbn in L. rewrite <- !mirror_tape_move_right in L. rewrite mirror_tape_right in L. rewrite tape_local_mirror in L.
+    auto.
+  Qed.
+
+
+
   (** Termination times *)
 
   (* The termination times of CopySymbols and MoveTosymbol only differ in the factors *)
@@ -374,7 +413,8 @@ Arguments CopySymbols_Code_Rel { sig X encX } x y /.
 
 
 
-Section MoveToOtherSide.
+
+Section MoveToOtherSideOfTheEncoding.
 
   Variable sig : finType.
   Variable X : Type.
@@ -605,12 +645,57 @@ Section MoveToOtherSide.
   Qed.
   
 
-End MoveToOtherSide.
+End MoveToOtherSideOfTheEncoding.
 
 Arguments MoveToRightCode : simpl never.
 Arguments MoveToLeftCode : simpl never.
 Arguments CopyValue : simpl never.
 Arguments CopyValue' : simpl never.
+
+
+
+
+Section RestoreValue.
+
+  Variable sig : finType.
+  Variable (X : Type) (codX : codeable sig X).
+
+  Definition MoveToLeft_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
+    Mk_R_p (
+        ignoreParam (
+            fun tin tout =>
+              forall x, tin ≂ x ->
+                   exists x rs, tout = midtape nil x rs
+          )
+      ).
+
+  Definition MoveToLeft :=
+    MoveToSymbol_L (fun _ : (sig^+) => false);;
+    Move _ R tt.
+
+  Lemma MoveToLeft_WRealsie : MoveToLeft ⊫ MoveToLeft_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold MoveToLeft. repeat TM_Correct. }
+    {
+      intros tin ((), tout) H. intros x HEncX.
+      destruct H as ((ymid&tmid)&(H1&_)&_&H3). cbn in *. clear ymid. rewrite H1 in *. rewrite H3 in *. clear H1 H3.
+      destruct HEncX as (r1 & r2 & HE1 & HE2).
+      destruct (encode x) eqn:E1; cbn in *.
+      - apply midtape_tape_local_cons in HE2. unfold finType_CS in *. rewrite HE1 in HE2. rewrite HE2.
+        pose proof MoveToSymbol_L_correct_toLeft (inl START :: r1) (inl STOP) r2 as (L1&L2).
+        cbn in L1, L2. rewrite <- app_assoc in L2. cbn in *.
+        destruct (tape_move_right _) eqn:E2; cbn in *; subst; try now apply app_cons_not_nil in L2. eauto.
+      - apply midtape_tape_local_cons in HE2. unfold finType_CS in *. rewrite HE1 in HE2. rewrite HE2.
+        pose proof MoveToSymbol_L_correct_toLeft (inl START :: r1) e (l ++ inl STOP :: r2) as (L1&L2).
+        cbn in L1, L2. rewrite <- app_assoc in L2. cbn in *.
+        destruct (tape_move_right _) eqn:E2; cbn in *; subst; try now apply app_cons_not_nil in L2. eauto.
+    }
+  Qed.
+
+End RestoreValue.
+
+
 
 
 (* todo: Arguments, smpl, etc. *)
