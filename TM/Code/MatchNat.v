@@ -7,6 +7,7 @@ Require Import TM.Compound.TMTac.
 (* Basic pattern matching *)
 Section MatchNat.
 
+  (*
   Definition MatchNat_Rel : Rel (tapes bool^+ 1) (bool * tapes bool^+ 1) :=
     Mk_R_p
       (fun tin '(yout, tout) =>
@@ -18,6 +19,22 @@ Section MatchNat.
            | S n' =>
              tout ≂[inl START :: r1; r2] n' /\ yout = true
            end).
+  *)
+
+  Definition MatchNat_Rel : Rel (tapes bool^+ 1) (bool * tapes bool^+ 1) :=
+    Mk_R_p
+      (
+        if? (fun tin tout =>
+               forall n r1 r2,
+                 tin ≂[r1;r2] n ->
+                 exists n', n = S n' /\
+                       tout ≂[inl START :: r1; r2] n')
+          ! (fun tin tout =>
+               forall n r1 r2,
+                 tin ≂[r1;r2] n ->
+                 n = 0 /\
+                 tout = tin)
+      ).
 
   Definition MatchNat : { M : mTM bool^+ 1 & states M -> bool } :=
     MATCH (Read_char _)
@@ -27,6 +44,7 @@ Section MatchNat.
                  | _ => mono_Nop _ true (* invalid input *)
                  end).
 
+  (*
   Lemma MatchNat_Sem : MatchNat ⊨c(5) MatchNat_Rel.
   Proof.
     eapply RealiseIn_monotone.
@@ -55,7 +73,48 @@ Section MatchNat.
         + try rewrite L. simpl_tape. cbn. apply tape_local_cons_iff in HE2 as (HE2&HE3). unfold finType_CS in *. rewrite HE3. auto.
     }
   Qed.
-  
+*)
+
+  Lemma MatchNat_Sem : MatchNat ⊨c(5) MatchNat_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    {
+      unfold MatchNat. eapply Match_RealiseIn. cbn. eapply read_char_sem.
+      instantiate (2 := fun o : option bool^+ =>
+                          match o with Some (inr true) => _ | Some (inr false) => _ | _ => _ end).
+      cbn. intros [ s | ]; cbn.
+      - destruct s as [ start | s]; cbn.
+        + eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
+        + destruct s.
+          * eapply Seq_RealiseIn; [eapply Write_Sem | eapply Move_Sem].
+          * eapply mono_Nop_Sem.
+      - eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
+    }
+    { cbn. omega. }
+    {
+      intros tin (yout&tout) H. hnf.
+      TMSimp. destruct yout.
+      - intros n r1 r2 HEncN. destruct HEncN as (HE1&HE2).
+        destruct n as [ | n']; cbn in *.
+        + exfalso.
+          pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. rewrite L in H0. clear L.
+          cbn in *. TMSimp; TMSolve 1.
+        + exists n'. split. auto.
+          pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. rewrite L in H0. clear L.
+          cbn in *. TMSimp; TMSolve 1. apply tape_local_cons_iff in HE2 as (HE2&HE3). TMSimp.
+          destruct n'; cbn; hnf; eauto.
+      - intros n r1 r2 HEncN. destruct HEncN as (HE1&HE2).
+        destruct n as [ | n']; cbn in *.
+        + pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. rewrite L in H0. clear L.
+          cbn in *. TMSimp; TMSolve 1.
+        + exfalso.
+          pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. rewrite L in H0. clear L.
+          cbn in *. TMSimp; TMSolve 1.
+    }
+  Qed.
+
+
+
   (* Constructors *)
   Section NatConstructor.
 
