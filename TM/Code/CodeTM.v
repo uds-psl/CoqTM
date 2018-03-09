@@ -91,22 +91,30 @@ Section Fix_Sig.
       tape_encodes_size t x size1' size2'.
     Proof. intros (r1&r2&H1&H2&H3) H4 H5. hnf. exists r1, r2. split; [ | split; auto]; omega. Qed.
 
-    Lemma tape_encodes_l_tape_encodes (t : tape sig^+) (x : X) r1 r2 :
+    Lemma tape_encodes_l_encodes (t : tape sig^+) (x : X) r1 r2 :
       tape_encodes_l t x r1 r2 -> tape_encodes t x.
     Proof. intros. hnf. eauto. Qed.
 
-    Lemma tape_encodes_r_tape_encodes' (t : tape sig^+) (x : X) r1 r2 :
+    Lemma tape_encodes_r_encodes' (t : tape sig^+) (x : X) r1 r2 :
       tape_encodes_r t x r1 r2 -> tape_encodes' t x.
     Proof. intros. hnf. eauto. Qed.
 
-    Lemma tape_encodes_size_tape_encodes (t : tape sig^+) (x : X) s1 s2 :
+    Lemma tape_encodes_size_encodes (t : tape sig^+) (x : X) s1 s2 :
       tape_encodes_size t x s1 s2 -> tape_encodes t x.
-    Proof. intros (r1&r2&HS1&HS2&HE). eauto using tape_encodes_l_tape_encodes. Qed.
+    Proof. intros (r1&r2&HS1&HS2&HE). eauto using tape_encodes_l_encodes. Qed.
 
-    Lemma tape_encodes'_size_tape_encodes' (t : tape sig^+) (x : X) s1 s2 :
+    Lemma tape_encodes'_size_encodes' (t : tape sig^+) (x : X) s1 s2 :
       tape_encodes'_size t x s1 s2 -> tape_encodes' t x.
-    Proof. intros (r1&r2&HS1&HS2&HE). eauto using tape_encodes_r_tape_encodes'. Qed.
-      
+    Proof. intros (r1&r2&HS1&HS2&HE). eauto using tape_encodes_r_encodes'. Qed.
+
+    Lemma tape_encodes_l_encodes_size (t : tape sig^+) (x : X) r1 r2 :
+      tape_encodes_l t x r1 r2 -> tape_encodes_size t x (|r1|) (|r2|).
+    Proof. intros (H1&H2). hnf. exists r1, r2. repeat split; auto. Qed.
+
+    Lemma tape_encodes_r_encodes'_size (t : tape sig^+) (x : X) r1 r2 :
+      tape_encodes_r t x r1 r2 -> tape_encodes'_size t x (|r1|) (|r2|).
+    Proof. intros (H1&H2). hnf. exists r1, r2. repeat split; auto. Qed.
+
   End Tape_Encodes.
 
   Arguments tape_encodes : simpl never.

@@ -725,6 +725,12 @@ Section RestoreValue.
   Definition isLeft (tau : finType) (t : tape tau) (s : nat) :=
     exists x rs, |rs| <= s /\ t = midtape nil x rs.
 
+
+  Lemma isLeft_monotone (tau : finType) (t : tape tau) (s1 s2 : nat) :
+    isLeft t s1 -> s1 <= s2 -> isLeft t s2.
+  Proof. intros (x&rs&Hrs&->) Hs. exists x, rs. split. omega. auto. Qed.
+
+
   Definition RestoreValue_Rel_size : Rel (tapes (sig^+) 2) (unit * tapes (sig^+) 2) :=
     ignoreParam (
         fun tin tout =>
