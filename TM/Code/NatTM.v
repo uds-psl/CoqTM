@@ -163,7 +163,6 @@ Section Iter1.
   (** Correctness *)
 
   
-  (*
   Definition Iter_Step_Rel : Rel (tapes (bool^+) 2) ((bool * unit) * tapes (bool^+) 2) :=
     fun tin '(yout, tout) =>
       forall m n s1 s2,
@@ -178,8 +177,8 @@ Section Iter1.
           tout[@Fin1] ≂ f n /\
           yout = (true, tt)
         end.
-   *)
 
+  (*
   Definition Iter_Step_Rel : Rel (tapes (bool^+) 2) ((bool * unit) * tapes (bool^+) 2) :=
     ignoreSecond (
         if? (fun tin tout =>
@@ -195,8 +194,8 @@ Section Iter1.
                  tin [@Fin1] ≂ n ->
                  m = 0 /\ tout = tin)
       ).
+   *)
 
-  (*
   Lemma Iter_Step_WRealise : Iter_Step ⊫ Iter_Step_Rel.
   Proof.
     eapply WRealise_monotone.
@@ -216,8 +215,8 @@ Section Iter1.
         + eauto.
     }
   Qed.
-   *)
 
+  (*
   Lemma Iter_Step_WRealise : Iter_Step ⊫ Iter_Step_Rel.
   Proof.
     eapply WRealise_monotone.
@@ -235,6 +234,7 @@ Section Iter1.
         destruct_tapes. cbn in *. subst. f_equal; eauto.
     }
   Qed.
+   *)
 
 
   Definition Iter_Loop_Rel : Rel (tapes bool^+ 2) (unit * tapes bool^+ 2) :=
@@ -254,6 +254,25 @@ Section Iter1.
     {
       intros tin ((), tout) (tmid&HStar&HLastStep).
       induction HStar as [ tin | tin tmid1 tmid2 HStar _ IH]; intros m n s1 s2 HEncM HEncN.
+      - cbn in HLastStep. specialize (HLastStep _ _ _ _ HEncM HEncN). destruct m; TMSimp; inv_pair. eauto.
+      - repeat (spec_assert IH; eauto). cbn in HLastStep, IH, HStar. destruct HStar as (()&HStar). cbn in HStar.
+        specialize (HStar _ _ _ _ HEncM HEncN).
+        destruct m; TMSimp; inv_pair.
+        specialize (IH _ _ _ _ H H0) as (IH1&IH2).
+        rewrite <- Nat.add_succ_comm in IH1.
+        split; cbn in *; auto.
+    }
+  Qed.
+  
+
+  (*
+  Lemma Iter_Loop_WRealise : Iter_Loop ⊫ Iter_Loop_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold Iter_Loop. repeat TM_Correct. apply Iter_Step_WRealise. }
+    {
+      intros tin ((), tout) (tmid&HStar&HLastStep).
+      induction HStar as [ tin | tin tmid1 tmid2 HStar _ IH]; intros m n s1 s2 HEncM HEncN.
       - cbn in HLastStep. specialize (HLastStep _ _ _ _ HEncM HEncN) as (->&->). split; cbn; hnf; eauto.
       - repeat (spec_assert IH; eauto). cbn in HLastStep, IH, HStar. destruct HStar as (()&HStar). cbn in HStar.
         specialize (HStar _ _ _ _ HEncM HEncN). unfold finType_CS in *. destruct HStar as (m'&->&HS1&HS2).
@@ -262,6 +281,7 @@ Section Iter1.
         split; cbn in *; auto.
     }
   Qed.
+   *)
 
   Lemma Iter_Loop_Computes : Iter_Loop ⊫ Computes2_Rel Fin0 Fin1 Fin1 _ _ _ iter.
   Proof.
