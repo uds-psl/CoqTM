@@ -543,6 +543,10 @@ Section AddTapes.
 
 End AddTapes.
 
+(* Don't compute [add_tapes] and [app_tapes], since we want to use the meta-information in the [simpl_not_in] tactic *)
+Arguments add_tapes : simpl never.
+Arguments app_tapes : simpl never.
+
 
 
 (** * Tactical support *)
