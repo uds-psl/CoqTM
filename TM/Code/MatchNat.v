@@ -55,6 +55,41 @@ Section MatchNat.
         + try rewrite L. simpl_tape. cbn. apply tape_local_cons_iff in HE2 as (HE2&HE3). unfold finType_CS in *. rewrite HE3. auto.
     }
   Qed.
+
+
+  (* More accurate termination time *)
+  (* Note that this Lemma is not at all useful, but it shows how to show termination of the [Match] operator. *)
+  Lemma MatchNat_Terminates :
+    projT1 MatchNat ↓
+           (fun tin k =>
+              exists m, tin[@Fin0] ≂ m /\
+                   match m with
+                   | O => 2 <= k
+                   | _ => 5 <= k
+                   end).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold MatchNat. repeat TM_Correct. }
+    {
+      intros tin i. intros (m&HEncM&Hi).
+      destruct HEncM as (r1&r2&HE1&HE2).
+      destruct m eqn:Em; cbn in *.
+      - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. TMSimp.
+        exists 1, 0. repeat split.
+        + omega.
+        + omega.
+        + TMSimp. omega.
+      - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. TMSimp.
+        exists 1, 3. repeat split.
+        + omega.
+        + omega.
+        + TMSimp. exists 1, 1. repeat split.
+          * omega.
+          * omega.
+          * TMSimp. omega.
+    }
+  Qed.
+
   
   (* Constructors *)
   Section NatConstructor.

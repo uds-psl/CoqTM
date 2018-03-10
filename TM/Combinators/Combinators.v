@@ -113,13 +113,30 @@ Ltac smpl_match_WRealise :=
   end.
 
 
+Ltac smpl_match_Terminates :=
+  match goal with
+  | [ |- projT1 (MATCH ?M1 ?M2) ↓ ?R] =>
+    is_evar R;
+    let tM2 := type of M2 in
+    match tM2 with
+    | ?F -> _ =>
+      eapply (Match_TerminatesIn
+                (F := FinType(EqType F))
+                (T2 := ltac:(now (intros ?e; destruct_shelve e))));
+      [ (* show weak realisation of the machine over which is matched *)
+      | (* Show termination of the machine over which is matched *)
+      | intros ?e; repeat destruct _ (* Show termination of each case-machine *)
+      ]
+    end
+  end.
+
 (** Put stuff together *)
 
 Ltac smpl_TM_Combinators :=
   match goal with
   | [ |- MATCH _ _ ⊫ _] => smpl_match_WRealise
   | [ |- MATCH _ _ ⊨c(_) _] => smpl_match_RealiseIn
-  | [ |- projT1 (MATCH _ _) ↓ _] => eapply Match_TerminatesIn
+  | [ |- projT1 (MATCH _ _) ↓ _] => smpl_match_Terminates
   | [ |- If _ _ _ ⊫ _] => eapply If_WRealise
   | [ |- If _ _ _ ⊨c(_) _] => eapply If_RealiseIn
   | [ |- projT1 (If _ _ _) ↓ _] => eapply If_TerminatesIn
