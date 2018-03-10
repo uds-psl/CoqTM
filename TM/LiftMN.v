@@ -669,9 +669,9 @@ Ltac simpl_not_in_app_tapes :=
          | [ H : forall i : Fin.t _, not_indexes (app_tapes ?n ?m) i -> _ |- _] =>
            simpl_not_in_app_tapes_loop H n m
          | [ H : context [ (reorder (app_tapes ?n ?m) _)[@_]] |- _ ] =>
-           rewrite ! (add_tapes_reorder_nth (n := n) (m := m)) in H; cbn in H
+           rewrite ! (app_tapes_reorder_nth (n := n) (m := m)) in H; cbn in H
          | [ |- context [ (reorder (app_tapes ?n ?m) _)[@_]] ] =>
-           rewrite ! (add_tapes_reorder_nth (n := n) (m := m)); cbn
+           rewrite ! (app_tapes_reorder_nth (n := n) (m := m)); cbn
          end.
 
 Goal True.
