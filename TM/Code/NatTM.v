@@ -169,7 +169,7 @@ Proof.
     intros tin ((), tout) H. intros m n s2 s3 HEncM HEncN HEncM'. TMSimp.
     hnf in HEncM'. destruct HEncM' as (int3x&int3rest&Hint3rest&HEncM'). TMSimp. clear HEncM'.
 
-    (* Rewrite Lift-N equations *)
+    (* Rewrite remaining Lift-N equations *)
     specialize (H1 Fin1 ltac:(vector_not_in)). TMSimp. clear H1.
     specialize (H3 Fin1 ltac:(vector_not_in)). TMSimp. clear H3.
     specialize (H4 Fin2 ltac:(vector_not_in)). TMSimp. clear H4.
@@ -251,7 +251,7 @@ Proof.
 
     exists (44 + 16 * m), (94 + 36 * m). repeat split.
     - omega.
-    - cbn -[add mult]. eexists. split.
+    - eexists. split.
       + eapply tape_encodes_size_encodes; eauto using tape_encodes_l_encodes_size.
       + rewrite nat_encode_length. omega.
     - intros tmid1 () (H1&H2). cbn in H1, H2. unfold finType_CS in *. cbn -[add mult] in *.
@@ -260,13 +260,14 @@ Proof.
 
       exists (11 + 12 * m), (82 + 24 * m). repeat split.
       + omega.
-      + cbn -[add mult]. do 2 eexists. repeat split. eapply tape_encodes_l_encodes; eauto. eauto.
+      + do 2 eexists. repeat split. eapply tape_encodes_l_encodes; eauto. eauto.
         unfold Add_Loop_steps. omega.
-      + intros tmid2 () (H3&H4).
-        specialize (H4 Fin2 ltac:(vector_not_in)). unfold finType_CS in *. cbn -[add mult] in *. try rewrite H4 in *. (* ??? *)
-        specialize (H3 _ _ _ _ ltac:(eauto using tape_encodes_l_encodes_size) ltac:(eauto)) as (H5&H6). clear H6.
-        do 5 eexists. repeat split. eauto. unfold finType_CS in *. cbn in tmid2, H4. cbn. rewrite <- H4.
-        do 2 eexists. unshelve (repeat (split; [ shelve | eauto])). cbn. omega.
+      + intros tmid2 () (HRestore & HInject).
+        specialize (HRestore _ _ _ _ ltac:(eauto using tape_encodes_l_encodes_size) ltac:(eauto)) as (HRestore1&HRestore2).
+        specialize (HInject Fin2 ltac:(vector_not_in)). cbn in tmid2, HInject. rewrite <- HInject.
+        do 5 eexists. repeat split. eauto.
+        do 2 eexists. unshelve (repeat (split; [ shelve | cbn; eauto])).
+        cbn. omega.
         rewrite !nat_encode_length. cbn [length]. omega.
   }
 Qed.
@@ -276,31 +277,26 @@ Qed.
 (** * Multiplication *)
 
 (*
- * t0: m  (counter for mult) (stays left)
+ * t0: m  (counter for mult)
  * t1: n  (m for add) (stays left)
  * t2: a  (n for add) (stays left)
  * t3: n' (copy of m for add) (stays left)
- * t4: m' (copy of m) (stays left)
  *)
 
 Definition Mult_Step : { M : mTM _ 4 & states M -> bool * unit } :=
-  If (Inject MatchNat [|Fin0|])
+  If (Inject MatchNat (app_tapes 1 3))
      (Return (Inject Add (add_tapes 3 1)) (true, tt))
      (Nop _ _ (false, tt)).
 
 
 Definition Mult_Loop : { M : mTM _ 4 & states M -> unit } := WHILE Mult_Step.
 
-Definition Mult : { M : mTM _ 5 & states M -> unit } :=
-  Inject (CopyValue' _) [|Fin0; Fin4|];; (* save the counter *)
-  Inject Mult_Loop (app_tapes 4 1);; (* Main loop *)
-  Inject (RestoreValue _) [|Fin0; Fin4|]. (* restore the value *)
+Definition Mult : { M : mTM _ 4 & states M -> unit } :=
+  Inject (InitTape _ 0) [|Fin2|];; (* Initialise the accu to 0 *)
+  Mult_Loop. (* Main loop *)
 
 
 (** Correctness *)
-
-Print Add_Step_Rel.
-Print Add_Rel.
 
 Definition Mult_Step_Rel : Rel (tapes (bool^+) 4) ((bool * unit) * tapes (bool^+) 4) :=
   fun tin '(yout, tout) =>
@@ -339,14 +335,14 @@ Proof.
     - (* Condition of if evaluated to [true] *)
 
       (* Lift-N rewritings *)
-      pose proof (H2 Fin1 ltac:(vector_not_in)) as L2. TMSimp. clear L2.
-      pose proof (H2 Fin2 ltac:(vector_not_in)) as L2. TMSimp. clear L2.
-      pose proof (H2 Fin3 ltac:(vector_not_in)) as L2. TMSimp. clear L2. clear H2.
-      specialize (H3 Fin0 ltac:(vector_not_in)). TMSimp. clear H3.
+      pose proof (H2 Fin1 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
+      pose proof (H2 Fin2 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
+      pose proof (H2 Fin3 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
+      specialize (H3 Fin0 ltac:(vector_not_in)). TMSimp.
 
       (* Computation applications *)
       specialize (H _ _ _ ltac:(eauto)). destruct m; TMSimp; try congruence.
-      specialize (H1 _ _ _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto)) as (H1&H2&H3).
+      specialize (H1 _ _ _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto)) as (HC1&HC2&HC3).
 
       repeat split.
       + hnf. do 2 eexists. unshelve (do 2 (split; [ shelve | eauto])). cbn. omega.
@@ -356,17 +352,16 @@ Proof.
 
     - (* Condition of if evaluated to [false] *)
 
+      (* Lift-N rewritings *)
+      pose proof (H1 Fin1 ltac:(vector_not_in)) as L1. TMSimp.
+      pose proof (H1 Fin2 ltac:(vector_not_in)) as L2. TMSimp.
+      pose proof (H1 Fin3 ltac:(vector_not_in)) as L3. TMSimp.
+
       (* Computation applications *)
       specialize (H _ _ _ ltac:(eauto)). destruct m; TMSimp; try congruence.
 
-      destruct_tapes; cbn in *.
-
-      (* Lift-N rewritings *)
-      pose proof (H1 Fin1 ltac:(vector_not_in)) as L1. TMSimp.
-      pose proof (H1 Fin2 ltac:(vector_not_in)) as L1. TMSimp.
-      pose proof (H1 Fin3 ltac:(vector_not_in)) as L1. TMSimp. clear H1.
-
-      split; auto. f_equal. eapply tape_encodes_l_injective; eauto.
+      destruct_tapes; cbn in *. split; auto.
+      repeat f_equal; try congruence. eapply tape_encodes_l_injective; eauto.
   }
 Qed.
 
@@ -411,5 +406,192 @@ Proof.
       repeat split; cbn in *; auto.
       + enough (n + m * n + a = m * n + (n + a)) as -> by auto; omega.
       + eapply isLeft_monotone; eauto. apply Nat.eq_le_incl. apply max_max_le.
+  }
+Qed.
+
+
+(* We initialised [a] to [0] now, so the output on tape [t2] is [m*n] *)
+Definition Mult_Rel : Rel (tapes (bool^+) 4) (unit * tapes (bool^+) 4) :=
+  ignoreParam (
+      fun tin tout =>
+        forall (m n s0 s0' s1 s3 : nat),
+          tin [@Fin0] ≂{s0;s0'} m ->
+          tin [@Fin1] ≂{0;s1} n ->
+          isLeft tin[@Fin3] s3 ->
+          tout[@Fin0] ≂{m + s0; s0'} 0 /\ (* m is decremented to 0 *)
+          tout[@Fin1] ≂{0;s1} n /\ (* n stays unchanged *)
+          tout[@Fin2] ≂ m * n /\ (* a the output of the computation [m+n] *)
+          isLeft tout[@Fin3] (max s3 (S (S n))) (* n' stays left and has not allocated more memory than needed to hold n *)
+    ).
+
+Lemma Mult_WRealsie : Mult ⊫ Mult_Rel.
+Proof.
+  eapply WRealise_monotone.
+  {
+    unfold Mult. repeat TM_Correct.
+    - eapply RealiseIn_WRealise. apply InitTape_Sem.
+    - apply Mult_Loop_WRealise.
+  }
+  {
+    intros tin ((), tout) H. intros m n s0 s0' s1 s3 HEncM HEncN HEncN'. TMSimp.
+    (* Lift-N rewriting *)
+    pose proof (H1 Fin0 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
+    pose proof (H1 Fin1 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
+    pose proof (H1 Fin3 ltac:(vector_not_in)) as L1. TMSimp. clear L1. clear H1.
+    (* Apply computations *)
+    specialize (H0 _ _ _ _ _ _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto)) as (H1&H2&H3&H4).
+    now rewrite Nat.add_0_r in H3.
+  }
+Qed.
+
+
+(** Termination of Mult *)
+
+(*
+ * t0: m  (counter for mult) (stays left)
+ * t1: n  (m for add) (stays left)
+ * t2: a  (n for add) (stays left)
+ * t3: n' (copy of m for add) (stays left)
+ *)
+
+(*
+Definition Mult_Step : { M : mTM _ 4 & states M -> bool * unit } :=
+  If (Inject MatchNat [|Fin0|])
+     (Return (Inject Add (add_tapes 3 1)) (true, tt))
+     (Nop _ _ (false, tt)).
+*)
+Check Add_Terminates.
+
+Print Add_steps.
+
+Definition Mult_Step_steps n := 145 + 52 * n. (* 5 additional steps for [MatchNat] and 1 additional step for [If] *)
+
+Lemma Mult_Step_Terminates :
+  projT1 Mult_Step ↓
+         (fun tin i =>
+            exists (m n a s1' s3 : nat),
+              tin[@Fin0] ≂ m /\
+              tin[@Fin1] ≂{0;s1'} n /\
+              tin[@Fin2] ≂ a /\
+              isLeft tin[@Fin3] s3 /\
+              match m with
+              | 0 => 6 <= i
+              | _ => 6 + Mult_Step_steps n <= i
+              end).
+Proof.
+  eapply TerminatesIn_monotone.
+  {
+    unfold Mult_Step. repeat TM_Correct.
+    - eapply RealiseIn_WRealise. apply MatchNat_Sem.
+    - eapply RealiseIn_terminatesIn. apply MatchNat_Sem.
+    - apply Add_Terminates.
+  }
+  {
+    intros tin i (m&n&a&s1'&s3&HEncM&HEncN&HEncA&HEncN'&Hi).
+    destruct m as [ | m' ].
+    {
+      exists 5, 0. repeat split.
+      - omega.
+      - cbn. omega.
+      - intros tmid b (HComp & HInject). cbn -[app_tapes] in HComp, HInject.
+        destruct HEncM as (r1&r2&HEncM). cbn -[add mult] in *.
+        specialize (HComp _ _ _ ltac:(eauto)). cbn in HComp. destruct HComp as (HComp&->).
+        omega.
+    }
+    {
+      exists 5, (Mult_Step_steps n). repeat split.
+      - omega.
+      - cbn. omega.
+      - intros tmid b (HComp & HInject). cbn -[app_tapes] in HComp, HInject.
+        destruct HEncM as (r1&r2&HEncM). cbn -[add mult] in *.
+        cbn in tmid.
+        pose proof (HInject Fin1 ltac:(vector_not_in)) as L1. rewrite L1 in *. clear L1.
+        pose proof (HInject Fin2 ltac:(vector_not_in)) as L1. rewrite L1 in *. clear L1.
+        pose proof (HInject Fin3 ltac:(vector_not_in)) as L1. rewrite L1 in *. clear L1.
+        specialize (HComp _ _ _ ltac:(eauto)). cbn in HComp. destruct HComp as (HComp&->).
+        do 4 eexists. repeat split.
+        + eauto.
+        + eauto.
+        + eauto.
+        + unfold Add_steps, Mult_Step_steps. omega.
+    }
+  }
+Qed.
+
+
+Definition Mult_Loop_steps m n := 6 + m * (152 + 52 * n).
+
+Lemma Mult_Loop_Terminates :
+  projT1 Mult_Loop ↓
+         (fun tin i => exists a m n s1' s3,
+              tin[@Fin0] ≂ m /\
+              tin[@Fin1] ≂{0;s1'} n /\
+              tin[@Fin2] ≂ a /\
+              isLeft tin[@Fin3] s3 /\
+              Mult_Loop_steps m n <= i).
+Proof.
+  unfold Mult_Loop, Mult_Loop_steps. repeat TM_Correct.
+  { apply Mult_Step_WRealise. }
+  { apply Mult_Step_Terminates. }
+  {
+    intros tin i (a & m & n & s1' & s3 & HEncM & HEncN & HEncA & HEncN' & Hi).
+    pose proof HEncM as (r1 & r2 & HEncM' % tape_encodes_l_encodes_size).
+    destruct m as [ | m'] eqn:Em; cbn -[add mult] in *.
+    - exists 6. repeat split.
+      + do 5 eexists. repeat split; eauto. cbn -[add mult]. omega.
+      + intros b () tmid. intros H.
+        specialize H with (1 := HEncM') (2 := HEncN) (3 := HEncA) (4 := HEncN'). cbn -[add mult] in *.
+        destruct H as (->&?); inv_pair. omega.
+    - exists (6 + Mult_Step_steps n). repeat split.
+      + do 5 eexists. repeat split; eauto. cbn -[add mult]. unfold Mult_Step_steps, Mult_Loop_steps. omega.
+      + intros b () tmid. intros H.
+        specialize H with (1 := HEncM') (2 := HEncN) (3 := HEncA) (4 := HEncN'). cbn -[add mult] in *.
+        destruct H as (H1&H2&H3&H4&H5); inv_pair.
+        eexists (Mult_Loop_steps m' n). repeat split.
+        * do 5 eexists. repeat split.
+          -- eapply tape_encodes_size_encodes; eauto.
+          -- eassumption.
+          -- eassumption.
+          -- eapply isLeft_monotone; eauto.
+          -- unfold Mult_Step_steps. constructor.
+        * unfold Mult_Step_steps, Mult_Loop_steps.
+          rewrite <- Hi. clear_all. rewrite !Nat.mul_succ_l. omega. (* oh [omega] -- you come to your limits *)
+  }
+Qed.
+
+
+(*
+ * Mult writes [0] to tape [a] and executes the loop after that.
+ * The runtime of [InitTape 0] is [12 + 4 * |encode 0| = 12 + 4 * 1 = 16
+ *)
+
+Definition Mult_steps m n := 24 + m * (152 + 52 * n).
+
+
+Lemma Mult_Terminates :
+  projT1 Mult ↓
+         (fun tin i => exists m n s1' s3,
+              tin[@Fin0] ≂ m /\
+              tin[@Fin1] ≂{0;s1'} n /\
+              isLeft tin[@Fin3] s3 /\
+              Mult_steps m n <= i).
+Proof.
+  eapply TerminatesIn_monotone.
+  {
+    unfold Mult. repeat TM_Correct.
+    - eapply RealiseIn_WRealise. apply InitTape_Sem.
+    - eapply RealiseIn_terminatesIn. apply InitTape_Sem.
+    - apply Mult_Loop_Terminates.
+  }
+  {
+    intros tin i (m & n & s1' & s3 & HEncM & HEncN & HEncN' & Hi).
+    exists 16, (Mult_Loop_steps m n). cbn -[add mult]. repeat split.
+    - rewrite <- Hi. unfold Mult_Loop_steps, Mult_steps. omega.
+    - rewrite nat_encode_length. omega.
+    - intros tmid () (HEncA' & HInj).
+      pose proof (HInj Fin0 ltac:(vector_not_in)) as L1. rewrite <- !L1 in *. clear L1.
+      pose proof (HInj Fin1 ltac:(vector_not_in)) as L1. rewrite <- !L1 in *. clear L1.
+      pose proof (HInj Fin3 ltac:(vector_not_in)) as L1. rewrite <- !L1 in *. clear L1. clear HInj.
+      eauto 10.
   }
 Qed.
