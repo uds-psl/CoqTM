@@ -146,6 +146,8 @@ Definition restrict X Y Z (R : Rel X (Y * Z)) f : Rel X Z := (fun x1 x2 => R x1 
 Notation "R '|_' f" := (restrict R f) (at level 30, format "R '|_' f").
 Arguments restrict { X Y Z } ( R f ) x y /.
 
+
+
 Lemma rif_restrict X Y (R1 R2 : Rel X Y) b : (if? R1 ! R2) |_b =2 if b then R1 else R2.
 Proof.
   destruct b; firstorder.
@@ -171,6 +173,17 @@ Lemma rcomp_restrict X Y Z (R1 : Rel X Y) (R2 : Rel Y (bool * Z)) b :
 Proof.
   destruct b; firstorder.
 Qed.
+
+
+Definition restrictFst X P1 P2 Z (R : Rel X ((P1 * P2) * Z)) (p1 : P1) : Rel X (P2*Z) := fun x '(p2, z) => R x ((p1, p2), z).
+Notation "R '|_fst=' p1" := (restrictFst R p1) (at level 30, format "R '|_fst=' p1").
+Arguments restrictFst { X P1 P2 Z } R p1 x y /.
+
+
+Definition restrictSnd X P1 P2 Z (R : Rel X ((P1 * P2) * Z)) (p2 : P2) : Rel X (P1*Z) := fun x '(p1, z) => R x ((p1, p2), z).
+Notation "R '|_snd=' p1" := (restrictSnd R p1) (at level 30, format "R '|_snd=' p1").
+Arguments restrictSnd { X P1 P2 Z } R p2 x y /.
+
 
 Definition pow X R n : Rel X X := it (rcomp R) n eq.
 
@@ -481,6 +494,7 @@ Proof.
 Qed.      
 
 
+(* Introduce a param that is fixed to a value *)
 Definition rfix X Y Z (R : Rel X Z) (p : Y) : Rel X (Y*Z) := (fun x '(y, z) =>
 y = p /\ R x z).
 Notation "R '||_' f" := (rfix R f) (at level 30, format "R '||_' f").

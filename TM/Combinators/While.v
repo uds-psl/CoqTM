@@ -107,7 +107,7 @@ Section While.
 
   Lemma While_WRealise (R : Rel _ (bool * F * _)) :
     pM ⊫ R ->
-    WHILE ⊫ ( (star (⋃_f R |_ (true, f))) ∘ (fun t '(f, t') => R t (false, f, t'))).
+    WHILE ⊫ star (⋃_f R |_ (true, f)) ∘ R |_fst=false.
   Proof.
     intros HR t1 i1 oenc2 eq. unfold initc in eq.
     revert t1 eq; apply complete_induction with (x := i1); clear i1; intros i1 IH t1 eq.
