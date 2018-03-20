@@ -26,9 +26,9 @@ TM/Mirror.v
 # Encoding
 TM/Code/Code.v
 TM/Code/CodeTM.v
-TM/Code/FinTM.v
+# TM/Code/FinTM.v
+# TM/Code/BoolTM.v
 TM/Code/ChangeAlphabet.v
-TM/Code/BoolTM.v
 TM/Code/Copy.v
 # Defect files
 # TM/Code/MatchSum.v

@@ -8,6 +8,41 @@ Require Import TM.Compound.TMTac.
 
 Notation "sig '^+'" := (FinType(EqType(bool + sig))) (at level 0) : type_scope.
 
+
+(* Tape proposition that says that the pointer is on (but not off) the left-most symbol *)
+Section IsLeft.
+
+  Definition isLeft (sig : finType) (t : tape sig) :=
+    exists x rs, t = midtape nil x rs.
+
+   Definition isLeft_size (sig : finType) (t : tape sig) (s : nat) :=
+    exists x rs, |rs| <= s /\ t = midtape nil x rs.
+
+
+   Lemma isLeft_size_isLeft (sig : finType) (t : tape sig) (s : nat) :
+     isLeft_size t s -> isLeft t.
+   Proof. intros (x&rs&_&->). hnf. eauto. Qed.
+
+  Lemma isLeft_size_monotone (sig : finType) (t : tape sig) (s1 s2 : nat) :
+    isLeft_size t s1 -> s1 <= s2 -> isLeft_size t s2.
+  Proof. intros (x&rs&Hrs&->) Hs. exists x, rs. split. omega. auto. Qed. 
+
+  Lemma mapTape_isLeft (sig tau : finType) (t : tape sig) (f : sig -> tau) :
+    isLeft (mapTape f t) <-> isLeft t.
+  Proof.
+    split.
+    - intros (r1&r2&H). destruct t; cbn in *; inv H.
+      apply map_eq_nil in H1 as ->. hnf. eauto.
+    - intros (r1&r2&->). hnf. cbn. eauto.
+  Qed.
+  
+End IsLeft.
+
+Hint Resolve isLeft_size_isLeft isLeft_size_monotone mapTape_isLeft.
+
+
+
+
 Section Fix_Sig.
   
   Variable (sig : finType).
@@ -144,66 +179,45 @@ Section Fix_Sig.
     Proof. intros ? ->. now eapply tape_encodes_ext; eauto. Qed.
 
   End Encodes_Ext.
+
+
+  
+
+  (** Definition of the computation relations *)
   
   Section Computes.
-    Variable n_tapes : nat.
-    Variable (i j : Fin.t n_tapes).
+    Variable n : nat.
     Variable (X Y : Type) (cX : codeable sig X) (cY : codeable sig Y).
-    Variable (F : finType).
-
     
+    (*
+     * Tape [t0] is the input tapes, [t2] is the output tape.
+     * All further tapes are "internal tapes", i.e. they pointer is left before and after the execution.
+     *)
     Definition Computes_Rel (f : X -> Y) :
-      Rel (tapes (sig ^+) n_tapes) (F * tapes sig^+ n_tapes) :=
-      ignoreParam (fun tin tout => forall (x : X), tin[@i] ≂ x -> tout[@j] ≂ f x).
-    
+      Rel (tapes (sig ^+) (S (S n))) (unit * tapes sig^+ (S (S n))) :=
+      ignoreParam (
+          fun tin tout =>
+            forall (x : X),
+              tin[@Fin0] ≂ x ->
+              (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]) ->
+              tout[@Fin0] = tin[@Fin0] /\ (* Input value stayes unchanged *)
+              tout[@Fin1] ≂ f x /\
+              forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]
+        ).
 
-    Definition Computes_Rel_p (f : X -> Y) (param_fun : X -> F) :
-      Rel (tapes (sig ^+) n_tapes) (F * tapes sig^+ n_tapes) :=
-      fun tin '(yout, tout) =>
-        forall (x : X), tin[@i] ≂ x -> tout[@j] ≂ f x /\ yout = param_fun x.
 
-
-    Section Computes_IgnoreParam.
-
-      Variable (f : X -> Y) (param_fun : X -> F).
-
-      Lemma Computes_Rel_ignore_param :
-        Computes_Rel_p f param_fun <<=2 Computes_Rel f.
-      Proof.
-        hnf. intros tin (?,tout) Comp. hnf in *. intros x HEnc. now specialize (Comp x HEnc) as (?&_).
-      Qed.
-
-      Variable pM : { M : mTM sig^+ n_tapes & states M -> F }.
-
-      Lemma Computes_IgnoreParam_WRealise :
-        pM ⊫ Computes_Rel_p f param_fun ->
-        pM ⊫ Computes_Rel f.
-      Proof. intros H. eapply WRealise_monotone; eauto using Computes_Rel_ignore_param. Qed.
-
-      Lemma Computes_IgnoreParam_RealiseIn k :
-        pM ⊨c(k) Computes_Rel_p f param_fun ->
-        pM ⊨c(k) Computes_Rel f.
-      Proof. intros H. eapply RealiseIn_monotone; eauto using Computes_Rel_ignore_param. Qed.
-
-    End Computes_IgnoreParam.
-
+    (* The computes relation must be extensional *)
     Section Computes_Ext.
       Variable (f f' : X -> Y) (ext_fun : forall x, f x = f' x).
-      Variable (paramFun paramFun' : X -> F) (ext_param : forall x, paramFun x = paramFun' x).
 
       Lemma Computes_ext :
         Computes_Rel f' <<=2 Computes_Rel f.
       Proof.
-        intros tin (yout, tout) HRel. hnf. intros x EncX. specialize (HRel _ EncX). congruence.
-      Qed.
+        intros tin (yout, tout) HRel. hnf. intros x EncX. specialize (HRel _ EncX). intuition congruence.
+      Qed
+.
 
-      Lemma Computes_ext_p :
-        Computes_Rel_p f' paramFun' <<=2 Computes_Rel_p f paramFun.
-      Proof.
-        intros tin (yout, tout) HRel. hnf. intros x EncX. specialize (HRel _ EncX). congruence.
-      Qed.
-
-      Variable pM : { M : mTM sig^+ n_tapes & states M -> F }.
+      Variable pM : { M : mTM sig^+ (S (S n)) & states M -> unit }.
 
       Lemma Computes_Ext_WRealise :
         pM ⊫ Computes_Rel f' ->
@@ -233,149 +247,44 @@ Section Fix_Sig.
         - eapply Computes_ext.
       Qed.
 
-      Lemma Computes_Ext_WRealise_p :
-        pM ⊫ Computes_Rel_p f' paramFun' ->
-        pM ⊫ Computes_Rel_p f paramFun.
-      Proof.
-        intros H. eapply WRealise_monotone.
-        - eapply H.
-        - eapply Computes_ext_p.
-      Qed.
-
-      Lemma Computes_Ext_Realise_p :
-        pM ⊨ Computes_Rel_p f' paramFun' ->
-        pM ⊨ Computes_Rel_p f paramFun.
-      Proof.
-        intros H. eapply Realise_monotone.
-        - eapply H.
-        - eapply Computes_ext_p.
-      Qed.
-
-      Lemma Computes_Ext_RealiseIn_p (k : nat) :
-        pM ⊨c(k) Computes_Rel_p f' paramFun' ->
-        pM ⊨c(k) Computes_Rel_p f paramFun.
-      Proof.
-        intros H. eapply RealiseIn_monotone.
-        - eapply H.
-        - auto.
-        - eapply Computes_ext_p.
-      Qed.
-
     End Computes_Ext.
   End Computes.
 
-  Section Computes_Composes.
-    Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
-    Variable (F1 F2 : finType).
-    Variable (f : X -> Y) (g : Y -> Z).
-    Variable (param1 : X -> F1) (param2 : Y -> F2).
-    Variable (n_tapes : nat).
-    Variable (i1 i2 i3 : Fin.t n_tapes).
-    Variable (pM : {M : mTM sig^+ n_tapes & states M -> F1}).
-    Variable (pN : {N : mTM sig^+ n_tapes & states N -> F2}).
 
-    Lemma compose_Computes_Realise_p (iin iout : Fin.t n_tapes) :
-      pM ⊨ Computes_Rel_p i1 i2 _ _ f param1 ->
-      pN ⊨ Computes_Rel_p i2 i3 _ _ g param2 ->
-      (pM ;; pN) ⊨ Computes_Rel_p i1 i3 _ _ (fun x => g (f x)) (fun x => param2 (f x)).
-    Proof.
-      intros Comp1 Comp2. eapply Realise_monotone.
-      - cbn. eapply Seq_Realise; eauto.
-      - intros tx (out2, ty) H. hnf in H. destruct H as ((out1,tps1)&H1&H2). hnf. intros x EncX. hnf in H1, H2.
-        specialize (H1 x EncX) as (H1&->). specialize (H2 (f x) H1) as (H2&->). auto.
-    Qed.
-
-    Lemma compose_Computes_WRealise_p (iin iout : Fin.t n_tapes) :
-      pM ⊫ Computes_Rel_p i1 i2 _ _ f param1 ->
-      pN ⊫ Computes_Rel_p i2 i3 _ _ g param2 ->
-      (pM ;; pN) ⊫ Computes_Rel_p i1 i3 _ _ (fun x => g (f x)) (fun x => param2 (f x)).
-    Proof.
-      intros Comp1 Comp2. eapply WRealise_monotone.
-      - cbn. eapply Seq_WRealise; eauto.
-      - intros tx (out2, ty) H. hnf in H. destruct H as ((out1,tps1)&H1&H2). hnf. intros x EncX. hnf in H1, H2.
-        specialize (H1 x EncX) as (H1&->). specialize (H2 (f x) H1) as (H2&->). auto.
-    Qed.
-    
-    Lemma compose_computes_RealiseIn_p (iin iout : Fin.t (S n_tapes)) (k1 k2 : nat) :
-      pM ⊨c(k1) Computes_Rel_p i1 i2 _ _ f param1 ->
-      pN ⊨c(k2) Computes_Rel_p i2 i3 _ _ g param2 ->
-      (pM ;; pN) ⊨c(k1 + S k2) Computes_Rel_p i1 i3 _ _ (fun x => g (f x)) (fun x => param2 (f x)).
-    Proof.
-      intros Comp1 Comp2. eapply RealiseIn_monotone.
-      - cbn. eapply Seq_RealiseIn; eauto.
-      - cbn. omega.
-      - intros tx (out2, ty) H. hnf in H. destruct H as ((out1,tps1)&H1&H2). hnf. intros x EncX. hnf in H1, H2.
-        specialize (H1 x EncX) as (H1&->). specialize (H2 (f x) H1) as (H2&->). auto.
-    Qed.
-
-  End Computes_Composes.
-  
-
+  (** Computes relation with two arguments *)
   Section Computes2.
-    Variable n_tapes : nat.
-    Variable (i j k : Fin.t n_tapes).
+    Variable n : nat.
     Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
-    Variable (F : finType).
 
-    Definition Computes2_Rel (f : X -> Y -> Z) : Rel (tapes sig^+ n_tapes) (F * tapes sig^+ n_tapes) :=
-      ignoreParam (fun tin tout =>
-                     forall (x : X) (y : Y),
-                       tape_encodes _ ( tin[@i]) x ->
-                       tape_encodes _ ( tin[@j]) y ->
-                       tape_encodes _ (tout[@k]) (f x y)).
+    (*
+     * Tapes [t0] and [t1] are input tapes, [t2] is the output tape.
+     * All further tapes are "internal tapes", i.e. they pointer is left before and after the execution.
+     *)
+    Definition Computes2_Rel (f : X -> Y -> Z) :
+      Rel (tapes (sig ^+) (S (S (S n)))) (unit * tapes sig^+ (S (S (S n)))) :=
+      ignoreParam (
+          fun tin tout =>
+            forall (x : X) (y : Y),
+              tin[@Fin0] ≂ x ->
+              tin[@Fin1] ≂ y ->
+              (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS (Fin.FS i))]) ->
+              tout[@Fin0] = tin[@Fin0] /\ (* First input value stayes unchanged *)
+              tout[@Fin1] = tin[@Fin1] /\ (* Second input value stayes unchanged *)
+              tout[@Fin2] ≂ f x y /\
+              forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS (Fin.FS i))]
+        ).
     
-
-    Definition Computes2_Rel_p (f : X -> Y -> Z) (param : X -> Y -> F) : Rel (tapes sig^+ n_tapes) (F * tapes sig^+ n_tapes) :=
-      fun tin '(yout, tout) =>
-        forall (x : X) (y : Y),
-          tape_encodes _ ( tin[@i]) x ->
-          tape_encodes _ ( tin[@j]) y ->
-          tape_encodes _ (tout[@k]) (f x y) /\
-          yout = param x y.
-
-
-    Section Computes2_IgnoreParam.
-
-      Variable (f : X -> Y -> Z) (param_fun : X -> Y -> F).
-
-      Lemma Computes2_Rel_ignore_param :
-        Computes2_Rel_p f param_fun <<=2 Computes2_Rel f.
-      Proof.
-        hnf. intros tin (?,tout) Comp. hnf in *. intros x HEncX y HEncY. now specialize (Comp x HEncX) as (?&_).
-      Qed.
-
-      Variable pM : { M : mTM sig^+ n_tapes & states M -> F }.
-
-      Lemma Computes2_IgnoreParam_WRealise :
-        pM ⊫ Computes2_Rel_p f param_fun ->
-        pM ⊫ Computes2_Rel f.
-      Proof. intros H. eapply WRealise_monotone; eauto using Computes2_Rel_ignore_param. Qed.
-
-      Lemma Computes2_IgnoreParam_RealiseIn l :
-        pM ⊨c(l) Computes2_Rel_p f param_fun ->
-        pM ⊨c(l) Computes2_Rel f.
-      Proof. intros H. eapply RealiseIn_monotone; eauto using Computes2_Rel_ignore_param. Qed.
-
-    End Computes2_IgnoreParam.
-
 
     Section Computes2_Ext.
       Variable (f f' : X -> Y -> Z) (ext_fun : forall x y, f x y = f' x y).
-      Variable (paramFun paramFun' : X -> Y -> F) (ext_param : forall x y, paramFun x y = paramFun' x y).
 
       Lemma Computes2_ext :
         Computes2_Rel f' <<=2 Computes2_Rel f.
       Proof.
-        intros tin (yout, tout) HRel. hnf. intros x EncX y EncY. specialize (HRel x EncX y EncY). congruence.
+        intros tin (yout, tout) HRel. hnf. intros x EncX y EncY. specialize (HRel x EncX y EncY). intuition congruence.
       Qed.
 
-      Lemma Computes2_ext_p :
-        Computes2_Rel_p f' paramFun' <<=2 Computes2_Rel_p f paramFun.
-      Proof.
-        intros tin (yout, tout) HRel. hnf. intros x EncX y EncY. specialize (HRel x EncX y EncY). congruence.
-      Qed.
-
-      Variable pM : { M : mTM sig^+ n_tapes & states M -> F }.
+      Variable pM : { M : mTM sig^+ (S (S (S n))) & states M -> unit }.
 
       Lemma Computes2_Ext_WRealise :
         pM ⊫ Computes2_Rel f' ->
@@ -405,34 +314,6 @@ Section Fix_Sig.
         - eapply Computes2_ext.
       Qed.
 
-      Lemma Computes2_Ext_WRealise_p :
-        pM ⊫ Computes2_Rel_p f' paramFun' ->
-        pM ⊫ Computes2_Rel_p f paramFun.
-      Proof.
-        intros H. eapply WRealise_monotone.
-        - eapply H.
-        - eapply Computes2_ext_p.
-      Qed.
-
-      Lemma Computes2_Ext_Realise_p :
-        pM ⊨ Computes2_Rel_p f' paramFun' ->
-        pM ⊨ Computes2_Rel_p f paramFun.
-      Proof.
-        intros H. eapply Realise_monotone.
-        - eapply H.
-        - eapply Computes2_ext_p.
-      Qed.
-
-      Lemma Computes2_Ext_RealiseIn_p (l : nat) :
-        pM ⊨c(l) Computes2_Rel_p f' paramFun' ->
-        pM ⊨c(l) Computes2_Rel_p f paramFun.
-      Proof.
-        intros H. eapply RealiseIn_monotone.
-        - eapply H.
-        - auto.
-        - eapply Computes2_ext_p.
-      Qed.
-
     End Computes2_Ext.
 
   End Computes2.
@@ -444,9 +325,6 @@ Notation "t '≂[' r1 ';' r2 ] x" := (tape_encodes_l _ t x r1 r2) (at level 70, 
 Notation "t '≂{' r1 ';' r2 } x" := (tape_encodes_size _ t x r1 r2) (at level 70, no associativity, format "t  '≂{' r1 ;  r2 }  x").
 Notation "t '≃[' r1 ';' r2 ] x" := (tape_encodes_r _ t x r1 r2) (at level 70, no associativity, format "t  '≃[' r1 ;  r2 ]  x").
 Notation "t '≃{' r1 ';' r2 } x" := (tape_encodes'_size _ t x r1 r2) (at level 70, no associativity, format "t  '≃{' r1 ;  r2 }  x").
-
-
-Definition return_unit (X : Type) : X -> unit := fun _ => tt.
 
 
 
