@@ -200,7 +200,7 @@ Section Fix_Sig.
             forall (x : X),
               tin[@Fin0] ≂ x ->
               (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]) ->
-              tout[@Fin0] = tin[@Fin0] /\ (* Input value stayes unchanged *)
+              tout[@Fin0] ≂ x /\ (* Input value stayes unchanged *)
               tout[@Fin1] ≂ f x /\
               forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]
         ).
