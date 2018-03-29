@@ -117,10 +117,15 @@ Section LiftSigmaTau.
 
   Definition Lift := (liftM; projT2 pMSig).
 
+  
+  Definition surjectConf : (mconfig tau (states liftM) n) -> (mconfig sig (states (projT1 pMSig)) n) :=
+    fun c => mk_mconfig (cstate c) (surjectTapes Retr_g def (ctapes c)).
+
+  Definition injectConf : (mconfig sig (states (projT1 pMSig)) n) -> (mconfig tau (states liftM) n) :=
+    fun c => mk_mconfig (cstate c) (injectTapes Retr_f (ctapes c)).
+
 
   (* End definition *)
-
-  Ltac dup H := let H' := fresh H in pose proof H as H'.
 
   Lemma surject_step :
     forall (tape : tape tau) (act : option sig * move) (d : sig),
@@ -139,10 +144,9 @@ Section LiftSigmaTau.
 
   Lemma sim_step (c1 c2 : mconfig tau (states (projT1 pMSig)) n) :
     step (M := liftM) c1 = c2 ->
-    step (M := projT1 pMSig) (mk_mconfig (cstate c1) (surjectTapes Retr_g def (ctapes c1))) =
-    (mk_mconfig (cstate c2) (surjectTapes Retr_g def (ctapes c2))).
+    step (M := projT1 pMSig) (surjectConf c1) = surjectConf c2.
   Proof.
-    intros H. cbn.
+    unfold surjectConf. intros H. cbn. 
     destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2.
     cbv [step] in *. cbn -[map step] in *.
     destruct (trans (state1, surjectReadSymbols (current_chars tapes1))) as (q, act) eqn:E3.
@@ -166,8 +170,7 @@ Section LiftSigmaTau.
 
   Lemma sim_loop (c1 c2 : mconfig tau (states liftM) n) (i : nat) :
     loopM (M := liftM) i c1 = Some c2 ->
-    loopM (M := projT1 pMSig) i (mk_mconfig (cstate c1) (surjectTapes Retr_g def (ctapes c1))) =
-    Some (mk_mconfig (cstate c2) (surjectTapes Retr_g def (ctapes c2))).
+    loopM (M := projT1 pMSig) i (surjectConf c1) = Some (surjectConf c2).
   Proof.
     unfold loopM in *. revert c2 c1. induction i; intros c2 c1 H; cbn in *.
     - destruct (halt _) eqn:E; now inv H.
@@ -185,13 +188,6 @@ Section LiftSigmaTau.
     cbn in H. apply H.
     now apply (@sim_loop (initc liftM t) outc i).
   Qed.
-
-  Definition surjectConf : (mconfig tau (states liftM) n) -> (mconfig sig (states (projT1 pMSig)) n) :=
-    fun c => mk_mconfig (cstate c) (surjectTapes Retr_g def (ctapes c)).
-
-  Definition injectConf : (mconfig sig (states (projT1 pMSig)) n) -> (mconfig tau (states liftM) n) :=
-    fun c => mk_mconfig (cstate c) (injectTapes Retr_f (ctapes c)).
-
 
 
   Lemma propagate_step (conf : (mconfig tau (states (projT1 pMSig)) n)) :
@@ -212,19 +208,12 @@ Section LiftSigmaTau.
       erewrite !Vector.nth_map; simpl_tape; eauto. reflexivity.
   Qed.
 
-  Lemma propagate_loop (k : nat) tin (conf : mconfig sig (states (projT1 pMSig)) n) :
-    loopM k (initc (projT1 pMSig) (surjectTapes Retr_g def tin)) = Some conf ->
-    exists oconf' : (mconfig tau (states liftM) n),
-      loopM k (initc liftM tin) = Some oconf'.
+  Lemma propagate_loop (k : nat) iconf (oconf : mconfig sig (states (projT1 pMSig)) n) :
+    loopM k (surjectConf iconf) = Some oconf ->
+    exists oconf' : mconfig tau (states liftM) n,
+      loopM k iconf = Some oconf'.
   Proof.
-    unfold loopM.
-    enough (forall iconf : mconfig tau (states (projT1 pMSig)) n,
-               loop k (step (M:=projT1 pMSig)) (fun c : mconfig sig (states (projT1 pMSig)) n => halt (cstate c))
-                    (surjectConf iconf) = Some conf ->
-               exists oconf' : mconfig tau (states liftM) n,
-                 loop k (step (M:=liftM)) (fun c : mconfig tau (states liftM) n => halt (cstate c)) iconf = Some oconf')
-           by auto.
-    induction k as [ | k IH ]; intros iconf HLoop; cbn in *.
+    revert iconf. unfold loopM. induction k as [ | k IH ]; intros iconf HLoop; cbn in *.
     - destruct (halt _); inv HLoop. unfold injectConf. cbn. eauto.
     - destruct (halt _) eqn:E1; eauto.
       replace (step (surjectConf iconf)) with (surjectConf (step (M := liftM) iconf)) in HLoop.
