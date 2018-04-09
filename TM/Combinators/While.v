@@ -105,10 +105,14 @@ Section While.
   Qed.
 
 
-  Lemma While_WRealise (R : Rel _ (bool * F * _)) :
-    pM ⊫ R ->
-    WHILE ⊫ star (⋃_f R |_ (true, f)) ∘ R |_fst=false.
+  Definition While_Rel (R : Rel (tapes sig n) (bool * F * tapes sig n)) :=
+    star (⋃_f R |_ (true, f)) ∘ R |_fst=false.
+
+
+  Lemma While_WRealise R :
+    pM ⊫ R -> WHILE ⊫ While_Rel R.
   Proof.
+    unfold While_Rel.
     intros HR t1 i1 oenc2 eq. unfold initc in eq.
     revert t1 eq; apply complete_induction with (x := i1); clear i1; intros i1 IH t1 eq.
     eapply While_split in eq as (i2&x0&i3&Eq1&Eq2&->).
@@ -204,5 +208,30 @@ Section While.
 End While.
 (* Arguments While {n} {sig} M _. *)
 
-
+Arguments While_Rel {n sig F} R x y/.
 Arguments WHILE : simpl never.
+
+
+Section WhileInduction.
+
+  Variable (sig : finType) (n : nat) (F : finType).
+
+  Variable R1 : Rel (tapes sig n) ((bool * F) * tapes sig n).
+  Variable R2 : Rel (tapes sig n) (F * tapes sig n).
+
+  Lemma WhileInduction :
+    (forall tin yout tout (HLastStep: (R1 |_fst=false) tin (yout, tout)), R2 tin (yout, tout)) ->
+    (forall tin tmid ymid tout yout
+       (HStar : (R1 |_(true, ymid)) tin tmid) (HLastStep : R2 tmid (yout, tout)), R2 tin (yout, tout)) ->
+    While_Rel R1 <<=2 R2.
+  Proof.
+    unfold While_Rel.
+    intros H1 H2. intros tin (yout, tout) H.  cbn in H. destruct H as (tmid&HStar&HLastStep).
+    induction HStar as [ tin | tin tmid tmid2 HS1 HS2 IH].
+    - apply H1. cbn. apply HLastStep.
+    - cbn in HS1. destruct HS1 as (ymid, HS1). eapply H2.
+      + cbn. eapply HS1.
+      + apply IH. apply HLastStep.
+  Qed.
+
+End WhileInduction.
