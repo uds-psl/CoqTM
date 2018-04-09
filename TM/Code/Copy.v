@@ -729,7 +729,7 @@ Section RestoreValue.
             tin [@Fin0] ≂{s1;s2} x1 ->
             tin [@Fin1] ≂{0;s3} x2 ->
             tout[@Fin0] ≂{0; (s1 + |encode x1| + s2) - (|encode x2|)} x2 /\
-            isLeft tout[@Fin1] (S (|encode x2|) + s3)
+            isLeft_size tout[@Fin1] (S (|encode x2|) + s3)
       ).
 
   Lemma RestoreValue_WRealise_size : RestoreValue ⊫ RestoreValue_Rel_size.
