@@ -641,156 +641,76 @@ Proof.
 Qed.
 
 
-(* (* TODO *)
 (** Termination of Mult *)
 
-(*
- * t0: m  (counter for mult) (stays left)
- * t1: n  (m for add) (stays left)
- * t2: a  (n for add) (stays left)
- * t3: n' (copy of m for add) (stays left)
- *)
+Print Mult_Step.
 
-(*
-Definition Mult_Step : { M : mTM _ 4 & states M -> bool * unit } :=
-  If (Inject MatchNat [|Fin0|])
-     (Return (Inject Add (add_tapes 3 1)) (true, tt))
-     (Nop _ _ (false, tt)).
-*)
-Check Add_Terminates.
+Check CopyValue'_Terminates.
 
-Print Add_steps.
-
-Definition Mult_Step_steps n := 145 + 52 * n. (* 5 additional steps for [MatchNat] and 1 additional step for [If] *)
+Definition Mult_Step_steps m' n c :=
+  match m' with
+  | O => 6
+  | _ => 190 + 62 * n + 36 * c
+  end.
 
 Lemma Mult_Step_Terminates :
   projT1 Mult_Step ↓
-         (fun tin i =>
-            exists (m n a s1' s3 : nat),
-              tin[@Fin0] ≂ m /\
-              tin[@Fin1] ≂{0;s1'} n /\
-              tin[@Fin2] ≂ a /\
-              isLeft tin[@Fin3] s3 /\
-              match m with
-              | 0 => 6 <= i
-              | _ => 6 + Mult_Step_steps n <= i
-              end).
+         (fun tin k => exists m' n c,
+              tin[@Fin0] ≂ m' /\
+              tin[@Fin1] ≂ n /\
+              tin[@Fin2] ≂ c /\
+              isLeft tin[@Fin3] /\
+              isLeft tin[@Fin4] /\
+              Mult_Step_steps m' n c <= k).
 Proof.
+  Local Arguments add : simpl never. Local Arguments mult : simpl never.
   eapply TerminatesIn_monotone.
   {
     unfold Mult_Step. repeat TM_Correct.
     - eapply RealiseIn_WRealise. apply MatchNat_Sem.
     - eapply RealiseIn_terminatesIn. apply MatchNat_Sem.
+    - apply Add_Computes.
     - apply Add_Terminates.
+    - apply CopyValue'_WRealise with (X := nat).
+    - apply CopyValue'_Terminates with (X := nat).
+    - apply MoveToLeft_Terminates with (X := nat).
   }
   {
-    intros tin i (m&n&a&s1'&s3&HEncM&HEncN&HEncA&HEncN'&Hi).
-    destruct m as [ | m' ].
-    {
-      exists 5, 0. repeat split.
-      - omega.
-      - cbn. omega.
-      - intros tmid b (HComp & HInject). cbn -[app_tapes] in HComp, HInject.
-        destruct HEncM as (r1&r2&HEncM). cbn -[add mult] in *.
-        specialize (HComp _ _ _ ltac:(eauto)). cbn in HComp. destruct HComp as (HComp&->).
-        omega.
-    }
-    {
-      exists 5, (Mult_Step_steps n). repeat split.
-      - omega.
-      - cbn. omega.
-      - intros tmid b (HComp & HInject). cbn -[app_tapes] in HComp, HInject.
-        destruct HEncM as (r1&r2&HEncM). cbn -[add mult] in *.
-        cbn in tmid.
-        pose proof (HInject Fin1 ltac:(vector_not_in)) as L1. rewrite L1 in *. clear L1.
-        pose proof (HInject Fin2 ltac:(vector_not_in)) as L1. rewrite L1 in *. clear L1.
-        pose proof (HInject Fin3 ltac:(vector_not_in)) as L1. rewrite L1 in *. clear L1.
-        specialize (HComp _ _ _ ltac:(eauto)). cbn in HComp. destruct HComp as (HComp&->).
-        do 4 eexists. repeat split.
-        + eauto.
-        + eauto.
-        + eauto.
-        + unfold Add_steps, Mult_Step_steps. omega.
-    }
+    intros tin k. intros (m'&n&c&HEncM'&HEncN&HEncC&HInt3&HInt4&Hk).
+    pose proof HEncM' as (r11&r12&HEncM'').
+    destruct m' as [ | m']; cbn.
+    - exists 5, 0. cbn in *; repeat split.
+      + omega.
+      + omega.
+      + intros tmid y (HComp&HInj). TMSimp.
+        rewrite <- HInj0, <- HInj1, <- HInj2, <- HInj3 in *. clear HInj0 HInj1 HInj2 HInj3.
+        specialize (HComp _ _ _ HEncM''). cbn in *. destruct HComp as (HComp&->). omega.
+    - exists 5, (184 + 62 * n + 36 * c); cbn in *; repeat split.
+      + omega.
+      + omega.
+      + intros tmid y (HComp&HInj). TMSimp.
+        rewrite <- HInj0, <- HInj1, <- HInj2, <- HInj3 in *. clear HInj0 HInj1 HInj2 HInj3.
+        specialize (HComp _ _ _ HEncM''). cbn in *. destruct HComp as (HComp&->).
+        exists (120 + 42 * n + 16 * c), (63 + 20 * n + 20 * c); cbn in *; repeat split.
+        * omega.
+        * do 2 eexists. repeat split; eauto.
+          -- intros i; destruct_fin i; cbn. eauto.
+          -- unfold Add_steps. omega.
+        * intros tmid0 () (HComp2&HInj). TMSimp. rewrite <- HInj0 in *. clear HInj0.
+          specialize (HComp2 _ _ ltac:(eauto) ltac:(eauto)).
+          spec_assert HComp2 as (HComp1&HComp2&HComp3&HComp4).
+          { intros i; destruct_fin i; cbn; eauto. }
+          specialize (HComp4 Fin0). cbn in HComp4.
+          pose proof HComp3 as (r21&r22&HComp3').
+          exists (44 + 16 * n + 16 * c), (18 + 4 * n + 4 * c). repeat split.
+          -- omega.
+          -- eexists. repeat split; eauto. rewrite nat_encode_length. omega.
+          -- intros tmid1 () (HComp5&HInj). TMSimp. clear HInj0 HInj1 HInj2.
+             specialize HComp5 with (1 := HComp3') as (->&HComp5).
+             do 3 eexists. split. eauto. rewrite nat_encode_length.
+             rewrite Nat.mul_add_distr_l, Nat.mul_succ_r, Nat.mul_add_distr_l, !Nat.add_assoc.
+             enough (| r21 | <= 0) by omega.
+             (* Problemma *)
+             admit.
   }
-Qed.
-
-
-Definition Mult_Loop_steps m n := 6 + m * (152 + 52 * n).
-
-Lemma Mult_Loop_Terminates :
-  projT1 Mult_Loop ↓
-         (fun tin i => exists a m n s1' s3,
-              tin[@Fin0] ≂ m /\
-              tin[@Fin1] ≂{0;s1'} n /\
-              tin[@Fin2] ≂ a /\
-              isLeft tin[@Fin3] s3 /\
-              Mult_Loop_steps m n <= i).
-Proof.
-  unfold Mult_Loop, Mult_Loop_steps. repeat TM_Correct.
-  { apply Mult_Step_WRealise. }
-  { apply Mult_Step_Terminates. }
-  {
-    intros tin i (a & m & n & s1' & s3 & HEncM & HEncN & HEncA & HEncN' & Hi).
-    pose proof HEncM as (r1 & r2 & HEncM' % tape_encodes_l_encodes_size).
-    destruct m as [ | m'] eqn:Em; cbn -[add mult] in *.
-    - exists 6. repeat split.
-      + do 5 eexists. repeat split; eauto. cbn -[add mult]. omega.
-      + intros b () tmid. intros H.
-        specialize H with (1 := HEncM') (2 := HEncN) (3 := HEncA) (4 := HEncN'). cbn -[add mult] in *.
-        destruct H as (->&?); inv_pair. omega.
-    - exists (6 + Mult_Step_steps n). repeat split.
-      + do 5 eexists. repeat split; eauto. cbn -[add mult]. unfold Mult_Step_steps, Mult_Loop_steps. omega.
-      + intros b () tmid. intros H.
-        specialize H with (1 := HEncM') (2 := HEncN) (3 := HEncA) (4 := HEncN'). cbn -[add mult] in *.
-        destruct H as (H1&H2&H3&H4&H5); inv_pair.
-        eexists (Mult_Loop_steps m' n). repeat split.
-        * do 5 eexists. repeat split.
-          -- eapply tape_encodes_size_encodes; eauto.
-          -- eassumption.
-          -- eassumption.
-          -- eapply isLeft_monotone; eauto.
-          -- unfold Mult_Step_steps. constructor.
-        * unfold Mult_Step_steps, Mult_Loop_steps.
-          rewrite <- Hi. clear_all. rewrite !Nat.mul_succ_l. omega. (* oh [omega] -- you come to your limits *)
-  }
-Qed.
-
-
-(*
- * Mult writes [0] to tape [a] and executes the loop after that.
- * The runtime of [InitTape 0] is [12 + 4 * |encode 0| = 12 + 4 * 1 = 16
- *)
-
-Definition Mult_steps m n := 24 + m * (152 + 52 * n).
-
-
-Lemma Mult_Terminates :
-  projT1 Mult ↓
-         (fun tin i => exists m n s1' s3,
-              tin[@Fin0] ≂ m /\
-              tin[@Fin1] ≂{0;s1'} n /\
-              isLeft tin[@Fin3] s3 /\
-              Mult_steps m n <= i).
-Proof.
-  eapply TerminatesIn_monotone.
-  {
-    unfold Mult. repeat TM_Correct.
-    - eapply RealiseIn_WRealise. apply InitTape_Sem.
-    - eapply RealiseIn_terminatesIn. apply InitTape_Sem.
-    - apply Mult_Loop_Terminates.
-  }
-  {
-    intros tin i (m & n & s1' & s3 & HEncM & HEncN & HEncN' & Hi).
-    exists 16, (Mult_Loop_steps m n). cbn -[add mult]. repeat split.
-    - rewrite <- Hi. unfold Mult_Loop_steps, Mult_steps. omega.
-    - rewrite nat_encode_length. omega.
-    - intros tmid () (HEncA' & HInj).
-      pose proof (HInj Fin0 ltac:(vector_not_in)) as L1. rewrite <- !L1 in *. clear L1.
-      pose proof (HInj Fin1 ltac:(vector_not_in)) as L1. rewrite <- !L1 in *. clear L1.
-      pose proof (HInj Fin3 ltac:(vector_not_in)) as L1. rewrite <- !L1 in *. clear L1. clear HInj.
-      eauto 10.
-  }
-Qed.
-
-*)
+Admitted.
