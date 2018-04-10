@@ -35,11 +35,29 @@ Section IsLeft.
       apply map_eq_nil in H1 as ->. hnf. eauto.
     - intros (r1&r2&->). hnf. cbn. eauto.
   Qed.
+
+  Lemma isLeft_left (sig : finType) (t : tape sig) :
+    isLeft t -> left t = nil.
+  Proof. now intros (x&rs&->). Qed.
+
+  Lemma isLeft_size_left (sig : finType) (t : tape sig) (s1 : nat) :
+    isLeft_size t s1 -> left t = nil.
+  Proof. eauto using isLeft_left, isLeft_size_isLeft. Qed.
+
+  Lemma isLeft_size_right (sig : finType) (t : tape sig) (s1 : nat) :
+    isLeft_size t s1 -> length (right t) <= s1.
+  Proof. now intros (x&r1&H1&->). Qed.
+
+  Lemma isLeft_isLeft_size (sig : finType) (t : tape sig) :
+    isLeft t -> isLeft_size t (| tape_local t|).
+  Proof. intros (x&r2&->). cbn. hnf. eauto. Qed.
   
 End IsLeft.
 
-Hint Resolve isLeft_size_isLeft isLeft_size_monotone mapTape_isLeft.
-
+(*
+Hint Resolve isLeft_size_isLeft isLeft_size_monotone mapTape_isLeft : tape.
+Hint Resolve isLeft_left isLeft_size_left isLeft_size_right isLeft_isLeft_size : tape.
+*)
 
 
 
@@ -268,8 +286,8 @@ Section Fix_Sig.
               tin[@Fin0] ≂ x ->
               tin[@Fin1] ≂ y ->
               (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS (Fin.FS i))]) ->
-              tout[@Fin0] = tin[@Fin0] /\ (* First input value stayes unchanged *)
-              tout[@Fin1] = tin[@Fin1] /\ (* Second input value stayes unchanged *)
+              tout[@Fin0] ≂ x /\ (* First input value stayes unchanged *)
+              tout[@Fin1] ≂ y /\ (* Second input value stayes unchanged *)
               tout[@Fin2] ≂ f x y /\
               forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS (Fin.FS i))]
         ).

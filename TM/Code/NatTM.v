@@ -43,24 +43,57 @@ Qed.
 
 
 (*
- * In pseudocode:
- * while (m--) {
- *   n++;
+ * Step machine
+ *
+ * if (b--) {
+ *   a++;
+ *   continue;
+ * } else {
+ *   break;
  * }
+ *
+ * Tapes:
+ * t0: a
+ * t1: b
  *)
-
 Definition Add_Step : { M : mTM _ 2 & states M -> bool * unit } :=
-  If (Inject MatchNat [|Fin0|])
-     (Return (Inject Constr_S [|Fin1|]) (true, tt))
+  If (Inject MatchNat [|Fin1|])
+     (Return (Inject Constr_S [|Fin0|]) (true, tt))
      (Nop _ _ (false, tt)).
 
 
 Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := WHILE Add_Step.
 
-Definition Add : { M : mTM _ 3 & states M -> unit } :=
-  Inject (CopyValue' _) [|Fin0; Fin2|];; (* save the counter *)
-  Inject Add_Loop (app_tapes _ _);; (* Main loop *)
-  Inject (RestoreValue _) [|Fin0; Fin2|]. (* restore the value *)
+(*
+ * Full machine in pseudocode:
+ * a := n
+ * b := m
+ * while (b--) { // Loop
+ *   a++;
+ * }
+ * return a;
+ *
+ * Tapes:
+ * INP t0: m
+ * INP t1: n
+ * OUT t2: a
+ * INT t3: b
+ *)
+(* Everything, but not reset *)
+Definition Add_Main : { M : mTM (bool^+) 4 & states M -> unit } :=
+  Inject (CopyValue' _) [|Fin1; Fin2|];; (* copy n to a *)
+  Inject (CopyValue' _) [|Fin0; Fin3|];; (* copy m to b *)
+  Inject Add_Loop [|Fin2; Fin3|]. (* Main loop *)
+
+
+(*
+ * Finally, reset tape b.
+ * For technical reasons, it is convienient to define the machine for this last step seperately,
+ * because it makes prooving the termination easier.
+ *)
+Definition Add :=
+  Add_Main;; (* Initialisation and main loop *)
+  Inject (MoveToLeft _) [|Fin3|]. (* Reset b *)
 
 
 (** Correctness *)
@@ -68,16 +101,16 @@ Definition Add : { M : mTM _ 3 & states M -> unit } :=
 
 Definition Add_Step_Rel : Rel (tapes (bool^+) 2) ((bool * unit) * tapes (bool^+) 2) :=
   fun tin '(yout, tout) =>
-    forall m n s1 s2,
-      tin [@Fin0] ≂{s1;s2} m ->
-      tin [@Fin1] ≂ n ->
-      match m with
+    forall a b s1 s2,
+      tin [@Fin0] ≂ a ->
+      tin [@Fin1] ≂{s1;s2} b ->
+      match b with
       | O =>
         tout = tin /\
         yout = (false, tt)
-      | S m' =>
-        tout[@Fin0] ≂{S s1; s2} m' /\
-        tout[@Fin1] ≂ S n /\
+      | S b' =>
+        tout[@Fin0] ≂ S a /\
+        tout[@Fin1] ≂{S s1; s2} b' /\
         yout = (true, tt)
       end.
 
@@ -91,15 +124,13 @@ Proof.
   }
   { cbn. omega. }
   {
-    intros tin (yout, tout) H. cbn. intros m n s1 s2 HEncM HEncN. TMSimp.
-    destruct HEncM as (r1&r2&Hs1&Hs2&HEncM).
+    intros tin (yout, tout) H. cbn. intros a b s1 s2 HEncA HEncB. TMSimp.
+    destruct HEncB as (r1&r2&Hs1&Hs2&HEncB).
     destruct H; TMSimp inv_pair; clear_trivial_eqs.
-    - specialize (H _ _ _ HEncM). destruct m; TMSimp; try congruence. split.
-      + do 2 eexists. split. shelve. split. shelve. eauto. Unshelve. all: cbn; omega.
-      + eauto.
-    - specialize (H _ _ _ HEncM). destruct m; TMSimp; try congruence. split.
-      + pose proof tape_encodes_l_injective H HEncM. destruct_tapes. cbn in *. subst. f_equal; eauto.
-      + eauto.
+    - specialize (H _ _ _ HEncB). destruct b; TMSimp; try congruence. repeat split; auto.
+      do 2 eexists. split. shelve. split. shelve. eauto. Unshelve. all: cbn; omega.
+    - specialize (H _ _ _ HEncB). destruct b; TMSimp; try congruence. split; auto.
+      pose proof tape_encodes_l_injective H HEncB. destruct_tapes. cbn in *. subst. f_equal; eauto.
   }
 Qed.
 
@@ -107,11 +138,11 @@ Qed.
 Definition Add_Loop_Rel : Rel (tapes bool^+ 2) (unit * tapes bool^+ 2) :=
   ignoreParam (
       fun tin tout =>
-        forall m n s1 s2,
-          tin [@Fin0] ≂{s1;s2} m ->
-          tin [@Fin1] ≂ n ->
-          tout[@Fin0] ≂{m+s1; s2} 0 /\
-          tout[@Fin1] ≂ m + n
+        forall a b s1 s2,
+          tin [@Fin0] ≂ a ->
+          tin [@Fin1] ≂{s1;s2} b ->
+          tout[@Fin0] ≂ b + a /\
+          tout[@Fin1] ≂{b+s1; s2} 0
     ).
 
 Lemma Add_Loop_WRealise : Add_Loop ⊫ Add_Loop_Rel.
@@ -119,79 +150,139 @@ Proof.
   eapply WRealise_monotone.
   { unfold Add_Loop. repeat TM_Correct. eapply RealiseIn_WRealise. apply Add_Step_Sem. }
   {
-    intros tin ((), tout) (tmid&HStar&HLastStep).
-    induction HStar as [ tin | tin tmid1 tmid2 HStar _ IH]; intros m n s1 s2 HEncM HEncN.
-    - cbn in HLastStep. specialize (HLastStep _ _ _ _ HEncM HEncN). destruct m; TMSimp; inv_pair. eauto.
-    - repeat (spec_assert IH; eauto). cbn in HLastStep, IH, HStar. destruct HStar as (()&HStar). cbn in HStar.
-      specialize (HStar _ _ _ _ HEncM HEncN).
-      destruct m; TMSimp; inv_pair.
-      specialize (IH _ _ _ _ H H0) as (IH1&IH2).
+    apply WhileInduction; intros; intros a b s1 s2 HEncA HEncB; cbn in *.
+    - specialize (HLastStep _ _ _ _ HEncA HEncB). destruct b; TMSimp; inv_pair. auto.
+    - specialize (HStar _ _ _ _ HEncA HEncB).
+      destruct b; TMSimp; inv_pair.
+      specialize (HLastStep _ _ _ _ H H0) as (IH1&IH2).
       rewrite <- Nat.add_succ_comm in IH1, IH2. cbn in *. auto.
   }
 Qed.
 
 
-Lemma Add_Loop_Computes : Add_Loop ⊫ Computes2_Rel Fin0 Fin1 Fin1 _ _ _ plus.
-Proof.
-  eapply WRealise_monotone. apply Add_Loop_WRealise.
-  intros tin ((), tout) H. intros m n HEncM HEncN. hnf in H.
-  destruct HEncM as (r1 & r2 & HEncM % tape_encodes_l_encodes_size).
-  now specialize (H _ _ _ _ HEncM HEncN) as (?&?).
-Qed.
+(* TODO: This is good: *)
+Global Arguments finType_CS (X) {_ _}.
 
 
-(* Save the counter; do the addition; restore the counter *)
-Definition Add_Rel : Rel (tapes bool^+ 3) (unit * tapes bool^+ 3) :=
+
+(* Everything, but reset *)
+Definition Add_Main_Rel : Rel (tapes bool^+ 4) (unit * tapes bool^+ 4) :=
   ignoreParam (
       fun tin tout =>
-        forall m n s2 s3,
-          tin [@Fin0] ≂{0;s2} m ->
+        forall m n s,
+          tin [@Fin0] ≂ m ->
           tin [@Fin1] ≂ n ->
-          isLeft tin[@Fin2] s3 ->
-          tout[@Fin0] ≂{0;s2} m /\
-          tout[@Fin1] ≂ m + n /\
-          isLeft tout[@Fin2] (max s3 (S (S m)))
+          isLeft_size (tin[@Fin3]) s ->
+          tout[@Fin0] ≂ m /\
+          tout[@Fin1] ≂ n /\
+          tout[@Fin2] ≂ m + n /\
+          tout[@Fin3] ≂{m; S (S s)} 0
     ).
 
 
 
-Lemma Add_WRealise : Add ⊫ Add_Rel.
+Lemma Add_Main_WRealise : Add_Main ⊫ Add_Main_Rel.
 Proof.
   Local Arguments Encode_Nat : simpl never.
   eapply WRealise_monotone.
   {
-    unfold Add. repeat TM_Correct.
+    unfold Add_Main. repeat TM_Correct.
+    - apply CopyValue'_WRealise with (X := nat).
     - apply CopyValue'_WRealise with (X := nat).
     - apply Add_Loop_WRealise.
-    - apply RestoreValue_WRealise_size with (X := nat).
   }
   {
-    intros tin ((), tout) H. intros m n s2 s3 HEncM HEncN HEncM'. TMSimp.
-    hnf in HEncM'. destruct HEncM' as (int3x&int3rest&Hint3rest&HEncM'). TMSimp. clear HEncM'.
+    intros tin ((), tout) H. cbn. intros m n s HEncM HEncN HInt.
+    pose proof HEncM as (r1&r2&HEncM'). pose proof HEncN as (r3&r4&HEncN').
+    pose proof tape_encodes_l_encodes_size HEncM' as HEncM''.
+    pose proof tape_encodes_l_encodes_size HEncN' as HEncN''.
 
-    (* Rewrite remaining Lift-N equations *)
-    specialize (H1 Fin1 ltac:(vector_not_in)). TMSimp. clear H1.
-    specialize (H3 Fin1 ltac:(vector_not_in)). TMSimp. clear H3.
-    specialize (H4 Fin2 ltac:(vector_not_in)). TMSimp. clear H4.
+    TMSimp.
+    specialize (H _ _ _ HEncN') as (H'&H). rewrite <- H' in *. clear H'.
+    specialize (H0 _ _ _ HEncM') as (H0'&H0). rewrite <- H0' in *. clear H0'. TMSimp.
+    apply tape_encodes_l_encodes in H; apply tape_encodes_l_encodes_size in H0.
+    specialize (H1 _ _ _ _ H H0) as (H1&H1').
+    repeat split; auto.
 
-    (* Instantiate computation relations *)
-    destruct HEncM as (r1&r2&Hr1&Hr2&HEncM).
-    specialize (H _ _ _ HEncM) as (H&H'). TMSimp. clear H.
-    specialize (H0 _ _ _ _ ltac:(hnf;eauto) ltac:(eauto)) as (H0&H0').
-    specialize H2 with (1 := H0) (2 := tape_encodes_l_encodes_size H') as (H2&H2').
-
-    repeat split.
-    - eapply tape_encodes_size_monotone. eapply H2. omega. rewrite !nat_encode_length. cbn. omega.
-    - assumption.
-    - eapply isLeft_monotone; eauto. rewrite !nat_encode_length. rewrite skipn_length. cbn.
-      enough (S (S (m + (s3 - S (S m)))) <= max s3 (S (S m))) by omega.
-      change ((2 + m) + (s3 - (2 + m)) <= max s3 (2 + m)).
-      eapply max_plus_minus_le.
+    eapply tape_encodes_size_monotone; eauto.
+    - erewrite isLeft_size_left; eauto. cbn. omega.
+    - rewrite skipn_length. rewrite nat_encode_length.
+      (* Search (?a - ?b <= ?c - ?b). *)
+      transitivity (s - S (S m)); [ | omega].
+      apply Nat.sub_le_mono_r.
+      now apply isLeft_size_right.
   }
 Qed.
 
+(* TODO: Put this in Base *)
+Lemma fin_destruct_S (n : nat) (i : Fin.t (S n)) :
+  { i' | i = Fin.FS i' } + { i = Fin0 }.
+Proof.
+  refine (match i in (Fin.t n')
+          with
+          | Fin.F1 => _
+          | Fin.FS i' => _
+          end); eauto.
+  (*
+  refine (match i as i0 in (Fin.t n') return
+                match n' with
+                | O => fun _ : Fin.t 0 => unit
+                | S n'' => fun i0 : Fin.t (S n'') => { i' | i0 = Fin.FS i' } + { i0 = Fin0}
+                end i0
+          with
+          | Fin.F1 => _
+          | Fin.FS i' => _
+          end); eauto.
+   *)
+Defined.
+
+Lemma fin_destruct_O (i : Fin.t 0) : Empty_set.
+Proof. refine (match i with end). Defined.
+
+Ltac destruct_fin i :=
+  match type of i with
+  | Fin.t (S ?n) =>
+    let i' := fresh i in
+    pose proof fin_destruct_S i as [ (i'&->) | -> ];
+    [ destruct_fin i'
+    | idtac]
+  | Fin.t O =>
+    pose proof fin_destruct_O i as []
+  end.
+
+Goal True.
+  assert (i : Fin.t 4) by repeat constructor.
+  enough (i = i) by tauto.
+  destruct_fin i.
+  all: reflexivity.
+Abort.
+
+
+
+Lemma Add_Computes : Add ⊫ Computes2_Rel _ _ _ add.
+Proof.
+  eapply WRealise_monotone.
+  {
+    unfold Add. repeat TM_Correct.
+    - apply Add_Main_WRealise.
+    - apply MoveToLeft_WRealsie with (X := nat). (* Don't forget the type here! *)
+  }
+  {
+    intros tin ((), tout) H. intros m n HEncM HEncN HInt. TMSimp.
+    specialize (HInt Fin0); apply isLeft_isLeft_size in HInt.
+    specialize (H _ _ _ HEncM HEncN HInt) as (H&H'&H''&H''').
+    repeat split; eauto.
+    intros i.
+    destruct_fin i; eapply isLeft_size_isLeft; eauto.
+  }
+Qed.
+
+(* TODO *)
+
+(*
 
 (** Termination *)
+
 
 Definition Add_Loop_steps m := 11 + m * 12.
 
@@ -595,3 +686,5 @@ Proof.
       eauto 10.
   }
 Qed.
+
+*)

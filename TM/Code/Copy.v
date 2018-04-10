@@ -703,7 +703,7 @@ Section RestoreValue.
       - eapply MoveToLeft_WRealsie.
     }
     {
-      intros tin ((), tout) H. intros x1 x2 r1 r2 r3 HEncX1 HEncX2. TMSimp. clear H4. (* TODO: clear -> simpl_not_in *)
+      intros tin ((), tout) H. intros x1 x2 r1 r2 r3 HEncX1 HEncX2. TMSimp.
       specialize (H _ _ _ HEncX1) as (H&H').
       specialize (H0 _ _ _ HEncX2) as (H0&H0'). rewrite H0 in *. clear H0.
       specialize (H2 _ _ _ HEncX2) as (H2&H2').
