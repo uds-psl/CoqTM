@@ -220,7 +220,7 @@ Section Fix_Sig.
               (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]) ->
               tout[@Fin0] ≂ x /\ (* Input value stayes unchanged *)
               tout[@Fin1] ≂ f x /\
-              forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]
+              forall i : Fin.t n, isLeft tout[@Fin.FS(Fin.FS i)]
         ).
 
     Definition Computes_T (r : X -> nat) : Rel (tapes (sig ^+) (S (S n))) nat :=
@@ -318,7 +318,7 @@ Section Fix_Sig.
               tout[@Fin0] ≂ x /\ (* First input value stayes unchanged *)
               tout[@Fin1] ≂ y /\ (* Second input value stayes unchanged *)
               tout[@Fin2] ≂ f x y /\
-              forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS (Fin.FS i))]
+              forall i : Fin.t n, isLeft tout[@Fin.FS(Fin.FS (Fin.FS i))]
         ).
 
 
@@ -399,11 +399,20 @@ Section Fix_Sig.
 
 End Fix_Sig.
 
+
+Arguments Computes_Rel {sig n X Y _ _} f x y/.
+Arguments Computes_T {sig n X _} r x y/.
+
+Arguments Computes2_Rel {sig n X Y Z _ _ _} f x y/.
+Arguments Computes2_T {sig n X Y _ _} r x y/.
+
+
 Notation "t '≂' x" := (tape_encodes _ t x) (at level 70, no associativity).
 Notation "t '≂[' r1 ';' r2 ] x" := (tape_encodes_l _ t x r1 r2) (at level 70, no associativity, format "t  '≂[' r1 ;  r2 ]  x").
 Notation "t '≂{' r1 ';' r2 } x" := (tape_encodes_size _ t x r1 r2) (at level 70, no associativity, format "t  '≂{' r1 ;  r2 }  x").
 Notation "t '≃[' r1 ';' r2 ] x" := (tape_encodes_r _ t x r1 r2) (at level 70, no associativity, format "t  '≃[' r1 ;  r2 ]  x").
 Notation "t '≃{' r1 ';' r2 } x" := (tape_encodes'_size _ t x r1 r2) (at level 70, no associativity, format "t  '≃{' r1 ;  r2 }  x").
+
 
 
 

@@ -4,6 +4,8 @@ Require Import TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Compound.TMTac.
 Require Import TM.Code.Copy.
 
+Require Import Lia.
+
 
 (*** Machines that compte natural functions *)
 
@@ -259,111 +261,127 @@ Abort.
 
 
 
-Lemma Add_Computes : Add ⊫ Computes2_Rel _ _ _ add.
+Lemma Add_Computes : Add ⊫ Computes2_Rel add.
 Proof.
   eapply WRealise_monotone.
   {
     unfold Add. repeat TM_Correct.
     - apply Add_Main_WRealise.
-    - apply MoveToLeft_WRealsie with (X := nat). (* Don't forget the type here! *)
+    - apply MoveToLeft_WRealise' with (X := nat). (* Don't forget the type here! *)
   }
   {
-    intros tin ((), tout) H. intros m n HEncM HEncN HInt. TMSimp.
+    intros tin ((), tout) H. intros m n HEncM HEncN HInt. TMSimp. clear H2 H3 H4. 
     specialize (HInt Fin0); apply isLeft_isLeft_size in HInt.
-    specialize (H _ _ _ HEncM HEncN HInt) as (H&H'&H''&H''').
-    repeat split; eauto.
-    intros i.
-    destruct_fin i; eapply isLeft_size_isLeft; eauto.
+    specialize (H _ _ _ HEncM HEncN HInt) as (H1&H2&H3&H4).
+    destruct H4 as (r1&r2&Hr1&Hr2&H4).
+    repeat split; eauto. intros i; destruct_fin i.
+    eauto using tape_encodes_l_encodes.
   }
 Qed.
 
-(* TODO *)
-
-(*
 
 (** Termination *)
 
 
-Definition Add_Loop_steps m := 11 + m * 12.
+Definition Add_Loop_steps b := 11 + 12 * b.
 
 Lemma Add_Loop_Terminates :
   projT1 Add_Loop ↓
-         (fun tin i => exists m n,
-              tin[@Fin0] ≂ m /\
-              tin[@Fin1] ≂ n /\
-              Add_Loop_steps m <= i).
+         (fun tin i => exists a b,
+              tin[@Fin0] ≂ a /\
+              tin[@Fin1] ≂ b /\
+              Add_Loop_steps b <= i).
 Proof.
   unfold Add_Loop, Add_Loop_steps. repeat TM_Correct.
   { eapply RealiseIn_WRealise. apply Add_Step_Sem. }
   { eapply RealiseIn_terminatesIn. apply Add_Step_Sem. }
   {
-    intros tin i (m&n&HEncM&HEncN&Hi).
-    destruct HEncM as (r1 & r2 & HEncM % tape_encodes_l_encodes_size).
-    destruct m.
+    intros tin i (a&b&HEncA&HEncB&Hi).
+    destruct HEncB as (r1 & r2 & HEncB % tape_encodes_l_encodes_size).
+    destruct b.
     - exists 11. repeat split.
       + omega.
-      + intros b () tmid H. cbn in H. specialize (H _ _ _ _ HEncM HEncN). cbn in *. destruct H as (H1&H2); subst; inv H2. auto.
+      + intros y () tmid H. cbn in H. specialize (H _ _ _ _ HEncA HEncB). cbn in *.
+        destruct H; TMSimp; inv_pair. omega.
     - exists 11. repeat split.
       + omega.
-      + intros b () tmid H. cbn in H. specialize (H _ _ _ _ HEncM HEncN). cbn -[plus mult] in *.
+      + intros y () tmid H. cbn in H. specialize (H _ _ _ _ HEncA HEncB). cbn -[plus mult] in *.
         destruct H as (H1&H2&H3). inv H3.
-        exists (11 + m * 12). repeat split.
-        * do 2 eexists. split. eapply tape_encodes_size_encodes; eauto. split. eauto. omega.
+        exists (11 + b * 12). repeat split.
+        * do 2 eexists. repeat split. eauto. eapply tape_encodes_size_encodes; eauto. omega.
         * omega.
   }
 Qed.
 
 
-Definition Add_steps m := 139 + 52 * m.
+Definition Add_Main_steps m n := 101 + 16 * n + 38 * m.
 
-
-Lemma Add_Terminates :
-  projT1 Add ↓
-         (fun tin i => exists m n s2 s3,
-              tin[@Fin0] ≂{0; s2} m /\
-              tin[@Fin1] ≂ n /\
-              isLeft tin[@Fin2] s3 /\
-              Add_steps m <= i).
+Lemma Add_Main_Terminates :
+  projT1 Add_Main ↓ Computes2_T Add_Main_steps.
 Proof.
-  unfold Add, Add_steps. eapply TerminatesIn_monotone.
+  Arguments add : simpl never. Arguments mult : simpl never.
+  unfold Add_Main, Add_Main_steps. eapply TerminatesIn_monotone.
   {
     repeat TM_Correct.
-    - eapply CopyValue'_WRealise.
-    - eapply CopyValue'_Terminates.
-    - eapply Add_Loop_WRealise.
-    - eapply Add_Loop_Terminates.
-    - eapply RestoreValue_Terminates.
+    - apply CopyValue'_WRealise with (X := nat).
+    - apply CopyValue'_Terminates with (X := nat).
+    - apply CopyValue'_WRealise with (X := nat).
+    - apply CopyValue'_Terminates with (X := nat).
+    - apply Add_Loop_Terminates.
   }
   {
-    intros tin i (m & n & s2 & s3 & HEncM & HEncN & HEncM' & Hi).
-    destruct HEncM as (r1&r2&Hr1&Hr2&HEncM). destruct r1; cbn in Hr1; inv Hr1.
-    destruct HEncM' as (int3x&int3rest&Hint3rest&HEncM').
-    unfold finType_CS in *. cbn -[add mult] in *. rewrite HEncM' in *. clear HEncM'.
-
-    exists (44 + 16 * m), (94 + 36 * m). repeat split.
-    - omega.
-    - eexists. split.
-      + eapply tape_encodes_size_encodes; eauto using tape_encodes_l_encodes_size.
-      + rewrite nat_encode_length. omega.
-    - intros tmid1 () (H1&H2). cbn in H1, H2. unfold finType_CS in *. cbn -[add mult] in *.
-      specialize (H2 Fin1 ltac:(vector_not_in)). rewrite H2 in *. clear H2.
-      specialize (H1 _ _ _ HEncM) as (H1&H2). unfold finType_CS in *. rewrite <- H1 in *. clear H1.
-
-      exists (11 + 12 * m), (82 + 24 * m). repeat split.
-      + omega.
-      + do 2 eexists. repeat split. eapply tape_encodes_l_encodes; eauto. eauto.
-        unfold Add_Loop_steps. omega.
-      + intros tmid2 () (HRestore & HInject).
-        specialize (HRestore _ _ _ _ ltac:(eauto using tape_encodes_l_encodes_size) ltac:(eauto)) as (HRestore1&HRestore2).
-        specialize (HInject Fin2 ltac:(vector_not_in)). cbn in tmid2, HInject. rewrite <- HInject.
-        do 5 eexists. repeat split. eauto.
-        do 2 eexists. unshelve (repeat (split; [ shelve | cbn; eauto])).
-        cbn. omega.
-        rewrite !nat_encode_length. cbn [length]. omega.
+    intros tin k (m&n&HEncM&HEncN&HInt&Hk).
+    pose proof HEncN as (r11&r12&HEncN').
+    pose proof HEncM as (r21&r22&HEncM').
+    exists (44 + 16 * n), (56 + 28 * m). repeat split.
+    - rewrite <- Hk. omega.
+    - cbn -[add mult]. exists n. rewrite nat_encode_length. split; auto. omega.
+    - intros tmid ymid. intros (H1&H2). TMSimp.
+      specialize (H1 _ _ _ HEncN'). TMSimp.
+      specialize (HInt Fin0).
+      exists (44 + 16 * m), (Add_Loop_steps m). repeat split.
+      + unfold Add_Loop_steps. omega.
+      + exists m. split. eauto. rewrite nat_encode_length. omega.
+      + intros tmid2 () (HComp & HInj). TMSimp.
+        specialize (HComp _ _ _ HEncM') as (HComp&HComp').
+        do 2 eexists; repeat split; eauto; do 2 eexists; eassumption.
   }
 Qed.
 
 
+Definition Add_steps m n := 120 + 16 * n + 42 * m.
+
+Lemma Add_Terminates :
+  projT1 Add ↓ Computes2_T Add_steps.
+Proof.
+  Arguments add : simpl never. Arguments mult : simpl never.
+  unfold Add, Add_steps. eapply TerminatesIn_monotone.
+  {
+    repeat TM_Correct.
+    - apply Add_Main_WRealise.
+    - apply Add_Main_Terminates.
+    - apply MoveToLeft_Terminates.
+  }
+  {
+    intros tin k (m&n&HEncM&HEncN&HInt&Hk).
+    pose proof HEncM as (r11&r12&HEncM'); pose proof HEncN as (r21&r22&HEncN').
+    exists (Add_Main_steps m n), (18 + 4 * m). repeat split.
+    - unfold Add_Main_steps. omega.
+    - cbn. exists m, n. repeat split; eauto.
+    - intros tmid () HComp. cbn in *.
+      specialize (HInt Fin0). apply isLeft_isLeft_size in HInt.
+      specialize (HComp _ _ _ HEncM HEncN HInt) as (HComp1&HComp2&HComp3&HComp4).
+      destruct HComp4 as (r31&r32&Hr31&_&HComp4).
+      do 3 eexists. split; eauto. rewrite nat_encode_length.
+      transitivity (14 + 4 * (m + 1)).
+      + apply Nat.add_le_mono. omega. apply Nat.mul_le_mono. omega. apply Nat.add_le_mono. assumption. omega.
+      + omega.
+  }
+Qed.
+
+
+(*
+(* TODO *)
 
 (** * Multiplication *)
 

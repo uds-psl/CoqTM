@@ -631,7 +631,7 @@ Section RestoreValue.
     Move _ R tt. (* 1 *)
   (* 14 + 4 * (|r1| + |encode x|) *)
 
-  Lemma MoveToLeft_WRealsie : MoveToLeft ⊫ MoveToLeft_Rel.
+  Lemma MoveToLeft_WRealise : MoveToLeft ⊫ MoveToLeft_Rel.
   Proof.
     eapply WRealise_monotone.
     { unfold MoveToLeft. repeat TM_Correct. }
@@ -649,6 +649,30 @@ Section RestoreValue.
         destruct (tape_move_right _) eqn:E2; cbn in *; subst; try now apply app_cons_not_nil in L2. eauto.
     }
   Qed.
+
+  Definition MoveToLeft_Rel' : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
+    Mk_R_p (
+        ignoreParam (
+            fun tin tout =>
+              forall x,
+                tin ≂ x ->
+                isLeft tout
+          )
+      ).
+
+  Lemma MoveToLeft_WRealise' : MoveToLeft ⊫ MoveToLeft_Rel'.
+  Proof.
+    eapply WRealise_monotone.
+    { apply MoveToLeft_WRealise. }
+    {
+      intros tin ((), tout) H. cbn in *. intros x (r1&r2&HEncX).
+      specialize (H _ _ _ HEncX) as (H1&H2).
+      hnf. destruct (rev r1) eqn:E1; cbn in *; rewrite E1 in H2; cbn in *.
+      - apply (conj H1) in H2. apply midtape_tape_local_cons_left in H2 as ->. eauto.
+      - apply (conj H1) in H2. apply midtape_tape_local_cons_left in H2 as ->. eauto.
+    }
+  Qed.
+  
 
   Lemma MoveToLeft_Terminates :
     projT1 MoveToLeft ↓ (fun tin i => exists x r1 r2, tin[@Fin0] ≂[r1;r2] x /\ 14 + 4 * (|r1| + |encode x : list sig|) <= i).
@@ -698,9 +722,9 @@ Section RestoreValue.
     eapply WRealise_monotone.
     {
       unfold RestoreValue. repeat TM_Correct.
-      - eapply MoveToLeft_WRealsie.
+      - eapply MoveToLeft_WRealise.
       - eapply CopyValue'_WRealise.
-      - eapply MoveToLeft_WRealsie.
+      - eapply MoveToLeft_WRealise.
     }
     {
       intros tin ((), tout) H. intros x1 x2 r1 r2 r3 HEncX1 HEncX2. TMSimp.
@@ -760,7 +784,7 @@ Section RestoreValue.
     eapply TerminatesIn_monotone.
     {
       unfold RestoreValue. repeat TM_Correct.
-      - eapply MoveToLeft_WRealsie.
+      - eapply MoveToLeft_WRealise.
       - eapply MoveToLeft_Terminates.
       - eapply CopyValue'_WRealise.
       - eapply CopyValue'_Terminates.
