@@ -585,28 +585,54 @@ Lemma simpl_not_in_helper2 :
 Proof. vector_not_in. Qed.
 
 
-Ltac is_nat n :=
-  match n with
+Ltac is_num_const n :=
+  lazymatch n with
   | O => idtac
-  | S ?n => idtac
-  | _ => fail 1 "Not a number"
+  | S ?n => is_num_const n
+  | _ => fail "Not a number"
   end.
 
+
 (*
-Eval cbn in ltac:(is_nat 42; idtac "yes!").
+Section Test_Is_Num_Const.
+  Variable n : nat.
+  Eval cbn in ltac:(is_num_const 42).
+  Fail Eval cbn in ltac:(is_num_const n).
+  Fail Eval cbn in ltac:(is_num_const (S n)).
+End Test_Is_Num_Const.
 *)
 
+
+(* This tactical executes [t 0], ..., [t (n-1)]. *)
 Ltac do_n_times n t :=
   match n with
   | O => idtac
   | (S ?n') =>
-    t n';
-    do_n_times n' t
+    t 0;
+    do_n_times n' ltac:(fun i => let next := constr:(S i) in t next)
   end.
-
 (*
 Eval cbn in ltac:(do_n_times 42 ltac:(fun a => idtac a)).
 *)
+
+(* This similiar tactical executes [t Fin0], ..., [t Fin_(n-1)]. *)
+Ltac do_n_times_fin_rect n m t :=
+  lazymatch n with
+  | O => idtac
+  | S ?n' =>
+    let m' := eval simpl in (pred m) in
+    let one := eval simpl in (@Fin.F1 _ : Fin.t m) in
+    t one;
+    do_n_times_fin_rect n' m' ltac:(fun i => let next := eval simpl in (Fin.FS i) in t next)
+  end.
+
+Ltac do_n_times_fin n t := do_n_times_fin_rect n n t.
+
+(*
+Eval cbn in ltac:(do_n_times_fin 3 ltac:(fun a => idtac a)).
+Eval cbn in ltac:(do_n_times_fin 3 ltac:(fun a => let x := eval simpl in (a : Fin.t 3) in idtac x)).
+*)
+
 
 
 
@@ -628,15 +654,17 @@ Ltac simpl_not_in_add_tapes_step H m' :=
 Ltac simpl_not_in_add_tapes_loop H m :=
   do_n_times m ltac:(simpl_not_in_add_tapes_step H); clear H.
 
-Ltac simpl_not_in_add_tapes :=
-  repeat match goal with
-         | [ H : forall i : Fin.t _, not_indexes (add_tapes _ ?m) i -> _ |- _] =>
-           simpl_not_in_add_tapes_loop H m
-         | [ H : context [ (reorder (add_tapes _ ?m) _)[@_]] |- _ ] =>
-           rewrite ! (add_tapes_reorder_nth (m := m)) in H; cbn in H
-         | [ |- context [ (reorder (add_tapes _ ?m) _)[@_]] ] =>
-           rewrite ! (add_tapes_reorder_nth (m := m)); cbn
-         end.
+Ltac simpl_not_in_add_tapes_one :=
+  lazymatch goal with
+  | [ H : forall i : Fin.t _, not_indexes (add_tapes _ ?m) i -> _ |- _] =>
+    simpl_not_in_add_tapes_loop H m; clear H
+  | [ H : context [ (reorder (add_tapes _ ?m) _)[@_]] |- _ ] =>
+    rewrite ! (add_tapes_reorder_nth (m := m)) in H; cbn in H
+  | [ |- context [ (reorder (add_tapes _ ?m) _)[@_]] ] =>
+    rewrite ! (add_tapes_reorder_nth (m := m)); cbn
+  end.
+
+Ltac simpl_not_in_add_tapes := repeat simpl_not_in_add_tapes_one.
 
 (* Test *)
 Goal True.
@@ -664,23 +692,90 @@ Ltac simpl_not_in_app_tapes_step H n m' :=
 Ltac simpl_not_in_app_tapes_loop H n m :=
   do_n_times m ltac:(fun m' => simpl_not_in_app_tapes_step H n m'); clear H.
 
-Ltac simpl_not_in_app_tapes :=
-  repeat match goal with
-         | [ H : forall i : Fin.t _, not_indexes (app_tapes ?n ?m) i -> _ |- _] =>
-           simpl_not_in_app_tapes_loop H n m
-         | [ H : context [ (reorder (app_tapes ?n ?m) _)[@_]] |- _ ] =>
-           rewrite ! (app_tapes_reorder_nth (n := n) (m := m)) in H; cbn in H
-         | [ |- context [ (reorder (app_tapes ?n ?m) _)[@_]] ] =>
-           rewrite ! (app_tapes_reorder_nth (n := n) (m := m)); cbn
-         end.
+Ltac simpl_not_in_app_tapes_one :=
+  lazymatch goal with
+  | [ H : forall i : Fin.t _, not_indexes (app_tapes ?n ?m) i -> _ |- _] =>
+    simpl_not_in_app_tapes_loop H n m; clear H
+  | [ H : context [ (reorder (app_tapes ?n ?m) _)[@_]] |- _ ] =>
+    rewrite ! (app_tapes_reorder_nth (n := n) (m := m)) in H; cbn in H
+  | [ |- context [ (reorder (app_tapes ?n ?m) _)[@_]] ] =>
+    rewrite ! (app_tapes_reorder_nth (n := n) (m := m)); cbn
+  end.
+
+
+Ltac simpl_not_in_app_tapes := repeat simpl_not_in_app_tapes_one.
 
 Goal True.
   assert (forall i : Fin.t 10, not_indexes (app_tapes 8 _) i -> i = i) as HInj by firstorder.
   simpl_not_in_app_tapes.
+  Check HInj0 : Fin8 = Fin8.
+  Check HInj1 : Fin9 = Fin9.
+  Fail Check HInj.
 Abort.
 
 
-(* TODO: generalise this tactic for arbitrary index vectors, like in [simpl_not_in_add_tapes] *)
+
+(* Check whether a vector (syntactically) contains an element *)
+Ltac vector_contains a vect :=
+  lazymatch vect with
+  | @Vector.nil ?A => fail "Vector doesn't contain" a
+  | @Vector.cons ?A a ?n ?vect' => idtac
+  | @Vector.cons ?A ?b ?n ?vect' => vector_contains a vect'
+  | _ => fail "No vector" vect
+  end.
+
+Fail Check ltac:(vector_contains 42 (@Vector.nil nat); idtac "yes!").
+Check ltac:(vector_contains 42 [|4;8;15;16;23;42|]; idtac "yes!").
+
+Ltac vector_doesnt_contain a vect :=
+  tryif vector_contains a vect then fail "Vector DOES contain" a else idtac.
+
+
+Check ltac:(vector_doesnt_contain 42 (@Vector.nil nat); idtac "yes!").
+Check ltac:(vector_doesnt_contain 9 [|4;8;15;16;23;42|]; idtac "yes!").
+Fail Check ltac:(vector_doesnt_contain 42 [|4;8;15;16;23;42|]; idtac "yes!").
+
+
+
+(*
+ * The tactic [simpl_not_in_vector] trys to specialises hypothesises of the form 
+ * [H : forall i : Fin.t n, not_indexes [F1; ...; Fk] i -> _]
+ * with [i := Fin0], ..., [i := Fin(n-1)].
+ *)
+
+Ltac simpl_not_in_vector_step H vect n m' :=
+  let H' := fresh H in
+  tryif vector_contains m' vect
+  then idtac (* skip m' *)
+  else pose proof (H m' ltac:(vector_not_in)) as H'.
+
+Ltac simpl_not_in_vector_loop H vect n :=
+  do_n_times_fin n ltac:(fun m' => simpl_not_in_vector_step H vect n m').
+  
+Ltac simpl_not_in_vector_one :=
+  lazymatch goal with
+  | [ H : forall i : Fin.t ?n, not_indexes ?vect i -> _ |- _ ] =>
+    simpl_not_in_vector_loop H vect n; clear H
+  end.
+
+Ltac simpl_not_in_vector := repeat simpl_not_in_vector_one.
+
+
+(* Test *)
+Goal True.
+  assert (forall i : Fin.t 10, not_indexes [|Fin8; Fin1; Fin2; Fin3|] i -> i = i) as HInj by firstorder.
+  simpl_not_in_vector_one.
+  Fail Check HInj.
+  Check (HInj0 : Fin0 = Fin0).
+  Check (HInj1 : Fin4 = Fin4).
+  Check (HInj2 : Fin5 = Fin5).
+  Check (HInj3 : Fin6 = Fin6).
+  Check (HInj4 : Fin7 = Fin7).
+  Check (HInj5 : Fin9 = Fin9).
+Abort.
+
+
+
 Ltac simpl_not_in :=
   repeat match goal with
          | [ H: forall i : Fin.t 2, not_indexes [|Fin0|] i -> _ |- _] =>
@@ -689,4 +784,5 @@ Ltac simpl_not_in :=
            specialize (H Fin0  simpl_not_in_helper2)
          | _ => progress simpl_not_in_add_tapes
          | _ => progress simpl_not_in_app_tapes
+         | _ => progress simpl_not_in_vector
          end.
