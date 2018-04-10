@@ -270,7 +270,7 @@ Proof.
     - apply MoveToLeft_WRealise' with (X := nat). (* Don't forget the type here! *)
   }
   {
-    intros tin ((), tout) H. intros m n HEncM HEncN HInt. TMSimp. clear H2 H3 H4. 
+    intros tin ((), tout) H. intros m n HEncM HEncN HInt. TMSimp. clear H2 H3 H4.
     specialize (HInt Fin0); apply isLeft_isLeft_size in HInt.
     specialize (H _ _ _ HEncM HEncN HInt) as (H1&H2&H3&H4).
     destruct H4 as (r1&r2&Hr1&Hr2&H4).
@@ -380,180 +380,268 @@ Proof.
 Qed.
 
 
-(*
-(* TODO *)
-
 (** * Multiplication *)
 
+
 (*
- * t0: m  (counter for mult)
- * t1: n  (m for add) (stays left)
- * t2: a  (n for add) (stays left)
- * t3: n' (copy of m for add) (stays left)
+ * Complete Machine:
+ *
+ * INP t0: m
+ * INP t1: n  (from Add: INP t0)
+ * OUT t2: c  (from Add: INP t1)
+ * INT t3: c' (from Add: OUT t2)
+ * INT t4:    (from Add: INT t3)
+ * INT t5: m' (copy of m)
+ *
+ * Pseudocode:
+ * c := 0
+ * m' := m
+ * while (m--) {
+ *   ADD(n, c, c')
+ *   c := c'
+ *   reset c'
+ * }
+ * reset m'
  *)
 
-Definition Mult_Step : { M : mTM _ 4 & states M -> bool * unit } :=
-  If (Inject MatchNat (app_tapes 1 3))
-     (Return (Inject Add (add_tapes 3 1)) (true, tt))
-     (Nop _ _ (false, tt)).
+(*
+ * Step-Machine:
+ * (Note that it only accesses the copy of m)
+ *
+ * t0: m' (counter)
+ * t1: n  (from Add: INP t0)
+ * t2: c  (from Add: INP t1)
+ * t3: c' (from Add: OUT t2)
+ * t4:    (from Add: INT t4)
+ *
+ * if (m'--) {
+ *   Add(n, c, c')
+ *   c := c
+ *   reset c'
+ *   continue
+ * } else {
+ *   break
+ * }
+ *)
+Definition Mult_Step : { M : mTM _ 5 & states M -> bool * unit } :=
+  If (Inject MatchNat [|Fin0|])
+     (Return (
+          Inject Add [|Fin1; Fin2; Fin3; Fin4|];; (* Add(n, c, c') *)
+          Inject (CopyValue' _) [|Fin3; Fin2|];; (* c := c' *)
+          Inject (MoveToLeft _) [|Fin3|] (* reset c' *)
+        ) (true, tt)) (* continue *)
+     (Nop _ _ (false, tt)). (* break *)
 
 
-Definition Mult_Loop : { M : mTM _ 4 & states M -> unit } := WHILE Mult_Step.
-
-Definition Mult : { M : mTM _ 4 & states M -> unit } :=
-  Inject (InitTape _ 0) [|Fin2|];; (* Initialise the accu to 0 *)
-  Mult_Loop. (* Main loop *)
+Definition Mult_Loop : { M : mTM _ 5 & states M -> unit } := WHILE Mult_Step.
 
 
-(** Correctness *)
+(*
+ * INP t0: m
+ * INP t1: n  (from Mult_Loop: t1)
+ * OUT t2: c  (from Mult_Loop: t2)
+ * INT t3: c' (from Mult_Loop: t3)
+ * INT t4:    (from Mult_Loop: t4)
+ * INT t5: m' (from Mult_Loop: t0)
+ *)
+Definition Mult_Main : { M : mTM _ 6 & states M -> unit } :=
+  Inject (CopyValue' _) [|Fin0; Fin5|];; (* m' := m *)
+  Inject (InitTape _ 0) [|Fin2|];; (* c := 0 *)
+  Inject Mult_Loop [|Fin5; Fin1; Fin2; Fin3; Fin4|]. (* Main loop *)
 
-Definition Mult_Step_Rel : Rel (tapes (bool^+) 4) ((bool * unit) * tapes (bool^+) 4) :=
+
+Definition Mult : { M : mTM _ 6 & states M -> unit } :=
+  Mult_Main;;
+  Inject (MoveToLeft _) [|Fin5|]. (* Reset m' *)
+
+
+(** Correctness of Mult *)
+
+Definition Mult_Step_Rel : Rel (tapes (bool^+) 5) ((bool * unit) * tapes (bool^+) 5) :=
   fun tin '(yout, tout) =>
-    forall (a m n s0 s0' s1 s3 : nat),
-      tin [@Fin0] ≂{s0;s0'} m ->
-      tin [@Fin1] ≂{0;s1} n ->
-      tin [@Fin2] ≂ a ->
-      isLeft tin[@Fin3] s3 ->
-      match m with
+    forall c s1 s2 m' n,
+      tin[@Fin0] ≂{s1;s2} m' ->
+      tin[@Fin1] ≂ n ->
+      tin[@Fin2] ≂ c ->
+      isLeft tin[@Fin3] ->
+      isLeft tin[@Fin4] ->
+      match m' with
       | O =>
-        tout = tin /\ (* nothing changes *)
-        yout = (false, tt) (* break *)
-      | S m' =>
-        tout[@Fin0] ≂{S s0; s0'} m' /\ (* m decrements *)
-        tout[@Fin1] ≂{0;s1} n /\ (* n stays unchanged *)
-        tout[@Fin2] ≂ n + a /\ (* a is incremented by n *)
-        isLeft tout[@Fin3] (max s3 (S (S n))) /\ (* n' stays left and has not allocated more memory than needed to hold n *)
-        yout = (true, tt) (* continue *)
+        tout = tin /\
+        yout = (false, tt) (* return *)
+      | S m'' =>
+        tout[@Fin0] ≂{S s1;s2} m'' /\
+        tout[@Fin1] ≂ n /\
+        tout[@Fin2] ≂ n + c /\
+        isLeft tout[@Fin3] /\
+        isLeft tout[@Fin4] /\
+        yout = (true, tt) (* contine *)
       end.
-
-
 
 Lemma Mult_Step_WRealise : Mult_Step ⊫ Mult_Step_Rel.
 Proof.
   eapply WRealise_monotone.
   {
     unfold Mult_Step. repeat TM_Correct.
-    - eapply RealiseIn_WRealise. eapply MatchNat_Sem.
-    - eapply Add_WRealise.
+    - eapply RealiseIn_WRealise. apply MatchNat_Sem.
+    - apply Add_Computes.
+    - apply CopyValue'_WRealise.
+    - apply MoveToLeft_WRealise'.
   }
   {
-    intros tin ((bout, ()), tout) H.
-    intros a m n s0 s0' s1 s3 HEncM HEncN HEncA HEncN'.
-    pose proof HEncM as (r1&r2&Hr1&Hr2&HEncM').
-    TMSimp. destruct H; TMSimp; inv_pair.
-    - (* Condition of if evaluated to [true] *)
-
-      (* Lift-N rewritings *)
-      pose proof (H2 Fin1 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
-      pose proof (H2 Fin2 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
-      pose proof (H2 Fin3 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
-      specialize (H3 Fin0 ltac:(vector_not_in)). TMSimp.
-
-      (* Computation applications *)
-      specialize (H _ _ _ ltac:(eauto)). destruct m; TMSimp; try congruence.
-      specialize (H1 _ _ _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto)) as (HC1&HC2&HC3).
-
-      repeat split.
-      + hnf. do 2 eexists. unshelve (do 2 (split; [ shelve | eauto])). cbn. omega.
-      + assumption.
-      + assumption.
-      + assumption.
-
-    - (* Condition of if evaluated to [false] *)
-
-      (* Lift-N rewritings *)
-      pose proof (H1 Fin1 ltac:(vector_not_in)) as L1. TMSimp.
-      pose proof (H1 Fin2 ltac:(vector_not_in)) as L2. TMSimp.
-      pose proof (H1 Fin3 ltac:(vector_not_in)) as L3. TMSimp.
-
-      (* Computation applications *)
-      specialize (H _ _ _ ltac:(eauto)). destruct m; TMSimp; try congruence.
-
-      destruct_tapes; cbn in *. split; auto.
-      repeat f_equal; try congruence. eapply tape_encodes_l_injective; eauto.
+    intros tin (yout, tout) H. intros c s1 s2 m' n HEncM' HEncN HEncC HInt3 HInt4. TMSimp.
+    destruct H; TMSimp.
+    - destruct HEncM' as (r11&r12&Hr11&Hr12&HEncM').
+      specialize (H _ _ _ HEncM').
+      destruct m' as [ | m']; TMSimp; inv_pair; try congruence.
+      specialize (H1 _ _ HEncN HEncC).
+      spec_assert H1 as (HComp1&HComp2&HComp3&HComp4).
+      { intros i; destruct_fin i; cbn; assumption. }
+      specialize (HComp4 Fin0); cbn in HComp4.
+      destruct HComp3 as (rs1&rs2&HComp3).
+      specialize (H2 _ _ _ HComp3) as (H2&H2'). TMSimp.
+      repeat split; eauto.
+      + do 2 eexists. split. shelve. split. shelve. eauto. Unshelve. all: cbn; omega.
+      + eapply tape_encodes_l_encodes; eauto.
+      + eapply H7. eapply tape_encodes_l_encodes; eauto.
+    - destruct HEncM' as (r11&r12&Hr11&Hr12&HEncM').
+      specialize (H _ _ _ HEncM').
+      destruct m' as [ | m']; TMSimp; inv_pair; try congruence.
+      split; auto.
+      pose proof tape_encodes_l_injective H HEncM'.
+      destruct_tapes; cbn in *; subst; repeat f_equal; auto.
   }
 Qed.
 
+
+Definition Mult_Loop_Rel : Rel (tapes (bool^+) 5) (unit * tapes (bool^+) 5) :=
+  ignoreParam (
+      fun tin tout =>
+        forall c s1 s2 m' n,
+          tin[@Fin0] ≂{s1;s2} m' ->
+          tin[@Fin1] ≂ n ->
+          tin[@Fin2] ≂ c ->
+          isLeft tin[@Fin3] ->
+          isLeft tin[@Fin4] ->
+          tout[@Fin0] ≂{m'+s1;s2} 0 /\
+          tout[@Fin1] ≂ n /\
+          tout[@Fin2] ≂ m' * n + c /\
+          isLeft tout[@Fin3] /\
+          isLeft tout[@Fin4]
+    ).
+
+
+Lemma Mult_Loop_WRealise :
+  Mult_Loop ⊫ Mult_Loop_Rel.
+Proof.
+  eapply WRealise_monotone.
+  {
+    unfold Mult_Loop. repeat TM_Correct. eapply Mult_Step_WRealise.
+  }
+  {
+    eapply WhileInduction; intros; intros c s1 s2 m' n HEncM' HEncN HEncC HInt3 HInt4; TMSimp.
+    - specialize (HLastStep _ _ _ _ _ HEncM' HEncN HEncC HInt3 HInt4).
+      destruct m' as [ | m']; TMSimp; inv_pair; try congruence. auto.
+    - specialize (HStar _ _ _ _ _ HEncM' HEncN HEncC HInt3 HInt4).
+      destruct m' as [ | m']; TMSimp; inv_pair; try congruence.
+      specialize (HLastStep _ _ _ _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto)) as (HL1&HL2&HL3&HL4&HL).
+      repeat split; auto.
+      + now rewrite Nat.add_succ_comm.
+      + now rewrite Nat.mul_succ_l, <- Nat.add_assoc.
+  }
+Qed.
 
 (*
- * t0: m  (counter for mult) (stays left)
- * t1: n  (m for add) (stays left)
- * t2: a  (n for add) (stays left)
- * t3: n' (copy of m for add) (stays left)
+ * Complete Machine:
+ *
+ * INP t0: m
+ * INP t1: n  (from Add: INP t0)
+ * OUT t2: c  (from Add: INP t1)
+ * INT t3: c' (from Add: OUT t2)
+ * INT t4:    (from Add: INT t3)
+ * INT t5: m' (copy of m)
+ *
+ * Pseudocode:
+ * c := 0
+ * m' := m
+ * while (m--) {
+ *   ADD(n, c, c')
+ *   c := c'
+ *   reset c'
+ * }
+ * reset m'
  *)
 
-Definition Mult_Loop_Rel : Rel (tapes (bool^+) 4) (unit * tapes (bool^+) 4) :=
+Definition Mult_Main_Rel : Rel (tapes (bool^+) 6) (unit * tapes (bool^+) 6) :=
   ignoreParam (
       fun tin tout =>
-        forall (a m n s0 s0' s1 s3 : nat),
-          tin [@Fin0] ≂{s0;s0'} m ->
-          tin [@Fin1] ≂{0;s1} n ->
-          tin [@Fin2] ≂ a ->
-          isLeft tin[@Fin3] s3 ->
-          tout[@Fin0] ≂{m + s0; s0'} 0 /\ (* m is decremented to 0 *)
-          tout[@Fin1] ≂{0;s1} n /\ (* n stays unchanged *)
-          tout[@Fin2] ≂ m * n + a /\ (* a is m times incremented by n *)
-          isLeft tout[@Fin3] (max s3 (S (S n))) (* n' stays left and has not allocated more memory than needed to hold n *)
+        forall s1 m n,
+          tin[@Fin0] ≂ m ->
+          tin[@Fin1] ≂ n ->
+          isLeft tin[@Fin3] ->
+          isLeft tin[@Fin4] ->
+          isLeft_size tin[@Fin5] s1 ->
+          tout[@Fin0] ≂ m /\
+          tout[@Fin1] ≂ n /\
+          tout[@Fin2] ≂ m * n /\
+          isLeft tout[@Fin3] /\
+          isLeft tout[@Fin4] /\
+          tout[@Fin5] ≂{m; S (S s1)} 0
     ).
 
-
-Lemma Mult_Loop_WRealise : Mult_Loop ⊫ Mult_Loop_Rel.
-Proof.
-  eapply WRealise_monotone.
-  { unfold Mult_Loop. repeat TM_Correct. apply Mult_Step_WRealise. }
-  {
-    intros tin ((), tout) (tmid&HStar&HLastStep).
-    induction HStar as [ tin | tin tmid1 tmid2 HStar _ IH];
-      intros a m n s0 s0' s1 s3 HEncM HEncN HEncA HEncN'.
-    - cbn in HLastStep. specialize (HLastStep _ _ _ _ _ _ _ HEncM HEncN HEncA HEncN').
-      destruct m; TMSimp; inv_pair. eauto using isLeft_monotone, Nat.le_max_l.
-    - repeat (spec_assert IH; eauto). cbn in HLastStep, IH, HStar. destruct HStar as (()&HStar). cbn in HStar.
-      specialize (HStar _ _ _ _ _ _ _ HEncM HEncN HEncA HEncN').
-      destruct m; TMSimp; inv_pair.
-      specialize (IH _ _ _ _ _ _ _ H H0 H1 H2) as (IH1&IH2&IH3&IH4).
-      rewrite <- Nat.add_succ_comm in IH1. cbn in *.
-      repeat split; cbn in *; auto.
-      + enough (n + m * n + a = m * n + (n + a)) as -> by auto; omega.
-      + eapply isLeft_monotone; eauto. apply Nat.eq_le_incl. apply max_max_le.
-  }
-Qed.
-
-
-(* We initialised [a] to [0] now, so the output on tape [t2] is [m*n] *)
-Definition Mult_Rel : Rel (tapes (bool^+) 4) (unit * tapes (bool^+) 4) :=
-  ignoreParam (
-      fun tin tout =>
-        forall (m n s0 s0' s1 s3 : nat),
-          tin [@Fin0] ≂{s0;s0'} m ->
-          tin [@Fin1] ≂{0;s1} n ->
-          isLeft tin[@Fin3] s3 ->
-          tout[@Fin0] ≂{m + s0; s0'} 0 /\ (* m is decremented to 0 *)
-          tout[@Fin1] ≂{0;s1} n /\ (* n stays unchanged *)
-          tout[@Fin2] ≂ m * n /\ (* a the output of the computation [m+n] *)
-          isLeft tout[@Fin3] (max s3 (S (S n))) (* n' stays left and has not allocated more memory than needed to hold n *)
-    ).
-
-Lemma Mult_WRealsie : Mult ⊫ Mult_Rel.
+Lemma Mult_Main_WRealise :
+  Mult_Main ⊫ Mult_Main_Rel.
 Proof.
   eapply WRealise_monotone.
   {
-    unfold Mult. repeat TM_Correct.
+    unfold Mult_Main. repeat TM_Correct.
+    - apply CopyValue'_WRealise with (X := nat).
     - eapply RealiseIn_WRealise. apply InitTape_Sem.
     - apply Mult_Loop_WRealise.
   }
   {
-    intros tin ((), tout) H. intros m n s0 s0' s1 s3 HEncM HEncN HEncN'. TMSimp.
-    (* Lift-N rewriting *)
-    pose proof (H1 Fin0 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
-    pose proof (H1 Fin1 ltac:(vector_not_in)) as L1. TMSimp. clear L1.
-    pose proof (H1 Fin3 ltac:(vector_not_in)) as L1. TMSimp. clear L1. clear H1.
-    (* Apply computations *)
-    specialize (H0 _ _ _ _ _ _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto)) as (H1&H2&H3&H4).
-    now rewrite Nat.add_0_r in H3.
+    intros tin ((), tout) H. intros s1 m n HEncM HEncN HInt3 HInt4 HInt5. TMSimp.
+    pose proof HEncM as (r1&r2&HEncM').
+    specialize (H _ _ _ HEncM') as (->&H).
+    rewrite isLeft_left in H; eauto. apply tape_encodes_l_encodes_size in H. cbn in H.
+    specialize (H1 _ _ _ _ _ H HEncN H0 HInt3 HInt4) as (HComp1&HComp2&HComp3&HComp4&HComp5).
+    repeat split; eauto.
+    - now rewrite <- Nat.add_0_r.
+    - eapply tape_encodes_size_monotone; eauto.
+      + omega.
+      + rewrite skipn_length. rewrite nat_encode_length.
+        transitivity (s1 - S (S m)).
+        * apply Nat.sub_le_mono_r. now apply isLeft_size_right.
+        * omega.
+    - eapply isLeft_size_isLeft; eassumption.
   }
 Qed.
 
 
+Lemma Mult_Computes :
+  Mult ⊫ Computes2_Rel mult.
+Proof.
+  eapply WRealise_monotone.
+  {
+    unfold Mult. repeat TM_Correct.
+    - eapply Mult_Main_WRealise.
+    - eapply MoveToLeft_WRealise'.
+  }
+  {
+    intros tin ((), tout) H. intros m n HEncM HEncN HInt. TMSimp.
+    pose proof HInt Fin0 as HInt3; pose proof HInt Fin1 as HInt4; pose proof HInt Fin2 as HInt5; clear HInt.
+    apply isLeft_isLeft_size in HInt5.
+    specialize (H _ _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto)) as
+        (HComp1&HComp2&HComp3&HComp4&HComp5&HComp6).
+    destruct HComp6 as (r1&r2&Hr1&Hr2&HComp6).
+    repeat split; eauto.
+    intros i; destruct_fin i; cbn; eauto.
+    eapply H0; do 2 eexists; eauto.
+  }
+Qed.
+
+
+(* (* TODO *)
 (** Termination of Mult *)
 
 (*
