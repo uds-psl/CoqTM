@@ -25,7 +25,7 @@ Section IsLeft.
 
   Lemma isLeft_size_monotone (sig : finType) (t : tape sig) (s1 s2 : nat) :
     isLeft_size t s1 -> s1 <= s2 -> isLeft_size t s2.
-  Proof. intros (x&rs&Hrs&->) Hs. exists x, rs. split. omega. auto. Qed. 
+  Proof. intros (x&rs&Hrs&->) Hs. exists x, rs. split. omega. auto. Qed.
 
   Lemma mapTape_isLeft (sig tau : finType) (t : tape sig) (f : sig -> tau) :
     isLeft (mapTape f t) <-> isLeft t.
@@ -51,7 +51,7 @@ Section IsLeft.
   Lemma isLeft_isLeft_size (sig : finType) (t : tape sig) :
     isLeft t -> isLeft_size t (| tape_local t|).
   Proof. intros (x&r2&->). cbn. hnf. eauto. Qed.
-  
+
 End IsLeft.
 
 (*
@@ -62,7 +62,7 @@ Hint Resolve isLeft_left isLeft_size_left isLeft_size_right isLeft_isLeft_size :
 
 
 Section Fix_Sig.
-  
+
   Variable (sig : finType).
 
 
@@ -99,7 +99,7 @@ Section Fix_Sig.
     Definition tape_encodes' (t : tape sig^+) (x : X) : Prop :=
       exists r1 r2 : list (sig^+), tape_encodes_r t x r1 r2.
 
-    
+
     Lemma tape_encodes_l_injective (t1 t2 : tape sig^+) (x : X) (r1 r2 : list sig^+) :
       tape_encodes_l t1 x r1 r2 ->
       tape_encodes_l t2 x r1 r2 ->
@@ -128,7 +128,7 @@ Section Fix_Sig.
       intros (H2&H2') (H1&H1'). rewrite H2 in H1; clear H2. rewrite H2' in H1'. clear H2'. cbn in *.
       eapply encode_map_injective in H1' as (->&H2). inv H1. inv H2. tauto. eapply retract_inr.
     Qed.
-    
+
     Notation "t '≂' x" := (tape_encodes t x) (at level 70, no associativity).
 
     Lemma tape_encodes_functional (t : tape sig^+) (x1 x2 : X) :
@@ -199,14 +199,14 @@ Section Fix_Sig.
   End Encodes_Ext.
 
 
-  
+
 
   (** Definition of the computation relations *)
-  
+
   Section Computes.
     Variable n : nat.
     Variable (X Y : Type) (cX : codeable sig X) (cY : codeable sig Y).
-    
+
     (*
      * Tape [t0] is the input tapes, [t2] is the output tape.
      * All further tapes are "internal tapes", i.e. they pointer is left before and after the execution.
@@ -222,6 +222,14 @@ Section Fix_Sig.
               tout[@Fin1] ≂ f x /\
               forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]
         ).
+
+    Definition Computes_T (r : X -> nat) : Rel (tapes (sig ^+) (S (S n))) nat :=
+      fun tin k =>
+        exists x : X,
+          tin[@Fin0] ≂ x /\
+          (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]) /\
+          r x <= k.
+
 
 
     (* The computes relation must be extensional *)
@@ -265,6 +273,27 @@ Section Fix_Sig.
         - eapply Computes_ext.
       Qed.
 
+
+      Variable (r1 r2 : X -> nat).
+      Hypothesis mon : forall x, r2 x <= r1 x.
+
+      Lemma Computes_Monotone  :
+        Computes_T r1 <<=2 Computes_T r2.
+      Proof.
+        intros tin k H. hnf in H.
+        destruct H as (x&H1&H2&H3).
+        hnf. exists x. repeat split; eauto. rewrite <- H3. apply mon.
+      Qed.
+
+      Lemma Computes_T_Monotone :
+        projT1 pM ↓ Computes_T r2 ->
+        projT1 pM ↓ Computes_T r1.
+      Proof.
+        intros H. eapply TerminatesIn_monotone.
+        - apply H.
+        - apply Computes_Monotone.
+      Qed.
+
     End Computes_Ext.
   End Computes.
 
@@ -291,7 +320,15 @@ Section Fix_Sig.
               tout[@Fin2] ≂ f x y /\
               forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS (Fin.FS i))]
         ).
-    
+
+
+    Definition Computes2_T (r : X -> Y -> nat) : Rel (tapes (sig ^+) (S (S (S n)))) nat :=
+      fun tin k =>
+        exists (x : X) (y : Y),
+          tin[@Fin0] ≂ x /\
+          tin[@Fin1] ≂ y /\
+          (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS (Fin.FS i))]) /\
+          r x y <= k.
 
     Section Computes2_Ext.
       Variable (f f' : X -> Y -> Z) (ext_fun : forall x y, f x y = f' x y).
@@ -332,7 +369,31 @@ Section Fix_Sig.
         - eapply Computes2_ext.
       Qed.
 
+
+      Variable (r1 r2 : X -> Y -> nat).
+      Hypothesis mon : forall x y, r2 x y <= r1 x y.
+
+
+      Lemma Computes2_Monotone  :
+        Computes2_T r1 <<=2 Computes2_T r2.
+      Proof.
+        intros tin k H. hnf in H.
+        destruct H as (x&y&H1&H2&H3&H4).
+        hnf. exists x, y. repeat split; eauto. rewrite <- H4. apply mon.
+      Qed.
+
+      Lemma Computes2_T_Monotone :
+        projT1 pM ↓ Computes2_T r2 ->
+        projT1 pM ↓ Computes2_T r1.
+      Proof.
+        intros H. eapply TerminatesIn_monotone.
+        - apply H.
+        - eapply Computes2_Monotone.
+      Qed.
+
+
     End Computes2_Ext.
+
 
   End Computes2.
 
@@ -378,7 +439,7 @@ Section Computes_Gen.
   Definition param_genF (params : list comp_gen_param) :=
     paramVectCoerce (map par_type params).
 
-  
+
   Fixpoint Computes_Gen
            (params : list comp_gen_param)
            (f : param_genF params)
@@ -427,12 +488,12 @@ Section Test_Computes_Gen1.
   Variable F : finType.
 
   Definition gen1 := Computes_Gen cY j [| (mk_param i cX) |] f.
-  
+
   Lemma Computes_Gen_Computes : gen1 =2 Computes i j cX cY f.
   Proof.
     split; cbn; hnf; intuition.
   Qed.
-  
+
 End Test_Computes_Gen1.
 
 (* Check, that Computes_Gen coincises with Computes2 for [k := 2] *)
@@ -464,7 +525,7 @@ Section InitTape.
     Variable sig : finType.
 
     (* This should go directly to WriteString.  It is a better definition *)
-    
+
     Definition WriteStr_Rev_Rel (str:list sig) : Rel (tapes sig 1) (unit * tapes sig 1) :=
       Mk_R_p (ignoreParam (fun tin tout => right tout = str ++ right tin)).
 
@@ -507,7 +568,7 @@ Section InitTape.
     Qed.
 
   End Write_String_Rev.
-  
+
 
   Variable sig : finType.
   Variable X : Type.
@@ -518,7 +579,7 @@ Section InitTape.
 
   Definition InitTape (x : X) : { M : mTM sig^+ 1 & states M -> unit } :=
     Write_String L tt (List.rev (inl START :: List.map inr (encode (codeable := codX) x) ++ [inl STOP]));; Move _ R tt;; Move _ R tt.
-  
+
 
   Lemma InitTape_Sem (x : X) :
     InitTape x ⊨c(12 + 4 * |encode x|) InitTape_Rel x.
@@ -554,6 +615,6 @@ Section Test_InitTape_Gen0.
     - TMSimp. do 2 eexists. split; hnf; cbn; eauto.
     - TMSimp. do 2 eexists. split; hnf; cbn; eauto.
   Qed.
-  
+
 End Test_InitTape_Gen0.
  *)

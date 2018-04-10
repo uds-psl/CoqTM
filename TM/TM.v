@@ -273,7 +273,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Notation "M ↓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '↓'  T").
 
   Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : Rel (tapes _) _) :
-    M ↓ T1 -> (forall tin k, T2 tin k -> T1 tin k) -> M ↓ T2.
+    M ↓ T1 -> (T2 <<=2 T1) -> M ↓ T2.
   Proof.
     intros H1 H2. firstorder.
   Qed.
