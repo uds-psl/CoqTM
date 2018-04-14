@@ -1,0 +1,344 @@
+\documentclass{beamer} %
+% \usetheme{CambridgeUS}
+\usepackage[latin1]{inputenc}
+% \usefonttheme{professionalfonts}
+\usepackage{tikz}
+\usepackage{amsmath}
+\usepackage{verbatim}
+\usepackage{listings}
+\usepackage{minted}
+\usecolortheme{orchid}
+\usetikzlibrary{arrows,shapes,snakes}
+
+
+%%
+%% Important note:
+%% Add [fragile] to each frame using listings!
+%%
+
+\include{mypreamble}
+
+
+%% Use these versions of the type names
+\renewcommand{\Type}{\mathbb{T}}
+\renewcommand{\Nat}{\mathbb{N}}
+\renewcommand{\Bool}{\mathbb{B}}
+\renewcommand{\Option}{\mathcal{O}}
+\renewcommand{\List}{\mathcal{L}}
+\newcommand{\Pow}{\mathcal{P}}
+
+% Hide Controls
+\beamertemplatenavigationsymbolsempty%
+% \setbeamertemplate{footline}[page number]
+%% Show only current page number
+\setbeamertemplate{footline}{\raisebox{5pt}{\makebox[\paperwidth]{\hfill\makebox[20pt]{\scriptsize{\color{gray}\insertframenumber}}}}}
+
+%% Display a list of references at the bottom
+\newcommand\refs[1]{%
+  \begin{textblock*}{8cm}(0.3cm,9.0cm)%
+    \scriptsize {\color{gray}#1}
+  \end{textblock*}
+}
+
+
+\title{Formalising Multi-Tape Turing Machines In Coq}
+\subtitle{Second Bachelor Seminar Talk}
+\author{Maximilian Wuttke}
+\institute{Saarland University\\
+  \bigskip
+  \tiny
+  Programming Systems Lab
+}
+\date{March 20, 2018\\
+  \bigskip{}
+  \bigskip{}
+  {
+    \tiny
+    Advisor: Yannick Forster\\
+    Supervisor: Prof.\ Dr.\ Gert Smolka%
+  }
+}
+
+\begin{document}
+
+
+\tikzstyle{every picture}+=[remember picture]
+
+
+
+
+\frame{\titlepage}
+
+\begin{frame}{Small Recap: Muli-Tape Turing Machines in Coq}
+
+  \begin{itemize}
+  \item \textbf{Partitioned machines}: $pM : \setOf{M : \MS{mTM}~\Sigma~n;~ f \from Q_{M} \to F}$ for \textbf{finite} types $F$
+  \item Parametrised relations: $R \subseteq (\Tape_\Sigma^n) \times (F \times \Tape_\Sigma^n)$
+  \item Weak realisation: $pM \VDash R$
+  \item Termination: $M \downarrow T$
+  \end{itemize}
+
+\end{frame}
+
+\begin{frame}{Realisation}
+
+  \begin{definition}[Realisation, $pM \VDash R$]
+    Let $R \subseteq (\Tape_\Sigma^n) \times (F \times \Tape_\Sigma^n)$ for a finite $F$.
+    \begin{multline*}
+      \mathbf{pM \VDash R} :=
+      \forall (t_{in}~t_{out} : \Tape_\Sigma^n)~(q_{out}:Q_M)~(k:\Nat). \\
+      M(t_{in}) \triangleright^k (q_{out}, t_{out}) \rightarrow
+      \left(t_{in}, \left(f(q_{out}), t_{out} \right) \right) \in R.
+    \end{multline*}
+    We say that $pM$ \textbf{realises} $R$.
+  \end{definition}
+
+  \begin{lemma}[Monoticity of $\VDash$]
+    If $pM \VDash R_1$ and $R_1 \subseteq R_2$, then $pM \VDash R_2$.
+  \end{lemma}
+
+\end{frame}
+
+\begin{frame}{Termination}
+
+  \begin{definition}[Termination, $M \downarrow T$]
+    Let $T \subseteq (\Tape_\Sigma^n) \times \Nat$.
+    \[
+      \mathbf{M \downarrow T} :=
+      \forall (t_{in},~k) \in T.~
+      \exists c_{out},~M(t_{in}) \triangleright^k c_{out}
+    \]
+    We say that $M$ \textbf{terminates in} $T$.
+  \end{definition}
+
+  \begin{lemma}[Monoticity of $\downarrow$]
+    If $M \downarrow T_1$ and $T_2 \subseteq T_1$, then $M \downarrow T_2$.
+  \end{lemma}
+
+\end{frame}
+
+
+\begin{frame}{Combinators for Parametrised Machines}
+  \emph{Shallow-embedded} language for constructing partitioned machines:
+  
+  \begin{itemize}
+  \item $\MS{Match}~pM_1~(\lam {x:F_1} \cdots pM_2 \cdots pM_3 \cdots)$
+  \item $\MS{If}~pM_1~pM_2~pM_3$
+  \item $pM_1;~ pM_2$
+  \item $\MS{While}~pM$
+  \end{itemize}
+
+  \pause
+
+  \begin{lemma}[Correctness of $\MS{While}$]
+    Let $pM$ be a partitioned (and $R$ parametrised) over $\Bool \times F$.\\
+    % Overload While for a relation operator and a machine operator?
+    If $pM \VDash R$, then $\MS{While}~pM \VDash \MS{While}~R$ with
+    \[
+      \MS{While}~R :=
+      (\bigcup_{y \in F} \bigl({R\at{(true, y)}}\bigr)^* \circ R\at{\MS{fst}=\false}.
+    \]
+  \end{lemma}
+\end{frame}
+
+\begin{frame}{Machine transformations}
+  \textbf{Problem:}
+  When combining machines, the numbers of tapes and the alphabet have to match!
+  \pause%
+  \bigskip
+
+  \textbf{Solution:} Two operations on machines:
+  \begin{itemize}
+    \item $n$-Lift: add/rearange tapes
+    \item $\Sigma$-Lift: translate symbols
+  \end{itemize}
+\end{frame}
+\begin{frame}{$n$-Lift}
+  Let $f \from \Fin_m \hookrightarrow \Fin_n$ be an injection between tape indexes.
+
+  Let $M$ be an $m$-tape $F$-partitioned Turing machine parametrised over $\Sigma$,
+  and $R$ be a $F$-parametrised relation.
+
+  Define an $n$-tape Turing machine $\MS{Lift}_f~M$ and a relation $\MS{Lift}_f~R$.
+  \begin{align*}
+    \MS{Lift}_f~R := \setMap{(t_{in}, (a, t_{out})) &}{ \bigl(f^{-1}(t_{in}), (a, f^{-1}(t_{out})) \bigr) \in R } \cap \\
+    \Uparrow \setMap{(t_{in}, t_{out}) &}{ \forall i \notin \MS{img}~f.~ t_{in}[i] = t_{out}[i] }
+  \end{align*}
+  {\footnotesize (Where $f^{-1} \from \Tape^m \to \Tapes^n$)}
+  % (Tapes that are not in the image of $f$ do nothing, the other tapes simulate the corresponding tapes of $M$.)
+
+  \begin{lemma}[Correctness of the $n$-Lift]
+    \[
+      M \VDash R \rightarrow (\MS{Lift}_f~M) \VDash (\MS{Lift}_f~R)
+    \]
+  \end{lemma}
+
+\end{frame}
+
+\begin{frame}{$\Sigma$-Lift}
+  Let $f \from \Sigma \hookrightarrow \Tau$ be an injection between alphabets.
+
+  Let $\mathbf{default} : \Sigma^n$.
+
+  Let $M$ be an $m$-tape $F$-partitioned Turing machine parametrised over $\Sigma$,
+  and $R$ be a $F$-parametrised relation.
+
+  Define an $n$-tape Turing machine $\MS{Lift}_{f,\MS{default}}~M$ and a relation $\MS{Lift}_{f,\MS{default}}~R$.
+  \begin{align*}
+    \MS{Lift}_{f,\MS{default}}~R := \setMap{(t_{in}, (a, t_{out}))}{ (f^{-1}_{\MS{default}} (t_{in}) , (a, f^{-1}_{\MS{default}} (t_{out}))) \in R}
+  \end{align*}
+
+  \begin{lemma}[Correctness of the $\Sigma$-Lift]
+    \[
+      M \VDash R \rightarrow (\MS{Lift}_{f, \MS{default}}~M) \VDash (\MS{Lift}_{f, \MS{default}}~R)
+    \]
+  \end{lemma}
+\end{frame}
+
+
+\begin{frame}[fragile]{Encoding Values on Tapes}
+
+  \begin{itemize}
+  \item
+    Typeclass for \emph{encodable} types $X$ and alphabets $\Sigma$:
+
+    \footnotesize
+    \begin{minted}{coq}
+Class encodable (X : Type) (sig : finType) := {
+  encode : X -> list sig;
+}.
+    \end{minted}
+    For example: $\MS{encode}~(b:\Bool) := [b]$ and $\MS{encode} (n:\Nat) := 1^n 0$.
+    \pause
+
+  \item
+    Insert start end end symbols into an encoding:
+    $\Sigma^+ := \Bool + \Sigma$. \pause
+    
+  \item
+    Define class of predicates for \emph{calue-containing} of tapes:
+
+    \begin{definition}[value-containing, $t \eqsim_{[r1;r2]} x$]
+      Let $X$ be encodable over $\Sigma$, and $t \in \Tape_\Sigma$.
+      \[
+        t \eqsim_{[r1;r2]} x :=
+        t = \midtape{(r_1 \app [\inl \true])}{(\inr y)}{(\map~\inr~ys \app \inl \false \cons r_2)}
+        }.
+      \]
+      for $\MS{encode}(x) = y \cons ys$.
+      % or:
+      % \[
+      %   t \eqsim_{[r1;r2]} x :=
+      %   t = \midtape{(r_1 \app [\inl \true])}{\inl \false }{r_2}
+      % \]
+      % f
+      % and $\MS{encode}(x) = \nil$ and
+    \end{definition}
+
+    { \footnotesize
+      We write $t \eqsim x$ for $\exists r_1~r_2.~t \eqsim_{[r_1;r_2]} x$ \\
+      and $t \eqsim_{\{;s\}} x$ for $\exists r_1~r_2.~t\eqsim_{[r_1;r_2]} x \land |r_2| \le s$.
+    }
+  \end{itemize}
+  
+\end{frame}
+
+\begin{frame}[fragile]{A Relation for (Unary) Function Computation}
+
+  Convention:
+  \begin{itemize}
+  \item Input tapes; output tape; ``internal tapes''
+  \item Callee-safe
+  \item ``Internal tapes'' stay right
+  \item Output grows to the left
+  \end{itemize}
+  \pause
+  { \footnotesize
+    \begin{columns}
+      \begin{column}{0.5\textwidth}
+        Let $X, Y, Z$ be encodable over $\Sigma$.
+        \begin{alignat*}{2}
+          & \MS{Computes}~(f:X \to Y) := \\
+          & \quad \lam {t_{in}~(\_, t_{out})} \forall (x:X), \\
+          & \quad\quad t_{in}[0] \eqsim x \rightarrow \\
+          & \quad\quad \MS{isRight}~t_{in}[1] \rightarrow \\
+          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t_{in}[2+i]) \rightarrow \\
+          & \quad\quad t_{out}[0] \eqsim x ~\land \\
+          & \quad\quad t_{out}[1] \eqsim_{\{;0\}} f~x ~\land \\
+          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t_{out}[2+i])
+        \end{alignat*}
+      \end{column}
+      \pause
+      \begin{column}{0.5\textwidth}
+        \begin{alignat*}{2}
+          & \MS{Computes2}~(f:X \to Y \to Z) := \\
+          & \quad \lam {t_{in}~(\_, t_{out})} \forall (x:X)~(y:Y), \\
+          & \quad\quad t_{in}[0] \eqsim x \rightarrow \\
+          & \quad\quad t_{in}[1] \eqsim y \rightarrow \\
+          & \quad\quad \MS{isRight}~t_{in}[2] \rightarrow \\
+          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t_{in}[3+i]) \rightarrow \\
+          & \quad\quad t_{out}[0] \eqsim x ~\land \\
+          & \quad\quad t_{out}[1] \eqsim y ~\land \\
+          & \quad\quad t_{out}[1] \eqsim_{\{;0\}} f~x~y ~\land \\
+          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t_{out}[3+i])
+        \end{alignat*}
+      \end{column}
+    \end{columns}
+  }
+\end{frame}
+
+
+\begin{frame}{Value-Manipulating Machines}
+  \begin{itemize}
+  \item Match/destruct
+  \item Constructor
+  \item CopyValue
+  \item MoveRight
+  \item WriteValue
+  \end{itemize}
+\end{frame}
+
+
+\begin{frame}[fragile] \frametitle{Match $\Nat$}
+  \footnotesize
+
+  {\footnotesize
+    \begin{align*}
+      & \MS{Match\_Nat\_Rel} := \\
+      & \quad \lam {t_{in}~(y_{out}, t_{out})} \forall (n:\Nat) \uncover<2->{(s:\Nat)}, \\
+      & \quad\quad t_{in}[0] \eqsim_{\uncover<2->{\{;s\}}} n \rightarrow \\
+      & \quad\quad \MS{match}~n~\MS{with} \\
+      & \quad\quad |~0 \Rightarrow t_{out} = t_{in} ~\land~ y_{out} = \false \\
+      & \quad\quad |~S~n' \Rightarrow t_{out}[0]  \eqsim_{\uncover<2->{\{;s\}}} n' ~\land~ y_{out} = \true \\
+      & \quad\quad \MS{end}
+    \end{align*}
+  }
+
+  \pause\pause
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      
+\begin{lstlisting}[language=c, escapechar=!]
+if (n--) {
+  // ...
+} else {!\tikz\node [coordinate] (n1) {};!
+  // ...
+}
+\end{lstlisting}
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{align*}
+        & \MS{If}~(\MS{Inject}~\MS{MatchNat}~\Vector{ \text{\tiny \# of tape where $n$ is stored} }) \\
+        & \quad pM_1~pM_2
+      \end{align*}
+    \end{column}
+  \end{columns}
+
+
+  \begin{tikzpicture}[overlay]
+    % \path[->]<1-> (n1) edge [bend left] (n2);
+    \draw[->, snake] ([xshift=1.5cm] n1) -- +(2cm,0);
+  \end{tikzpicture} 
+\end{frame}
+
+\end{document}

@@ -15,6 +15,12 @@ Makefile.coq
 *.pdf
 *.thm
 *.fdb_latexmk
+*.toc
+*.nav
+*.snm
+*.ilg
+*.vrg
+*.pyg
 
 // Vim files
 *.sw*

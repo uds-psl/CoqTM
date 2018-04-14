@@ -1,6 +1,7 @@
 \usepackage{listings}
+\usepackage{stmaryrd}
 \usepackage{parskip}
-\usepackage{tikz-cd} % for commutative diagrams
+
 
 % To get \VDash to work (three options)
 % \usepackage{fdsymbol} % other math-font
@@ -11,6 +12,7 @@
 % TikZ ist *kein* Zeichenprogramm.
 \usepackage{tikz}
 \usetikzlibrary{arrows,shapes,snakes,automata,backgrounds}
+\usepackage{tikz-cd} % for commutative diagrams
 
 \newcommand{\lam}[2]{\lambda#1{.}\hskip.7pt#2}
 \newcommand{\Cond}[3]{\mathsf{if}\;#1\;\mathsf{then}\;#2\;\mathsf{else}\;#3}
@@ -32,10 +34,6 @@
 \newcommand{\txt}[1]{\text{#1}} % this disables spell-checking in my editor
 \newcommand{\MS}[1]{\textsf{#1}}
 
-% Lists
-\newcommand{\nil}{\MS{nil}}
-\newcommand{\cons}{\mathbin{::}}
-\newcommand{\rev}{\MS{rev}}
 
 % ++ operator:
 % Source: https://tex.stackexchange.com/questions/4194/how-to-typeset-haskell-operator-and-friends
@@ -63,7 +61,7 @@
 \newcommand{\from}{:}
 \renewcommand{\to}{\rightarrow}
 
-% Types and constants
+% Types
 \newcommand{\Option}{\MS{Option}}
 \newcommand{\Fin}{\MS{Fin}}
 \newcommand{\Bool}{\MS{Bool}}
@@ -72,12 +70,6 @@
 \newcommand{\Type}{\MS{Type}}
 \newcommand{\Unit}{\MS{Unit}}
 \newcommand{\List}{\MS{List}}
-\newcommand{\Some}[1]{\left\lfloor {#1}\right\rfloor}
-% \None is defined sometimes
-\def\None{\emptyset}
-\newcommand{\true}{\mathbf{true}}
-\newcommand{\false}{\mathbf{false}}
-\newcommand{\unit}{\mathbf{()}}
 \newcommand{\Rel}{\mathsf{Rel}}
 
 % Tapes
@@ -107,8 +99,22 @@
 \newcommand{\mmatch}{\MS{match}}
 \newcommand{\mlet}[2]{\MS{let}~#1~\MS{in}~#2}
 
-% More constants and functions
+% Constructors
 \DeclareMathOperator{\inl}{\ensuremath{\MS{inl}}}
 \DeclareMathOperator{\inr}{\ensuremath{\MS{inr}}}
-\newcommand{\map}{\ensuremath{\MS{map}}}
+\newcommand{\Some}[1]{\left\lfloor {#1}\right\rfloor}
+% \None is defined sometimes
+\def\None{\emptyset}
+\newcommand{\true}{\mathbf{true}}
+\newcommand{\false}{\mathbf{false}}
+\newcommand{\unit}{\mathbf{()}}
+\newcommand{\nil}{\MS{nil}}
+\newcommand{\cons}{\mathbin{::}}
 
+% Functions
+\newcommand{\map}{\ensuremath{\MS{map}}}
+\newcommand{\rev}{\MS{rev}}
+
+
+% Vector
+\newcommand{\Vector}[1]{\left\llbracket #1 \right\rrbracket}

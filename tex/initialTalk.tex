@@ -326,7 +326,7 @@
 
   Define an $n$-tape Turing machine $\MS{Lift}_{f,\MS{default}}~M$ and a relation $\MS{Lift}_{f,\MS{default}}~R$.
   \begin{align*}
-    \MS{lift}_{f,\MS{default}}~R := \setMap{(t_{in}, (a, t_{out}))}{ (f^{-1}_{\MS{default}} (t_{in}) , (a, f^{-1}_{\MS{default}} (t_{out}))) \in R}
+    \MS{Lift}_{f,\MS{default}}~R := \setMap{(t_{in}, (a, t_{out}))}{ (f^{-1}_{\MS{default}} (t_{in}) , (a, f^{-1}_{\MS{default}} (t_{out}))) \in R}
   \end{align*}
 
   \begin{lemma}[Correctness of the $\Sigma$-Lift]
