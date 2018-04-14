@@ -14,6 +14,7 @@
 %%
 %% Important note:
 %% Add [fragile] to each frame using listings!
+%% AUCTeX does this automatically!
 %%
 
 \include{mypreamble}
@@ -334,11 +335,261 @@ if (n--) {
     \end{column}
   \end{columns}
 
-
   \begin{tikzpicture}[overlay]
-    % \path[->]<1-> (n1) edge [bend left] (n2);
     \draw[->, snake] ([xshift=1.5cm] n1) -- +(2cm,0);
   \end{tikzpicture} 
+\end{frame}
+
+\begin{frame}
+  \frametitle{General Design of A Turing Machine}
+  \begin{enumerate}
+  \item Write the program in pseudo code
+  \item Partition the program into smaller programs
+  \item For each partion: map values to tapes
+  \item For each partion: write a machine using primitive machines and combinators
+  \item Compose machines
+  \item For each machine: define a correctness relation and proof correctness
+  \item For each machine: define a termination relation and proof termination
+  \end{enumerate}
+\end{frame}
+
+
+\begin{frame}[fragile]
+  \frametitle{Case Study: Designing A Multiplication Machine}
+
+  \begin{overlayarea}{\textwidth}{\textheight}
+
+    \begin{onlyenv}<1>
+\begin{lstlisting}
+c := 0
+while (m--) {
+  c += n
+}
+return c
+\end{lstlisting}
+    \end{onlyenv}
+
+    \begin{onlyenv}<2>
+\begin{lstlisting}
+m' := m
+c := 0
+while (m'--) {
+  Add(n, c, c')
+  CopyValue(c', c)
+  Reset(c')
+}
+Reset(m')
+return c
+\end{lstlisting}
+    \end{onlyenv}
+
+    \begin{onlyenv}<3->
+\begin{lstlisting}[escapechar=!]
+m' := m !\tikz\node [coordinate] (init1) {};!
+c := 0 !\tikz\node [coordinate] (init2) {};!
+while (true) { !\tikz\node [coordinate] (loop1) {};!
+  if (m--) { !\tikz\node [coordinate] (step1) {};!
+    Add(n, c, c')
+    CopyValue(c', c)
+    Reset(c')
+    continue
+  } else {
+    break
+  } !\tikz\node [coordinate] (step2) {};!
+} !\tikz\node [coordinate] (loop2) {};!
+Reset(m') !\tikz\node [coordinate] (reset) {};!
+return c
+\end{lstlisting}
+    \end{onlyenv}
+
+    \begin{onlyenv}<4->
+      \begin{tikzpicture}[overlay]
+        \node (init1') at ([yshift=+0.2cm] init1 -| (5,0));
+        \node (init2') at ([yshift=-0.2cm] init2 -| (5,0));
+        \node (loop1') at ([yshift=+0.2cm] loop1 -| (7,0));
+        \node (loop2') at ([yshift=-0.2cm] loop2 -| (7,0));
+        \node (step1') at ([yshift=+0.2cm] step1 -| (5,0));
+        \node (step2') at ([yshift=-0.2cm] step2 -| (5,0));
+        \node (reset1') at ([yshift=+0.3cm] reset -| (5,0));
+        \node (reset2') at ([yshift=-0.3cm] reset -| (5,0));
+        \node (initloop1) at (init1' -| (8.5, 0));
+        \node (initloop2) at (loop2' -| (8.5, 0));
+        \draw[snake=brace] (init1')  -- (init2')  node[midway, xshift=0.6cm] {Init};
+        \draw[snake=brace] (step1')  -- (step2')  node[midway, xshift=0.6cm] {Step};
+        \draw[snake=brace] (loop1')  -- (loop2')  node[midway, xshift=0.6cm] {Loop};
+        \draw[snake=brace] (reset1') -- (reset2') node[midway, xshift=0.6cm] {Reset};
+        \draw[snake=brace] (initloop1) -- (initloop2) node[midway, xshift=1cm] {Init+Loop};
+      \end{tikzpicture}
+    \end{onlyenv}
+  \end{overlayarea}
+
+\end{frame}
+
+
+\begin{frame}[fragile,fragile]
+  \frametitle{Multiplication: Step Machine}
+  \footnotesize
+  
+  We assumue a machine $\MS{Add} \VDash \MS{Computes2}~add$.
+
+  \begin{columns}
+    \begin{column}{0.4\textwidth}
+\begin{lstlisting}[escapechar=!]
+if (m--) {
+  Add(n, c, c')
+  CopyValue(c', c)
+  Reset(c')!\tikz\node [coordinate] (n1) {};!
+  continue
+} else {
+  break
+}
+\end{lstlisting}
+
+    \end{column}
+
+    \begin{column}{0.6\textwidth}
+      \begin{overlayarea}{\textwidth}{5cm}
+        \begin{onlyenv}<2->
+
+          \begin{tikzpicture}[overlay]
+            \draw[->, snake] ([xshift=1.5cm] n1) -- +(2cm,0);
+          \end{tikzpicture} 
+          
+          \begin{align*}
+            & \MS{Mult\_Step} := \\
+            & \quad\MS{If}~(\MS{Inject}~\MS{MatchNat}~\Vector{0}) \\
+            & \quad\bigl(\MS{Return}( \bigr. \\
+            & \quad\quad\quad \MS{Inject}~\MS{Add}~\Vector{1; 2; 3; 4}; \\
+            & \quad\quad\quad \MS{Inject}~\MS{CopyValue}~\Vector{3;2}; \\
+            & \quad\quad\quad \MS{Inject}~\MS{MoveToRight}~\Vector{3} \\
+            & \quad\quad\bigl. )~(\true, \unit \bigr) \\
+            & \quad\bigl(\MS{Nop}~(\false, \unit)\bigr)
+          \end{align*}
+        \end{onlyenv}
+      \end{overlayarea}
+    \end{column}
+    
+  \end{columns}
+
+\begin{lstlisting}
+t0: m' (t0 for MatchNat)
+t1: n  (t0 for Add)
+t2: c  (t1 for Add) (t1 for CopyValue)
+t3: c' (t2 for Add) (t0 for CopyValue) (t0 for MoveToRight)
+t4: ?  (t3 for Add)
+\end{lstlisting}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Multiplication: Verification of $\MS{Mult\_Loop}$}
+  \footnotesize
+
+  \begin{columns}
+    \tiny
+    \begin{column}{0.5\textwidth}
+      % \begin{align*}
+      %   & \MS{Mult\_Step\_Rel} := \\
+      %   &\quad \lam{t_{in}~(y, t_{out})} \forall (c~m'~n:\Nat), \\
+      %   &\quad\quad t_{in}[0] \eqsim_{\{;0\}} m' \rightarrow \\
+      %   &\quad\quad t{in}[1] \eqsim n \rightarrow \\
+      %   &\quad\quad t{in}[2] \eqsim c \rightarrow \\
+      %   &\quad\quad \MS{isRight}~t_{in}[3] \rightarrow \\
+      %   &\quad\quad \MS{isRight}~t_{in}[4] \rightarrow \\
+      %   &\quad\quad \MS{match}~m'~\MS{with} \\
+      %   &\quad\quad |~O \Rightarrow t_{out} = t_{in} ~\land~ y=\false \\
+      %   &\quad\quad |~S~m'' \Rightarrow \\
+      %   &\quad\quad\quad t_{out}[0] \eqsim_{\{;0\}} m'' ~\land \\
+      %   &\quad\quad\quad t_{out}[1] \eqsim n ~\land \\
+      %   &\quad\quad\quad t_{out}[2] \eqsim n+c ~\land \\
+      %   &\quad\quad\quad \MS{isRight}~t_{out}[3] ~\land \\
+      %   &\quad\quad\quad \MS{isRight}~t_{out}[4] ~\land \\
+      %   &\quad\quad\quad y = \true \\
+      %   &\quad\quad \MS{end}
+      % \end{align*}
+      \begin{align*}
+        & \MS{Mult\_Step\_Rel} := \\
+        &\quad \lam{t_{in}~(y, t_{out})} \forall (c~m'~n:\Nat), \\
+        &\quad\quad t_{in}[0] \eqsim_{\{;0\}} m' \rightarrow \\
+        &\quad\quad t{in}[1] \eqsim n \rightarrow t{in}[2] \eqsim c \rightarrow \\
+        &\quad\quad \MS{isRight}~t_{in}[3] \rightarrow \MS{isRight}~t_{in}[4] \rightarrow \\
+        &\quad\quad \MS{match}~m'~\MS{with} \\
+        &\quad\quad |~O \Rightarrow t_{out} = t_{in} ~\land~ y=\false \\
+        &\quad\quad |~S~m'' \Rightarrow \\
+        &\quad\quad\quad t_{out}[0] \eqsim_{\{;0\}} m'' ~\land \\
+        &\quad\quad\quad t_{out}[1] \eqsim n ~\land~ t_{out}[2] \eqsim n+c ~\land \\
+        &\quad\quad\quad \MS{isRight}~t_{out}[3] ~\land~ \MS{isRight}~t_{out}[4] ~\land~ y = \true \\
+        &\quad\quad \MS{end}
+      \end{align*}
+    \end{column}
+
+    \begin{column}{0.5\textwidth}
+      \begin{align*}
+        & \MS{Mult\_Loop\_Rel} := \\
+        &\quad \lam{t_{in}~(\unit, t_{out})} \forall (c~m'~n:\Nat), \\
+        &\quad\quad t_{in}[0] \eqsim_{\{;0\}} m' \rightarrow \\
+        &\quad\quad t{in}[1] \eqsim n \rightarrow \\
+        &\quad\quad t{in}[2] \eqsim c \rightarrow \\
+        &\quad\quad \MS{isRight}~t_{in}[3] \rightarrow \\
+        &\quad\quad \MS{isRight}~t_{in}[4] \rightarrow \\
+        &\quad\quad t_{out}[0] \eqsim_{\{;0\}} 0 ~\land \\
+        &\quad\quad t_{out}[1] \eqsim n ~\land \\
+        &\quad\quad t_{out}[2] \eqsim m' \cdot n+c ~\land \\
+        &\quad\quad \MS{isRight}~t_{out}[3] ~\land \\
+        &\quad\quad \MS{isRight}~t_{out}[4]
+      \end{align*}
+    \end{column}
+
+  \end{columns}
+
+  \pause
+
+  \textbf{Lemma:}
+  $\MS{Mult\_Step} \VDash \MS{Mult\_Step\_Rel}$.
+
+  \pause
+
+  \textbf{Lemma:}
+  $\MS{Mult\_Loop} := \MS{While}~\MS{Mult\_Step} \VDash \MS{Mult\_Loop\_Rel}$.
+  
+
+  \textbf{Proof:}
+  It is enough to show $\MS{While\_Rel}~\MS{Add\_Step\_Rel} \subseteq \MS{Add\_Loop\_Rel}$,
+  which can be shown using the induction scheme of $\MS{Add\_Step\_Rel}$.
+
+  \begin{enumerate}
+  \item Assume $\MS{Mult\_Step\_Rel}~t_{in}~(\true, t_{mid})$; show $\MS{Mult\_Step\_Rel}~t_{in}~(\unit, t_{out})$.
+  \item Assume $\MS{Mult\_Loop\_Rel}~t_{in}~(\unit, t_{mid})$ and $\MS{Mult\_Step\_Rel}~t_{mid}~(\false, t_{out})$;
+      show $\MS{Mult\_Loop\_Rel}~t_{in}~(\unit, t_{out})$.
+  \end{enumerate}
+
+\end{frame}
+
+\begin{frame}
+  \frametitle{Multiplication: Putting Machines Together}
+  \[
+  \]
+  \begin{alignat*}{2}
+    \MS{Mult\_Loop} :=~& \MS{While}~\MS{Mult\_Step} \\
+    \MS{Mult\_Main} :=~& \MS{Inject}~\MS{CopyValue}~\Vector{0;5}; \\
+                       & \MS{Inject}~(\MS{WriteValue~0})~\Vector{2}; \\
+                       & \MS{Inject}~\MS{Mult\_Loop}~\Vector{5;1;2;3;4} \\
+    \MS{Mult}       :=~& \MS{Mult\_Main}; \\
+                       & \MS{Inject}~\MS{MoveToRight}~\Vector{5}
+  \end{alignat*}
+
+  %\textbf{Lemma:}
+  \begin{lemma}[Correctness of Mult]
+    $\MS{Mult} \VDash \MS{Computes2}~mult$. \end{lemma}
+  
+\end{frame}
+
+\begin{frame}
+  \frametitle{Possible Future Work}
+  \begin{itemize}
+  \item Implement UNIV
+  \item Implement an interpreter for L
+  \end{itemize}
 \end{frame}
 
 \end{document}
