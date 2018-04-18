@@ -4,7 +4,9 @@
 \usepackage{amsmath}
 \usepackage{verbatim}
 \usepackage{listings}
-\usepackage{minted}
+\usepackage{mathpartir} % inference rules
+
+\usepackage{minted} % Hm? Do I really want to use this package? It depends on Python.
 
 \usepackage{tikz}
 \usetikzlibrary{arrows,shapes,snakes}
@@ -18,9 +20,11 @@
 
 % Yannick's notational wishes
 \renewcommand{\eqsim}{\simeq}
-\renewcommand{\Tape}{\MS{T}}
+\renewcommand{\Tape}{\MS{Tp}}
 \renewcommand{\VDash}{\vDash}
 \renewcommand{\Vector}[1]{\left[{#1}\right]}
+\renewcommand{\tapePointer}[1]{\underset{\uparrow}{#1}}
+\renewcommand{\midtape}[3]{#1~\tapePointer{#2}~#3}
 
 % \newcommand{\Lift}{\Uparrow}
 \newcommand{\WhileRel}{\oplus}
@@ -106,24 +110,26 @@
   \frametitle{Small Recap: Multi-Tape Turing Machines in Coq}
 
   \begin{itemize}
-  \item Partitioned machines:
-    $f : Q \to F$ for some finite $F$.
-  \item Realisation: $M \VDash R$
-  \item (Termination: $M \downarrow T$)
+  \item $\Tape_\Sigma$: type of tapes
+  \item $\MS{TM}_\Sigma^n$: $n$-tape Turing machine with alphabet $\Sigma$
+  \item $M : PTM_\Sigma^n(F)$: partitioned machines ($f: Q \to F$ for finite $F$)
+  \item $M \VDash R$: Realisation
+  \item $M \downarrow T$: Termination
   \end{itemize}
 
   \refs{[Asperti and Ricciotti (2015)]} % use this to show references on a slide
 \end{frame}
 
-\begin{frame}{Realisation}
+\begin{frame}
+  \frametitle{Realisation}
 
   \begin{definition}[Realisation, $M \VDash R$]
     Let $R \subseteq~\Tape^n \times F \times \Tape^n$.
     \begin{multline*}
       M \VDash R :=
       \forall t~t'~q~k.~
-      M(t) \triangleright^k (q_{out}, t') \rightarrow
-      R~t~\left(f(q_{out}), t' \right)
+      M(t) \triangleright^k (q, t') \rightarrow
+      R~t~\left(f(q), t' \right)
     \end{multline*}
   \end{definition}
 
@@ -134,7 +140,8 @@
   \refs{[Asperti and Ricciotti (2015)]} % use this to show references on a slide
 \end{frame}
 
-\begin{frame}{Combinators for Parametrised Machines}
+\begin{frame}
+  \frametitle{Combinators for Parametrised Machines}
   Combinators for partitioned machines:
   
   \begin{itemize}
@@ -149,18 +156,27 @@
   \begin{lemma}[Correctness of $\MS{While}$]
     Let $R \subseteq \Tape^n \times (\Bool \times F) \times \Tape^n$.
     
-    If $M \VDash R$, then $\MS{While}~M \VDash \WhileRel R$, where
-    \[
-      \WhileRel R :=
-      \bigl(\bigcup_{a : F} {R\at{\true; a}}\bigr)^* \circ R\at{\false}.
-    \]
+    If $M \VDash R$, then
+
+    $$\MS{While}~M \VDash \bigl(\bigcup_{a : F} {R\at{\true; a}}\bigr)^* \circ R\at{\false}.$$
   \end{lemma}
 
   \refs{[Asperti and Ricciotti (2015)]} % use this to show references on a slide
 \end{frame}
 
-\begin{frame}{Machine transformations}
-  \textbf{Problem:}
+\begin{frame}
+  \frametitle{Machine transformations}
+
+  (Admissible) typing rule for sequential composition:
+
+  \[
+    \inferrule{M_1 : \MS{PTM}_\Sigma^n(F_1) \and M_2 : \MS{PTM}_\Sigma^n(F_2)} {M_1;~M_2 : \MS{PTM}_\Sigma^n(F_2)}
+  \]
+
+\textbf{Problem:}
+
+
+  
   When combining machines, the numbers of tapes and the alphabet have to match!
   \pause%
   \bigskip
@@ -173,20 +189,23 @@
 \end{frame}
 
 
-\begin{frame}{$n$-Lift}
+\begin{frame}
+  \frametitle{$n$-Lift}
 
+  
   Let $i : \Fin_m \hookrightarrow \Fin_n$.
   
-  Let $M$ be a $m$-tape machine.
+  Let $M : \MS{PTM}_\Sigma^n$.
 
-  $\Uparrow_i M $ is a $n$-tape machine.
-  % $M \Uparrow_i $ is a $n$-tape machine.
-  
+  Then $\Uparrow_i M : \MS{PTM}_\Sigma^n$.
+
   Let $R \subseteq \Tape^m \times F \times \Tape^m$.
+  
+  Then $\Uparrow_i R \subseteq \Tape^n \times F \times \Tape^n$
+  with
   \begin{alignat*}{2}
-    & \Uparrow_i R  &   :=\;& \lam{t~(a, t')} R~(i^{-1}~t)~(a, i^{-1}~t') ~\land \\
-    % & R \Uparrow_i  & \;:=\;& \lam{t~(a, t')} R~(i^{-1}~t)~(a, i^{-1}~t') ~\land \\
-    &&&\quad \forall k \notin \MS{img}~i.~t[k] = t'[k]
+    & \Uparrow_i R  :=\;&& \lam{t~(a, t')} R~(i^{-1}~t)~(a, i^{-1}~t') ~\land \\
+    &&&\quad \forall k \notin \MS{ran}~i.~t[k] = t'[k]
   \end{alignat*}
 
   \begin{lemma}[Correctness of the $n$-Lift]
@@ -197,7 +216,8 @@
 \end{frame}
 
 
-\begin{frame}[fragile]{Encoding Values on Tapes}
+\begin{frame}[fragile]
+  \frametitle{Encoding Values on Tapes}
 
   \begin{itemize}
   \item
@@ -247,11 +267,12 @@ Class encodable (X : Type) (sig : finType) := {
   
 \end{frame}
 
-\begin{frame}[fragile]{A Relation for (Unary) Function Computation}
+\begin{frame}[fragile]
+  \frametitle{A Relation for (Unary) Function Computation}
 
   Convention:
   \begin{itemize}
-  \item Input tape(s): ``callee-safe''
+  \item Input tape(s): ``callee-saved''
   \item Output tape: is initially right; grows to left
   \item Internal tapes: right before and after execution
   \end{itemize}
@@ -291,7 +312,9 @@ Class encodable (X : Type) (sig : finType) := {
 \end{frame}
 
 
-\begin{frame}{Value-Manipulating Machines}
+\begin{frame}
+  \frametitle{Value-Manipulating Machines}
+  
   \begin{itemize}
   \item Match/destruct
   \item Constructor
@@ -301,7 +324,8 @@ Class encodable (X : Type) (sig : finType) := {
 \end{frame}
 
 
-\begin{frame}[fragile] \frametitle{Match $\Nat$}
+\begin{frame}[fragile]
+  \frametitle{Match $\Nat$}
   \footnotesize
 
   \begin{columns}
@@ -457,12 +481,12 @@ if (m'--) {
           
           \begin{align*}
             & \MS{Mult\_Step} := \\
-            & \quad\MS{If}~\Uparrow_{\Vector{0}} \MS{MatchNat}) \\
+            & \quad\MS{If}~(\Uparrow_{\Vector{0}} \MS{MatchNat}) \\
             & \quad\bigl(\MS{Return}( \bigr. \\
             & \quad\quad \Uparrow_{\Vector{1; 2; 3; 4}}\MS{Add}; \\
             & \quad\quad \Uparrow_{\Vector{3;2}} \MS{CopyValue}; \\
             & \quad\quad \Uparrow_{\Vector{3}} \MS{MoveToRight} \\
-            & \quad\quad\bigl. )~(\true, \unit \bigr) \\
+            & \quad\quad\bigl. )~(\true, \unit) \bigr) \\
             & \quad\bigl(\MS{Nop}~(\false, \unit)\bigr)
           \end{align*}
         \end{onlyenv}
@@ -483,10 +507,9 @@ t4: ?  (t3 for Add)
 
 \begin{frame}
   \frametitle{Multiplication: Verification of $\MS{Mult\_Loop}$}
-  \footnotesize
+  \tiny
 
   \begin{columns}
-    \tiny
     \begin{column}{0.5\textwidth}
       % \begin{align*}
       %   & \MS{Mult\_Step\_Rel} := \\
@@ -550,12 +573,12 @@ t4: ?  (t3 for Add)
   \pause
 
   \textbf{Lemma 2:}
-  $\MS{Mult\_Loop} := \MS{While}~\MS{Mult\_Step} \VDash \MS{Mult\_Loop\_Rel}$.
+  $\MS{While}~\MS{Mult\_Step} \VDash \MS{Mult\_Loop\_Rel}$.
   
 
   \textbf{Proof:}
-  It is enough to show $\WhileRel~\MS{Mult\_Step\_Rel} \subseteq \MS{Mult\_Loop\_Rel}$,
-  which can be shown using the induction scheme of $\WhileRel$.
+  It is enough to show $\bigl(\bigcup_{a : \Unit} {\MS{Mult\_Step\_Rel}\at{\true; a}}\bigr)^* \circ \MS{Mult\_Step\_Rel}\at{\false} \subseteq \MS{Mult\_Loop\_Rel}$,
+  which can be shown by star induction.
 
   \tiny
   \begin{enumerate}
@@ -591,6 +614,11 @@ t4: ?  (t3 for Add)
   \item Implement UNIV
   \item Implement an interpreter for L
   \end{itemize}
+  \pause\vfill
+  \begin{center}
+  \textbf{Thank you!}
+\end{center}
+  Project home page: \url{https://www.ps.uni-saarland.de/~wuttke/bachelor.php}
 \end{frame}
 
 
@@ -601,24 +629,23 @@ t4: ?  (t3 for Add)
 %%
 
 \begin{frame}
-  \center
-  Thank you!
-\end{frame}
-
-\begin{frame}
   \frametitle{Related Work}
   \footnotesize
   \begin{thebibliography}{10}
     \beamertemplatearticlebibitems%
-    \bibitem{}
+  \bibitem{}
+    Andrea Asperti, Wilmer Ricciotti
+    \newblock{\em Formalizing Turing Machines}%
+    \newblock{Lecture Notes in Computer Science, 2012}%
+  \bibitem{}
     Xu, Jian and Zhang, Xingyuan and Urban, Christian
     \newblock{\em Mechanising Turing Machines and Computability Theory in Isabelle/HOL}%
     \newblock{ITP 2013}
-    \bibitem{}
+  \bibitem{}
     Andrea Asperti and Wilmer Ricciotti
     \newblock{\em A formalization of multi-tape Turing machines}%
     \newblock{Theoretical Computer Science, 2015}
-    \bibitem{}
+  \bibitem{}
     Alberto Ciaffaglione
     \newblock{\em Towards Turing computability via coinduction}%
     \newblock{Science of Computer Programming, 2016}
@@ -645,25 +672,81 @@ t4: ?  (t3 for Add)
 
 \end{frame}
 
-\begin{frame}{$\Sigma$-Lift}
+\begin{frame}
+  \frametitle{$\Sigma$-Lift}
+
   Let $i \from \Sigma \hookrightarrow \Tau$ be an injection.
 
   Let $\mathbf{default} : \Sigma^n$.
 
-  Let $M$ be an $n$-tape $F$-partitioned Turing machine parametrised over $\Sigma$,
-  and $R$ be a $F$-parametrised relation.
+  Let $M : \MS{PTM}_\Sigma^n$ and $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$.
 
-  Define an $n$-tape Turing machine $\Uparrow_{i,\MS{default}} M$ and a relation $\MS{Lift}_{i,\MS{default}}~R$.
+  Then $\Uparrow_{i,s} M : \MS{MTM}_\Tau^n$ and $\Uparrow_{i,s} R \subseteq \Tape_\Tau^n \times F \times \Tape_\Tau^n$ with
   \begin{align*}
-    \Uparrow_{i; \MS{default}} R := \lam{t~(a, t')} R~(i^{-1}_{\MS{default}} t)~(a, i^{-1}_{\MS{default}} t')
+    \Uparrow_{i; s} R := \lam{t~(a, t')} R~(i^{-1}_{s} t)~(a, i^{-1}_{s} t')
   \end{align*}
 
   \begin{lemma}[Correctness of the $\Sigma$-Lift]
     If $M \VDash R$, then
-    $\Uparrow_{i; \MS{default}} M \VDash\; \Uparrow_{i; \MS{default}} R$.
+    $\Uparrow_{i; s} M \VDash\; \Uparrow_{i; s} R$.
   \end{lemma}
 \end{frame}
 
+\begin{frame}
+  \frametitle{Admissible Typing Rules for Combinators}
+  \[
+    \inferrule{M_1 : \MS{PTM}_\Sigma^n(F_1) \and M_2 : \MS{PTM}_\Sigma^n(F_2)} {M_1;~M_2 : \MS{PTM}_\Sigma^n(F_2)}
+  \]
+  \[
+    \inferrule{M_1 : \MS{PTM}_\Sigma^n(\Bool) \and M_2, M_3 : \MS{PTM}_\Sigma^n(F_2)} {\MS{If}~M_1~M_2~M_3 : \MS{PTM}_\Sigma^n(F_2)}
+  \]
+  \[
+    \inferrule{M : \MS{PTM}_\Sigma^n(\Bool \times F)} {\MS{While}~M : \MS{PTM}_\Sigma^n(F)}
+  \]
+  \[
+    \inferrule{M : \MS{PTM}_\Sigma^n(F_1) \and M' : F_1 \to \MS{PTM}_\Sigma^n(F_2)} {\MS{Match}~M~M' : \MS{PTM}_\Sigma^n(F_2)}
+  \]
+  \[
+    \inferrule{i : \Fin_m \hookrightarrow \Fin_n \and M : \MS{PTM}_\Sigma^m(F)}{\Uparrow_i M : \MS{PTM}_\Sigma^n(F)}
+  \]
+  \[
+    \inferrule{i : \Sigma \hookrightarrow \Tau \and s : \Sigma^n \and M : \MS{PTM}_\Sigma^n(F)}{\Uparrow_{i;s} M : \MS{PTM}_\Tau^n(F)}
+  \]
+\end{frame}
+
+\begin{frame}
+  \frametitle{Coq implementation}
+
+  \center
+  \begin{tabular}{l|r|r}
+    & Lines Spec & Lines Proof \\
+    \hline 
+    Prelim (\texttt{Fin}, \texttt{Vector}, \texttt{finType}, etc.) & 2183 & 2644 \\
+    \hline
+    Relations & 179 & 168 \\
+    \hline
+    TM, $\VDash$, $\downarrow$ & 522 & 255 \\
+    \hline
+    $\Sigma$-Lift & 106 & 330 \\
+    \hline
+    $n$-Lift & 308 & 247 \\
+    \hline
+    Combinators & 309 & 405 \\
+    \hline
+    Basic machines & 235 & 112 \\
+    \hline
+    Computation & 382 & 292 \\
+    \hline
+    Match $\Nat$ & 45 & 88 \\
+    \hline
+    CopyValue & 509 & 608 \\
+    \hline
+    Add, Mult (wip) & 183 & 321 \\
+    \hline
+    $\mathbf{\Sigma}$ & 4961 & 5470 \\
+  \end{tabular}
+
+\end{frame}
 
 
 \end{document}
