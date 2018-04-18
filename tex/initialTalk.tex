@@ -305,7 +305,7 @@
     \MS{Lift}_f~R := \setMap{(t_{in}, (a, t_{out})) &}{ \bigl(f^{-1}(t_{in}), (a, f^{-1}(t_{out})) \bigr) \in R } \cap \\
     \Uparrow \setMap{(t_{in}, t_{out}) &}{ \forall i \notin \MS{img}~f.~ t_{in}[i] = t_{out}[i] }
   \end{align*}
-  {\footnotesize (Where $f^{-1} \from \Tape^m \to \Tapes^n$)}
+  {\footnotesize (Where $f^{-1} \from \Tape^n \to \Tapes^m$)}
   % (Tapes that are not in the image of $f$ do nothing, the other tapes simulate the corresponding tapes of $M$.)
 
   \begin{lemma}[Correctness of the $n$-Lift]
@@ -321,7 +321,7 @@
 
   Let $\mathbf{default} : \Sigma$.
 
-  Let $M$ be an $m$-tape $F$-partitioned Turing machine parametrised over $\Sigma$,
+  Let $M$ be an $n$-tape $F$-partitioned Turing machine parametrised over $\Sigma$,
   and $R$ be a $F$-parametrised relation.
 
   Define an $n$-tape Turing machine $\MS{Lift}_{f,\MS{default}}~M$ and a relation $\MS{Lift}_{f,\MS{default}}~R$.

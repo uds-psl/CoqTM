@@ -1,23 +1,35 @@
 \documentclass{beamer} %
-% \usetheme{CambridgeUS}
 \usepackage[latin1]{inputenc}
-% \usefonttheme{professionalfonts}
-\usepackage{tikz}
+\usepackage[absolute,overlay]{textpos}
 \usepackage{amsmath}
 \usepackage{verbatim}
 \usepackage{listings}
 \usepackage{minted}
-\usecolortheme{orchid}
+
+\usepackage{tikz}
 \usetikzlibrary{arrows,shapes,snakes}
 
+% \usetheme{CambridgeUS}
+% \usefonttheme{professionalfonts}
+\usecolortheme{orchid}
+
+
+\include{mypreamble}
+
+% Yannick's notational wishes
+\renewcommand{\eqsim}{\simeq}
+\renewcommand{\Tape}{\MS{T}}
+\renewcommand{\VDash}{\vDash}
+\renewcommand{\Vector}[1]{\left[{#1}\right]}
+
+% \newcommand{\Lift}{\Uparrow}
+\newcommand{\WhileRel}{\oplus}
 
 %%
 %% Important note:
-%% Add [fragile] to each frame using listings!
+%% Add [fragile] to each frame that uses listings!
 %% AUCTeX does this automatically!
 %%
-
-\include{mypreamble}
 
 
 %% Use these versions of the type names
@@ -34,11 +46,19 @@
 %% Show only current page number
 \setbeamertemplate{footline}{\raisebox{5pt}{\makebox[\paperwidth]{\hfill\makebox[20pt]{\scriptsize{\color{gray}\insertframenumber}}}}}
 
-%% Display a list of references at the bottom
+% Display a list of references at the bottom
 \newcommand\refs[1]{%
   \begin{textblock*}{8cm}(0.3cm,9.0cm)%
     \scriptsize {\color{gray}#1}
   \end{textblock*}
+}
+
+\newcommand{\refs}[1]{%
+  \begin{tikzpicture}[remember picture, overlay]
+    \node[xshift=0.3cm,yshift=1cm] at (current page.south west)%
+    [text]
+      #1
+  \end{tikzpicture}
 }
 
 
@@ -50,7 +70,18 @@
   \tiny
   Programming Systems Lab
 }
-\date{March 20, 2018\\
+\date{March 20, 2018}
+
+
+
+\begin{document}
+
+\tikzstyle{every picture}+=[remember picture]
+
+
+
+\begin{frame}
+  \titlepage
   \bigskip{}
   \bigskip{}
   {
@@ -58,88 +89,74 @@
     Advisor: Yannick Forster\\
     Supervisor: Prof.\ Dr.\ Gert Smolka%
   }
-}
 
-\begin{document}
+  % \begin{tikzpicture}[remember picture,overlay]
+  %   \node [xshift=1cm,yshift=1cm] at (current page.south west)
+  %   {
+  %     This is an absolutely positioned text in the lower left corner. No shipout-hackery is used.
+  %   };
+  % \end{tikzpicture}
+\end{frame}
+
+% \frame{\titlepage}
 
 
-\tikzstyle{every picture}+=[remember picture]
 
-
-
-
-\frame{\titlepage}
-
-\begin{frame}{Small Recap: Muli-Tape Turing Machines in Coq}
+\begin{frame}
+  \frametitle{Small Recap: Multi-Tape Turing Machines in Coq}
 
   \begin{itemize}
-  \item \textbf{Partitioned machines}: $pM : \setOf{M : \MS{mTM}~\Sigma~n;~ f \from Q_{M} \to F}$ for \textbf{finite} types $F$
-  \item Parametrised relations: $R \subseteq (\Tape_\Sigma^n) \times (F \times \Tape_\Sigma^n)$
-  \item Weak realisation: $pM \VDash R$
-  \item Termination: $M \downarrow T$
+  \item Partitioned machines:
+    $f : Q \to F$ for some finite $F$.
+  \item Realisation: $M \VDash R$
+  \item (Termination: $M \downarrow T$)
   \end{itemize}
 
+  \refs{[Asperti and Ricciotti (2015)]} % use this to show references on a slide
 \end{frame}
 
 \begin{frame}{Realisation}
 
-  \begin{definition}[Realisation, $pM \VDash R$]
-    Let $R \subseteq (\Tape_\Sigma^n) \times (F \times \Tape_\Sigma^n)$ for a finite $F$.
+  \begin{definition}[Realisation, $M \VDash R$]
+    Let $R \subseteq~\Tape^n \times F \times \Tape^n$.
     \begin{multline*}
-      \mathbf{pM \VDash R} :=
-      \forall (t_{in}~t_{out} : \Tape_\Sigma^n)~(q_{out}:Q_M)~(k:\Nat). \\
-      M(t_{in}) \triangleright^k (q_{out}, t_{out}) \rightarrow
-      \left(t_{in}, \left(f(q_{out}), t_{out} \right) \right) \in R.
+      M \VDash R :=
+      \forall t~t'~q~k.~
+      M(t) \triangleright^k (q_{out}, t') \rightarrow
+      R~t~\left(f(q_{out}), t' \right)
     \end{multline*}
-    We say that $pM$ \textbf{realises} $R$.
   \end{definition}
 
   \begin{lemma}[Monoticity of $\VDash$]
-    If $pM \VDash R_1$ and $R_1 \subseteq R_2$, then $pM \VDash R_2$.
+    If $M \VDash R_1$ and $R_1 \subseteq R_2$, then $M \VDash R_2$.
   \end{lemma}
 
+  \refs{[Asperti and Ricciotti (2015)]} % use this to show references on a slide
 \end{frame}
-
-\begin{frame}{Termination}
-
-  \begin{definition}[Termination, $M \downarrow T$]
-    Let $T \subseteq (\Tape_\Sigma^n) \times \Nat$.
-    \[
-      \mathbf{M \downarrow T} :=
-      \forall (t_{in},~k) \in T.~
-      \exists c_{out},~M(t_{in}) \triangleright^k c_{out}
-    \]
-    We say that $M$ \textbf{terminates in} $T$.
-  \end{definition}
-
-  \begin{lemma}[Monoticity of $\downarrow$]
-    If $M \downarrow T_1$ and $T_2 \subseteq T_1$, then $M \downarrow T_2$.
-  \end{lemma}
-
-\end{frame}
-
 
 \begin{frame}{Combinators for Parametrised Machines}
-  \emph{Shallow-embedded} language for constructing partitioned machines:
+  Combinators for partitioned machines:
   
   \begin{itemize}
-  \item $\MS{Match}~pM_1~(\lam {x:F_1} \cdots pM_2 \cdots pM_3 \cdots)$
-  \item $\MS{If}~pM_1~pM_2~pM_3$
-  \item $pM_1;~ pM_2$
-  \item $\MS{While}~pM$
+  % \item $\MS{Match}~M_1~(\lam {x:F_1} \cdots M_2 \cdots M_3 \cdots)$
+  \item $\MS{If}~M_1~M_2~M_3$
+  \item $M_1;~ M_2$
+  \item $\MS{While}~M$
   \end{itemize}
 
   \pause
 
   \begin{lemma}[Correctness of $\MS{While}$]
-    Let $pM$ be a partitioned (and $R$ parametrised) over $\Bool \times F$.\\
-    % Overload While for a relation operator and a machine operator?
-    If $pM \VDash R$, then $\MS{While}~pM \VDash \MS{While}~R$ with
+    Let $R \subseteq \Tape^n \times (\Bool \times F) \times \Tape^n$.
+    
+    If $M \VDash R$, then $\MS{While}~M \VDash \WhileRel R$, where
     \[
-      \MS{While}~R :=
-      (\bigcup_{y \in F} \bigl({R\at{(true, y)}}\bigr)^* \circ R\at{\MS{fst}=\false}.
+      \WhileRel R :=
+      \bigl(\bigcup_{a : F} {R\at{\true; a}}\bigr)^* \circ R\at{\false}.
     \]
   \end{lemma}
+
+  \refs{[Asperti and Ricciotti (2015)]} % use this to show references on a slide
 \end{frame}
 
 \begin{frame}{Machine transformations}
@@ -150,50 +167,33 @@
 
   \textbf{Solution:} Two operations on machines:
   \begin{itemize}
-    \item $n$-Lift: add/rearange tapes
-    \item $\Sigma$-Lift: translate symbols
+    \item $n$-Lift: add/rearrange tapes
+    \item $\Sigma$-Lift: add/translate symbols
   \end{itemize}
 \end{frame}
+
+
 \begin{frame}{$n$-Lift}
-  Let $f \from \Fin_m \hookrightarrow \Fin_n$ be an injection between tape indexes.
 
-  Let $M$ be an $m$-tape $F$-partitioned Turing machine parametrised over $\Sigma$,
-  and $R$ be a $F$-parametrised relation.
+  Let $i : \Fin_m \hookrightarrow \Fin_n$.
+  
+  Let $M$ be a $m$-tape machine.
 
-  Define an $n$-tape Turing machine $\MS{Lift}_f~M$ and a relation $\MS{Lift}_f~R$.
-  \begin{align*}
-    \MS{Lift}_f~R := \setMap{(t_{in}, (a, t_{out})) &}{ \bigl(f^{-1}(t_{in}), (a, f^{-1}(t_{out})) \bigr) \in R } \cap \\
-    \Uparrow \setMap{(t_{in}, t_{out}) &}{ \forall i \notin \MS{img}~f.~ t_{in}[i] = t_{out}[i] }
-  \end{align*}
-  {\footnotesize (Where $f^{-1} \from \Tape^m \to \Tapes^n$)}
-  % (Tapes that are not in the image of $f$ do nothing, the other tapes simulate the corresponding tapes of $M$.)
+  $\Uparrow_i M $ is a $n$-tape machine.
+  % $M \Uparrow_i $ is a $n$-tape machine.
+  
+  Let $R \subseteq \Tape^m \times F \times \Tape^m$.
+  \begin{alignat*}{2}
+    & \Uparrow_i R  &   :=\;& \lam{t~(a, t')} R~(i^{-1}~t)~(a, i^{-1}~t') ~\land \\
+    % & R \Uparrow_i  & \;:=\;& \lam{t~(a, t')} R~(i^{-1}~t)~(a, i^{-1}~t') ~\land \\
+    &&&\quad \forall k \notin \MS{img}~i.~t[k] = t'[k]
+  \end{alignat*}
 
   \begin{lemma}[Correctness of the $n$-Lift]
-    \[
-      M \VDash R \rightarrow (\MS{Lift}_f~M) \VDash (\MS{Lift}_f~R)
-    \]
+    If $M \VDash R$, then $\Uparrow_i M  \VDash\; \Uparrow_i R$.
+    % If $M \VDash R$, then $M \Uparrow_i  \;\VDash R \Uparrow_i$.
   \end{lemma}
 
-\end{frame}
-
-\begin{frame}{$\Sigma$-Lift}
-  Let $f \from \Sigma \hookrightarrow \Tau$ be an injection between alphabets.
-
-  Let $\mathbf{default} : \Sigma^n$.
-
-  Let $M$ be an $m$-tape $F$-partitioned Turing machine parametrised over $\Sigma$,
-  and $R$ be a $F$-parametrised relation.
-
-  Define an $n$-tape Turing machine $\MS{Lift}_{f,\MS{default}}~M$ and a relation $\MS{Lift}_{f,\MS{default}}~R$.
-  \begin{align*}
-    \MS{Lift}_{f,\MS{default}}~R := \setMap{(t_{in}, (a, t_{out}))}{ (f^{-1}_{\MS{default}} (t_{in}) , (a, f^{-1}_{\MS{default}} (t_{out}))) \in R}
-  \end{align*}
-
-  \begin{lemma}[Correctness of the $\Sigma$-Lift]
-    \[
-      M \VDash R \rightarrow (\MS{Lift}_{f, \MS{default}}~M) \VDash (\MS{Lift}_{f, \MS{default}}~R)
-    \]
-  \end{lemma}
 \end{frame}
 
 
@@ -201,7 +201,7 @@
 
   \begin{itemize}
   \item
-    Typeclass for \emph{encodable} types $X$ and alphabets $\Sigma$:
+    Type class for \emph{encodable} types $X$ and alphabets $\Sigma$:
 
     \footnotesize
     \begin{minted}{coq}
@@ -209,24 +209,27 @@ Class encodable (X : Type) (sig : finType) := {
   encode : X -> list sig;
 }.
     \end{minted}
-    For example: $\MS{encode}~(b:\Bool) := [b]$ and $\MS{encode} (n:\Nat) := 1^n 0$.
+    % For example: $\mathtt{encode}~(b:\Bool) := [b]$ and $\mathtt{encode} (n:\Nat) := \true^n \false$.
     \pause
 
-  \item
-    Insert start end end symbols into an encoding:
-    $\Sigma^+ := \Bool + \Sigma$. \pause
+  % \item
+  %   Insert start end end symbols into an encoding:
+  %   $\Skigma^+ := \Bool + \Sigma$. \pause
     
   \item
-    Define class of predicates for \emph{calue-containing} of tapes:
+    Define class of predicates for \emph{value-containing} of tapes:
 
-    \begin{definition}[value-containing, $t \eqsim_{[r1;r2]} x$]
-      Let $X$ be encodable over $\Sigma$, and $t \in \Tape_\Sigma$.
+    \begin{definition}[value-containing, $t \eqsim_{[r_1;r_2]} x$]
+      % Hier möchte ich explizit angeben, dass $t$ ein $\Sigma^+$ tape ist.
+      % Let $X$ be encodable over $\Sigma$, and $t: \Tape_{\Sigma^+}$.
+      Let $X$ be encodable over $\Sigma$, and $t: \Tape_{\Bool+\Sigma}$.
       \[
         t \eqsim_{[r1;r2]} x :=
-        t = \midtape{(r_1 \app [\inl \true])}{(\inr y)}{(\map~\inr~ys \app \inl \false \cons r_2)}
-        }.
+        \bigl(
+        t = \midtape{r_1 ~ (\inl \true)}{(\inr y)}{(\map~\inr~ys) ~ (\inl \false) ~ r_2}
+        \bigr)
       \]
-      for $\MS{encode}(x) = y \cons ys$.
+      for $\mathtt{encode}(x) = y \cons ys$.
       % or:
       % \[
       %   t \eqsim_{[r1;r2]} x :=
@@ -237,8 +240,8 @@ Class encodable (X : Type) (sig : finType) := {
     \end{definition}
 
     { \footnotesize
-      We write $t \eqsim x$ for $\exists r_1~r_2.~t \eqsim_{[r_1;r_2]} x$ \\
-      and $t \eqsim_{\{;s\}} x$ for $\exists r_1~r_2.~t\eqsim_{[r_1;r_2]} x \land |r_2| \le s$.
+      $t \eqsim x := \exists r_1~r_2.~t \eqsim_{[r_1;r_2]} x$ \\
+      $t \eqsim_{\{;s\}} x := \exists r_1~r_2.~t\eqsim_{[r_1;r_2]} x \land |r_2| \le s$.
     }
   \end{itemize}
   
@@ -248,40 +251,39 @@ Class encodable (X : Type) (sig : finType) := {
 
   Convention:
   \begin{itemize}
-  \item Input tapes; output tape; ``internal tapes''
-  \item Callee-safe
-  \item ``Internal tapes'' stay right
-  \item Output grows to the left
+  \item Input tape(s): ``callee-safe''
+  \item Output tape: is initially right; grows to left
+  \item Internal tapes: right before and after execution
   \end{itemize}
   \pause
   { \footnotesize
     \begin{columns}
       \begin{column}{0.5\textwidth}
-        Let $X, Y, Z$ be encodable over $\Sigma$.
+        Let $X, Y$ be encodable over $\Sigma$.
         \begin{alignat*}{2}
           & \MS{Computes}~(f:X \to Y) := \\
-          & \quad \lam {t_{in}~(\_, t_{out})} \forall (x:X), \\
-          & \quad\quad t_{in}[0] \eqsim x \rightarrow \\
-          & \quad\quad \MS{isRight}~t_{in}[1] \rightarrow \\
-          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t_{in}[2+i]) \rightarrow \\
-          & \quad\quad t_{out}[0] \eqsim x ~\land \\
-          & \quad\quad t_{out}[1] \eqsim_{\{;0\}} f~x ~\land \\
-          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t_{out}[2+i])
+          & \quad \lam {t~(\_, t')} \forall (x:X). \\
+          & \quad\quad t[0] \eqsim x \rightarrow \\
+          & \quad\quad \MS{isRight}~t[1] \rightarrow \\
+          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t[2+i]) \rightarrow \\
+          & \quad\quad t'[0] \eqsim x ~\land \\
+          & \quad\quad t'[1] \eqsim_{\{;0\}} f~x ~\land \\
+          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t'[2+i])
         \end{alignat*}
       \end{column}
       \pause
       \begin{column}{0.5\textwidth}
         \begin{alignat*}{2}
           & \MS{Computes2}~(f:X \to Y \to Z) := \\
-          & \quad \lam {t_{in}~(\_, t_{out})} \forall (x:X)~(y:Y), \\
-          & \quad\quad t_{in}[0] \eqsim x \rightarrow \\
-          & \quad\quad t_{in}[1] \eqsim y \rightarrow \\
-          & \quad\quad \MS{isRight}~t_{in}[2] \rightarrow \\
-          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t_{in}[3+i]) \rightarrow \\
-          & \quad\quad t_{out}[0] \eqsim x ~\land \\
-          & \quad\quad t_{out}[1] \eqsim y ~\land \\
-          & \quad\quad t_{out}[1] \eqsim_{\{;0\}} f~x~y ~\land \\
-          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t_{out}[3+i])
+          & \quad \lam {t~(\_, t')} \forall (x:X)~(y:Y). \\
+          & \quad\quad t[0] \eqsim x \rightarrow \\
+          & \quad\quad t[1] \eqsim y \rightarrow \\
+          & \quad\quad \MS{isRight}~t[2] \rightarrow \\
+          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t[3+i]) \rightarrow \\
+          & \quad\quad t'[0] \eqsim x ~\land \\
+          & \quad\quad t'[1] \eqsim y ~\land \\
+          & \quad\quad t'[1] \eqsim_{\{;0\}} f~x~y ~\land \\
+          & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t'[3+i])
         \end{alignat*}
       \end{column}
     \end{columns}
@@ -293,9 +295,8 @@ Class encodable (X : Type) (sig : finType) := {
   \begin{itemize}
   \item Match/destruct
   \item Constructor
-  \item CopyValue
-  \item MoveRight
-  \item WriteValue
+  \item $\MS{CopyValue}$
+  \item $\MS{MoveRight}$
   \end{itemize}
 \end{frame}
 
@@ -303,41 +304,40 @@ Class encodable (X : Type) (sig : finType) := {
 \begin{frame}[fragile] \frametitle{Match $\Nat$}
   \footnotesize
 
-  {\footnotesize
-    \begin{align*}
-      & \MS{Match\_Nat\_Rel} := \\
-      & \quad \lam {t_{in}~(y_{out}, t_{out})} \forall (n:\Nat) \uncover<2->{(s:\Nat)}, \\
-      & \quad\quad t_{in}[0] \eqsim_{\uncover<2->{\{;s\}}} n \rightarrow \\
-      & \quad\quad \MS{match}~n~\MS{with} \\
-      & \quad\quad |~0 \Rightarrow t_{out} = t_{in} ~\land~ y_{out} = \false \\
-      & \quad\quad |~S~n' \Rightarrow t_{out}[0]  \eqsim_{\uncover<2->{\{;s\}}} n' ~\land~ y_{out} = \true \\
-      & \quad\quad \MS{end}
-    \end{align*}
-  }
-
-  \pause\pause
   \begin{columns}
     \begin{column}{0.5\textwidth}
       
 \begin{lstlisting}[language=c, escapechar=!]
 if (n--) {
   // ...
-} else {!\tikz\node [coordinate] (n1) {};!
+} else {
   // ...
 }
 \end{lstlisting}
     \end{column}
     \begin{column}{0.5\textwidth}
-      \begin{align*}
-        & \MS{If}~(\MS{Inject}~\MS{MatchNat}~\Vector{ \text{\tiny \# of tape where $n$ is stored} }) \\
-        & \quad pM_1~pM_2
-      \end{align*}
+      \tikz\node [coordinate] (n1) {};
+      $\MS{If}~(\Uparrow_{\Vector{i}} \MS{MatchNat})~M_1~M_2$
+      
+      (Where $n$ is stored on tape $i$)
     \end{column}
+    \begin{tikzpicture}[overlay]
+      \draw[->, snake] ([xshift=-3cm,yshift=0.05cm] n1) -- +(2cm,0);
+    \end{tikzpicture} 
   \end{columns}
 
-  \begin{tikzpicture}[overlay]
-    \draw[->, snake] ([xshift=1.5cm] n1) -- +(2cm,0);
-  \end{tikzpicture} 
+
+  \pause
+  \begin{align*}
+    & \MS{Match\_Nat\_Rel} := \\
+    & \quad \lam {t~(a, t')} \forall (n:\Nat) \uncover<2->{(s:\Nat)}, \\
+    & \quad\quad t[0] \eqsim_{\uncover<2->{\{;s\}}} n \rightarrow \\
+    & \quad\quad \MS{match}~n~\MS{with} \\
+    & \quad\quad |~0 \Rightarrow t' = t ~\land~ a = \false \\
+    & \quad\quad |~S~n' \Rightarrow t'[0]  \eqsim_{\uncover<2->{\{;s\}}} n' ~\land~ a = \true \\
+    & \quad\quad \MS{end}
+  \end{align*}
+
 \end{frame}
 
 \begin{frame}
@@ -345,8 +345,8 @@ if (n--) {
   \begin{enumerate}
   \item Write the program in pseudo code
   \item Partition the program into smaller programs
-  \item For each partion: map values to tapes
-  \item For each partion: write a machine using primitive machines and combinators
+  \item For each partition: map variables to tapes
+  \item For each partition: write a machine using value-manipulating machines and combinators
   \item Compose machines
   \item For each machine: define a correctness relation and proof correctness
   \item For each machine: define a termination relation and proof termination
@@ -388,7 +388,7 @@ return c
 m' := m !\tikz\node [coordinate] (init1) {};!
 c := 0 !\tikz\node [coordinate] (init2) {};!
 while (true) { !\tikz\node [coordinate] (loop1) {};!
-  if (m--) { !\tikz\node [coordinate] (step1) {};!
+  if (m'--) { !\tikz\node [coordinate] (step1) {};!
     Add(n, c, c')
     CopyValue(c', c)
     Reset(c')
@@ -430,12 +430,12 @@ return c
   \frametitle{Multiplication: Step Machine}
   \footnotesize
   
-  We assumue a machine $\MS{Add} \VDash \MS{Computes2}~add$.
+  We assume a machine $\MS{Add} \VDash \MS{Computes2}~add$.
 
   \begin{columns}
     \begin{column}{0.4\textwidth}
 \begin{lstlisting}[escapechar=!]
-if (m--) {
+if (m'--) {
   Add(n, c, c')
   CopyValue(c', c)
   Reset(c')!\tikz\node [coordinate] (n1) {};!
@@ -457,11 +457,11 @@ if (m--) {
           
           \begin{align*}
             & \MS{Mult\_Step} := \\
-            & \quad\MS{If}~(\MS{Inject}~\MS{MatchNat}~\Vector{0}) \\
+            & \quad\MS{If}~\Uparrow_{\Vector{0}} \MS{MatchNat}) \\
             & \quad\bigl(\MS{Return}( \bigr. \\
-            & \quad\quad\quad \MS{Inject}~\MS{Add}~\Vector{1; 2; 3; 4}; \\
-            & \quad\quad\quad \MS{Inject}~\MS{CopyValue}~\Vector{3;2}; \\
-            & \quad\quad\quad \MS{Inject}~\MS{MoveToRight}~\Vector{3} \\
+            & \quad\quad \Uparrow_{\Vector{1; 2; 3; 4}}\MS{Add}; \\
+            & \quad\quad \Uparrow_{\Vector{3;2}} \MS{CopyValue}; \\
+            & \quad\quad \Uparrow_{\Vector{3}} \MS{MoveToRight} \\
             & \quad\quad\bigl. )~(\true, \unit \bigr) \\
             & \quad\bigl(\MS{Nop}~(\false, \unit)\bigr)
           \end{align*}
@@ -490,35 +490,35 @@ t4: ?  (t3 for Add)
     \begin{column}{0.5\textwidth}
       % \begin{align*}
       %   & \MS{Mult\_Step\_Rel} := \\
-      %   &\quad \lam{t_{in}~(y, t_{out})} \forall (c~m'~n:\Nat), \\
-      %   &\quad\quad t_{in}[0] \eqsim_{\{;0\}} m' \rightarrow \\
-      %   &\quad\quad t{in}[1] \eqsim n \rightarrow \\
-      %   &\quad\quad t{in}[2] \eqsim c \rightarrow \\
-      %   &\quad\quad \MS{isRight}~t_{in}[3] \rightarrow \\
-      %   &\quad\quad \MS{isRight}~t_{in}[4] \rightarrow \\
+      %   &\quad \lam{t~(a, t')} \forall (c~m'~n:\Nat). \\
+      %   &\quad\quad t[0] \eqsim_{\{;0\}} m' \rightarrow \\
+      %   &\quad\quad t[1] \eqsim n \rightarrow \\
+      %   &\quad\quad t[2] \eqsim c \rightarrow \\
+      %   &\quad\quad \MS{isRight}~t[3] \rightarrow \\
+      %   &\quad\quad \MS{isRight}~t[4] \rightarrow \\
       %   &\quad\quad \MS{match}~m'~\MS{with} \\
-      %   &\quad\quad |~O \Rightarrow t_{out} = t_{in} ~\land~ y=\false \\
+      %   &\quad\quad |~O \Rightarrow t' = t ~\land~ y=\false \\
       %   &\quad\quad |~S~m'' \Rightarrow \\
-      %   &\quad\quad\quad t_{out}[0] \eqsim_{\{;0\}} m'' ~\land \\
-      %   &\quad\quad\quad t_{out}[1] \eqsim n ~\land \\
-      %   &\quad\quad\quad t_{out}[2] \eqsim n+c ~\land \\
-      %   &\quad\quad\quad \MS{isRight}~t_{out}[3] ~\land \\
-      %   &\quad\quad\quad \MS{isRight}~t_{out}[4] ~\land \\
-      %   &\quad\quad\quad y = \true \\
+      %   &\quad\quad\quad t'[0] \eqsim_{\{;0\}} m'' ~\land \\
+      %   &\quad\quad\quad t'[1] \eqsim n ~\land \\
+      %   &\quad\quad\quad t'[2] \eqsim n+c ~\land \\
+      %   &\quad\quad\quad \MS{isRight}~t'[3] ~\land \\
+      %   &\quad\quad\quad \MS{isRight}~t'[4] ~\land \\
+      %   &\quad\quad\quad a = \true \\
       %   &\quad\quad \MS{end}
       % \end{align*}
       \begin{align*}
         & \MS{Mult\_Step\_Rel} := \\
-        &\quad \lam{t_{in}~(y, t_{out})} \forall (c~m'~n:\Nat), \\
-        &\quad\quad t_{in}[0] \eqsim_{\{;0\}} m' \rightarrow \\
-        &\quad\quad t{in}[1] \eqsim n \rightarrow t{in}[2] \eqsim c \rightarrow \\
-        &\quad\quad \MS{isRight}~t_{in}[3] \rightarrow \MS{isRight}~t_{in}[4] \rightarrow \\
+        &\quad \lam{t~(a, t')} \forall (c~m'~n:\Nat). \\
+        &\quad\quad t[0] \eqsim_{\{;0\}} m' \rightarrow \\
+        &\quad\quad t[1] \eqsim n \rightarrow t[2] \eqsim c \rightarrow \\
+        &\quad\quad \MS{isRight}~t[3] \rightarrow \MS{isRight}~t[4] \rightarrow \\
         &\quad\quad \MS{match}~m'~\MS{with} \\
-        &\quad\quad |~O \Rightarrow t_{out} = t_{in} ~\land~ y=\false \\
+        &\quad\quad |~O \Rightarrow t' = t ~\land~ a = (\false,\ \unit) \\
         &\quad\quad |~S~m'' \Rightarrow \\
-        &\quad\quad\quad t_{out}[0] \eqsim_{\{;0\}} m'' ~\land \\
-        &\quad\quad\quad t_{out}[1] \eqsim n ~\land~ t_{out}[2] \eqsim n+c ~\land \\
-        &\quad\quad\quad \MS{isRight}~t_{out}[3] ~\land~ \MS{isRight}~t_{out}[4] ~\land~ y = \true \\
+        &\quad\quad\quad t'[0] \eqsim_{\{;0\}} m'' ~\land \\
+        &\quad\quad\quad t'[1] \eqsim n ~\land~ t'[2] \eqsim n+c ~\land \\
+        &\quad\quad\quad \MS{isRight}~t'[3] ~\land~ \MS{isRight}~t'[4] ~\land~ a = (\true, \unit) \\
         &\quad\quad \MS{end}
       \end{align*}
     \end{column}
@@ -526,17 +526,17 @@ t4: ?  (t3 for Add)
     \begin{column}{0.5\textwidth}
       \begin{align*}
         & \MS{Mult\_Loop\_Rel} := \\
-        &\quad \lam{t_{in}~(\unit, t_{out})} \forall (c~m'~n:\Nat), \\
-        &\quad\quad t_{in}[0] \eqsim_{\{;0\}} m' \rightarrow \\
-        &\quad\quad t{in}[1] \eqsim n \rightarrow \\
-        &\quad\quad t{in}[2] \eqsim c \rightarrow \\
-        &\quad\quad \MS{isRight}~t_{in}[3] \rightarrow \\
-        &\quad\quad \MS{isRight}~t_{in}[4] \rightarrow \\
-        &\quad\quad t_{out}[0] \eqsim_{\{;0\}} 0 ~\land \\
-        &\quad\quad t_{out}[1] \eqsim n ~\land \\
-        &\quad\quad t_{out}[2] \eqsim m' \cdot n+c ~\land \\
-        &\quad\quad \MS{isRight}~t_{out}[3] ~\land \\
-        &\quad\quad \MS{isRight}~t_{out}[4]
+        &\quad \lam{t~(\unit, t')} \forall (c~m'~n:\Nat). \\
+        &\quad\quad t[0] \eqsim_{\{;0\}} m' \rightarrow \\
+        &\quad\quad t[1] \eqsim n \rightarrow \\
+        &\quad\quad t[2] \eqsim c \rightarrow \\
+        &\quad\quad \MS{isRight}~t[3] \rightarrow \\
+        &\quad\quad \MS{isRight}~t[4] \rightarrow \\
+        &\quad\quad t'[0] \eqsim_{\{;0\}} 0 ~\land \\
+        &\quad\quad t'[1] \eqsim n ~\land \\
+        &\quad\quad t'[2] \eqsim m' \cdot n+c ~\land \\
+        &\quad\quad \MS{isRight}~t'[3] ~\land \\
+        &\quad\quad \MS{isRight}~t'[4]
       \end{align*}
     \end{column}
 
@@ -544,31 +544,31 @@ t4: ?  (t3 for Add)
 
   \pause
 
-  \textbf{Lemma:}
+  \textbf{Lemma 1:}
   $\MS{Mult\_Step} \VDash \MS{Mult\_Step\_Rel}$.
 
   \pause
 
-  \textbf{Lemma:}
+  \textbf{Lemma 2:}
   $\MS{Mult\_Loop} := \MS{While}~\MS{Mult\_Step} \VDash \MS{Mult\_Loop\_Rel}$.
   
 
   \textbf{Proof:}
-  It is enough to show $\MS{While\_Rel}~\MS{Add\_Step\_Rel} \subseteq \MS{Add\_Loop\_Rel}$,
-  which can be shown using the induction scheme of $\MS{Add\_Step\_Rel}$.
+  It is enough to show $\WhileRel~\MS{Mult\_Step\_Rel} \subseteq \MS{Mult\_Loop\_Rel}$,
+  which can be shown using the induction scheme of $\WhileRel$.
 
+  \tiny
   \begin{enumerate}
-  \item Assume $\MS{Mult\_Step\_Rel}~t_{in}~(\true, t_{mid})$; show $\MS{Mult\_Step\_Rel}~t_{in}~(\unit, t_{out})$.
-  \item Assume $\MS{Mult\_Loop\_Rel}~t_{in}~(\unit, t_{mid})$ and $\MS{Mult\_Step\_Rel}~t_{mid}~(\false, t_{out})$;
-      show $\MS{Mult\_Loop\_Rel}~t_{in}~(\unit, t_{out})$.
+  \item Assume $\MS{Mult\_Step\_Rel}~t~((\false, \unit), t')$; show $\MS{Mult\_Loop\_Rel}~t~(\unit, t')$.
+  \item Assume $\MS{Mult\_Step\_Rel}~t~((\true, \unit), t')$ and $\MS{Mult\_Loop\_Rel}~t'~(\unit, t'')$;
+    show $\MS{Mult\_Loop\_Rel}~t~(\unit, t'')$.
   \end{enumerate}
 
 \end{frame}
 
 \begin{frame}
   \frametitle{Multiplication: Putting Machines Together}
-  \[
-  \]
+
   \begin{alignat*}{2}
     \MS{Mult\_Loop} :=~& \MS{While}~\MS{Mult\_Step} \\
     \MS{Mult\_Main} :=~& \MS{Inject}~\MS{CopyValue}~\Vector{0;5}; \\
@@ -580,7 +580,8 @@ t4: ?  (t3 for Add)
 
   %\textbf{Lemma:}
   \begin{lemma}[Correctness of Mult]
-    $\MS{Mult} \VDash \MS{Computes2}~mult$. \end{lemma}
+    $\MS{Mult} \VDash \MS{Computes2}~mult$.
+  \end{lemma}
   
 \end{frame}
 
@@ -591,5 +592,78 @@ t4: ?  (t3 for Add)
   \item Implement an interpreter for L
   \end{itemize}
 \end{frame}
+
+
+
+
+%%
+%% Backup-Slides
+%%
+
+\begin{frame}
+  \center
+  Thank you!
+\end{frame}
+
+\begin{frame}
+  \frametitle{Related Work}
+  \footnotesize
+  \begin{thebibliography}{10}
+    \beamertemplatearticlebibitems%
+    \bibitem{}
+    Xu, Jian and Zhang, Xingyuan and Urban, Christian
+    \newblock{\em Mechanising Turing Machines and Computability Theory in Isabelle/HOL}%
+    \newblock{ITP 2013}
+    \bibitem{}
+    Andrea Asperti and Wilmer Ricciotti
+    \newblock{\em A formalization of multi-tape Turing machines}%
+    \newblock{Theoretical Computer Science, 2015}
+    \bibitem{}
+    Alberto Ciaffaglione
+    \newblock{\em Towards Turing computability via coinduction}%
+    \newblock{Science of Computer Programming, 2016}
+  \end{thebibliography}
+\end{frame}
+
+
+
+\begin{frame}
+  \frametitle{Termination}
+
+  \begin{definition}[Termination, $M \downarrow T$]
+    Let $T \subseteq \Tape^n \times \Nat$.
+    \[
+      \mathbf{M \downarrow T} :=
+      \forall t~k.~ T~t~k \rightarrow
+      \exists c_{out},~M(t) \triangleright^k c_{out}
+    \]
+  \end{definition}
+
+  \begin{lemma}[Monoticity of $\downarrow$]
+    If $M \downarrow T_1$ and $T_2 \subseteq T_1$, then $M \downarrow T_2$.
+  \end{lemma}
+
+\end{frame}
+
+\begin{frame}{$\Sigma$-Lift}
+  Let $i \from \Sigma \hookrightarrow \Tau$ be an injection.
+
+  Let $\mathbf{default} : \Sigma^n$.
+
+  Let $M$ be an $n$-tape $F$-partitioned Turing machine parametrised over $\Sigma$,
+  and $R$ be a $F$-parametrised relation.
+
+  Define an $n$-tape Turing machine $\Uparrow_{i,\MS{default}} M$ and a relation $\MS{Lift}_{i,\MS{default}}~R$.
+  \begin{align*}
+    \Uparrow_{i; \MS{default}} R := \lam{t~(a, t')} R~(i^{-1}_{\MS{default}} t)~(a, i^{-1}_{\MS{default}} t')
+  \end{align*}
+
+  \begin{lemma}[Correctness of the $\Sigma$-Lift]
+    If $M \VDash R$, then
+    $\Uparrow_{i; \MS{default}} M \VDash\; \Uparrow_{i; \MS{default}} R$.
+  \end{lemma}
+\end{frame}
+
+
 
 \end{document}

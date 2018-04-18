@@ -6,7 +6,8 @@
 % To get \VDash to work (three options)
 % \usepackage{fdsymbol} % other math-font
 % \usepackage{mathabx}  % other math-font
-\renewcommand{\vDash}{\models} \DeclareRobustCommand{\VDash}{\mathrel{|\mkern-2mu|}\joinrel \Relbar}
+\renewcommand{\vDash}{\models}
+\newcommand{\VDash}{\mathrel{|\mkern-2mu|}\joinrel \Relbar}
 
 
 % TikZ ist *kein* Zeichenprogramm.
