@@ -10,49 +10,49 @@ Notation "sig '^+'" := (FinType(EqType(bool + sig))) (at level 0) : type_scope.
 
 
 (* Tape proposition that says that the pointer is on (but not off) the left-most symbol *)
-Section IsLeft.
+Section IsRight.
 
-  Definition isLeft (sig : finType) (t : tape sig) :=
-    exists x rs, t = midtape nil x rs.
+  Definition isRight (sig : finType) (t : tape sig) :=
+    exists x rs, t = midtape rs x nil.
 
-   Definition isLeft_size (sig : finType) (t : tape sig) (s : nat) :=
-    exists x rs, |rs| <= s /\ t = midtape nil x rs.
+   Definition isRight_size (sig : finType) (t : tape sig) (s : nat) :=
+    exists x rs, t = midtape rs x nil /\ |rs| <= s.
 
 
-   Lemma isLeft_size_isLeft (sig : finType) (t : tape sig) (s : nat) :
-     isLeft_size t s -> isLeft t.
-   Proof. intros (x&rs&_&->). hnf. eauto. Qed.
+   Lemma isRight_size_isRight (sig : finType) (t : tape sig) (s : nat) :
+     isRight_size t s -> isRight t.
+   Proof. intros (x&rs&->&_). hnf. eauto. Qed.
 
-  Lemma isLeft_size_monotone (sig : finType) (t : tape sig) (s1 s2 : nat) :
-    isLeft_size t s1 -> s1 <= s2 -> isLeft_size t s2.
-  Proof. intros (x&rs&Hrs&->) Hs. exists x, rs. split. omega. auto. Qed.
+  Lemma isRight_size_monotone (sig : finType) (t : tape sig) (s1 s2 : nat) :
+    isRight_size t s1 -> s1 <= s2 -> isRight_size t s2.
+  Proof. intros (x&rs&->&Hr) Hs. exists x, rs. split. eauto. omega. Qed.
 
-  Lemma mapTape_isLeft (sig tau : finType) (t : tape sig) (f : sig -> tau) :
-    isLeft (mapTape f t) <-> isLeft t.
+  Lemma mapTape_isRight (sig tau : finType) (t : tape sig) (f : sig -> tau) :
+    isRight (mapTape f t) <-> isRight t.
   Proof.
     split.
     - intros (r1&r2&H). destruct t; cbn in *; inv H.
-      apply map_eq_nil in H1 as ->. hnf. eauto.
+      apply map_eq_nil in H3 as ->. hnf. eauto.
     - intros (r1&r2&->). hnf. cbn. eauto.
   Qed.
 
-  Lemma isLeft_left (sig : finType) (t : tape sig) :
-    isLeft t -> left t = nil.
+  Lemma isRight_right (sig : finType) (t : tape sig) :
+    isRight t -> right t = nil.
   Proof. now intros (x&rs&->). Qed.
 
-  Lemma isLeft_size_left (sig : finType) (t : tape sig) (s1 : nat) :
-    isLeft_size t s1 -> left t = nil.
-  Proof. eauto using isLeft_left, isLeft_size_isLeft. Qed.
+  Lemma isRight_size_left (sig : finType) (t : tape sig) (s1 : nat) :
+    isRight_size t s1 -> right t = nil.
+  Proof. eauto using isRight_right, isRight_size_isRight. Qed.
 
-  Lemma isLeft_size_right (sig : finType) (t : tape sig) (s1 : nat) :
-    isLeft_size t s1 -> length (right t) <= s1.
-  Proof. now intros (x&r1&H1&->). Qed.
+  Lemma isRight_size_right (sig : finType) (t : tape sig) (s1 : nat) :
+    isRight_size t s1 -> length (left t) <= s1.
+  Proof. now intros (x&r1&->&H1). Qed.
 
-  Lemma isLeft_isLeft_size (sig : finType) (t : tape sig) :
-    isLeft t -> isLeft_size t (| tape_local t|).
+  Lemma isRight_isRight_size (sig : finType) (t : tape sig) :
+    isRight t -> isRight_size t (| tape_local_l t|).
   Proof. intros (x&r2&->). cbn. hnf. eauto. Qed.
 
-End IsLeft.
+End IsRight.
 
 (*
 Hint Resolve isLeft_size_isLeft isLeft_size_monotone mapTape_isLeft : tape.
@@ -217,17 +217,17 @@ Section Fix_Sig.
           fun tin tout =>
             forall (x : X),
               tin[@Fin0] ≂ x ->
-              (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]) ->
+              (forall i : Fin.t n, isRight tin[@Fin.FS(Fin.FS i)]) ->
               tout[@Fin0] ≂ x /\ (* Input value stayes unchanged *)
               tout[@Fin1] ≂ f x /\
-              forall i : Fin.t n, isLeft tout[@Fin.FS(Fin.FS i)]
+              forall i : Fin.t n, isRight tout[@Fin.FS(Fin.FS i)]
         ).
 
     Definition Computes_T (r : X -> nat) : Rel (tapes (sig ^+) (S (S n))) nat :=
       fun tin k =>
         exists x : X,
           tin[@Fin0] ≂ x /\
-          (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS i)]) /\
+          (forall i : Fin.t n, isRight tin[@Fin.FS(Fin.FS i)]) /\
           r x <= k.
 
 
@@ -314,11 +314,11 @@ Section Fix_Sig.
             forall (x : X) (y : Y),
               tin[@Fin0] ≂ x ->
               tin[@Fin1] ≂ y ->
-              (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS (Fin.FS i))]) ->
+              (forall i : Fin.t n, isRight tin[@Fin.FS(Fin.FS (Fin.FS i))]) ->
               tout[@Fin0] ≂ x /\ (* First input value stayes unchanged *)
               tout[@Fin1] ≂ y /\ (* Second input value stayes unchanged *)
               tout[@Fin2] ≂ f x y /\
-              forall i : Fin.t n, isLeft tout[@Fin.FS(Fin.FS (Fin.FS i))]
+              forall i : Fin.t n, isRight tout[@Fin.FS(Fin.FS (Fin.FS i))]
         ).
 
 
@@ -327,7 +327,7 @@ Section Fix_Sig.
         exists (x : X) (y : Y),
           tin[@Fin0] ≂ x /\
           tin[@Fin1] ≂ y /\
-          (forall i : Fin.t n, isLeft tin[@Fin.FS(Fin.FS (Fin.FS i))]) /\
+          (forall i : Fin.t n, isRight tin[@Fin.FS(Fin.FS (Fin.FS i))]) /\
           r x y <= k.
 
     Section Computes2_Ext.

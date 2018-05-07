@@ -20,7 +20,7 @@
 
 % Yannick's notational wishes
 \renewcommand{\eqsim}{\simeq}
-\renewcommand{\Tape}{\MS{Tp}}
+\renewcommand{\Tape}{\MS{T}}
 \renewcommand{\VDash}{\vDash}
 \renewcommand{\Vector}[1]{\left[{#1}\right]}
 \renewcommand{\tapePointer}[1]{\underset{\uparrow}{#1}}
@@ -74,7 +74,7 @@
   \tiny
   Programming Systems Lab
 }
-\date{March 20, 2018}
+\date{April 20, 2018}
 
 
 
@@ -114,7 +114,7 @@
   \item $\MS{TM}_\Sigma^n$: $n$-tape Turing machine with alphabet $\Sigma$
   \item $M : PTM_\Sigma^n(F)$: partitioned machines ($f: Q \to F$ for finite $F$)
   \item $M \VDash R$: Realisation
-  \item $M \downarrow T$: Termination
+  \item ($M \downarrow S$: Termination)
   \end{itemize}
 
   \refs{[Asperti and Ricciotti (2015)]} % use this to show references on a slide
@@ -165,7 +165,7 @@
 \end{frame}
 
 \begin{frame}
-  \frametitle{Machine transformations}
+  \frametitle{Machine Lifts}
 
   (Admissible) typing rule for sequential composition:
 
@@ -192,17 +192,27 @@
 \begin{frame}
   \frametitle{$n$-Lift}
 
-  
-  Let $i : \Fin_m \hookrightarrow \Fin_n$.
-  
-  Let $M : \MS{PTM}_\Sigma^n$.
+  \begin{columns}
+    \begin{column}{0.5\textwidth}
+      \begin{alignat*}{2}
+      i ~&&         :&~ \Fin_m \hookrightarrow \Fin_n \\
+      M ~&&         :&~ \MS{PTM}_\Sigma^m(F) \\
+      R ~&& \subseteq&~ \Tape^m \times F \times \Tape^m
+      \end{alignat*}
+      % $$i : \Fin_m \hookrightarrow \Fin_n$$
+      % $$M : \MS{PTM}_\Sigma^n(F)$$
+      % $$R \subseteq \Tape^m \times F \times \Tape^m$$
+    \end{column}
+    \begin{column}{0.5\textwidth}
+      \begin{alignat*}{2}
+        \Uparrow_i M ~&&         : &~ \MS{PTM}_\Sigma^n(F) \\
+        \Uparrow_i R ~&& \subseteq &~ \Tape^n \times F \times \Tape^n
+      \end{alignat*}
+      % $$\Uparrow_i M : \MS{PTM}_\Sigma^n(F)$$
+      % $$\Uparrow_i R \subseteq \Tape^n \times F \times \Tape^n$$
+    \end{column}
+  \end{columns}
 
-  Then $\Uparrow_i M : \MS{PTM}_\Sigma^n$.
-
-  Let $R \subseteq \Tape^m \times F \times \Tape^m$.
-  
-  Then $\Uparrow_i R \subseteq \Tape^n \times F \times \Tape^n$
-  with
   \begin{alignat*}{2}
     & \Uparrow_i R  :=\;&& \lam{t~(a, t')} R~(i^{-1}~t)~(a, i^{-1}~t') ~\land \\
     &&&\quad \forall k \notin \MS{ran}~i.~t[k] = t'[k]
@@ -212,7 +222,6 @@
     If $M \VDash R$, then $\Uparrow_i M  \VDash\; \Uparrow_i R$.
     % If $M \VDash R$, then $M \Uparrow_i  \;\VDash R \Uparrow_i$.
   \end{lemma}
-
 \end{frame}
 
 
@@ -239,30 +248,16 @@ Class encodable (X : Type) (sig : finType) := {
   \item
     Define class of predicates for \emph{value-containing} of tapes:
 
-    \begin{definition}[value-containing, $t \eqsim_{[r_1;r_2]} x$]
-      % Hier möchte ich explizit angeben, dass $t$ ein $\Sigma^+$ tape ist.
-      % Let $X$ be encodable over $\Sigma$, and $t: \Tape_{\Sigma^+}$.
-      Let $X$ be encodable over $\Sigma$, and $t: \Tape_{\Bool+\Sigma}$.
+    \begin{definition}[value-containing, $t \eqsim x$]
+      Let $X$ be encodable over $\Sigma$, and $t: \Tape_{\Unit+\Sigma}$.
       \[
-        t \eqsim_{[r1;r2]} x :=
-        \bigl(
-        t = \midtape{r_1 ~ (\inl \true)}{(\inr y)}{(\map~\inr~ys) ~ (\inl \false) ~ r_2}
-        \bigr)
+        t \eqsim x :=
+        \exists r1.~
+        t = \midtape{r_1 ~ (\inl \unit)}{(\inr y)}{(\map~\inr~ys)}
       \]
       for $\mathtt{encode}(x) = y \cons ys$.
-      % or:
-      % \[
-      %   t \eqsim_{[r1;r2]} x :=
-      %   t = \midtape{(r_1 \app [\inl \true])}{\inl \false }{r_2}
-      % \]
-      % f
-      % and $\MS{encode}(x) = \nil$ and
     \end{definition}
 
-    { \footnotesize
-      $t \eqsim x := \exists r_1~r_2.~t \eqsim_{[r_1;r_2]} x$ \\
-      $t \eqsim_{\{;s\}} x := \exists r_1~r_2.~t\eqsim_{[r_1;r_2]} x \land |r_2| \le s$.
-    }
   \end{itemize}
   
 \end{frame}
@@ -288,7 +283,7 @@ Class encodable (X : Type) (sig : finType) := {
           & \quad\quad \MS{isRight}~t[1] \rightarrow \\
           & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t[2+i]) \rightarrow \\
           & \quad\quad t'[0] \eqsim x ~\land \\
-          & \quad\quad t'[1] \eqsim_{\{;0\}} f~x ~\land \\
+          & \quad\quad t'[1] \eqsim f~x ~\land \\
           & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t'[2+i])
         \end{alignat*}
       \end{column}
@@ -303,7 +298,7 @@ Class encodable (X : Type) (sig : finType) := {
           & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t[3+i]) \rightarrow \\
           & \quad\quad t'[0] \eqsim x ~\land \\
           & \quad\quad t'[1] \eqsim y ~\land \\
-          & \quad\quad t'[1] \eqsim_{\{;0\}} f~x~y ~\land \\
+          & \quad\quad t'[1] \eqsim f~x~y ~\land \\
           & \quad\quad (\forall i : \Fin_n.~\MS{isRight}~t'[3+i])
         \end{alignat*}
       \end{column}
@@ -316,7 +311,7 @@ Class encodable (X : Type) (sig : finType) := {
   \frametitle{Value-Manipulating Machines}
   
   \begin{itemize}
-  \item Match/destruct
+  \item Match
   \item Constructor
   \item $\MS{CopyValue}$
   \item $\MS{MoveRight}$
@@ -355,10 +350,10 @@ if (n--) {
   \begin{align*}
     & \MS{Match\_Nat\_Rel} := \\
     & \quad \lam {t~(a, t')} \forall (n:\Nat) \uncover<2->{(s:\Nat)}, \\
-    & \quad\quad t[0] \eqsim_{\uncover<2->{\{;s\}}} n \rightarrow \\
+    & \quad\quad t[0] \eqsim n \rightarrow \\
     & \quad\quad \MS{match}~n~\MS{with} \\
     & \quad\quad |~0 \Rightarrow t' = t ~\land~ a = \false \\
-    & \quad\quad |~S~n' \Rightarrow t'[0]  \eqsim_{\uncover<2->{\{;s\}}} n' ~\land~ a = \true \\
+    & \quad\quad |~S~n' \Rightarrow t'[0]  \eqsim n' ~\land~ a = \true \\
     & \quad\quad \MS{end}
   \end{align*}
 
@@ -372,8 +367,7 @@ if (n--) {
   \item For each partition: map variables to tapes
   \item For each partition: write a machine using value-manipulating machines and combinators
   \item Compose machines
-  \item For each machine: define a correctness relation and proof correctness
-  \item For each machine: define a termination relation and proof termination
+  \item For each machine: define a correctness relation and prove correctness
   \end{enumerate}
 \end{frame}
 
@@ -399,7 +393,8 @@ m' := m
 c := 0
 while (m'--) {
   Add(n, c, c')
-  CopyValue(c', c)
+  Reset(c)
+  c := c'
   Reset(c')
 }
 Reset(m')
@@ -414,7 +409,8 @@ c := 0 !\tikz\node [coordinate] (init2) {};!
 while (true) { !\tikz\node [coordinate] (loop1) {};!
   if (m'--) { !\tikz\node [coordinate] (step1) {};!
     Add(n, c, c')
-    CopyValue(c', c)
+    Reset(c)
+    c := c'
     Reset(c')
     continue
   } else {
@@ -442,7 +438,6 @@ return c
         \draw[snake=brace] (step1')  -- (step2')  node[midway, xshift=0.6cm] {Step};
         \draw[snake=brace] (loop1')  -- (loop2')  node[midway, xshift=0.6cm] {Loop};
         \draw[snake=brace] (reset1') -- (reset2') node[midway, xshift=0.6cm] {Reset};
-        \draw[snake=brace] (initloop1) -- (initloop2) node[midway, xshift=1cm] {Init+Loop};
       \end{tikzpicture}
     \end{onlyenv}
   \end{overlayarea}
@@ -461,7 +456,8 @@ return c
 \begin{lstlisting}[escapechar=!]
 if (m'--) {
   Add(n, c, c')
-  CopyValue(c', c)
+  Reset(c)
+  c := c'
   Reset(c')!\tikz\node [coordinate] (n1) {};!
   continue
 } else {
@@ -484,6 +480,7 @@ if (m'--) {
             & \quad\MS{If}~(\Uparrow_{\Vector{0}} \MS{MatchNat}) \\
             & \quad\bigl(\MS{Return}( \bigr. \\
             & \quad\quad \Uparrow_{\Vector{1; 2; 3; 4}}\MS{Add}; \\
+            & \quad\quad \Uparrow_{\Vector{2}} \MS{MoveToRight} \\
             & \quad\quad \Uparrow_{\Vector{3;2}} \MS{CopyValue}; \\
             & \quad\quad \Uparrow_{\Vector{3}} \MS{MoveToRight} \\
             & \quad\quad\bigl. )~(\true, \unit) \bigr) \\
@@ -499,7 +496,7 @@ if (m'--) {
 t0: m' (t0 for MatchNat)
 t1: n  (t0 for Add)
 t2: c  (t1 for Add) (t1 for CopyValue)
-t3: c' (t2 for Add) (t0 for CopyValue) (t0 for MoveToRight)
+t3: c' (t2 for Add) (t0 for CopyValue)
 t4: ?  (t3 for Add)
 \end{lstlisting}
 
@@ -533,13 +530,13 @@ t4: ?  (t3 for Add)
       \begin{align*}
         & \MS{Mult\_Step\_Rel} := \\
         &\quad \lam{t~(a, t')} \forall (c~m'~n:\Nat). \\
-        &\quad\quad t[0] \eqsim_{\{;0\}} m' \rightarrow \\
+        &\quad\quad t[0] \eqsim m' \rightarrow \\
         &\quad\quad t[1] \eqsim n \rightarrow t[2] \eqsim c \rightarrow \\
         &\quad\quad \MS{isRight}~t[3] \rightarrow \MS{isRight}~t[4] \rightarrow \\
         &\quad\quad \MS{match}~m'~\MS{with} \\
         &\quad\quad |~O \Rightarrow t' = t ~\land~ a = (\false,\ \unit) \\
         &\quad\quad |~S~m'' \Rightarrow \\
-        &\quad\quad\quad t'[0] \eqsim_{\{;0\}} m'' ~\land \\
+        &\quad\quad\quad t'[0] \eqsim m'' ~\land \\
         &\quad\quad\quad t'[1] \eqsim n ~\land~ t'[2] \eqsim n+c ~\land \\
         &\quad\quad\quad \MS{isRight}~t'[3] ~\land~ \MS{isRight}~t'[4] ~\land~ a = (\true, \unit) \\
         &\quad\quad \MS{end}
@@ -550,12 +547,12 @@ t4: ?  (t3 for Add)
       \begin{align*}
         & \MS{Mult\_Loop\_Rel} := \\
         &\quad \lam{t~(\unit, t')} \forall (c~m'~n:\Nat). \\
-        &\quad\quad t[0] \eqsim_{\{;0\}} m' \rightarrow \\
+        &\quad\quad t[0] \eqsim m' \rightarrow \\
         &\quad\quad t[1] \eqsim n \rightarrow \\
         &\quad\quad t[2] \eqsim c \rightarrow \\
         &\quad\quad \MS{isRight}~t[3] \rightarrow \\
         &\quad\quad \MS{isRight}~t[4] \rightarrow \\
-        &\quad\quad t'[0] \eqsim_{\{;0\}} 0 ~\land \\
+        &\quad\quad t'[0] \eqsim 0 ~\land \\
         &\quad\quad t'[1] \eqsim n ~\land \\
         &\quad\quad t'[2] \eqsim m' \cdot n+c ~\land \\
         &\quad\quad \MS{isRight}~t'[3] ~\land \\
@@ -593,12 +590,11 @@ t4: ?  (t3 for Add)
   \frametitle{Multiplication: Putting Machines Together}
 
   \begin{alignat*}{2}
-    \MS{Mult\_Loop} :=~& \MS{While}~\MS{Mult\_Step} \\
-    \MS{Mult\_Main} :=~& \MS{Inject}~\MS{CopyValue}~\Vector{0;5}; \\
-                       & \MS{Inject}~(\MS{WriteValue~0})~\Vector{2}; \\
-                       & \MS{Inject}~\MS{Mult\_Loop}~\Vector{5;1;2;3;4} \\
-    \MS{Mult}       :=~& \MS{Mult\_Main}; \\
-                       & \MS{Inject}~\MS{MoveToRight}~\Vector{5}
+    \MS{Mult\_Loop} :=&~\MS{While}~\MS{Mult\_Step} \\
+    \MS{Mult      } :=& \Uparrow_\Vector{0;5}~\MS{CopyValue}; \\
+                      & \Uparrow_\Vector{2}~\MS{O}; \\
+                      & \Uparrow_\Vector{5;1;2;3;4}~\MS{Mult\_Loop}; \\
+                      & \Uparrow_\Vector{5}~\MS{MoveToRight}
   \end{alignat*}
 
   %\textbf{Lemma:}
@@ -636,7 +632,7 @@ t4: ?  (t3 for Add)
   \bibitem{}
     Andrea Asperti, Wilmer Ricciotti
     \newblock{\em Formalizing Turing Machines}%
-    \newblock{Lecture Notes in Computer Science, 2012}%
+    \newblock{WoLLIC 2012}%
   \bibitem{}
     Xu, Jian and Zhang, Xingyuan and Urban, Christian
     \newblock{\em Mechanising Turing Machines and Computability Theory in Isabelle/HOL}%
@@ -693,7 +689,7 @@ t4: ?  (t3 for Add)
 \end{frame}
 
 \begin{frame}
-  \frametitle{Admissible Typing Rules for Combinators}
+  \frametitle{Admissible Typing Rules for Combinators and Lifts}
   \[
     \inferrule{M_1 : \MS{PTM}_\Sigma^n(F_1) \and M_2 : \MS{PTM}_\Sigma^n(F_2)} {M_1;~M_2 : \MS{PTM}_\Sigma^n(F_2)}
   \]
