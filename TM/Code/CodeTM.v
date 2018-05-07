@@ -62,13 +62,11 @@ Inductive start : Type :=
 | START : start.
 
 Instance start_eq : eq_dec start.
-Proof. intros. unfold dec. decide equality. Defined.
+Proof. unfold dec. decide equality. Defined.
 
 Instance start_fin : finTypeC (EqType start).
 Proof. split with (enum := [START]). cbn. intros []. cbn. reflexivity. Defined.
 
-Canonical Structure eqType_start : eqType := EqType start.
-Canonical Structure finType_start : finType := FinType eqType_start.
 
 
 Notation "sig '^+'" := (FinType(EqType(start + sig))) (at level 20) : type_scope.
