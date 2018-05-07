@@ -6,10 +6,7 @@ Require Import TM.Basic.Mono TM.Basic.WriteString.
 Require Import TM.Compound.TMTac.
 
 
-Notation "sig '^+'" := (FinType(EqType(bool + sig))) (at level 0) : type_scope.
-
-
-(* Tape proposition that says that the pointer is on (but not off) the left-most symbol *)
+(* Tape proposition that says that the pointer is on (but not off) the right-most symbol *)
 Section IsRight.
 
   Definition isRight (sig : finType) (t : tape sig) :=
@@ -60,179 +57,126 @@ Hint Resolve isLeft_left isLeft_size_left isLeft_size_right isLeft_isLeft_size :
 *)
 
 
+(** Start symbol, isomorphic to unit *)
+
+Inductive start : Type :=
+| START : start.
+
+Instance start_eq : eq_dec start.
+Proof. intros. unfold dec. decide equality. Defined.
+
+Instance start_fin : finTypeC (EqType start).
+Proof. split with (enum := [START]). cbn. intros []. cbn. reflexivity. Defined.
+
+Canonical Structure eqType_start : eqType := EqType start.
+Canonical Structure finType_start : finType := FinType eqType_start.
+
+
+Notation "sig '^+'" := (FinType(EqType(start + sig))) (at level 20) : type_scope.
+
+
+Generalizable Variable X Y Z sig tau.
 
 Section Fix_Sig.
 
   Variable (sig : finType).
 
 
-  Section Tape_Encodes.
+  (** ** Value Containing *)
 
-    Variable (X : Type) (cX : codeable sig X).
+  Section Tape_Contains.
 
-    (* Extend sig with a start end a end symbol *)
+    Context `{cx : codeable sig X}.
 
-    (*
-    Check sig^+.
-    Check tapes sig^+ 42.
-    Check (sig + bool) % type.
-     *)
+    Definition tape_contains_r (t: tape (sig^+)) (x : X) (r1: list (sig^+)) :=
+      exists y ys, encode x = (y :: ys : list sig) /\
+              t = midtape (inl START :: r1) (inr y) (map inr ys).
+              
+    Definition tape_contains (t: tape (sig^+)) (x : X) :=
+      exists y ys r1, encode x = (y :: ys : list sig) /\
+                 t = midtape (inl START :: r1) (inr y) (map inr ys).
 
-    Definition START : bool := false.
-    Definition STOP  : bool := true.
-
-    Definition tape_encodes_l (t : tape sig^+) (x : X) (r1 r2 : list sig^+) :=
-      left t = inl START :: r1 /\ tape_local t = encode x ++ inl STOP :: r2.
-
-    Definition tape_encodes_r (t : tape sig^+) (x : X) (r1 r2 : list sig^+) :=
-      right t = inl STOP :: r2 /\ tape_local_l t = rev (encode x) ++ inl START :: r1.
-
-    Definition tape_encodes_size (t : tape sig^+) (x : X) (size1 size2 : nat) :=
-      exists (r1 r2 : list (sig^+)), length r1 <= size1 /\ length r2 <= size2 /\ tape_encodes_l t x r1 r2.
-
-    Definition tape_encodes'_size (t : tape sig^+) (x : X) (size1 size2 : nat) :=
-      exists (r1 r2 : list (sig^+)), length r1 <= size1 /\ length r2 <= size2 /\ tape_encodes_r t x r1 r2.
-
-    Definition tape_encodes (t : tape sig^+) (x : X) : Prop :=
-      exists r1 r2 : list (sig^+), tape_encodes_l t x r1 r2.
-
-    Definition tape_encodes' (t : tape sig^+) (x : X) : Prop :=
-      exists r1 r2 : list (sig^+), tape_encodes_r t x r1 r2.
+    Lemma tape_contains_r_contains (t: tape (sig^+)) (x : X) (r1: list (sig^+)) :
+      tape_contains_r t x r1 -> tape_contains t x.
+    Proof. unfold tape_contains, tape_contains_r. firstorder. Qed.
 
 
-    Lemma tape_encodes_l_injective (t1 t2 : tape sig^+) (x : X) (r1 r2 : list sig^+) :
-      tape_encodes_l t1 x r1 r2 ->
-      tape_encodes_l t2 x r1 r2 ->
+    Lemma tape_encodes_r_injective (t1 t2 : tape (sig^+)) (x : X) (r1 r2 : list (sig^+)) :
+      tape_contains_r t1 x r1 ->
+      tape_contains_r t2 x r2 ->
+      r1 = r2 ->
       t1 = t2.
-    Proof.
-      intros (HE1&HE2) (HE1'&HE2').
-      destruct t1; cbn in *; try congruence.
-      now apply app_cons_not_nil in HE2.
-      destruct t2; cbn in *; congruence.
-    Qed.
+    Proof. intros (y&ys&H1&H2) (y'&ys'&H1'&H2'). congruence. Qed.
 
-    Lemma tape_encodes_r_injective (t1 t2 : tape sig^+) (x : X) (r1 r2 : list sig^+) :
-      tape_encodes_r t1 x r1 r2 ->
-      tape_encodes_r t2 x r1 r2 ->
-      t1 = t2.
-    Proof.
-      intros (HE1&HE2) (HE1'&HE2').
-      destruct t1; cbn in *; try congruence.
-      now apply app_cons_not_nil in HE2.
-      destruct t2; cbn in *; congruence.
-    Qed.
+  End Tape_Contains.
 
-    Lemma tape_encodes_l_functional (t : tape sig^+) (x1 x2 : X) (r1 r2 s1 s2 : list sig^+) :
-      tape_encodes_l t x1 r1 r2 -> tape_encodes_l t x2 s1 s2 -> x1 = x2 /\ r1 = s1 /\ r2 = s2.
-    Proof.
-      intros (H2&H2') (H1&H1'). rewrite H2 in H1; clear H2. rewrite H2' in H1'. clear H2'. cbn in *.
-      eapply encode_map_injective in H1' as (->&H2). inv H1. inv H2. tauto. eapply retract_inr.
-    Qed.
+  Arguments tape_contains : simpl never.
+  Arguments tape_contains_r : simpl never.
 
-    Notation "t '≂' x" := (tape_encodes t x) (at level 70, no associativity).
-
-    Lemma tape_encodes_functional (t : tape sig^+) (x1 x2 : X) :
-      t ≂ x1 -> t ≂ x2 -> x1 = x2.
-    Proof.
-      intros (r1&r2&H2) (s1&s2&H1). eapply tape_encodes_l_functional; eauto.
-    Qed.
-
-    Lemma tape_encodes_size_monotone (t : tape sig^+) (x : X) (size1 size1' size2 size2' : nat) :
-      tape_encodes_size t x size1 size2 ->
-      size1 <= size1' ->
-      size2 <= size2' ->
-      tape_encodes_size t x size1' size2'.
-    Proof. intros (r1&r2&H1&H2&H3) H4 H5. hnf. exists r1, r2. split; [ | split; auto]; omega. Qed.
-
-    Lemma tape_encodes_l_encodes (t : tape sig^+) (x : X) r1 r2 :
-      tape_encodes_l t x r1 r2 -> tape_encodes t x.
-    Proof. intros. hnf. eauto. Qed.
-
-    Lemma tape_encodes_r_encodes' (t : tape sig^+) (x : X) r1 r2 :
-      tape_encodes_r t x r1 r2 -> tape_encodes' t x.
-    Proof. intros. hnf. eauto. Qed.
-
-    Lemma tape_encodes_size_encodes (t : tape sig^+) (x : X) s1 s2 :
-      tape_encodes_size t x s1 s2 -> tape_encodes t x.
-    Proof. intros (r1&r2&HS1&HS2&HE). eauto using tape_encodes_l_encodes. Qed.
-
-    Lemma tape_encodes'_size_encodes' (t : tape sig^+) (x : X) s1 s2 :
-      tape_encodes'_size t x s1 s2 -> tape_encodes' t x.
-    Proof. intros (r1&r2&HS1&HS2&HE). eauto using tape_encodes_r_encodes'. Qed.
-
-    Lemma tape_encodes_l_encodes_size (t : tape sig^+) (x : X) r1 r2 :
-      tape_encodes_l t x r1 r2 -> tape_encodes_size t x (|r1|) (|r2|).
-    Proof. intros (H1&H2). hnf. exists r1, r2. repeat split; auto. Qed.
-
-    Lemma tape_encodes_r_encodes'_size (t : tape sig^+) (x : X) r1 r2 :
-      tape_encodes_r t x r1 r2 -> tape_encodes'_size t x (|r1|) (|r2|).
-    Proof. intros (H1&H2). hnf. exists r1, r2. repeat split; auto. Qed.
-
-  End Tape_Encodes.
-
-  Arguments tape_encodes : simpl never.
-
-  Notation "t '≂' x" := (tape_encodes _ t x) (at level 70, no associativity).
-  Notation "t '≂[' c ']' x" := (tape_encodes c t x) (at level 70, no associativity, only parsing).
+  Notation "t '≃' x" := (tape_contains t x) (at level 70, no associativity).
+  Notation "t '≃[' c ']' x" := (tape_contains (cx := c) t x) (at level 70, no associativity, only parsing).
 
   Section Encodes_Ext.
     Variable X : Type.
     Variable (cod1 cod2 : codeable sig X).
 
-    Lemma tape_encodes_ext (t : tape sig^+) (x : X) :
+    Lemma tape_contains_ext (t : tape (sig^+)) (x : X) :
       encode (codeable := cod1) x = encode (codeable := cod2) x ->
-      t ≂[cod1] x -> t ≂[cod2] x.
+      t ≃[cod1] x -> t ≃[cod2] x.
     Proof.
       Set Printing Implicit.
-      intros HExt (r1&r2&HE1&HE2). exists r1, r2. split; cbn.
-      - exact HE1.
-      - rewrite HE2. cbn. f_equal. erewrite map_ext. f_equal. eapply HExt. auto.
-        Unset Printing Implicit.
+      intros HExt (y&ys&r1&HE&->). hnf. exists y, ys, r1. split; congruence.
     Qed.
 
-    Lemma tape_encodes_ext' (t1 t2 : tape sig^+) (x : X) :
+    Lemma tape_encodes_ext' (t1 t2 : tape (sig^+)) (x : X) :
       encode (codeable := cod1) x = encode (codeable := cod2) x ->
       t1 = t2 ->
-      t1 ≂[cod1] x -> t2 ≂[cod2] x.
-    Proof. intros ? ->. now eapply tape_encodes_ext; eauto. Qed.
+      t1 ≃[cod1] x -> t2 ≃[cod2] x.
+    Proof.
+      Set Printing Implicit.
+      intros Heq -> (y&ys&r1&HE&->). hnf. exists y, ys, r1. split; congruence.
+    Qed.
 
   End Encodes_Ext.
 
 
 
 
-  (** Definition of the computation relations *)
+  (** ** Definition of the computation relations *)
 
   Section Computes.
     Variable n : nat.
-    Variable (X Y : Type) (cX : codeable sig X) (cY : codeable sig Y).
+    Context `{cX: codeable sig X} `{cY: codeable sig Y}.
+    Variable F : finType.
 
     (*
      * Tape [t0] is the input tapes, [t2] is the output tape.
-     * All further tapes are "internal tapes", i.e. they pointer is left before and after the execution.
+     * All further tapes are "internal tapes", i.e. they pointer is right before and after the execution.
      *)
     Definition Computes_Rel (f : X -> Y) :
-      Rel (tapes (sig ^+) (S (S n))) (unit * tapes sig^+ (S (S n))) :=
+      Rel (tapes (sig ^+) (S (S n))) (F * tapes (sig^+) (S (S n))) :=
       ignoreParam (
           fun tin tout =>
             forall (x : X),
-              tin[@Fin0] ≂ x ->
+              tin[@Fin0] ≃ x ->
+              isRight tin[@Fin1] ->
               (forall i : Fin.t n, isRight tin[@Fin.FS(Fin.FS i)]) ->
-              tout[@Fin0] ≂ x /\ (* Input value stayes unchanged *)
-              tout[@Fin1] ≂ f x /\
+              tout[@Fin0] ≃ x /\ (* Input value stayes unchanged *)
+              tout[@Fin1] ≃ f x /\ (* output of the computation *)
               forall i : Fin.t n, isRight tout[@Fin.FS(Fin.FS i)]
         ).
 
     Definition Computes_T (r : X -> nat) : Rel (tapes (sig ^+) (S (S n))) nat :=
       fun tin k =>
         exists x : X,
-          tin[@Fin0] ≂ x /\
+          tin[@Fin0] ≃ x /\
+          isRight tin[@Fin1] /\
           (forall i : Fin.t n, isRight tin[@Fin.FS(Fin.FS i)]) /\
           r x <= k.
 
 
 
-    (* The computes relation must be extensional *)
+    (** The computes relation is extensional *)
     Section Computes_Ext.
       Variable (f f' : X -> Y) (ext_fun : forall x, f x = f' x).
 
@@ -243,7 +187,7 @@ Section Fix_Sig.
       Qed
 .
 
-      Variable pM : { M : mTM sig^+ (S (S n)) & states M -> unit }.
+      Variable pM : { M : mTM (sig^+) (S (S n)) & states M -> F }.
 
       Lemma Computes_Ext_WRealise :
         pM ⊫ Computes_Rel f' ->
@@ -281,8 +225,8 @@ Section Fix_Sig.
         Computes_T r1 <<=2 Computes_T r2.
       Proof.
         intros tin k H. hnf in H.
-        destruct H as (x&H1&H2&H3).
-        hnf. exists x. repeat split; eauto. rewrite <- H3. apply mon.
+        destruct H as (x&H1&H2&H3&H4).
+        hnf. exists x. repeat split; eauto. rewrite <- H4. apply mon.
       Qed.
 
       Lemma Computes_T_Monotone :
@@ -298,26 +242,29 @@ Section Fix_Sig.
   End Computes.
 
 
-  (** Computes relation with two arguments *)
+  (** ** Computes relation with two arguments *)
   Section Computes2.
     Variable n : nat.
-    Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
+    (* WARNING: [Z] is overloaded in Coq with the type of integer numbers! *)
+    Context `{cX: codeable sig X} `{cY: codeable sig Y} Z `{cZ: codeable sig Z}.
+    Variable F : finType.
 
     (*
      * Tapes [t0] and [t1] are input tapes, [t2] is the output tape.
-     * All further tapes are "internal tapes", i.e. they pointer is left before and after the execution.
+     * All further tapes are "internal tapes", i.e. they pointer is right before and after the execution.
      *)
     Definition Computes2_Rel (f : X -> Y -> Z) :
-      Rel (tapes (sig ^+) (S (S (S n)))) (unit * tapes sig^+ (S (S (S n)))) :=
+      Rel (tapes (sig ^+) (S (S (S n)))) (F * tapes (sig^+) (S (S (S n)))) :=
       ignoreParam (
           fun tin tout =>
             forall (x : X) (y : Y),
-              tin[@Fin0] ≂ x ->
-              tin[@Fin1] ≂ y ->
+              tin[@Fin0] ≃ x ->
+              tin[@Fin1] ≃ y ->
+              isRight tin[@Fin2] ->
               (forall i : Fin.t n, isRight tin[@Fin.FS(Fin.FS (Fin.FS i))]) ->
-              tout[@Fin0] ≂ x /\ (* First input value stayes unchanged *)
-              tout[@Fin1] ≂ y /\ (* Second input value stayes unchanged *)
-              tout[@Fin2] ≂ f x y /\
+              tout[@Fin0] ≃ x /\ (* First input value stayes unchanged *)
+              tout[@Fin1] ≃ y /\ (* Second input value stayes unchanged *)
+              tout[@Fin2] ≃ f x y /\
               forall i : Fin.t n, isRight tout[@Fin.FS(Fin.FS (Fin.FS i))]
         ).
 
@@ -325,8 +272,9 @@ Section Fix_Sig.
     Definition Computes2_T (r : X -> Y -> nat) : Rel (tapes (sig ^+) (S (S (S n)))) nat :=
       fun tin k =>
         exists (x : X) (y : Y),
-          tin[@Fin0] ≂ x /\
-          tin[@Fin1] ≂ y /\
+          tin[@Fin0] ≃ x /\
+          tin[@Fin1] ≃ y /\
+          isRight tin[@Fin2] /\
           (forall i : Fin.t n, isRight tin[@Fin.FS(Fin.FS (Fin.FS i))]) /\
           r x y <= k.
 
@@ -339,7 +287,7 @@ Section Fix_Sig.
         intros tin (yout, tout) HRel. hnf. intros x EncX y EncY. specialize (HRel x EncX y EncY). intuition congruence.
       Qed.
 
-      Variable pM : { M : mTM sig^+ (S (S (S n))) & states M -> unit }.
+      Variable pM : { M : mTM (sig^+) (S (S (S n))) & states M -> F }.
 
       Lemma Computes2_Ext_WRealise :
         pM ⊫ Computes2_Rel f' ->
@@ -378,8 +326,8 @@ Section Fix_Sig.
         Computes2_T r1 <<=2 Computes2_T r2.
       Proof.
         intros tin k H. hnf in H.
-        destruct H as (x&y&H1&H2&H3&H4).
-        hnf. exists x, y. repeat split; eauto. rewrite <- H4. apply mon.
+        destruct H as (x&y&H1&H2&H3&H4&H5).
+        hnf. exists x, y. repeat split; eauto. rewrite <- H5. apply mon.
       Qed.
 
       Lemma Computes2_T_Monotone :
@@ -393,29 +341,28 @@ Section Fix_Sig.
 
 
     End Computes2_Ext.
-
-
   End Computes2.
-
 End Fix_Sig.
 
 
-Arguments Computes_Rel {sig n X Y _ _} f x y/.
-Arguments Computes_T {sig n X _} r x y/.
 
-Arguments Computes2_Rel {sig n X Y Z _ _ _} f x y/.
-Arguments Computes2_T {sig n X Y _ _} r x y/.
+Arguments Computes_Rel {sig n X cX Y cY F} f x y/.
+Arguments Computes_T {sig n X cX} r x y/.
 
-
-Notation "t '≂' x" := (tape_encodes _ t x) (at level 70, no associativity).
-Notation "t '≂[' r1 ';' r2 ] x" := (tape_encodes_l _ t x r1 r2) (at level 70, no associativity, format "t  '≂[' r1 ;  r2 ]  x").
-Notation "t '≂{' r1 ';' r2 } x" := (tape_encodes_size _ t x r1 r2) (at level 70, no associativity, format "t  '≂{' r1 ;  r2 }  x").
-Notation "t '≃[' r1 ';' r2 ] x" := (tape_encodes_r _ t x r1 r2) (at level 70, no associativity, format "t  '≃[' r1 ;  r2 ]  x").
-Notation "t '≃{' r1 ';' r2 } x" := (tape_encodes'_size _ t x r1 r2) (at level 70, no associativity, format "t  '≃{' r1 ;  r2 }  x").
+Arguments Computes2_Rel {sig n X cX Y cY Z cZ F} f x y/.
+Arguments Computes2_T {sig n X cX Y cY} r x y/.
 
 
+Notation "t ≃ x" := (tape_contains t x) (at level 70, no associativity, format "t  ≃  x").
+Notation "t '≃(' c ')' x" := (tape_contains (cx := c) t x) (at level 70, no associativity, only parsing).
 
 
+Notation "t ≃[ r1 ] x" := (tape_contains_r t x r1) (at level 70, no associativity, format "t  ≃[ r1 ]  x").
+Notation "t '≃[' c ']' x" := (tape_contains (cx := c) t x) (at level 70, no associativity, only parsing).
+
+
+
+(* begin hide *)
 (*
 Section Computes_Gen.
 
@@ -525,7 +472,12 @@ Section Test_Computes_Gen2.
 
 End Test_Computes_Gen2.
  *)
+(* end hide *)
 
+
+(* TODO *)
+
+(*
 
 (* Write a value to a tape *)
 Section InitTape.
@@ -605,6 +557,8 @@ Section InitTape.
   Qed.
 
 End InitTape.
+
+*)
 
 
 (*
