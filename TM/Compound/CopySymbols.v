@@ -293,26 +293,26 @@ End Test.
       rewrite CopySymbols_Fun_equation in H; cbn; auto.
     - rewrite e0 in H. cbn in *.
       destruct t' as (t1',t2'); cbn in *. inv H.
-      apply mirror_tape_inv_midtape in H1. subst.
-      apply mirror_tape_inv_midtape in H2. subst.
+      apply mirror_tape_inv_midtape' in H1. subst.
+      apply mirror_tape_inv_midtape' in H2. subst.
       simpl_tape. reflexivity.
     - rewrite e0 in H. cbn in *.
       destruct t' as (t1',t2'); cbn in *.
       destruct ls; cbn in *; simpl_tape in *.
       + rewrite CopySymbols_Fun_equation in H. inv H.
-        apply mirror_tape_inv_rightof in H1. subst.
+        apply mirror_tape_inv_rightof' in H1. subst.
         eapply IHp; clear IHp. rewrite CopySymbols_Fun_equation. f_equal. f_equal.
         destruct (left t2); cbn.
-        * apply mirror_tape_inv_rightof in H2. subst. reflexivity.
-        * apply mirror_tape_inv_midtape in H2. subst. reflexivity.
+        * apply mirror_tape_inv_rightof' in H2. subst. reflexivity.
+        * apply mirror_tape_inv_midtape' in H2. subst. reflexivity.
       + eapply IHp; clear IHp. rewrite <- H; clear H.
         f_equal. f_equal.
         destruct (left t2); cbn; auto.
     - destruct t' as (t1',t2'). destruct t1; cbn in *; inv H; auto.
-      1: apply mirror_tape_inv_niltape in H1.
-      2: apply mirror_tape_inv_rightof in H1.
-      3: apply mirror_tape_inv_leftof in H1.
-      all: apply mirror_tape_injective in H2.
+      1: apply mirror_tape_inv_niltape' in H1.
+      2: apply mirror_tape_inv_rightof' in H1.
+      3: apply mirror_tape_inv_leftof' in H1.
+      all: apply mirror_tape_injective' in H2.
       all: congruence.
   Qed.
 
@@ -326,8 +326,8 @@ End Test.
       rewrite CopySymbols_L_Fun_equation in H; cbn; auto.
     - rewrite e0 in H. inv H.
       destruct t' as (t1',t2'). cbn in *.
-      apply mirror_tape_inv_midtape in H1.
-      apply mirror_tape_inv_midtape in H2.
+      apply mirror_tape_inv_midtape' in H1.
+      apply mirror_tape_inv_midtape' in H2.
       subst. simpl_tape. reflexivity.
     - rewrite e0 in H.
       destruct t' as (t1',t2'). cbn in *.
@@ -337,10 +337,10 @@ End Test.
       + destruct (right t2); cbn; reflexivity.
     - destruct t' as (t1',t2'). cbn in *.
       destruct t1; cbn in *; inv H; auto.
-      1: apply mirror_tape_inv_niltape in H1.
-      2: apply mirror_tape_inv_rightof in H1.
-      3: apply mirror_tape_inv_leftof in H1.
-      all: apply mirror_tape_injective in H2.
+      1: apply mirror_tape_inv_niltape' in H1.
+      2: apply mirror_tape_inv_rightof' in H1.
+      3: apply mirror_tape_inv_leftof' in H1.
+      all: apply mirror_tape_injective' in H2.
       all: congruence.
   Qed.
 
