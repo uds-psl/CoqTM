@@ -12,10 +12,12 @@ Require Import TM.Mirror.
 Require Import TM.LiftMN.
 
 
+Generalizable All Variables.
+
+
 
 (* Don't simplify [skipn (S n) xs]; only, if the number and the lists are constructors *)
 Local Arguments skipn { A } !n !l.
-
 
 
 Section Copy.
@@ -41,6 +43,28 @@ Section Copy.
         rewrite IHp. simpl_list. f_equal. f_equal.
         destruct t2; cbn; try rewrite skipn_nil; auto; simpl_tape.
         destruct l0; cbn; auto. apply skipn_nil.
+    - destruct t1; cbn in *; auto; now apply app_cons_not_nil in HEnc.
+  Qed.
+
+  
+  Lemma CopySymbols_L_pair_correct tltr str1 x str2 :
+    (forall x, List.In x str1 -> stop x = false) ->
+    (stop x = true) ->
+    tape_local_l (fst tltr) = str1 ++ x :: str2 ->
+    CopySymbols_L_Fun stop id tltr =
+    (midtape str2 x (rev str1 ++ right (fst tltr)),
+     midtape (skipn (|str1|) (left (snd tltr))) x (rev str1 ++ right (snd tltr))).
+  Proof.
+    intros HStop1 HStop2. intros HEnc.
+    revert str1 x str2 HEnc HStop1 HStop2.
+    functional induction (CopySymbols_L_Fun stop id tltr); cbn in *; simpl_tape in *; intros.
+    - destruct str1; cbn in *; inv HEnc; auto. specialize (HStop1 _ ltac:(eauto)). congruence.
+    - destruct str1; cbn in *.
+      + inv HEnc. congruence.
+      + inv HEnc. specialize (IHp _ _ _ ltac:(reflexivity)). do 2 spec_assert IHp; eauto.
+        rewrite IHp. simpl_list. f_equal. f_equal.
+        destruct t2; cbn; try rewrite skipn_nil; auto; simpl_tape.
+        destruct l; cbn; auto. apply skipn_nil.
     - destruct t1; cbn in *; auto; now apply app_cons_not_nil in HEnc.
   Qed.
 
@@ -134,6 +158,22 @@ Section Copy.
         eapply IHr1; eauto. cbn. now simpl_tape.
   Qed.
 
+  
+  Lemma CopySymbols_L_TermTime_local t r1 sym r2 :
+    tape_local_l t = r1 ++ sym :: r2 ->
+    stop sym = true ->
+    CopySymbols_L_TermTime stop t <= 8 + 8 * length r1.
+  Proof.
+    revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite CopySymbols_L_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; try congruence. inv HEnc.
+      rewrite CopySymbols_L_TermTime_equation. destruct (stop a).
+      + omega.
+      + apply Nat.add_le_mono_l. replace (8 * S (|r1|)) with (8 + 8 * |r1|) by omega.
+        eapply IHr1; eauto. cbn. now simpl_tape.
+  Qed.
+
+
   Lemma MoveToSymbols_TermTime_local t r1 sym r2 :
     tape_local t = r1 ++ sym :: r2 ->
     stop sym = true ->
@@ -185,6 +225,38 @@ Section Copy.
   Qed.
   
 End Copy.
+
+
+
+(* Move the pointer to the right end *)
+Section Reset.
+  Variable (sig: finType) (X:Type) (encX: codeable sig X).
+
+  Definition Reset := Return (MoveToSymbol (fun (s: sig^+) => false)) tt;; Move _ L tt.
+
+  Definition Reset_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
+    Mk_R_p (ignoreParam (fun tin tout => forall x:X, tin ≃ x -> isRight tout)).
+
+  Lemma Reset_WRealise : Reset ⊫ Reset_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold Reset. repeat TM_Correct. }
+    { intros tin ((), tout) H. intros x HEncX. TMSimp. clear_trivial_eqs. clear H3.
+      destruct HEncX as (y&ys&rs&HECode&HEncX). rewrite HEncX.
+      pose proof MoveToSymbol_correct_toRight (inl START :: rs) (inr y) (map inr ys) as (HMove1&HMove2).
+      cbn in *. unfold finType_CS in *. (* rewrite <- HEncX, <- H2 in HMove1, HMove2. *)
+      destruct (rev _).
+      - apply (conj HMove2) in HMove1. eapply midtape_tape_local_l_cons_right in HMove1.
+        rewrite HMove1. repeat econstructor.
+      - apply (conj HMove2) in HMove1. eapply midtape_tape_local_l_cons_right in HMove1.
+        rewrite HMove1. repeat econstructor.
+    }
+  Qed.
+
+End Reset.
+
+(*
+(* TODO *)
 
 Section Copy_code.
   Variable sig : finType.
@@ -830,4 +902,6 @@ Ltac smpl_TM_CopyMoveCode :=
   end.
 
 Smpl Add smpl_TM_CopyMoveCode : TM_Correct.
+*)
+
 *)
