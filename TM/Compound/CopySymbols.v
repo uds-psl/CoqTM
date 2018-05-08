@@ -312,7 +312,7 @@ End Test.
       1: apply mirror_tape_inv_niltape' in H1.
       2: apply mirror_tape_inv_rightof' in H1.
       3: apply mirror_tape_inv_leftof' in H1.
-      all: apply mirror_tape_injective' in H2.
+      all: apply mirror_tape_injective in H2.
       all: congruence.
   Qed.
 
@@ -340,7 +340,7 @@ End Test.
       1: apply mirror_tape_inv_niltape' in H1.
       2: apply mirror_tape_inv_rightof' in H1.
       3: apply mirror_tape_inv_leftof' in H1.
-      all: apply mirror_tape_injective' in H2.
+      all: apply mirror_tape_injective in H2.
       all: congruence.
   Qed.
 
