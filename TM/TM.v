@@ -508,15 +508,19 @@ Section MirrorTape.
   Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
 
   Lemma mirror_tape_inv_midtape t r1 r2 x :
-    mirror_tape t = midtape r1 x r2 -> t = midtape r2 x r1.
+    midtape r1 x r2 = mirror_tape t -> t = midtape r2 x r1.
   Proof. intros. destruct t; cbn in *; congruence. Qed.
 
   Lemma mirror_tape_inv_leftof t rs x :
-    mirror_tape t = leftof rs x -> t = rightof rs x.
+    leftof rs x = mirror_tape t -> t = rightof rs x.
   Proof. intros. destruct t; cbn in *; congruence. Qed.
 
   Lemma mirror_tape_inv_rightof t ls x :
-    mirror_tape t = rightof ls x -> t = leftof ls x.
+    rightof ls x = mirror_tape t -> t = leftof ls x.
+  Proof. intros. destruct t; cbn in *; congruence. Qed.
+
+  Lemma mirror_tape_inv_niltape t :
+    niltape _ = mirror_tape t -> t = niltape _.
   Proof. intros. destruct t; cbn in *; congruence. Qed.
 
   Definition mirror_tapes (t : tapes sig n) : tapes sig n := Vector.map mirror_tape t.
