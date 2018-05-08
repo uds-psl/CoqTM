@@ -4,22 +4,29 @@ Require Import TM.Combinators.Combinators.
 Require Import TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Compound.TMTac.
 
+
+Lemma encode_nat_correct (n : nat) :
+  encode n = repeat true n ++ [false].
+Proof. induction n; cbn in *; f_equal; auto. Qed.
+
+
+
 (* Basic pattern matching *)
 Section MatchNat.
 
-  Definition MatchNat_Rel : Rel (tapes bool^+ 1) (bool * tapes bool^+ 1) :=
+  Definition MatchNat_Rel : Rel (tapes (bool^+) 1) (bool * tapes (bool^+) 1) :=
     Mk_R_p
       (fun tin '(yout, tout) =>
-         forall (n : nat) r1 r2,
-           tin ≂[r1;r2] n ->
+         forall (n : nat),
+           tin ≃ n ->
            match n with
            | O =>
-             tout ≂[r1;r2] O /\ yout = false
+             tout ≃ O /\ yout = false
            | S n' =>
-             tout ≂[inl START :: r1; r2] n' /\ yout = true
+             tout ≃ n' /\ yout = true
            end).
 
-  Definition MatchNat : { M : mTM bool^+ 1 & states M -> bool } :=
+  Definition MatchNat : { M : mTM (bool^+) 1 & states M -> bool } :=
     MATCH (Read_char _)
           (fun o => match o with
                  | Some (inr true)  => Write (inl START) tt;; Move _ R true  (* S *)
@@ -32,7 +39,7 @@ Section MatchNat.
     eapply RealiseIn_monotone.
     {
       unfold MatchNat. eapply Match_RealiseIn. cbn. eapply read_char_sem.
-      instantiate (2 := fun o : option bool^+ =>
+      instantiate (2 := fun o : option (bool^+) =>
                           match o with Some (inr true) => _ | Some (inr false) => _ | _ => _ end).
       cbn. intros [ s | ]; cbn.
       - destruct s as [ start | s]; cbn.
@@ -44,25 +51,25 @@ Section MatchNat.
     }
     { cbn. omega. }
     {
-      intros tin (yout&tout) H. intros n r1 r2 HEncN. TMSimp.
-      destruct HEncN as (HE1&HE2).
-      destruct n; cbn in *.
-      - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. rewrite L in H0. clear L.
-        TMSimp. repeat split; auto.
-      - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. rewrite L in H0. clear L.
-        TMSimp. split; auto. split.
-        + simpl_tape. auto.
-        + try rewrite L. simpl_tape. cbn. apply tape_local_cons_iff in HE2 as (HE2&HE3). unfold finType_CS in *. rewrite HE3. auto.
+      intros tin (yout&tout) H. intros n HEncN. TMSimp.
+      destruct HEncN as (x&ys&r1&HE1&HE2).
+      rewrite encode_nat_correct in HE1.
+      rewrite HE2 in H0. cbn in *.
+      destruct n; cbn in *; inv HE1; TMSimp; cbn.
+      - repeat econstructor.
+      - destruct n; cbn.
+        + repeat econstructor.
+        + split; auto. hnf. do 3 eexists. split. rewrite encode_nat_correct. cbn. all: eauto.
     }
   Qed.
 
 
   (* More accurate termination time *)
-  (* Note that this Lemma is not at all useful, but it shows how to show termination of the [Match] operator. *)
+  (* This lemma demonstrates how to show termination of the [Match] operator, in case each case-machine has different/not constant run time. *)
   Lemma MatchNat_Terminates :
     projT1 MatchNat ↓
            (fun tin k =>
-              exists m, tin[@Fin0] ≂ m /\
+              exists m, tin[@Fin0] ≃ m /\
                    match m with
                    | O => 2 <= k
                    | _ => 5 <= k
@@ -72,15 +79,14 @@ Section MatchNat.
     { unfold MatchNat. repeat TM_Correct. }
     {
       intros tin i. intros (m&HEncM&Hi).
-      destruct HEncM as (r1&r2&HE1&HE2).
+      destruct HEncM as (y&ys&r1&HE1&HE2).
+      rewrite encode_nat_correct in HE1.
       destruct m eqn:Em; cbn in *.
-      - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. TMSimp.
-        exists 1, 0. repeat split.
+      - exists 1, 0. repeat split.
         + omega.
         + omega.
         + TMSimp. omega.
-      - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as L. TMSimp.
-        exists 1, 3. repeat split.
+      - exists 1, 3. repeat split.
         + omega.
         + omega.
         + TMSimp. exists 1, 1. repeat split.
@@ -94,10 +100,10 @@ Section MatchNat.
   (* Constructors *)
   Section NatConstructor.
 
-    Definition S_Rel : Rel (tapes bool^+ 1) (unit * tapes bool^+ 1) :=
-      Mk_R_p (ignoreParam (fun tin tout => forall n : nat, tin ≂ n -> tout ≂ S n)).
+    Definition S_Rel : Rel (tapes (bool^+) 1) (unit * tapes (bool^+) 1) :=
+      Mk_R_p (ignoreParam (fun tin tout => forall n : nat, tin ≃ n -> tout ≃ S n)).
 
-    Definition Constr_S : { M : mTM bool^+ 1 & states M -> unit } :=
+    Definition Constr_S : { M : mTM (bool^+) 1 & states M -> unit } :=
       Move _ L tt;; WriteMove (Some (inr true), L) tt;; WriteMove (Some (inl START), R) tt.
 
     Lemma Constr_S_Sem : Constr_S ⊨c(5) S_Rel.
@@ -113,40 +119,40 @@ Section MatchNat.
       {
         intros tin (yout, tout) H. intros n HEncN.
         TMSimp. clear H0 H4 H2 H3. simpl_tape.
-        destruct HEncN as (r1&r2&HE1&HE2).
-        destruct n as [ | n']; cbn in *.
-        - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(eauto)) as ->.
-          cbn. hnf. do 2 eexists. split.
-          + cbn. reflexivity.
-          + cbn. reflexivity.
-        - pose proof (proj1 (midtape_tape_local_cons_left _ _ _ _) ltac:(split; eauto)) as ->.
-          cbn. hnf. do 2 eexists. split.
-          + cbn. reflexivity.
-          + cbn. reflexivity.
+        destruct HEncN as (y&ys&r1&HE1&HE2).
+        rewrite encode_nat_correct in HE1.
+        destruct n as [ | n']; cbn in *; inv HE1.
+        - hnf. do 3 eexists. split.
+          + rewrite encode_nat_correct. cbn. reflexivity.
+          + cbn. f_equal. rewrite HE2. cbn. reflexivity.
+        - hnf. do 3 eexists. split.
+          + rewrite encode_nat_correct. cbn. reflexivity.
+          + cbn. f_equal. rewrite HE2. cbn. reflexivity.
       }
     Qed.
 
-    Definition O_Rel : Rel (tapes bool^+ 1) (unit * tapes bool^+ 1) :=
-      Mk_R_p (ignoreParam (fun tin tout => forall n, tin ≂ n -> tout ≂ O)).
 
-    Definition Constr_O : { M : mTM bool^+ 1 & states M -> unit } :=
-      WriteMove (Some (inl STOP), L) tt;; WriteMove (Some (inr false), L) tt;; WriteMove (Some (inl START), R) tt.
+    Definition O_Rel : Rel (tapes (bool^+) 1) (unit * tapes (bool^+) 1) :=
+      Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ O)).
 
 
-    Lemma Constr_O_Sem : Constr_O ⊨c(5) O_Rel.
+    Definition Constr_O : { M : mTM (bool^+) 1 & states M -> unit } :=
+      WriteMove (Some (inr false), L) tt;;
+      WriteMove (Some (inl START), R) tt.
+
+
+    Lemma Constr_O_Sem : Constr_O ⊨c(3) O_Rel.
     Proof.
       eapply RealiseIn_monotone.
-      {
-        repeat eapply Seq_RealiseIn.
-        - eapply WriteMove_Sem.
-        - eapply WriteMove_Sem.
-        - eapply WriteMove_Sem.
-      }
+      { unfold Constr_O. repeat TM_Correct. }
       { cbn. omega. }
       {
-        intros tin (yout, tout). TMSimp. simpl_tape.
-        destruct H0 as (r1&r2&HE1&HE2). cbn in *.
-        do 2 eexists; split; cbn; eauto.
+        intros tin (yout, tout) H.
+        intros HRight. TMSimp.
+        clear H H1 H2.
+        simpl_tape.
+        destruct HRight as (m&ls&HRight). rewrite HRight. cbn.
+        hnf. rewrite encode_nat_correct. cbn. repeat econstructor.
       }
     Qed.
 
