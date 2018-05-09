@@ -752,6 +752,33 @@ Section MapTape.
     tape_move_right (mapTape t) = mapTape (tape_move_right t).
   Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
 
+  Lemma mapTape_inv_niltap t :
+    mapTape t = niltape _ ->
+    t = niltape _.
+  Proof. intros. destruct t; inv H. repeat econstructor. Qed.
+
+  Lemma mapTape_inv_rightof t l ls :
+    mapTape t = rightof l ls ->
+    exists l' ls', t = rightof l' ls' /\
+              l = g l' /\
+              ls = map g ls'.
+  Proof. intros. destruct t; inv H. repeat econstructor. Qed.
+
+  Lemma mapTape_inv_leftof t r rs :
+    mapTape t = leftof r rs ->
+    exists r' rs', t = leftof r' rs' /\
+              r = g r' /\
+              rs = map g rs'.
+  Proof. intros. destruct t; inv H. repeat econstructor. Qed.
+
+  Lemma mapTape_inv_midtape t ls m rs :
+    mapTape t = midtape ls m rs ->
+    exists ls' m' rs', t = midtape ls' m' rs' /\
+                  ls = map g ls' /\
+                  m = g m' /\
+                  rs = map g rs'.
+  Proof. intros. destruct t; inv H. repeat econstructor. Qed.
+
   (*
   Lemma mapTapes_nth {n : nat} (ts : tapes tau n) (k : Fin.t n) :
     (mapTapes ts)[@k] = mapTape (ts[@k]).
