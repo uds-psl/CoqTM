@@ -50,29 +50,26 @@ Section IsRight.
 
 End IsRight.
 
-(*
-Hint Resolve isLeft_size_isLeft isLeft_size_monotone mapTape_isLeft : tape.
-Hint Resolve isLeft_left isLeft_size_left isLeft_size_right isLeft_isLeft_size : tape.
-*)
 
 
-(** Start symbol, isomorphic to unit *)
+(** Type for start and stop symbols, isomorphic to [bool] *)
 
-Inductive start : Type :=
-| START : start.
+Inductive boundary : Type :=
+| START : boundary
+| STOP  : boundary.
 
-Instance start_eq : eq_dec start.
+Instance boundary_eq : eq_dec boundary.
 Proof. unfold dec. decide equality. Defined.
 
-Instance start_fin : finTypeC (EqType start).
-Proof. split with (enum := [START]). cbn. intros []. cbn. reflexivity. Defined.
+Instance boundary_fin : finTypeC (EqType boundary).
+Proof. split with (enum := [START; STOP]). cbn. intros []; cbn; reflexivity. Defined.
 
 
-
-Notation "sig '^+'" := (FinType(EqType(start + sig))) (at level 20) : type_scope.
+Notation "sig '^+'" := (FinType(EqType(boundary + sig))) (at level 20) : type_scope.
 
 
 Generalizable Variable X Y Z sig tau.
+
 
 Section Fix_Sig.
 
@@ -81,48 +78,41 @@ Section Fix_Sig.
 
   (** ** Value Containing *)
 
+  (** A tape [t] contains a value [x], if [t=midtape rs (inl START) (map inr (encode x) ++ [inl STOP])] for some [rs :
+      list (sig^+)].  This means, the pointer is on the start symbol, right to the pointer is the encoding of [x], which
+      is terminated by the stop symbol [inl STOP].  We write [t ≃ x] for tape [t] contains [x]. *)
+
+  (** We also define a dual predicate for value-containing: reversed value containing.  The difference is that the
+      pointer is on the stop symbol, instead of the start symbol.  This predicate is useful for intermediate states of a
+      machine, for example in the machine [CopyValue], which first has to move the head to the ustop symbol.  We write
+      [t ≂ x] for [t] contains [x] reversed. *)
+
   Section Tape_Contains.
 
     Context `{cx : codeable sig X}.
 
-    Definition tape_contains_r (t: tape (sig^+)) (x : X) (r1: list (sig^+)) :=
-      exists y ys, encode x = (y :: ys : list sig) /\
-              t = midtape (inl START :: r1) (inr y) (map inr ys).
-              
     Definition tape_contains (t: tape (sig^+)) (x : X) :=
-      exists y ys r1, encode x = (y :: ys : list sig) /\
-                 t = midtape (inl START :: r1) (inr y) (map inr ys).
+      exists r1, t = midtape r1 (inl START) (map inr (encode x) ++ [inl STOP]).
 
-    Lemma tape_contains_r_contains (t: tape (sig^+)) (x : X) (r1: list (sig^+)) :
-      tape_contains_r t x r1 -> tape_contains t x.
-    Proof. unfold tape_contains, tape_contains_r. firstorder. Qed.
+    Definition tape_contains_rev (t: tape (sig^+)) (x : X) :=
+      exists r1, t = midtape (map inr (rev (encode x)) ++ inl START :: r1) (inl STOP) nil.
 
 
-    Lemma tape_contains_r_injective (t1 t2 : tape (sig^+)) (x : X) (r1 r2 : list (sig^+)) :
-      tape_contains_r t1 x r1 ->
-      tape_contains_r t2 x r2 ->
-      r1 = r2 ->
-      t1 = t2.
-    Proof. intros (y&ys&H1&H2) (y'&ys'&H1'&H2'). congruence. Qed.
-
-    Lemma tape_contains_empty_right t x y :
-      tape_contains t x ->
-      encode x = [y] ->
+    Lemma tape_contains_rev_isRight t x :
+      tape_contains_rev t x ->
       isRight t.
-    Proof.
-      intros (y'&ys&rs&HCode&->). intros.
-      repeat econstructor. f_equal.
-      enough (ys=nil) as -> by easy. congruence.
-    Qed.
-      
+    Proof. intros (r1&->). repeat econstructor. Qed.
 
   End Tape_Contains.
 
   Arguments tape_contains : simpl never.
-  Arguments tape_contains_r : simpl never.
+  Arguments tape_contains_rev : simpl never.
 
-  Notation "t '≃' x" := (tape_contains t x) (at level 70, no associativity).
-  Notation "t '≃[' c ']' x" := (tape_contains (cx := c) t x) (at level 70, no associativity, only parsing).
+  Notation "t ≃ x" := (tape_contains t x) (at level 70, no associativity).
+  Notation "t ≃( c ) x" := (tape_contains (cx := c) t x) (at level 70, no associativity, only parsing).
+  Notation "t ≂ x" := (tape_contains_rev t x) (at level 70, no associativity).
+  Notation "t ≂( c ) x" := (tape_contains_rev (cx := c) t x) (at level 70, no associativity, only parsing).
+
 
   Section Encodes_Ext.
     Variable X : Type.
@@ -130,20 +120,29 @@ Section Fix_Sig.
 
     Lemma tape_contains_ext (t : tape (sig^+)) (x : X) :
       encode (codeable := cod1) x = encode (codeable := cod2) x ->
-      t ≃[cod1] x -> t ≃[cod2] x.
-    Proof.
-      Set Printing Implicit.
-      intros HExt (y&ys&r1&HE&->). hnf. exists y, ys, r1. split; congruence.
-    Qed.
+      t ≃(cod1) x ->
+      t ≃(cod2) x.
+    Proof. intros HExt (r1&->). rewrite HExt. repeat econstructor. Qed.
 
     Lemma tape_encodes_ext' (t1 t2 : tape (sig^+)) (x : X) :
       encode (codeable := cod1) x = encode (codeable := cod2) x ->
       t1 = t2 ->
-      t1 ≃[cod1] x -> t2 ≃[cod2] x.
-    Proof.
-      Set Printing Implicit.
-      intros Heq -> (y&ys&r1&HE&->). hnf. exists y, ys, r1. split; congruence.
-    Qed.
+      t1 ≃(cod1) x ->
+      t2 ≃(cod2) x.
+    Proof. intros HEq -> (r1&->). rewrite HEq. repeat econstructor. Qed.
+
+    Lemma tape_contains_rev_ext (t : tape (sig^+)) (x : X) :
+      encode (codeable := cod1) x = encode (codeable := cod2) x ->
+      t ≂(cod1) x ->
+      t ≂(cod2) x.
+    Proof. intros HExt (r1&->). rewrite HExt. repeat econstructor. Qed.
+
+    Lemma tape_encodes_rev_ext' (t1 t2 : tape (sig^+)) (x : X) :
+      encode (codeable := cod1) x = encode (codeable := cod2) x ->
+      t1 = t2 ->
+      t1 ≂(cod1) x ->
+      t2 ≂(cod2) x.
+    Proof. intros HEq -> (r1&->). rewrite HEq. repeat econstructor. Qed.
 
   End Encodes_Ext.
 
@@ -192,8 +191,7 @@ Section Fix_Sig.
         Computes_Rel f' <<=2 Computes_Rel f.
       Proof.
         intros tin (yout, tout) HRel. hnf. intros x EncX. specialize (HRel _ EncX). intuition congruence.
-      Qed
-.
+      Qed.
 
       Variable pM : { M : mTM (sig^+) (S (S n)) & states M -> F }.
 
@@ -361,12 +359,11 @@ Arguments Computes2_Rel {sig n X cX Y cY Z cZ F} f x y/.
 Arguments Computes2_T {sig n X cX Y cY} r x y/.
 
 
-Notation "t ≃ x" := (tape_contains t x) (at level 70, no associativity, format "t  ≃  x").
-Notation "t '≃(' c ')' x" := (tape_contains (cx := c) t x) (at level 70, no associativity, only parsing).
+Notation "t ≃ x" := (tape_contains t x) (at level 70, no associativity).
+Notation "t ≃( c ) x" := (tape_contains (cx := c) t x) (at level 70, no associativity, only parsing).
 
-
-Notation "t ≃[ r1 ] x" := (tape_contains_r t x r1) (at level 70, no associativity, format "t  ≃[ r1 ]  x").
-Notation "t '≃[' c ; r1 ']' x" := (tape_contains_r (cx := c) t x r1) (at level 70, no associativity, only parsing).
+Notation "t ≂ x" := (tape_contains_rev t x) (at level 70, no associativity).
+Notation "t ≂( c ) x" := (tape_contains_rev (cx := c) t x) (at level 70, no associativity, only parsing).
 
 
 
@@ -480,10 +477,6 @@ Section Test_Computes_Gen2.
 
 End Test_Computes_Gen2.
  *)
-(* end hide *)
-
-
-(* TODO *)
 
 
 (*
@@ -506,3 +499,5 @@ Section Test_InitTape_Gen0.
 
 End Test_InitTape_Gen0.
  *)
+
+(* end hide *)
