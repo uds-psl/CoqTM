@@ -645,7 +645,7 @@ Eval cbn in ltac:(do_n_times_fin 3 ltac:(fun a => let x := eval simpl in (a : Fi
  *)
 
 Ltac simpl_not_in_add_tapes_step H m' :=
-  let H' := fresh H in
+  let H' := fresh "HIndex_" H in
   unshelve epose proof (H ltac:(getFin m') _) as H';
   [ hnf; unfold add_tapes, Fin_initVect; cbn [tabulate Vector.map Fin.L Fin.R]; vector_not_in
   | cbn [Fin.L Fin.R] in H'
@@ -683,7 +683,7 @@ Abort.
 
 
 Ltac simpl_not_in_app_tapes_step H n m' :=
-  let H' := fresh H in
+  let H' := fresh "HIndex_" H in
   unshelve epose proof (H (Fin.R n ltac:(getFin m')) _) as H';
   [ hnf; unfold app_tapes, Fin_initVect; cbn [tabulate Vector.map Fin.L Fin.R]; vector_not_in
   | cbn [Fin.L Fin.R] in H'
@@ -706,10 +706,10 @@ Ltac simpl_not_in_app_tapes_one :=
 Ltac simpl_not_in_app_tapes := repeat simpl_not_in_app_tapes_one.
 
 Goal True.
-  assert (forall i : Fin.t 10, not_indexes (app_tapes 8 _) i -> i = i) as HInj by firstorder.
+  assert (forall i : Fin.t 10, not_indexes (app_tapes 8 _) i -> i = i) as Inj by firstorder.
   simpl_not_in_app_tapes.
-  Check HInj0 : Fin8 = Fin8.
-  Check HInj1 : Fin9 = Fin9.
+  Check HIndex_Inj : Fin8 = Fin8.
+  Check HIndex_Inj0 : Fin9 = Fin9.
   Fail Check HInj.
 Abort.
 
@@ -738,13 +738,13 @@ Fail Check ltac:(vector_doesnt_contain 42 [|4;8;15;16;23;42|]; idtac "yes!").
 
 
 (*
- * The tactic [simpl_not_in_vector] trys to specialises hypothesises of the form 
+ * The tactic [simpl_not_in_vector] tries to specialises hypothesises of the form 
  * [H : forall i : Fin.t n, not_indexes [F1; ...; Fk] i -> _]
  * with [i := Fin0], ..., [i := Fin(n-1)].
  *)
 
 Ltac simpl_not_in_vector_step H vect n m' :=
-  let H' := fresh H in
+  let H' := fresh "HIndex_" H in
   tryif vector_contains m' vect
   then idtac (* skip m' *)
   else pose proof (H m' ltac:(vector_not_in)) as H'.
@@ -766,12 +766,12 @@ Goal True.
   assert (forall i : Fin.t 10, not_indexes [|Fin8; Fin1; Fin2; Fin3|] i -> i = i) as HInj by firstorder.
   simpl_not_in_vector_one.
   Fail Check HInj.
-  Check (HInj0 : Fin0 = Fin0).
-  Check (HInj1 : Fin4 = Fin4).
-  Check (HInj2 : Fin5 = Fin5).
-  Check (HInj3 : Fin6 = Fin6).
-  Check (HInj4 : Fin7 = Fin7).
-  Check (HInj5 : Fin9 = Fin9).
+  Check (HIndex_HInj : Fin0 = Fin0).
+  Check (HIndex_HInj0 : Fin4 = Fin4).
+  Check (HIndex_HInj1 : Fin5 = Fin5).
+  Check (HIndex_HInj2 : Fin6 = Fin6).
+  Check (HIndex_HInj3 : Fin7 = Fin7).
+  Check (HIndex_HInj4 : Fin9 = Fin9).
 Abort.
 
 
