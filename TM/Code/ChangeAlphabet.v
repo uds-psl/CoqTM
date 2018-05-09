@@ -1,15 +1,19 @@
 Require Import TM.Prelim TM.Code.CodeTM.
 Require Import TM.LiftSigmaTau.
 
+
+Arguments finType_CS (X) {_ _}.
+
+
 Section SurjectInject.
   Variable (sig tau : finType).
   Variable (f : sig -> tau) (g : tau -> option sig).
   Variable def : sig.
   Hypothesis retr : tight_retract f g.
-  
+
   Definition injectSymbols : list sig -> list tau := map f.
   Definition surjectSymbols : list tau -> list sig := map (surject g def).
-  
+
   (* This can be easyly proven without induction. *)
   Lemma surject_inject (str : list sig) (str' : list tau) :
     injectSymbols str = str' ->
@@ -53,7 +57,7 @@ Section SurjectInject.
     - pose proof surject_cons H as (t&str'&->&L1&L2). cbn in *. specialize (IH _ _ L2) as (Str&Str'&->&IH1&IH2).
       inv H. repeat eexists. instantiate (1 := t :: Str). reflexivity. cbn. reflexivity.
   Qed.
-  
+
 End SurjectInject.
 
 
@@ -69,6 +73,17 @@ Lemma map_cons' (A B: Type) (f: A->B) (ls: list A) (y: B) (ys: list B) :
           y = f x /\
           ys = map f xs.
 Proof. induction ls; intros H; cbn in *; inv H; eauto. Qed.
+
+Lemma map_nil (A B: Type) (f: A->B) (ls: list A) :
+  map f ls = nil ->
+  ls = nil.
+Proof. intros H. destruct ls; cbn in *; now inv H. Qed.
+
+Lemma map_nil' (A B: Type) (f: A->B) (ls: list A) :
+  nil = map f ls ->
+  ls = nil.
+Proof. intros H. destruct ls; cbn in *; now inv H. Qed.
+
 
 
 Section MapCode.
@@ -92,7 +107,7 @@ Section MapCode.
   Lemma surjectTape_injectTape t :
     surjectTape (injectTape t) = t.
   Proof.
-    unfold injectTape, surjectTape. unfold LiftSigmaTau.surjectTape. unfold surject. simpl_tape. 
+    unfold injectTape, surjectTape. unfold LiftSigmaTau.surjectTape. unfold surject. simpl_tape.
     erewrite mapTape_ext. apply mapTape_id. intros a. retract_adjoint. reflexivity.
   Qed.
 
@@ -101,72 +116,51 @@ Section MapCode.
   Lemma contains_translate_sig (x : X) (t : tape (sig^+)) :
     t ≃ x <-> (injectTape t) ≃ x.
   Proof.
-    split; intros (y&ys&r1&HCode&HC); subst; cbn in *; hnf.
-    - repeat eexists. cbn. rewrite HCode. cbn. eauto.
-      f_equal. rewrite !map_map. cbn. now eapply map_ext.
-    - eapply map_cons' in HCode as (y'&ys'&HCode&->&->); rename y' into y; rename ys' into ys.
-      do 2 eexists. exists (surjectSymbols g' (inr def) r1). split.
-      + rewrite HCode. eauto.
-      + enough (midtape (inl START :: surjectSymbols TRetr_g (inr def) r1) 
-                        (inr y) (map inr ys) =
-                surjectTape (midtape (inl START :: r1) (inr (f y)) (map inr (map f ys)))) as L.
-        { unfold finType_CS in *. rewrite L. rewrite <- HC. symmetry. now apply surjectTape_injectTape. }
-        { cbn. f_equal.
-          - unfold surject. cbn. retract_adjoint. reflexivity.
-          - rewrite !map_map. apply map_ext. intros. unfold surject. cbn. retract_adjoint. reflexivity.
-        }
+    split; intros (r1&HCode); subst; cbn in *; hnf.
+    - repeat eexists. cbn. f_equal. rewrite map_app, !List.map_map. cbn. reflexivity.
+    - unfold injectTape in HCode.
+      exists (surjectSymbols g' (inr def) r1).
+      apply mapTape_inv_midtape in HCode as (ls'&m'&rs'&->&->&HCode1&HCode2).
+      rewrite map_map in HCode2.
+      destruct m'; cbn in *; inv HCode1. cbv [id] in *. inv H0. clear H.
+      f_equal.
+      + unfold surjectSymbols. rewrite map_map. rewrite <- map_id at 1. eapply map_ext.
+        intros [ | ]; cbn. reflexivity. unfold surject. cbn. retract_adjoint. reflexivity.
+      + symmetry. eapply map_injective with (t := retract_sum_f id f); eauto. now rewrite map_app, !map_map.
   Qed.
 
   Lemma contains_translate_tau1 (x : X) (t : tape (tau^+)) :
     t ≃ x -> surjectTape t ≃ x.
   Proof.
-    intros (y&ys&r1&HCode&->). cbn in *.
-    eapply map_cons' in HCode as (y'&ys'&HCode&->&->); rename y' into y; rename ys' into ys.
-    cbn. hnf. repeat econstructor; cbn; eauto.
-    f_equal.
-    - unfold surject. cbn. retract_adjoint. reflexivity.
-    - rewrite !map_map. apply map_ext. intros. unfold surject. cbn. retract_adjoint. reflexivity.
+    intros (ls&HCode). cbn in *. subst. cbn. rewrite !map_map.
+    repeat econstructor. f_equal. rewrite map_app, !map_map. f_equal.
+    eapply map_ext. intros. unfold surject. cbn. retract_adjoint. reflexivity.
   Qed.
 
-  
   Lemma contains_translate_tau2 (x : X) (t : tape (tau^+)) :
     (~ def el encode x) \/ (forall t' : tau, exists s', g t' = Some s') ->
     surjectTape t ≃ x -> t ≃ x.
   Proof.
-    intros HDef. intros (y&ys&rs&HCode&H). cbn in *.
-    hnf. do 2 eexists. exists (skipn 1 (left t)). split. cbn. rewrite HCode. cbn. reflexivity.
-    unfold surjectTape, LiftSigmaTau.surjectTape in H.
-
-    destruct t; cbn -[skipn] in *; inv H.
-    f_equal.
-    - eapply map_cons' in H1 as (y'&ys'H1&->&H1'&->). cbn in *. f_equal.
-      destruct y'; cbn in *; eauto. now destruct s.
-      unfold surject in H1'. cbn in H1'. destruct (g e0) eqn:E1; inv H1'.
-    - unfold surject in H2. unfold retract_sum_g in H2. destruct e; inv H2.
-      destruct (g e) eqn:E2; inv H0.
-      eapply tretract_g_inv' in E2 as ->; eauto.
-      edestruct HDef as [HDef1|HDef2].
-      { contradict HDef1. rewrite HCode. cbn. tauto. }
-      { specialize (HDef2 e) as (s'&HDef2). congruence. }
-    - rewrite map_map. 
-      change (surjectSymbols (retract_sum_g Some g) (inr def) l0 = map inr ys) in H3.
-      eapply inject_surject in H3 as ->; eauto.
-      { unfold injectSymbols. rewrite map_map. apply map_ext. intros. cbn. reflexivity. }
-      { intros. destruct HDef as [HDef1|HDef2].
-        { (* def ∉ encode x *)
-          unfold retract_sum_g. destruct t; cbn. eauto.
-          destruct (g e0) eqn:E1; cbn; eauto. 
-          contradict HDef1. rewrite HCode. cbn. right.
-          eenough (List.In (inr def) (map inr ys)) as (?&L1&L2)%in_map_iff by now inv L1.
-          rewrite <- H3. eapply in_map_iff. unfold surject. unfold retract_sum_g. cbn.
-          exists (inr e0). rewrite E1. eauto.
-        }
-        { (* retract is full *)
-          unfold retract_sum_g. destruct t; cbn; eauto.
-          destruct (g e0) eqn:E1; eauto.
-          specialize (HDef2 e0) as (?&?). congruence.
-        }
-      }
+    intros HDef. intros (r1&HCode). cbn in *.
+    unfold surjectTape, LiftSigmaTau.surjectTape in HCode.
+    eapply mapTape_inv_midtape in HCode as (ls'&m'&rs'&->&->&HCode1&HCode2).
+    repeat econstructor; cbn in *. f_equal.
+    - unfold surject in HCode1. destruct m'; cbn in *. now inv HCode1. destruct (g e); inv HCode1.
+    - symmetry in HCode2. eapply surject_app in HCode2 as (str&str'&->&L1&L2).
+      eapply inject_surject in L1 as ->; eauto.
+      eapply inject_surject in L2 as ->; eauto.
+      + f_equal. unfold injectSymbols. rewrite !map_map. eapply map_ext. intros. cbn. reflexivity.
+      + unfold surjectSymbols in L2. eapply map_cons' in L2 as (t & ? & -> & ? & -> % map_nil').
+        unfold surject in H. destruct t; cbn in *; swap 1 2. destruct (g e); inv H. inv H.
+        intros [ | ]; intros [ | ]; try congruence; auto. inv H. eexists. cbn. reflexivity.
+      + intros [ | ]; intros He; cbn; eauto.
+        destruct (g e) eqn:E1; cbn; eauto.
+        destruct HDef as [HDef1|HDef2].
+        { contradict HDef1.
+          eenough (List.In (inr def) (map inr (encode x))) as (?&?&?) % in_map_iff by congruence.
+          rewrite <- L1. eapply in_map_iff. eexists. unfold surject. instantiate (1 := inr e). cbn.
+          rewrite E1. auto. }
+        { specialize (HDef2 e) as (?&?). congruence. }
   Qed.
 
 
@@ -230,11 +224,11 @@ Section Computes_Change_Alphabet.
   Variable F : finType.
   Variable (pM : {M : mTM (sig^+) (S (S n_tapes)) & states M -> F}).
 
-  Let retr' := retr' retr. 
+  Let retr' := retr' retr.
 
   Notation "'f''" := TRetr_f.
   Notation "'g''" := TRetr_g.
-  
+
 
   Definition ChangeAlphabet : { M : mTM (tau^+) (S (S n_tapes)) & states M -> F } :=
     LiftSigmaTau.Lift pM retr' (inr defX ::: inr defY ::: Vector.const (inr defX) n_tapes).
@@ -257,7 +251,7 @@ Section Computes_Change_Alphabet.
       unfold ChangeAlphabet. eapply Lift_WRealise; eauto.
     }
     {
-      
+
       hnf. intros tin (yout&tout) HComp.
       cbn. intros x HEncX HOut HIntern.
       cbn in HComp. repeat autounfold with tape in HComp. simpl_vector in HComp. cbn in HComp.
@@ -278,7 +272,7 @@ Section Computes_Change_Alphabet.
         now eapply surjectTape_isRight' in HComp3.
     }
   Qed.
-  
+
 
   (*
   Lemma ChangeAlphabet_Computes_RealiseIn (k : nat) :
@@ -353,7 +347,7 @@ Section Computes2_Change_Alphabet.
   Variable (i1 i2 i3 : Fin.t n_tapes).
   Variable (pM : {M : mTM (sig^+) n_tapes & states M -> F}).
 
-  
+
   Definition GoodCode2 := (forall (x: X) (y : Y), ~ default el encode (sigma := sig) (func x y)) \/ (forall t' : tau, exists s', g t' = Some s').
 
   Lemma ChangeAlphabet_Computes2_WRealise :
