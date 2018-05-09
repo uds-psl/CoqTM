@@ -98,12 +98,23 @@ Section Fix_Sig.
     Proof. unfold tape_contains, tape_contains_r. firstorder. Qed.
 
 
-    Lemma tape_encodes_r_injective (t1 t2 : tape (sig^+)) (x : X) (r1 r2 : list (sig^+)) :
+    Lemma tape_contains_r_injective (t1 t2 : tape (sig^+)) (x : X) (r1 r2 : list (sig^+)) :
       tape_contains_r t1 x r1 ->
       tape_contains_r t2 x r2 ->
       r1 = r2 ->
       t1 = t2.
     Proof. intros (y&ys&H1&H2) (y'&ys'&H1'&H2'). congruence. Qed.
+
+    Lemma tape_contains_empty_right t x y :
+      tape_contains t x ->
+      encode x = [y] ->
+      isRight t.
+    Proof.
+      intros (y'&ys&rs&HCode&->). intros.
+      repeat econstructor. f_equal.
+      enough (ys=nil) as -> by easy. congruence.
+    Qed.
+      
 
   End Tape_Contains.
 

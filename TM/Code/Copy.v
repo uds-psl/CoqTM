@@ -227,6 +227,25 @@ Section Copy.
 End Copy.
 
 
+(** [tape_contains_rev] is similiar to [tape_contains], but the pointer is right, on the last symbol of the encoding. *)
+Section Contains_Reverse.
+  Variable (sig: finType) (X:Type) (cX: codeable sig X).
+
+  Definition tape_contains_rev (t: tape (sig^+)) x :=
+    exists (y : sig) (ys : list sig) (r1 : list (start + sig)),
+      encode x = (ys ++ [y] : list sig) /\ t = midtape (map inr ys ++ inl START :: r1) (inr y) nil.
+  Notation "t ≂ x" := (tape_contains_rev t x) (at level 70).
+
+  Lemma tape_contains_rev_isRight t x :
+    t ≂ x -> isRight t.
+  Proof. intros (y&ys&r1&HCode&->). repeat econstructor. Qed.
+End Contains_Reverse.
+
+Arguments tape_contains_rev {sig X cX} t x.
+Notation "t ≂ x" := (tape_contains_rev t x) (at level 70).
+Notation "t ≂( c ) x" := (tape_contains_rev (cX := c) t x) (at level 70, only parsing).
+
+
 
 (* Move the pointer to the right end *)
 Section Reset.
@@ -235,7 +254,7 @@ Section Reset.
   Definition Reset := Return (MoveToSymbol (fun (s: sig^+) => false)) tt;; Move _ L tt.
 
   Definition Reset_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
-    Mk_R_p (ignoreParam (fun tin tout => forall x:X, tin ≃ x -> isRight tout)).
+    Mk_R_p (ignoreParam (fun tin tout => forall x:X, tin ≃ x -> tout ≂ x)).
 
   Lemma Reset_WRealise : Reset ⊫ Reset_Rel.
   Proof.
@@ -247,13 +266,38 @@ Section Reset.
       cbn in *. unfold finType_CS in *. (* rewrite <- HEncX, <- H2 in HMove1, HMove2. *)
       destruct (rev _).
       - apply (conj HMove2) in HMove1. eapply midtape_tape_local_l_cons_right in HMove1.
-        rewrite HMove1. repeat econstructor.
+        rewrite HMove1. repeat econstructor. all: admit.
       - apply (conj HMove2) in HMove1. eapply midtape_tape_local_l_cons_right in HMove1.
-        rewrite HMove1. repeat econstructor.
+        rewrite HMove1. repeat econstructor. all: admit.
     }
-  Qed.
+  Admitted.
 
 End Reset.
+
+
+(* Copy a value from to an internal (right) tape *)
+Section CopyValue.
+  Variable (sig: finType) (X:Type) (encX: codeable sig X).
+
+  (** The tape "almost" contains the value x, but the pointer of the tape is right. *)
+  Definition tape_contains_rew (t: tape (sig^+)) x :=
+    exists (y : sig) (ys : list sig) (r1 : list (start + sig)),
+      encode x = (ys ++ [y] : list sig) /\ t = midtape (map inr ys ++ inl START :: r1) (inr y) nil.
+  Notation "t ≂ x" := (tape_contains_rew t x) (at level 70).
+
+  Lemma tape_contains_rew_isRight t x :
+    t ≂ x -> isRight t.
+  Proof. intros (y&ys&r1&HCode&->). repeat econstructor. Qed.
+
+
+(** CopyValue := t0:Reset; CopySymbols_L (stop at the start symbol); 1-2: Move(R) *)
+
+
+  
+
+End CopyValue.
+
+
 
 (*
 (* TODO *)
