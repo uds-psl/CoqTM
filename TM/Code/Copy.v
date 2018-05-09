@@ -91,6 +91,19 @@ Section Copy.
         * simpl_list. eapply IH; cbn; eauto.
   Qed.
 
+  Corollary MoveToSymbol_correct_midtape ls rs rs' m x :
+    stop m = false ->
+    (forall x, List.In x rs -> stop x = false) ->
+    stop x = true ->
+    MoveToSymbol_Fun stop (midtape ls m (rs ++ x :: rs')) =
+    midtape (rev rs ++ m :: ls) x rs'.
+  Proof.
+    intros HStopM HStopRs HStopX.
+    unshelve epose proof (@MoveToSymbol_correct (midtape ls m (rs ++ x :: rs')) (m::rs) rs' x _ HStopX eq_refl) as L.
+    { intros ? [->|?]; auto. }
+    cbn in *. now rewrite <- app_assoc in L.
+  Qed.
+    
   Corollary MoveToSymbol_L_correct t str1 str2 x :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
@@ -102,6 +115,19 @@ Section Copy.
     erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L; simpl_tape in *; eauto.
     now apply mirror_tape_inv_midtape in L.
   Qed.
+
+  Corollary MoveToSymbol_L_correct_midtape ls ls' rs m x :
+    stop m = false ->
+    (forall x, List.In x ls -> stop x = false) ->
+    stop x = true ->
+    MoveToSymbol_L_Fun stop (midtape (ls ++ x :: ls') m rs) =
+    midtape ls' x (rev ls ++ m :: rs).
+  Proof.
+    intros HStopM HStopRs HStopX.
+    unshelve epose proof (@MoveToSymbol_L_correct (midtape (ls ++ x :: ls') m rs) (m::ls) ls' x _ HStopX eq_refl) as L.
+    { intros ? [->|?]; auto. }
+    cbn in *. now rewrite <- app_assoc in L.
+  Qed.    
 
   Lemma MoveToSymbol_correct_toRight' (t : tape sig) x str :
     tape_local t = x :: str ->
@@ -144,6 +170,75 @@ Section Copy.
 
   (* The termination times of CopySymbols and MoveTosymbol only differ in the factors *)
 
+  Lemma MoveToSymbol_TermTime_local t r1 sym r2 :
+    tape_local t = r1 ++ sym :: r2 ->
+    stop sym = true ->
+    MoveToSymbol_TermTime stop t <= 4 + 4 * length r1.
+  Proof.
+    revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; try congruence. inv HEnc.
+      rewrite MoveToSymbol_TermTime_equation. destruct (stop a).
+      + omega.
+      + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
+        eapply IHr1; eauto. cbn. now simpl_tape.
+  Qed.
+
+  Corollary MoveToSymbol_TermTime_midtape ls x m rs rs' :
+    stop x = true ->
+    MoveToSymbol_TermTime stop (midtape ls m (rs ++ x :: rs')) <= 8 + 4 * length rs.
+  Proof.
+    intros.
+    rewrite MoveToSymbol_TermTime_local with (r1 := m::rs) (sym := x) (r2 := rs'); auto.
+    cbn [length]. omega.
+  Qed.
+
+  Lemma MoveToSymbol_TermTime_local_l t r1 sym r2 :
+    tape_local_l t = r1 ++ sym :: r2 ->
+    stop sym = true ->
+    MoveToSymbol_L_TermTime stop t <= 4 + 4 * length r1.
+  Proof.
+    revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_L_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; try congruence. inv HEnc.
+      rewrite MoveToSymbol_L_TermTime_equation. destruct (stop a).
+      + omega.
+      + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
+        eapply IHr1; eauto. cbn. now simpl_tape.
+  Qed.
+
+  Corollary MoveToSymbol_TermTime_midtape_l ls ls' x m rs :
+    stop x = true ->
+    MoveToSymbol_L_TermTime stop (midtape (ls ++ x :: ls') m rs) <= 8 + 4 * length ls.
+  Proof.
+    intros.
+    rewrite MoveToSymbol_TermTime_local_l with (r1 := m::ls) (sym := x) (r2 := ls'); auto.
+    cbn [length]. omega.
+  Qed.
+    
+
+  Lemma MoveToSymbol_TermTime_dontstop t :
+    MoveToSymbol_TermTime (fun x : sig => false) t <= 4 + 4 * (|tape_local t|).
+  Proof.
+    functional induction (MoveToSymbol_TermTime (fun _ => false) t); try congruence.
+    - cbn -[plus mult]. destruct rs.
+      + cbn -[plus mult] in *. omega.
+      + cbn -[plus mult] in *. omega.
+    - omega.
+  Qed.
+
+  Lemma MoveToSymbol_L_TermTime_dontstop t :
+    MoveToSymbol_L_TermTime (fun x : sig => false) t <= 4 + 4 * (|tape_local_l t|).
+  Proof.
+    functional induction (MoveToSymbol_L_TermTime (fun _ => false) t); try congruence.
+    - cbn -[plus mult]. destruct ls.
+      + cbn -[plus mult] in *. omega.
+      + cbn -[plus mult] in *. omega.
+    - omega.
+  Qed.
+  
+  
+
   Lemma CopySymbols_TermTime_local t r1 sym r2 :
     tape_local t = r1 ++ sym :: r2 ->
     stop sym = true ->
@@ -174,82 +269,111 @@ Section Copy.
   Qed.
 
 
-  Lemma MoveToSymbols_TermTime_local t r1 sym r2 :
-    tape_local t = r1 ++ sym :: r2 ->
-    stop sym = true ->
-    MoveToSymbol_TermTime stop t <= 4 + 4 * length r1.
-  Proof.
-    revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
-    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_TermTime_equation. rewrite HStop. cbn. omega.
-    - destruct t; cbn in HEnc; try congruence. inv HEnc.
-      rewrite MoveToSymbol_TermTime_equation. destruct (stop a).
-      + omega.
-      + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
-        eapply IHr1; eauto. cbn. now simpl_tape.
-  Qed.
-
-
-  Lemma MoveToSymbols_TermTime_local_l t r1 sym r2 :
-    tape_local_l t = r1 ++ sym :: r2 ->
-    stop sym = true ->
-    MoveToSymbol_L_TermTime stop t <= 4 + 4 * length r1.
-  Proof.
-    revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
-    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_L_TermTime_equation. rewrite HStop. cbn. omega.
-    - destruct t; cbn in HEnc; try congruence. inv HEnc.
-      rewrite MoveToSymbol_L_TermTime_equation. destruct (stop a).
-      + omega.
-      + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
-        eapply IHr1; eauto. cbn. now simpl_tape.
-  Qed.
-
-  
-  Lemma MoveToSymbol_TermTime_dontstop t :
-    MoveToSymbol_TermTime (fun x : sig => false) t <= 4 + 4 * (|tape_local t|).
-  Proof.
-    functional induction (MoveToSymbol_TermTime (fun _ => false) t); try congruence.
-    - cbn -[plus mult]. destruct rs.
-      + cbn -[plus mult] in *. omega.
-      + cbn -[plus mult] in *. omega.
-    - omega.
-  Qed.
-
-  Lemma MoveToSymbol_L_TermTime_dontstop t :
-    MoveToSymbol_L_TermTime (fun x : sig => false) t <= 4 + 4 * (|tape_local_l t|).
-  Proof.
-    functional induction (MoveToSymbol_L_TermTime (fun _ => false) t); try congruence.
-    - cbn -[plus mult]. destruct ls.
-      + cbn -[plus mult] in *. omega.
-      + cbn -[plus mult] in *. omega.
-    - omega.
-  Qed.
-  
 End Copy.
 
 
-(** [tape_contains_rev] is similiar to [tape_contains], but the pointer is right, on the last symbol of the encoding. *)
-Section Contains_Reverse.
+
+(** Move between the start and the end symbol *)
+Section Move.
   Variable (sig: finType) (X:Type) (cX: codeable sig X).
 
-  Definition tape_contains_rev (t: tape (sig^+)) x :=
-    exists (y : sig) (ys : list sig) (r1 : list (start + sig)),
-      encode x = (ys ++ [y] : list sig) /\ t = midtape (map inr ys ++ inl START :: r1) (inr y) nil.
-  Notation "t ≂ x" := (tape_contains_rev t x) (at level 70).
 
-  Lemma tape_contains_rev_isRight t x :
-    t ≂ x -> isRight t.
-  Proof. intros (y&ys&r1&HCode&->). repeat econstructor. Qed.
-End Contains_Reverse.
+  Definition isStop  (s: sig^+) := match s with inl STOP => true | _ => false end.
+  Definition isStart (s: sig^+) := match s with inl START => true | _ => false end.
+  
+  (* Note, that [encode] maps implicitely here *)
+  Lemma stop_not_in (x : X) (s : (sig^+)) :
+    List.In s (encode x) -> isStop s = false.
+  Proof. cbn. intros (?&<-&?) % in_map_iff. reflexivity. Qed.
 
-Arguments tape_contains_rev {sig X cX} t x.
-Notation "t ≂ x" := (tape_contains_rev t x) (at level 70).
-Notation "t ≂( c ) x" := (tape_contains_rev (cX := c) t x) (at level 70, only parsing).
-
+  Lemma start_not_in (x : X) (s : (sig^+)) :
+    List.In s (encode x) -> isStart s = false.
+  Proof. cbn. intros (?&<-&?) % in_map_iff. reflexivity. Qed.
 
 
-(* Move the pointer to the right end *)
+  Definition MoveRight := Return (MoveToSymbol isStop) tt.
+  Definition MoveLeft := Return (MoveToSymbol_L isStart) tt.
+  Definition Reset := MoveRight.
+
+  Definition MoveRight_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
+    Mk_R_p (ignoreParam (fun tin tout => forall x:X, tin ≃ x -> tout ≂ x)).
+  Definition MoveLeft_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
+    Mk_R_p (ignoreParam (fun tin tout => forall x:X, tin ≂ x -> tout ≃ x)).
+  Definition Reset_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
+    Mk_R_p (ignoreParam (fun tin tout => forall x:X, tin ≃ x -> isRight tout)).
+
+  Lemma MoveRight_WRealise : MoveRight ⊫ MoveRight_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold MoveRight. repeat TM_Correct. }
+    {
+      intros tin ((), tout) H. intros x HEncX.
+      TMSimp; clear_trivial_eqs. clear H0 H1.
+      destruct HEncX as (r1&->).
+      erewrite MoveToSymbol_correct_midtape; eauto.
+      - repeat econstructor. now rewrite map_rev.
+      - apply stop_not_in.
+    }
+  Qed.
+  
+  Lemma MoveLeft_WRealise : MoveLeft ⊫ MoveLeft_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold MoveLeft. repeat TM_Correct. }
+    {
+      intros tin ((), tout) H. intros x HEncX.
+      TMSimp; clear_trivial_eqs. clear H0 H1.
+      destruct HEncX as (r1&->).
+      erewrite MoveToSymbol_L_correct_midtape; eauto.
+      - repeat econstructor. now rewrite <- map_rev, rev_involutive.
+      - intros ? (?&<-&? % in_rev) % in_map_iff. reflexivity.
+    }
+  Qed.
+
+  Lemma Reset_WRealise : Reset ⊫ Reset_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold Reset. eapply MoveRight_WRealise. }
+    {
+      intros tin ((), tout) H. intros x HEncX.
+      TMSimp. eapply tape_contains_rev_isRight; eauto.
+    }
+  Qed.
+
+  Lemma MoveRight_Terminates :
+    projT1 MoveRight ↓ (fun tin k => exists x, tin[@Fin0] ≃ x /\ 8 + 4 * length (encode x : list sig) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold MoveRight. repeat TM_Correct. }
+    {
+      intros tin k (x&HEncX&Hk).
+      destruct HEncX as (r1&->).
+      rewrite MoveToSymbol_TermTime_midtape; auto. now rewrite map_length. 
+    }
+  Qed.
+  
+  Lemma MoveLeft_Terminates :
+    projT1 MoveLeft ↓ (fun tin k => exists x, tin[@Fin0] ≂ x /\ 8 + 4 * length (encode x : list sig) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold MoveLeft. repeat TM_Correct. }
+    {
+      intros tin k (x&HEncX&Hk).
+      destruct HEncX as (r1&->).
+      rewrite MoveToSymbol_TermTime_midtape_l; auto. now rewrite map_length, rev_length. 
+    }
+  Qed.
+
+End Move.
+
+
+(* TODO: CopyValue *)
+
+
+(*
+
 Section Reset.
-  Variable (sig: finType) (X:Type) (encX: codeable sig X).
+  Variable (sig: finType) (X:Type) (cX: codeable sig X).
 
   Definition Reset := Return (MoveToSymbol (fun (s: sig^+) => false)) tt;; Move _ L tt.
 
@@ -948,4 +1072,5 @@ Ltac smpl_TM_CopyMoveCode :=
 Smpl Add smpl_TM_CopyMoveCode : TM_Correct.
 *)
 
+*)
 *)
