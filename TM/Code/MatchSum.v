@@ -5,108 +5,103 @@ Require Import TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Compound.TMTac.
 Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 
+
+(* This is good *)
+Local Arguments finType_CS (X) {_ _}.
+
+
 (* Basic pattern matching *)
 Section MatchSum.
 
   Variable X Y : Type.
-  
+
   Variable (sigX sigY : finType).
   Hypothesis (codX : codeable sigX X) (codY : codeable sigY Y).
 
-  Definition MatchSum_Rel : Rel (tapes (bool + (sigX+sigY))^+ 1) (bool * tapes (bool + (sigX+sigY))^+ 1) :=
-    Mk_R_p (if? (fun (tin tout : tape (bool + (sigX+sigY))^+) =>
-                   forall v : X + Y,
-                     tin ≂ v ->
-                     exists x : X, v = inl x /\ tout ≂ x)
-              ! (fun (tin tout : tape ((bool + (sigX+sigY))^+)) =>
-                   forall v : X + Y,
-                     tin ≂ v ->
-                     exists y : Y, v = inr y /\ tout ≂ y)).
+  Definition MatchSum_Rel : Rel (tapes ((bool + (sigX+sigY))^+) 1) (bool * tapes ((bool + (sigX+sigY))^+) 1) :=
+    Mk_R_p (fun tin '(yout, tout) =>
+              forall s : X + Y, tin ≃ s ->
+                           match s with
+                           | inl x => tout ≃ x /\ yout = true
+                           | inr y => tout ≃ y /\ yout = false
+                           end).
+
 
   Definition MatchSum : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> bool } :=
-    MATCH (Read_char _)
-          (fun o => match o with
-                 | Some (inr (inl true))  => Write (inl START) tt;; Move _ R true  (* inl *)
-                 | Some (inr (inl false)) => Write (inl START) tt;; Move _ R false (* inr *)
+    Move _ R tt;; (* skip the [START] symbol *)
+    MATCH (Read_char _) (* read the "constructor" symbol *)
+          (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding partion *)
+                 | Some (inr (inl true))  => Write (inl START) true  (* inl *)
+                 | Some (inr (inl false)) => Write (inl START) false (* inr *)
                  | _ => mono_Nop _ true (* invalid input *)
                  end).
-
-  Eval simpl in ltac:(intros ?e; destruct_shelve e) : (option (bool + (bool + (nat + nat)))) -> _.
 
   Lemma MatchSum_Sem : MatchSum ⊨c(5) MatchSum_Rel.
   Proof.
     eapply RealiseIn_monotone.
     { unfold MatchSum. repeat TM_Correct. }
-    { Unshelve. 8: constructor. all: try omega. 3: constructor. cbn. omega. }
+    { Unshelve. 4,6: constructor. all: cbn. all: omega. }
     {
-      intros tin (yout&tout) H. destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
-      destruct_tapes; cbn in *.
-      destruct h; cbn in *; TMSimp hnf in *; eauto. destruct (map _) in H0; cbn in H0; congruence.
-      destruct e; swap 1 2; cbn in *; TMSimp hnf in *.
-      - destruct s; swap 1 2; TMSimp hnf in *.
-        + destruct s; TMSimp hnf in *.
-          destruct v; cbn in *; inv H0.
-          destruct v; cbn in *; inv H0.
-        + destruct b; TMSimp hnf in *.
-          * destruct v as [vx|vy]; TMSimp. exists vx. split; auto.
-            destruct (encode _) eqn:E; cbn; do 2 eexists; split; cbn; try rewrite E; cbn; auto.
-          * destruct v as [vx|vy]; TMSimp. exists vy. split; auto.
-            destruct (encode _) eqn:E; cbn; do 2 eexists; split; cbn; try rewrite E; cbn; auto.
-      - destruct b; TMSimp hnf in *; destruct v; TMSimp hnf in *.
+      intros tin (yout&tout) H.
+      intros s HEncS. destruct HEncS as (ls&HEncS). TMSimp; clear_trivial_eqs. clear HEncS tin.
+      destruct s as [x|y]; cbn in *; TMSimp.
+      - (* s = inl x *) now repeat econstructor.
+      - (* s = inr y *) now repeat econstructor.
     }
   Qed.
 
   (* Constructors *)
   Section SumConstr.
 
-    Definition ConstrSum_Rel (is_left:bool) : Rel (tapes (bool + (sigX+sigY))^+ 1) (unit * tapes (bool + (sigX+sigY))^+ 1) :=
-      Mk_R_p (
-          ignoreParam
-            (fun tin tout =>
-               if is_left
-               then forall x : X, tape_encodes (Encode_Map codX (@retract_r_l sigX sigY)) tin x ->
-                             tape_encodes (Encode_Sum codX codY) tout (inl x)
-               else forall y : Y, tape_encodes (Encode_Map codY (@retract_r_r sigX sigY)) tin y ->
-                             tape_encodes (Encode_Sum codX codY) tout (inr y))).
 
-    Definition ConstrSum (is_left:bool) : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> unit } :=
-      Move _ L tt;; Write (inr (inl is_left)) tt;; Move _ L tt;; Write (inl START) tt;; Move _ R tt.
+    Definition Constr_inl_Rel : Rel (tapes (bool + (sigX+sigY))^+ 1) (unit * tapes (bool + (sigX+sigY))^+ 1) :=
+      Mk_R_p (ignoreParam (fun tin tout => forall x:X, tin ≃ x -> tout ≃ inl x)).
 
-    Lemma ConstrSum_Sem (is_left:bool) : (ConstrSum is_left) ⊨c(9) (ConstrSum_Rel is_left).
+    Definition Constr_inr_Rel : Rel (tapes (bool + (sigX+sigY))^+ 1) (unit * tapes (bool + (sigX+sigY))^+ 1) :=
+      Mk_R_p (ignoreParam (fun tin tout => forall y:Y, tin ≃ y -> tout ≃ inr y)).
+
+    Definition Constr_inl : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> unit } :=
+      WriteMove (Some (inr (inl true)), L) tt;; Write (inl START) tt.
+
+    Definition Constr_inr : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> unit } :=
+      WriteMove (Some (inr (inl false)), L) tt;; Write (inl START) tt.
+
+
+    Lemma Constr_inl_Sem : Constr_inl ⊨c(3) Constr_inl_Rel.
     Proof.
       eapply RealiseIn_monotone.
-      { unfold ConstrSum. repeat TM_Correct. }
-      { cbn. omega. }
+      { unfold Constr_inl. repeat TM_Correct. }
+      { cbn. reflexivity. }
       {
-        TMSimp. destruct is_left; intros tin (yout&tout); TMSimp.
-        {
-          rewrite tape_match_right_left.
-          destruct H0 as (r1&r2&HE1&HE2).
-          destruct h0; cbn in *; inv HE1. destruct (encode x); cbn in HE2; inv HE2. clear H0.
-          do 2 eexists; split; cbn.
-          - cbn. f_equal.
-          - destruct (encode x); cbn in *; eauto. f_equal. eauto. f_equal. rewrite HE2. cbn. f_equal.
-        }
-        {
-          rewrite tape_match_right_left.
-          destruct H0 as (r1&r2&HE1&HE2).
-          destruct h0; cbn in *; inv HE1. destruct (encode y); cbn in HE2; inv HE2. clear H0.
-          do 2 eexists; split; cbn.
-          - cbn. f_equal.
-          - destruct (encode y); cbn in *; eauto. f_equal. eauto. f_equal. rewrite HE2. cbn. f_equal.
-        }
+        intros tin (()&tout) H.
+        cbn. intros x HEncX. destruct HEncX as (ls&HEncX). TMSimp; clear_trivial_eqs.
+        repeat econstructor. f_equal. simpl_tape. cbn. reflexivity.
       }
     Qed.
-                
-      
+
+    Lemma Constr_inr_Sem : Constr_inr ⊨c(3) Constr_inr_Rel.
+    Proof.
+      eapply RealiseIn_monotone.
+      { unfold Constr_inr. repeat TM_Correct. }
+      { cbn. reflexivity. }
+      {
+        intros tin (()&tout) H.
+        cbn. intros y HEncY. destruct HEncY as (ls&HEncY). TMSimp; clear_trivial_eqs.
+        repeat econstructor. f_equal. simpl_tape. cbn. reflexivity.
+      }
+    Qed.
+
   End SumConstr.
 
 End MatchSum.
 
+(*
 
-(* Reductions *)
+(** ** Reductions *)
 
-Require Import ChangeAlphabet.
+(* TODO!!! *)
+
+Require Import ChangeAlphabet LiftSigmaTau.
 
 Section MatchOption.
 
@@ -119,38 +114,77 @@ Section MatchOption.
   Compute encode None.
   Compute encode (Some 42).
 
-  Definition MatchOption_Rel : Rel (tapes (bool + sigX)^+ 1) (bool * tapes (bool + sigX)^+ 1) :=
-    Mk_R_p (if? (fun (tin tout : tape (bool + sigX)^+) =>
-                   forall v : option X,
-                     tape_encodes (Encode_Option codX ) tin v ->
-                     exists x : X, v = Some x)
-              ! (fun (tin tout : tape (bool + sigX)^+) =>
-                   forall v : option X,
-                     tape_encodes (Encode_Option codX ) tin v ->
-                     v = None)).
+  Let sig := FinType (EqType (bool + (sigX + Empty_set))).
+  Let tau := FinType (EqType (bool + sigX)).
 
-  Let retr' : TRetract (bool + (sigX + Empty_set)) (bool + sigX) .
-  Proof. econstructor. eapply tretract_sum; auto_inj. Defined.
-    
+  Let retr : TRetract sig tau .
+  Proof. econstructor. eapply tretract_sum; eauto. Defined.
+
+  Let retr' : TRetract sig^+ tau^+.
+  Proof. eapply ChangeAlphabet.retr'. eapply retr. Defined.
+
+  Let def : sig := inl default.
+
+  Local Instance codX' : codeable sig X.
+  Proof.
+    eapply Encode_Map. eapply codX. unshelve eapply TRetr_inv. econstructor.
+  Abort.
+
+  Typeclasses eauto := debug.
+  Check _ : codeable tau^+ X.
+
+  Definition MatchOption_Rel : Rel (tapes tau^+ 1) (bool * tapes tau^+ 1) :=
+    Mk_R_p (fun tin '(yout, tout) =>
+              forall o : option X,
+                tin ≃ o ->
+                match o with
+                | Some x => tout ≃ x /\ yout = true
+                | None => tout ≃ tt /\ yout = false
+                end).
+
   Definition MatchOption : { M : mTM (bool + sigX)^+ 1 & states M -> bool }.
   Proof.
-    eapply ChangeAlphabet.ChangeAlphabet. 3: eapply (@MatchSum sigX (FinType (EqType Empty_set))).
-    - cbn. do 2 constructor.
-    - eapply retr'.
+    eapply Lift.
+    - cbn. eapply MatchSum with (sigX := sigX) (sigY := FinType (EqType Empty_set)).
+    - apply TRetract_Retract. apply retr'.
+    - refine [| inr def |].
   Defined.
+
 
   Lemma MatchOption_Sem :
     MatchOption ⊨c(5) MatchOption_Rel.
   Proof.
     eapply RealiseIn_monotone.
+    { unfold MatchOption. eapply Lift_RealiseIn. eapply MatchSum_Sem with (X := X) (Y := Empty_set). }
+    { cbn. reflexivity. }
     {
-      unfold MatchOption.
-      eapply Lift_RealiseIn; swap 1 2. (* todo tac *)
-      - eapply (MatchSum_Sem codX Encode_Unit).
-      - eapply tight_retract_strong. cbn. eapply (ChangeAlphabet.retr' retr').
-    }
-    { omega. }
-    {
+      intros tin (yout&tout) H. intros o HEncO.
+      destruct HEncO as (ls&HEncO). destruct o as [x| ]; TMSimp.
+      - specialize (H (inl x)). TMSimp. spec_assert H as (H&->).
+        { repeat econstructor. cbn. unfold surjectTapes. simpl_vector. TMSimp. f_equal. f_equal.
+          rewrite List.map_app, !List.map_map. cbn. reflexivity. }
+        autounfold with tape in H. simpl_vector in H. cbn in *.
+        split; auto.
+        Typeclasses eauto := debug.
+        Check contains_translate_tau2 (sig := sig) (tau := tau) (retr := retr) (enc_X := codX).
+        cbn in *.
+        unfold tape_contains in *.
+        Set Printing Implicit.
+        cbn in *.
+        .
+
+        Show Existentials.
+
+        instantiate (1 := ltac:(print_goal_cbn)).
+
+
+        
+
+
+
+
+
+      
       hnf. intros tin (yout&tout). intros H. destruct_tapes; cbn in *.
       hnf in *. destruct yout; cbn in *.
       {
@@ -210,7 +244,7 @@ Section MapSum.
   Variable (X Y Z : Type) (codX : codeable sigX X) (codY : codeable sigY Y) (codZ : codeable sigZ Z).
 
   Variable (inputTape outputTape : Fin.t n).
-  
+
   Local Definition sig_add_sum : finType := FinType(EqType((bool+(sigX+sigY))+sigZ)).
   Local Definition sig_add_X : finType := FinType(EqType(sigX+sigZ)).
   Local Definition sig_add_Y : finType := FinType(EqType(sigY+sigZ)).
@@ -243,7 +277,7 @@ Section MapSum.
    * nach rechts gemappte Kodierung [sigX + sigZ] bzw. [sigY + sigZ].  In der Ausgabe darf also kein Symbol von [sigX] bzw. [sigY]
    * stehen. Dementsprechend wird die Injektion von [sigX] bzw. [sigY] als [default]-Symbol gewählt.
    *)
-  
+
   Definition MapSum : { M : mTM (sig_add_sum ^+) n & states M -> unit } :=
     If (ChangeAlphabet (inl (default : bool)) _ (Inject (MatchSum sigX sigY) [|inputTape|]))
       (ChangeAlphabet (inl (default : sigX)) _ M1)
@@ -276,7 +310,7 @@ Section MapSum.
           - unshelve eapply (encodeTranslate_tau2 _) in H1.
             + left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
             + eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
-        } 
+        }
         refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
       }
       {
@@ -289,10 +323,12 @@ Section MapSum.
           - unshelve eapply (encodeTranslate_tau2 _) in H1.
             + left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
             + eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
-        } 
+        }
         refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
       }
     }
   Qed.
-  
+
 End MapSum.
+
+*)
