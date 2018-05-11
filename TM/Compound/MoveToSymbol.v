@@ -179,8 +179,6 @@ Section move_to_symbol.
   Qed.
   Hint Rewrite MoveToSymbol_Fun_tapesToList : tape.
 
-  Lemma tape_move_niltape (t : tape sig) (D : move) : tape_move t D = niltape _ -> t = niltape _.
-  Proof. destruct t, D; cbn; intros; try congruence. destruct l; congruence. destruct l0; congruence. Qed.
 
   Lemma MoveToSymbol_Fun_niltape t : MoveToSymbol_Fun t = niltape _ -> t = niltape _.
   Proof.

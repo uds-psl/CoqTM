@@ -62,6 +62,15 @@ Section MatchNat.
       WriteMove (Some (inr true), L) tt;; Write (inl START) tt.
 
 
+    (*
+    Lemma tape_right_move_left' (sig : finType) rs (x:sig) ls :
+      right (tape_move_left' rs x ls) = x :: ls.
+    Proof. destruct rs; cbn; reflexivity. Qed.
+
+    Hint Rewrite tape_right_move_left' : tape.
+    *)
+
+
     Lemma Constr_S_Sem : Constr_S ⊨c(3) S_Rel.
     Proof.
       eapply RealiseIn_monotone.
@@ -69,8 +78,8 @@ Section MatchNat.
       { cbn. omega. }
       {
         intros tin (yout, tout) H. intros n HEncN.
-        TMSimp. clear all except HEncN. simpl_tape.
-        destruct HEncN as (r1&->). rewrite encode_nat_correct. cbn.
+        TMSimp. clear all except HEncN.
+        destruct HEncN as (r1&->). cbn. simpl_tape. rewrite encode_nat_correct. cbn.
         repeat econstructor. now rewrite encode_nat_correct.
       }
     Qed.

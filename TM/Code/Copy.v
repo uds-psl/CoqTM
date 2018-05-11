@@ -168,7 +168,7 @@ Section Copy.
       destruct str; cbn.
       + rewrite MoveToSymbol_Fun_equation; cbn. simpl_list. cbn. auto.
       + specialize (IHt0 _ _ ltac:(eauto)).
-      destruct IHt0 as (IH1&IH2). rewrite IH1, IH2. split; auto.
+      destruct IHt0 as (IH1&IH2). cbn in *. rewrite IH1, IH2. split; auto.
       destruct str; cbn; simpl_list; cbn; simpl_list; auto.
     - destruct t eqn:E; cbn in *; auto; congruence.
   Qed.

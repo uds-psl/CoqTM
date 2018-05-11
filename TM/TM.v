@@ -66,18 +66,6 @@ we are on the right extremity of a non-empty tape (right overflow). *)
       | midtape _ _ r => r
       end.
 
-  Definition mk_tape ls c rs :=
-    match c with
-    | Some c => midtape ls c rs
-    | None => match ls with
-             | List.nil => match rs with
-                          | List.nil => niltape
-                          | r :: rs => leftof r rs
-                          end
-             | l :: ls => rightof l ls
-             end
-    end.
-
   (** ** Definition of moves *)
   
   Inductive move : Type := L : move | R : move | N : move.
@@ -106,34 +94,50 @@ we are on the right extremity of a non-empty tape (right overflow). *)
 
   (** Definition of tape movements *)
 
+  Definition tape_move_right' ls a rs :=
+    match rs with
+    | nil => rightof a ls
+    | r::rs' => midtape (a::ls) r rs'
+    end.
+
   Definition tape_move_right :=
     fun (t : tape) =>
       match t with
-        niltape => niltape
+      | niltape => niltape
       | rightof _ _ =>t
       | leftof a rs =>midtape  [ ] a rs
-      | midtape ls a rs =>
-        match rs with
-          []  => rightof  a ls
-        | a0 :: rs0 => midtape (a::ls) a0 rs0
-        end
+      | midtape ls a rs => tape_move_right' ls a rs
       end.
 
+
+  Definition tape_move_left' ls a rs :=
+    match ls with
+    | nil => leftof a rs
+    | l::ls' => midtape ls' l (a::rs)
+    end.
+  
   Definition tape_move_left :=
     fun (t : tape) =>
       match t with 
-        niltape => niltape 
+      | niltape => niltape 
       | leftof _ _ => t
       | rightof a ls => midtape ls a [ ]
-      | midtape ls a rs => 
-        match ls with 
-          [] => leftof a rs
-        | a0 :: ls0 => midtape ls0 a0 (a::rs)
-        end
+      | midtape ls a rs => tape_move_left' ls a rs
       end. 
 
-  Definition tape_move := fun (t : tape) (m : move) =>
-                            match m with  R => tape_move_right t | L => tape_move_left t | N => t end.
+  (*
+  (* This shouldn't reduce with [cbn], because we don't know how [l] looks like. *)
+  Eval cbn in (tape_move_left (midtape _ _ _)).
+  (* This should reduce. *)
+  Eval cbn in (tape_move_left (midtape (_::_) _ _)).
+  *)
+
+  
+  Definition tape_move (t : tape) (m : move) :=
+    match m with
+    | R => tape_move_right t
+    | L => tape_move_left t | N => t
+    end.
 
   (* Rewriting Lemmas *)
 
@@ -169,21 +173,21 @@ we are on the right extremity of a non-empty tape (right overflow). *)
 
   (** Writing on the tape *)
 
-  Definition tape_write := fun (t : tape) (s : option sig) =>
-                             match s with 
-                               None => t
-                             | Some s0 => midtape (left t) s0 (right t)
-                             end.
+  Definition tape_write (t : tape) (s : option sig) :=
+    match s with 
+    | None => t
+    | Some s0 => midtape (left t) s0 (right t)
+    end.
 
   (** A single step of the machine *)
   
-  Definition tape_move_mono := fun (t : tape) (mv : option sig * move) =>
-                                 tape_move (tape_write t (fst mv)) (snd mv).
+  Definition tape_move_mono (t : tape) (mv : option sig * move) :=
+    tape_move (tape_write t (fst mv)) (snd mv).
 
   (** One step on each tape *)
   
-  Definition tape_move_multi := fun (n : nat) (ts : tapes n) (actions : Vector.t (option sig * move) n)=>
-                                  Vector.map2 tape_move_mono ts actions.
+  Definition tape_move_multi (n : nat) (ts : tapes n) (actions : Vector.t (option sig * move) n) :=
+    Vector.map2 tape_move_mono ts actions.
 
   (** ** Configurations of TMs *)
   
@@ -199,18 +203,17 @@ we are on the right extremity of a non-empty tape (right overflow). *)
 
   (** ** Machine execution *)
   
-  Definition step :=
-    fun n (M:mTM n) (c:mconfig (states M) n) => 
-      let (news,actions) := trans (cstate c, current_chars  (ctapes c)) in 
-      mk_mconfig news (tape_move_multi (ctapes c) actions).
+  Definition step n (M:mTM n) (c:mconfig (states M) n) :=
+    let (news,actions) := trans (cstate c, current_chars  (ctapes c)) in 
+    mk_mconfig news (tape_move_multi (ctapes c) actions).
 
   (** Run the machine i steps until it halts *)
-  Definition loopM := fun n (M :mTM n) (i : nat) cin =>
-                        loop i (@step n M) (fun c => halt (cstate c)) cin.
+  Definition loopM n (M :mTM n) (i : nat) cin :=
+    loop i (@step n M) (fun c => halt (cstate c)) cin.
   
   (** Initial configuration *)  
-  Definition initc := fun n (M : mTM n) tapes =>
-                        mk_mconfig (n := n) (@start n M) tapes.
+  Definition initc n (M : mTM n) tapes :=
+    mk_mconfig (n := n) (@start n M) tapes.
 
   (** ** Realisation of machines *)
 
@@ -823,68 +826,35 @@ Hint Rewrite mapTape_local : tape.
 
 
 
-(* Auxiliary Lemmas for matching on tapes or symbol lists, when the tape moves left and right *)
 Section MatchTapes.
   Variable sig : finType.
-  
-  Lemma tape_match_right_left (t : tape sig) (x : sig) :
-    right
-      match left t with
-      | [] => leftof x (right t)
-      | a :: rs => midtape rs a (x :: right t)
-      end =
-    x :: right t.
-  Proof. destruct t; cbn; auto. destruct l; cbn; auto. Qed.
 
-  Lemma tape_match_left_right (t : tape sig) (x : sig) :
-    left
-      match right t with
-      | [] => rightof x (left t)
-      | a :: rs => midtape (x :: left t) a rs
-      end =
-    x :: left t.
-  Proof. destruct t; cbn; auto. destruct l0; cbn; auto. Qed.
+  Lemma tape_right_move_left' ls (x : sig) rs :
+    right (tape_move_left' ls x rs) = x :: rs.
+  Proof. destruct ls; cbn; reflexivity. Qed.
 
-  Lemma tape_match_symbols_left (l : sig) (ls : list sig) (xs : list sig) :
-    left
-      match xs with
-      | [] => rightof l ls
-      | a :: rs' => midtape (l :: ls) a rs'
-      end = l :: ls.
-  Proof. destruct xs; cbn; auto. Qed.
+  Lemma tape_left_move_right' ls (x : sig) rs :
+    left (tape_move_right' ls x rs) = x :: ls.
+  Proof. destruct rs; cbn; reflexivity. Qed.
 
-  Lemma tape_match_symbols_right (r : sig) (rs : list sig) (xs : list sig) :
-    right
-      match xs with
-      | [] => leftof r rs
-      | a :: ls' => midtape ls' a (r :: rs)
-      end = r :: rs.
-  Proof. destruct xs; cbn; auto. Qed.
+  Lemma tape_local_move_right' rs (x : sig) ls :
+    tape_local (tape_move_right' rs x ls) = ls.
+  Proof. destruct ls; cbn; reflexivity. Qed.
 
-  Lemma tape_match_symbols_tape_local (l : sig) (ls : list sig) (xs : list sig) :
-    tape_local
-      match xs with
-      | [] => rightof l ls
-      | a :: rs' => midtape (l :: ls) a rs'
-      end = xs.
-  Proof. destruct xs; cbn; auto. Qed.
+  Lemma tape_local_l_move_left' rs (x : sig) ls :
+    tape_local_l (tape_move_left' rs x ls) = rs.
+  Proof. destruct rs; cbn; reflexivity. Qed.
 
-  Lemma tape_match_symbols_tape_local_l (r : sig) (rs : list sig) (xs : list sig) :
-  tape_local_l
-    match xs with
-    | [] => leftof r rs
-    | a :: ls' => midtape ls' a (r :: rs)
-    end = xs.
-  Proof. destruct xs; cbn; auto. Qed.
-  
 End MatchTapes.
 
-Hint Rewrite tape_match_right_left : tape.
-Hint Rewrite tape_match_left_right : tape.
-Hint Rewrite tape_match_symbols_left : tape.
-Hint Rewrite tape_match_symbols_right : tape.
-Hint Rewrite tape_match_symbols_tape_local : tape.
-Hint Rewrite tape_match_symbols_tape_local_l : tape.
+Hint Rewrite tape_right_move_left' : tape.
+Hint Rewrite tape_left_move_right' : tape.
+Hint Rewrite tape_local_move_right' : tape.
+Hint Rewrite tape_local_l_move_left' : tape.
+
+
+
+
 
 Arguments current_chars : simpl never.
 Hint Unfold current_chars : tape.

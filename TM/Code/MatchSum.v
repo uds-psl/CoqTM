@@ -86,8 +86,14 @@ Section MatchSum.
       { cbn. reflexivity. }
       {
         intros tin (()&tout) H.
+        Arguments tape_move : simpl never.
         cbn. intros y HEncY. destruct HEncY as (ls&HEncY). TMSimp; clear_trivial_eqs.
-        repeat econstructor. f_equal. simpl_tape. cbn. reflexivity.
+        cbv [tape_move_mono] in *. cbn in *.
+        Arguments tape_move { _ _ _ } /.
+        cbn [tape_move_mono tape_move] in *.
+        
+        
+        repeat econstructor. f_equal. simpl_tape. cbn. simpl_tape. reflexivity.
       }
     Qed.
 
