@@ -65,7 +65,7 @@ Instance boundary_fin : finTypeC (EqType boundary).
 Proof. split with (enum := [START; STOP]). cbn. intros []; cbn; reflexivity. Defined.
 
 
-Notation "sig '^+'" := (FinType(EqType(boundary + sig))) (at level 20) : type_scope.
+Notation "sig '^+'" := (FinType(EqType(boundary + sig))) (at level 0) : type_scope.
 
 
 Generalizable Variable X Y Z sig tau.
