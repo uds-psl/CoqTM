@@ -67,6 +67,7 @@ Proof.
 Qed.
 
 
+(* TODO: -> Base *)
 Lemma map_cons' (A B: Type) (f: A->B) (ls: list A) (y: B) (ys: list B) :
   map f ls = y :: ys ->
   exists x xs, ls = x :: xs /\

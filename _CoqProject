@@ -35,10 +35,10 @@ TM/Code/ChangeAlphabet.v
 TM/Code/Copy.v
 TM/Code/MatchNat.v
 TM/Code/MatchSum.v
+TM/Code/MatchList.v
 
 # Defect files
 # TM/Code/MatchProd.v
-# TM/Code/MatchList.v
 # TM/Code/NatCounter.v
 TM/Code/NatTM.v
 

@@ -1,4 +1,4 @@
-(* Product destruct and construction *)
+(* List destruct and construction *)
 
 Require Import TM.Code.CodeTM.
 Require Import TM.Basic.Mono TM.Basic.Nop TM.Basic.Multi.
@@ -8,337 +8,271 @@ Require Import TM.Compound.TMTac.
 Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 Require Import TM.Code.Copy.
 
+
+(* This is good *)
+Arguments finType_CS (X) {_ _}.
+
+
+
+(* TODO: -> base *)
+Lemma rev_eq_nil (Z: Type) (l: list Z) :
+  rev l = nil -> l = nil.
+Proof. intros. destruct l; cbn in *. reflexivity. symmetry in H. now apply app_cons_not_nil in H. Qed.
+
+Lemma map_eq_nil (Y Z: Type) (f: Y->Z) (l: list Y) :
+  map f l = nil -> l = nil.
+Proof. intros. destruct l; cbn in *. reflexivity. congruence. Qed.
+
+Lemma map_eq_cons (A B: Type) (f: A->B) (ls: list A) (y: B) (ys: list B) :
+  map f ls = y :: ys ->
+  exists x xs, ls = x :: xs /\
+          y = f x /\
+          ys = map f xs.
+Proof. induction ls; intros H; cbn in *; inv H; eauto. Qed.
+
+Lemma map_eq_app (A B: Type) (f: A -> B) (ls : list A) (xs ys : list B) :
+  map f ls = xs ++ ys ->
+  exists ls1 ls2, ls = ls1 ++ ls2 /\
+             xs = map f ls1 /\
+             ys = map f ls2.
+Proof.
+  revert xs ys. induction ls; intros; cbn in *.
+  - symmetry in H. apply app_eq_nil in H as (->&->). exists nil, nil. cbn. tauto.
+  - destruct xs; cbn in *.
+    + exists nil. eexists. repeat split. cbn. now subst.
+    + inv H. specialize IHls with (1 := H2) as (ls1&ls2&->&->&->).
+      repeat econstructor. 2: instantiate (1 := a :: ls1). all: reflexivity.
+Qed.
+  
+
+Lemma rev_eq_cons (A: Type) (ls: list A) (x : A) (xs: list A) :
+  rev ls = x :: xs ->
+  ls = rev xs ++ [x].
+Proof. intros H. rewrite <- rev_involutive at 1. rewrite H. cbn. reflexivity. Qed.
+
+
+
 Section MatchList.
 
-  (*
-  Section Test.
-
-    Let f {tau : Type} (x : (bool + (tau + (bool + tau)))) : (bool + tau) :=
-      match x with
-      | inl x => inl x
-      | inr (inl y) => inr y
-      | inr (inr (inl y)) => inl y
-      | inr (inr (inr y)) => inr y
-      end.
-
-    Let g {tau : Type} (x: bool + tau) : option (bool + (tau + (bool + tau))) :=
-      match x with
-      | inl y => Some (inl y)
-      | inr y => Some (inr (inl y))
-      end.
-
-    Section Test.
-      (* The encoding of a list is a concatenation of encoding of options *)
-
-      Compute encode [].
-      Compute encode None.
-      Compute encode [1;2;3] : list (bool + bool).
-      Compute encode (true, (1, [2;3])).
-      Compute encode (true, (1, [2;3])) : list (bool + (bool + (bool + bool))).
-      Compute encode (true, (tt, [tt;tt])) : list (bool + (unit + (bool + unit))).
-      Compute map f (encode (true, (tt, [tt;tt])) : list (bool + (unit + (bool + unit)))).
-
-      Goal encode [1;2;3] = encode (Some 1) ++ encode (Some 2) ++ encode (Some 3) ++ encode None.
-      Proof. cbn. trivial. Qed.
-
-      Goal encode [1;2;3] = map f (encode (true, (1, [2; 3]))).
-      Proof. cbn. trivial. Qed.
-
-      Goal encode [tt;tt;tt] = map f (encode (true, (tt, [tt;tt]))).
-      Proof. cbn. trivial. Qed.
-      
-    End Test.
-
-    Variable X : Type.
-    Variable (sigX : finType).
-    Hypothesis (codX : codeable sigX X).
-
-    Lemma encode_f_cons (x : X) (xs : list X) :
-      map f (encode (true, (x, xs))) = encode (x :: xs).
-    Proof.
-      cbn. f_equal. repeat rewrite !map_app, !List.map_map. cbn. f_equal.
-      erewrite map_ext.
-      - eapply map_id.
-      - intuition.
-    Qed.
-
-    Lemma retr' (tau : Type) : retract (@f tau) (@g tau).
-    Proof.
-      hnf. intros x. intuition; cbn; auto.
-    Abort.
-
-  End Test.
-   *)
+  (** ** Definition *)
 
 
   Variable X : Type.
   Variable (sigX : finType).
   Hypothesis (codX : codeable sigX X).
 
-  Definition M1 : { M : mTM (bool + sigX)^+ 1 & states M -> bool } :=
-    MATCH (Read_char _)
-          (fun o => match o with
-                 | Some (inr (inl true))  => mono_Nop _ true  (* inl *)
-                 | Some (inr (inl false)) => mono_Nop _ false (* inr *)
-                 | _ => mono_Nop _ true (* invalid input *)
+  Definition stop (s: (bool+sigX)^+) :=
+    match s with
+    | inr (inl _) => true
+    | _ => false
+    end.
+  
+
+  Definition Skip_cons : { M : mTM (bool + sigX)^+ 1 & states M -> unit } :=
+    Move _ R tt;;
+    Return (MoveToSymbol stop) tt.
+
+
+  Definition M1 : { M : mTM (bool + sigX)^+ 2 & states M -> unit } :=
+    Inject Skip_cons [|Fin0|];;
+    Inject (Write (inl STOP) tt) [|Fin1|];;
+    MovePar _ L L tt;;
+    CopySymbols_L stop id;;
+    Inject (Write (inl START) tt) [|Fin1|].
+
+  Definition MatchList : { M : mTM (bool + sigX)^+ 2 & states M -> bool } :=
+    Inject (Move _ R tt) [|Fin0|];;
+    MATCH (Inject (Read_char _) [|Fin0|])
+          (fun s => match s with
+                 | Some (inr (inl false)) => (* nil *)
+                   Inject (Move _ L false) [|Fin0|]
+                 | Some (inr (inl true)) => (* cons *)
+                   M1;; 
+                   Inject Skip_cons [|Fin0|];;
+                   Inject (Move _ L tt;; Write (inl START) true) [|Fin0|]
+                 | _ => Nop _ _ true (* invalid input *)
                  end).
 
-  Let R1 : Rel (tapes (bool+sigX)^+ 1) (bool * tapes (bool+sigX)^+ 1) :=
+
+  (** ** Corectness *)
+
+  Definition Skip_cons_Rel : Rel (tapes (bool+sigX)^+ 1) (unit * tapes (bool+sigX)^+ 1) :=
     Mk_R_p (
-        (if? (fun (tin tout : tape (bool+sigX)^+) =>
-                   forall (lst : list X),
-                     tin ≂ lst ->
-                     exists (head : X) (tail : list X),
-                       lst = head :: tail)
-              ! (fun (tin tout : tape (bool+sigX)^+) =>
-                   forall (lst : list X),
-                     tin ≂ lst ->
-                     lst = nil)
-        ) ∩ ignoreParam (@IdR _)). 
+        ignoreParam (
+            fun tin tout =>
+              forall ls rs (x : X) (l : list X),
+                tin = midtape (inl START :: ls) (inr (inl true))
+                              (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) ->
+                match l with
+                | nil =>
+                  tout = midtape (rev (map inr (encode x)) ++ inr (inl true) :: inl START :: ls)
+                                 (inr (inl false)) (inl STOP :: rs)
+                | x'::l' =>
+                  tout = midtape (rev (map inr (encode x)) ++ inr (inl true) :: inl START :: ls)
+                                 (inr (inl true)) (map inr (encode x') ++ map inr (encode l') ++ inl STOP :: rs)
+                end)).
 
-  Lemma M1_Sem : M1 ⊨c(5) R1.
+
+  Lemma Skip_cons_WRealise : Skip_cons ⊫ Skip_cons_Rel.
   Proof.
-    eapply RealiseIn_monotone.
+    eapply WRealise_monotone.
+    { unfold Skip_cons. repeat TM_Correct. }
     {
-      eapply Match_RealiseIn. cbn. eapply read_char_sem.
-      instantiate (2 := fun o : option (bool + sigX)^+ =>
-                          match o with Some (inr (inl true)) => _ | Some (inr (inl false)) => _ | _ => _ end).
-      cbn. intros [ s | ]; cbn.
-      - destruct s as [ start | s]; cbn.
-        + eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
-        + destruct s as [cons | xy]; swap 1 2; cbn.
-          * eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
-          * destruct cons; cbn; eapply mono_Nop_Sem.
-      - eapply RealiseIn_monotone'. eapply mono_Nop_Sem. omega.
+      intros tin ((), tout) H. intros ls rs x l HTin. TMSimp. clear_trivial_eqs. clear H3 HTin H1 H2.
+      destruct l as [ | x' l']; cbn.
+      - destruct (encode x : list sigX) eqn:E; cbn.
+        + rewrite MoveToSymbol_Fun_equation; cbn. reflexivity.
+        + rewrite MoveToSymbol_correct_midtape; cbn; eauto.
+          * now rewrite <- !app_assoc.
+          * rewrite List.map_map. intros [ | ] (?&H1&H2) % in_map_iff; now inv H1.
+      - destruct (encode x : list sigX) eqn:E; cbn.
+        + destruct l'; cbn.
+          * rewrite MoveToSymbol_Fun_equation. cbn. f_equal. now rewrite !List.map_app, <- List.app_assoc.
+          * rewrite MoveToSymbol_Fun_equation.
+            cbn. f_equal. rewrite !List.map_map, !List.map_app, !List.map_map, <- List.app_assoc. cbn. f_equal.
+            now rewrite List.map_app, !List.map_map.
+        + rewrite MoveToSymbol_correct_midtape; cbn; eauto.
+          * rewrite <- app_assoc. f_equal. now rewrite map_app, <- app_assoc.
+          * rewrite List.map_map. intros ? (?&?&?) % in_map_iff; subst. cbn. reflexivity.
     }
-    { cbn. omega. }
-    {
-      subst R1.
-      intros tin (yout&tout) H. destruct H as (H1&(t&(H2&H3)&H4)); hnf in *. subst.
-      split.
-      {
-        destruct_tapes; cbn in *.
-        destruct h; cbn in *; TMSimp hnf in *; eauto. destruct (map _) in H0; cbn in H0; congruence.
-        destruct e; swap 1 2; cbn in *; TMSimp hnf in *.
-        - destruct s; swap 1 2; cbn in *; TMSimp hnf in *.
-          + destruct lst; cbn in *; inv H0.
-          + destruct b; cbn in *; TMSimp; unfold encode_list in *.
-            * destruct lst; TMSimp hnf in *. eauto.
-            * destruct lst; TMSimp hnf in *. eexists; split; eauto.
-        - destruct lst; cbn in *; inv H0; eauto.
-      }
-      {
-        destruct_tapes; cbn in *.
-        destruct h; cbn in *; TMSimp; eauto. destruct e; cbn in *; TMSimp; auto.
-        destruct s; cbn in *; TMSimp; auto.
-        destruct b; cbn in *; TMSimp; auto.
-      }
-    }
-  Qed.
-
-  Definition stop_X' :=
-    fun (x : (bool+sigX)^+) =>
-      match x with
-      | inr (inr x) => false
-      | _ => true (* Stop at the next constructor or start/end symbol *)
-      end.
-
-  (* Copy the head encoding to tape 1 and set new start token on tape 0. *)
-  Let M2 : { M : mTM (bool+sigX)^+ 2 & states M -> unit } :=
-    Inject (Move _ R tt) [|Fin.F1|];;
-    CopySymbols stop_X' id;;
-    Inject (
-      Move _ L tt;;
-      WriteMove (Some (inl START), R) tt (* write the start symbol *)
-    ) [|Fin.F1|].
-
-  (* Copy the symbols from tape 0 to tape 1, finish tape 0 but not don't initialise tape 1 *)
-  Let R2 : Rel (tapes (bool + sigX)^+ 2) (unit * tapes (bool + sigX)^+ 2) :=
-    ignoreParam (
-        fun (tin tout : tapes (bool + sigX)^+ 2) =>
-          forall (head : X) (tail : list X),
-            tin [@Fin.F1] ≂ head :: tail ->
-            tout[@Fin.F1] ≂ tail /\
-            left (tout[@Fin.FS Fin.F1]) =
-            rev (map inr (map inr (encode head : list sigX))) ++ left (tin[@Fin.FS Fin.F1])
-      ).
-
-
-  Lemma CopySymbols_cons_first (head : X) (tail : list X) tltr tl' tr' rs' :
-    (tl', tr') = CopySymbols_Fun stop_X' id tltr ->
-    tape_local (fst tltr) = map inr (map inr (encode head)) ++ map inr (encode tail) ++ (inl STOP :: rs') ->
-    tape_local (tl') = map inr (encode tail) ++ (inl STOP :: rs').
-  Proof.
-    intros. destruct tail as [ | ctail tail'] eqn:E1; cbn in *.
-    - unshelve erewrite (CopySymbols_pair_first (stop := stop_X') (tltr := tltr) (x := inr (inl false)) _ _ H0 H); eauto.
-      + rewrite List.map_map. intros x (? & <- & ?) % in_map_iff. cbn. trivial.
-    - unshelve erewrite (CopySymbols_pair_first (stop := stop_X') (tltr := tltr) (x := inr (inl true)) _ _ H0 H); eauto.
-      + rewrite List.map_map. intros x (? & <- & ?) % in_map_iff. cbn. trivial.
-  Qed.
-
-  Lemma CopySymbols_cons_second (head : X) (tail : list X) tltr tl' tr' rs' :
-    (tl', tr') = CopySymbols_Fun stop_X' id tltr ->
-    tape_local (fst tltr) = map inr (map inr (encode head)) ++ map inr (encode tail) ++ (inl STOP :: rs') ->
-    left tr' = map inr (map inr (rev (encode head : list sigX))) ++ left (snd tltr).
-  Proof.
-    intros. rewrite !map_rev. destruct tail as [ | ctail tail'] eqn:E1; cbn in *.
-    - unshelve epose proof (CopySymbols_pair_second (stop := stop_X') (tltr := tltr) (x := inr (inl false)) _ _ H0 H) as L; eauto.
-      + intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
-      + apply tape_local_l_cons_iff in L as (L1&L2). rewrite L2. trivial.
-    - unshelve epose proof (CopySymbols_pair_second (stop := stop_X') (tltr := tltr) (x := inr (inl true)) _ _ H0 H) as L; eauto.
-      + intuition. eapply in_map_iff in H1 as (?&<-& (?&<-&?)%in_map_iff). trivial.
-      + apply tape_local_l_cons_iff in L as (L1&L2). rewrite L2. trivial.
   Qed.
   
-  Lemma M2_WRealise : M2 ⊫ R2.
-  Proof.
-    subst M2 R1 R2.
-    eapply WRealise_monotone.
-    {
-      do 2 try eapply Seq_WRealise.
-      all: try (eapply Inject_WRealise; [vector_dupfree| ]).
-      3: do 1 eapply Seq_WRealise.
-      all: try (eapply Realise_WRealise, RealiseIn_Realise;
-                first [ eapply Move_Sem | eapply WriteMove_Sem | eapply Write_Sem ]).
-      - eapply CopySymbols_WRealise.
-    }
-    {
-      hnf. intros. hnf. destruct y. intros head tail.
-      TMSimp.
-      destruct H0 as (r1&r2&HE1&HE2). cbn in *.
-      destruct h1; cbn in *; inv HE1; [ do 2 destruct (map _); cbn in H3; congruence | inv H3]. clear H. 
-      split.
-      - 
-        epose proof CopySymbols_cons_first H1 (head := head) (tail := tail) (rs' := r2) as L1. cbn in *.
-        simpl_tape in L1. spec_assert L1.
-        {
-          inv HE2. now simpl_list.
-        }
-        hnf.
-        do 2 eexists; split; cbn.
-        + eapply tape_match_left_right.
-        + erewrite <- L1. destruct h2; cbn in *; auto. destruct (encode_list _); cbn in *; congruence. destruct l; cbn; auto.
-      -
-        epose proof CopySymbols_cons_second H1 (head := head) (tail := tail) (rs' := r2) as L1. cbn in *.
-        spec_assert L1.
-        {
-          inv HE2. simpl_tape. now simpl_list.
-        }
-        hnf. now rewrite !map_rev, List.map_map in *.
-    }
-  Qed.
 
-  Let M3 : { M : mTM (bool+sigX)^+ 2 & states M -> unit } :=
-    Inject (WriteMove (Some (inl START), R) tt) [|Fin.FS Fin.F1|];;
-    M2;;
-    Inject (
-      WriteMove (Some (inl STOP), L) tt;;
-      MoveToSymbol_L stop_X';;
-      Move _ R tt
-    ) [|Fin.FS Fin.F1|].
 
-  Let R3 : Rel (tapes (bool+sigX)^+ 2) (unit * tapes (bool+sigX)^+ 2) :=
+  Definition M1_Rel : Rel (tapes (bool+sigX)^+ 2) (unit * tapes (bool+sigX)^+ 2) :=
     ignoreParam (
-        fun (tin tout : tapes (bool+sigX)^+ 2) =>
-          forall (head : X) (tail : list X),
-            tin [@Fin.F1] ≂ head :: tail ->
-            tout[@Fin.F1] ≂ tail /\
-            tout[@Fin.FS Fin.F1] ≂ head
-      ).
+        fun tin tout =>
+          forall ls rs (x : X) (l : list X),
+            isRight tin[@Fin1] ->
+            tin[@Fin0] = midtape (inl START :: ls) (inr (inl true))
+                                 (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) ->
+            tout[@Fin0] = tin[@Fin0] /\
+            tout[@Fin1] ≃ x).
+            
 
 
-  Lemma M3_WRealise : M3 ⊫ R3.
+  
+  Lemma M1_WRealise : M1 ⊫ M1_Rel.
   Proof.
     eapply WRealise_monotone.
+    { unfold M1. repeat TM_Correct. eapply Skip_cons_WRealise. }
     {
-      do 2 try eapply Seq_WRealise.
-      all: try (eapply Inject_WRealise; [vector_dupfree| ]).
-      3: repeat eapply Seq_WRealise.
-      all: try (eapply Realise_WRealise, RealiseIn_Realise;
-                first [ eapply Move_Sem | eapply WriteMove_Sem | eapply Write_Sem ]).
-      - eapply M2_WRealise.
-      - eapply MoveToSymbol_L_WRealise.
-    }
-    {
-      subst R1 M2 R2 M3 R3. hnf. intros. hnf. destruct y. intros head tail.
-      TMSimp. clear_trivial_eqs.
-      destruct H0 as (r1&r2&HE1&HE2). cbn in *.
-      destruct h1; cbn in *; inv HE1; [destruct (encode _); cbn in HE2; congruence | inv HE2]. clear H.
-      specialize (H1 head tail). spec_assert H1 by (hnf; do 2 eexists; hnf; split; cbn; eauto). destruct H1 as (H1&H1').
-      split; eauto. hnf; unfold tape_encodes_r; cbn in *. clear b H5.
-      rewrite tape_match_left_right in *. unfold finType_CS in *; rewrite H1' in *.
+      intros tin ((), tout) H. intros ls rs x l HRight HTin0. TMSimp; clear_trivial_eqs.
+      rename H3 into HCopy.
+      clear HIndex_H1 HIndex_H2 HIndex_H7.
+      destruct HRight as (r1&r2&HRight). TMSimp. clear HRight.
 
-      assert (tape_local_l (tape_move_mono h4 (Some (inl STOP), L)) =
-              rev (map inr (map inr (encode head))) ++ inl START :: left h2) as L1.
-      {
-        repeat ( rewrite <- !app_assoc in *; cbn in * ).
-        destruct h4; cbn in *; try congruence. subst. apply tape_match_symbols_tape_local_l.
-      }
-
-      epose proof (MoveToSymbol_L_correct (stop := stop_X') _ _ L1) as L2.
-      simpl_tape in L2. 
-      cbn in *. rewrite H1' in *.
-      progress unfold finType_CS in *.
-      do 2 eexists; hnf; split; cbn in *; eauto.
-      + rewrite L2. cbn. simpl_tape. eauto.
-      + rewrite L2. cbn. simpl_tape. rewrite rev_involutive. eauto.
-
-      Unshelve.
-      2,3,4: cbn; trivial.
-      1,2: intros x; rewrite !List.map_map, <- map_rev; intros (? & <- & ?) % in_map_iff; cbn; trivial.
+      specialize H with (1 := eq_refl).
+      destruct l as [ | x' l']; TMSimp.
+      - destruct (encode x : list sigX) as [ | ex exs] eqn:E; cbn in *.
+        + rewrite CopySymbols_L_Fun_equation in HCopy. cbn in HCopy. inv HCopy; TMSimp.
+          split; auto. repeat econstructor. f_equal. cbn. rewrite E. cbn. simpl_tape. reflexivity.
+        + unfold tape_move_left' at 1 in HCopy. 
+          rewrite <- app_assoc in HCopy. cbn in HCopy.
+          destruct (rev (map inr (map inr exs))) eqn:E2; cbn in *.
+          * apply rev_eq_nil, map_eq_nil, map_eq_nil in E2 as ->; cbn in *.
+            do 2 ( rewrite CopySymbols_L_Fun_equation in HCopy; cbn in * ). inv HCopy; TMSimp.
+            split; auto.
+            repeat econstructor. f_equal. simpl_tape. cbn. rewrite E. reflexivity.
+          * replace (l ++ inr (inr ex) :: inr (inl true) :: inl START :: ls) with ((l ++ [inr (inr ex)]) ++ inr (inl true) :: inl START :: ls) in HCopy by now rewrite <- app_assoc.
+            rewrite CopySymbols_L_correct_midtape in HCopy; cbn; auto.
+            -- inv HCopy; TMSimp. split.
+               ++ f_equal. rewrite rev_app_distr. cbn. f_equal.
+                  rewrite app_comm_cons'. replace (rev l ++ [s]) with (rev (s :: l)) by reflexivity. rewrite <- E2.
+                  now rewrite rev_involutive.
+               ++ repeat econstructor. f_equal. cbn. rewrite E.
+                  rewrite map_id. cbn. rewrite rev_app_distr. cbn. f_equal. cbv [id]. simpl_tape.
+                  rewrite app_comm_cons'. replace (rev l ++ [s]) with (rev (s :: l)) by reflexivity. rewrite <- E2.
+                  now rewrite rev_involutive.
+            -- apply rev_eq_cons in E2. rewrite List.map_map in E2.
+               apply map_eq_app in E2 as (ls1&ls2&->&E2&E2').
+               destruct ls2; cbn in *; inv E2'. cbn. reflexivity.
+            -- apply rev_eq_cons in E2. rewrite List.map_map in E2.
+               apply map_eq_app in E2 as (ls1&ls2&->&E2&E2').
+               destruct ls2; cbn in *; inv E2'. symmetry in H3. apply map_eq_nil in H3 as ->.
+               intros s [Hs % in_rev | Hs] % in_app_iff.
+               ++ rewrite E2 in Hs. apply in_map_iff in Hs as (s'&<-&?). cbn. reflexivity.
+               ++ destruct Hs as [<-|[]]. cbn. reflexivity.
+      - destruct  (encode x : list sigX) as [ | ex exs] eqn:E; cbn in *.
+        + rewrite CopySymbols_L_Fun_equation in HCopy. cbn in HCopy. inv HCopy; TMSimp.
+          split. f_equal. f_equal. now rewrite !List.map_app, List.map_map, <- List.app_assoc.
+          repeat econstructor. cbn. rewrite E. cbn. f_equal. simpl_tape. reflexivity.
+        + rewrite <- app_assoc in HCopy. cbn in HCopy. 
+          destruct (rev (map inr (map inr exs))) eqn:E2; cbn in *.
+          * apply rev_eq_nil, map_eq_nil, map_eq_nil in E2 as ->; cbn in *.
+            do 2 ( rewrite CopySymbols_L_Fun_equation in HCopy; cbn in * ). inv HCopy; TMSimp.
+            split. now rewrite map_app, <- app_assoc.
+            repeat econstructor. f_equal. simpl_tape. cbn. rewrite E. reflexivity.
+          * replace (l ++ inr (inr ex) :: inr (inl true) :: inl START :: ls) with ((l ++ [inr (inr ex)]) ++ inr (inl true) :: inl START :: ls) in HCopy by now rewrite <- app_assoc.
+            rewrite CopySymbols_L_correct_midtape in HCopy; cbn; auto.
+            -- inv HCopy; TMSimp. split.
+               ++ rewrite map_app, <- app_assoc. f_equal. rewrite rev_app_distr. cbn. f_equal.
+                  rewrite app_comm_cons'. replace (rev l ++ [s]) with (rev (s :: l)) by reflexivity. rewrite <- E2.
+                  now rewrite rev_involutive.
+               ++ repeat econstructor. f_equal. cbn. rewrite E.
+                  rewrite map_id. cbn. rewrite rev_app_distr. cbn. f_equal. cbv [id]. simpl_tape.
+                  rewrite app_comm_cons'. replace (rev l ++ [s]) with (rev (s :: l)) by reflexivity. rewrite <- E2.
+                  now rewrite rev_involutive.
+            -- apply rev_eq_cons in E2. rewrite List.map_map in E2.
+               apply map_eq_app in E2 as (ls1&ls2&->&E2&E2').
+               destruct ls2; cbn in *; inv E2'. cbn. reflexivity.
+            -- apply rev_eq_cons in E2. rewrite List.map_map in E2.
+               apply map_eq_app in E2 as (ls1&ls2&->&E2&E2').
+               destruct ls2; cbn in *; inv E2'. symmetry in H3. apply map_eq_nil in H3 as ->.
+               intros s [Hs % in_rev | Hs] % in_app_iff.
+               ++ rewrite E2 in Hs. apply in_map_iff in Hs as (s'&<-&?). cbn. reflexivity.
+               ++ destruct Hs as [<-|[]]. cbn. reflexivity.
     }
   Qed.
 
-  Definition MatchList : { M : mTM (bool+sigX)^+ 2 & states M -> bool } :=
-    If (Inject M1 [|Fin.F1|])
-       (M3;; Nop _ _ true)
-       (Nop _ _ false).
+
 
   Definition MatchList_Rel : Rel (tapes (bool+sigX)^+ 2) (bool * tapes (bool+sigX)^+ 2) :=
-    (if? (fun (tin tout : tapes (bool+sigX)^+ 2) =>
-          forall (lst : list X),
-            tin[@Fin.F1] ≂ lst ->
-            exists (head : X) (tail : list X),
-              lst = head :: tail /\
-              tout[@Fin.F1] ≂ tail /\
-              tout[@Fin.FS Fin.F1] ≂ head)
-       ! (fun (tin tout : tapes (bool+sigX)^+ 2) =>
-            forall (lst : list X),
-            tin[@Fin.F1] ≂ lst ->
-              lst = nil /\
-              tout[@Fin.F1] ≂ nil)).
+    fun tin '(yout, tout) =>
+      forall (l : list X),
+        tin[@Fin0] ≃ l ->
+        isRight tin[@Fin1] ->
+        match l with
+        | nil =>
+          tin = tout /\
+          yout = false
+        | x :: l' =>
+          tout[@Fin0] ≃ l' /\
+          tout[@Fin1] ≃ x /\
+          yout = true
+        end.
 
-  Lemma MatchList_Sem :
-    MatchList ⊫ MatchList_Rel.
+
+  Lemma MatchList_WRealise : MatchList ⊫ MatchList_Rel.
   Proof.
     eapply WRealise_monotone.
+    { unfold MatchList. repeat TM_Correct. eapply M1_WRealise. eapply Skip_cons_WRealise. }
     {
-      unfold MatchList. eapply If_WRealise.
-      - eapply Inject_WRealise. vector_dupfree. eapply Realise_WRealise, RealiseIn_Realise. eapply M1_Sem.
-      - eapply Seq_WRealise.
-        + eapply M3_WRealise.
-        + eapply Realise_WRealise, RealiseIn_Realise. eapply Nop_total.
-      - eapply Realise_WRealise, RealiseIn_Realise. eapply Nop_total.
-    }
-    {
-      subst R1 M2 R2 M3 R3. cbn.
-      intros tin (yout&tout).
-      TMSimp repeat progress simpl_not_in.
-      destruct yout, H; TMSimp.
-      - specialize (H _ H0) as (head&tail&->).
-        destruct H0 as (r1&r2&HE1&HE2).
-        specialize (H1 head tail).
-        spec_assert H1 as (H1&H1').
-        {
-          hnf. do 2 eexists; split; cbn in *; eauto.
-        }
-        do 2 eexists; repeat split; eauto.
-      - auto.
-      - congruence.
-      - now assert (lst = nil) as -> by auto.
+      intros tin (yout, tout) H. intros l HEncL HRight.
+      destruct HEncL as (ls&HEncL). TMSimp; clear_trivial_eqs.
+      destruct HRight as (ls'&rs'&HRight). TMSimp.
+
+      rewrite <- H1, <- H0 in *. (* clear H0 H1 HRight HIndex_H1 HIndex_H3. *)
+
+      destruct l as [ | x l'] in *; cbn in *; TMSimp; clear_trivial_eqs.
+      { (* nil *)
+        split; auto. destruct_tapes; cbn in *; subst. cbn; simpl_tape. reflexivity.
+      }
+      { (* cons *)
+        rewrite map_app, <- app_assoc in H1. symmetry in H1.
+        specialize (H _ _ _ _ ltac:(now repeat econstructor) H1) as (H&H'). TMSimp.
+        specialize H2 with (1 := eq_refl).
+        destruct l' as [ | x' l'']; TMSimp.
+        - repeat split; auto. repeat econstructor. f_equal. simpl_tape. cbn. reflexivity.
+        - repeat split; auto. repeat econstructor. f_equal. simpl_tape. cbn. now rewrite map_app, <- app_assoc.
+      }
     }
   Qed.
 
-  (* TODO: Termination *)
+
+
+  (* TODO: Constructors *)
+
+
 
 End MatchList.
