@@ -576,15 +576,6 @@ Ltac smpl_TM_LiftN :=
 Smpl Add smpl_TM_LiftN : TM_Correct.
 
 
-Lemma simpl_not_in_helper1 :
-  not_indexes (n := 2) [|Fin0|] Fin1.
-Proof. vector_not_in. Qed.
-
-Lemma simpl_not_in_helper2 :
-  not_indexes (n := 2) [|Fin1|] Fin0.
-Proof. vector_not_in. Qed.
-
-
 Ltac is_num_const n :=
   lazymatch n with
   | O => idtac
@@ -778,10 +769,6 @@ Abort.
 
 Ltac simpl_not_in :=
   repeat match goal with
-         | [ H: forall i : Fin.t 2, not_indexes [|Fin0|] i -> _ |- _] =>
-           specialize (H Fin1 simpl_not_in_helper1)
-         | [ H: forall i : Fin.t 2, not_indexes [|Fin1|] i -> _ |- _] =>
-           specialize (H Fin0  simpl_not_in_helper2)
          | _ => progress simpl_not_in_add_tapes
          | _ => progress simpl_not_in_app_tapes
          | _ => progress simpl_not_in_vector
