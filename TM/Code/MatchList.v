@@ -64,6 +64,7 @@ Section MatchList.
   Definition stop (s: (bool+sigX)^+) :=
     match s with
     | inr (inl _) => true
+    | inl _ => true
     | _ => false
     end.
   
@@ -396,5 +397,139 @@ Section MatchList.
     }
   Qed.
 
+
+
+  (** ** Constructors *)
+
+
+  (** *** [nil] *)
+  
+  Definition Constr_nil : { M : mTM (bool + sigX)^+ 1 & states M -> unit } :=
+    WriteMove (Some (inl STOP), L) tt;; WriteMove (Some (inr (inl false)), L) tt;; Write (inl START) tt.
+
+
+  Definition Constr_nil_Rel : Rel (tapes (bool+sigX)^+ 1) (unit * tapes (bool+sigX)^+ 1) :=
+    Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ nil)).
+
+
+  Lemma Constr_nil_Sem : Constr_nil ⊨c(5) Constr_nil_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    { unfold Constr_nil. repeat TM_Correct. }
+    { reflexivity. }
+    {
+      intros tin ((), tout) H. intros HRight. TMSimp.
+      repeat econstructor. f_equal. simpl_tape. cbn. rewrite isRight_right; auto.
+    }
+  Qed.
+  
+
+  (** *** [cons] *)
+
+
+  (* TODO: -> Copy.v *)
+  (** Move to the right of an encoding, but one left before the end of the encoding *)
+  Section MoveRight'.
+
+    Variable Y : Type.
+    Variable sig : finType.
+    Hypothesis encX : codeable sig Y.
+
+    Definition MoveRight' : { M : mTM sig^+ 1 & states M -> unit } :=
+      MoveRight _;; Move _ L tt.
+
+    Definition MoveRight'_Rel : Rel (tapes sig^+ 1) (unit * tapes sig^+ 1) :=
+      Mk_R_p (ignoreParam (
+                  fun tin tout =>
+                    forall y : Y,
+                      tin ≃ y ->
+                      exists ls, (* This is equal to [[left tin]], but the relation for [MoveRight] isn't strong enough. *)
+                        right tout = [inl STOP] /\
+                        tape_local_l tout = rev (map inr (encode y)) ++ [inl START] ++ ls
+             )).
+
+    Lemma MoveRight'_WRealise : MoveRight' ⊫ MoveRight'_Rel.
+    Proof.
+      eapply WRealise_monotone.
+      { unfold MoveRight'. repeat TM_Correct. apply MoveRight_WRealise with (X := Y). }
+      {
+        intros tin ((), tout) H. intros y HEncY.
+        TMSimp; clear_trivial_eqs.
+        specialize (H _ HEncY) as (ls&HEncY'). TMSimp.
+        destruct (encode y) eqn:E.
+        - repeat econstructor.
+        - eexists. rewrite <- map_rev; cbn. destruct (map inr (rev l ++ [e])) eqn:E2.
+          { apply map_eq_nil in E2. symmetry in E2. now apply app_cons_not_nil in E2. }
+          cbn. split; auto.
+      }
+    Qed.
+
+    (* TODO: Termination *)
+
+  End MoveRight'.
+  
+
+  Definition Constr_cons : { M : mTM (bool + sigX)^+ 2 & states M -> unit } :=
+    Inject (MoveRight' _) [|Fin1|];;
+    Inject (CopySymbols_L stop id) [|Fin1;Fin0|];;
+    Inject (WriteMove (Some (inr (inl true)), L) tt;; Write (inl START) tt) [|Fin0|].
+
+  Definition Constr_cons_Rel : Rel (tapes (bool+sigX)^+ 2) (unit * tapes (bool+sigX)^+ 2) :=
+    ignoreParam (
+        fun tin tout =>
+          forall l y,
+            tin[@Fin0] ≃ l ->
+            tin[@Fin1] ≃ y ->
+            tout[@Fin0] ≃ y :: l /\
+            tout[@Fin1] ≃ y
+      ).
+
+  Lemma Constr_cons_WRealise : Constr_cons ⊫ Constr_cons_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold Constr_cons. repeat TM_Correct. eapply MoveRight'_WRealise with (Y := X). }
+    {
+      intros tin ((), tout) H. intros l y HEncL HEncY.
+      TMSimp; clear_trivial_eqs. specialize (H y HEncY) as (ls&HEncY1&HEncY2).
+      destruct HEncL as (ls2&HEncL). TMSimp.
+      destruct (encode y) as [ | e es] eqn:E; cbn in *.
+      - apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. clear HEncY2. TMSimp.
+        rewrite CopySymbols_L_Fun_equation in H0. cbn in H0. inv H0. TMSimp.
+        repeat econstructor; f_equal; simpl_tape; cbn; rewrite E; cbn; reflexivity.
+      - rewrite <- app_assoc in HEncY2. cbn in *.
+        destruct (rev (map inr (map inr es))) eqn:E2; cbn in *.
+        + apply rev_eq_nil, map_eq_nil, map_eq_nil in E2 as ->.
+          apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. clear HEncY2. TMSimp.
+          rewrite <- app_nil_l in H0 at 1.
+          rewrite CopySymbols_L_correct_midtape in H0; cbn; auto. inv H0. TMSimp.
+          repeat econstructor; f_equal; simpl_tape; cbn; rewrite E; cbn; auto.
+        + apply rev_eq_cons in E2.
+          apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. clear HEncY2. TMSimp.
+          replace (l0 ++ inr (inr e) :: inl START :: ls) with ((l0 ++ [inr (inr e)]) ++ inl START :: ls) in H0
+            by now rewrite <- app_assoc.
+          rewrite CopySymbols_L_correct_midtape in H0; cbn; auto.
+          * inv H0. TMSimp. repeat econstructor; f_equal; simpl_tape; cbn; rewrite E; cbn; auto.
+            -- f_equal. rewrite map_id.
+               rewrite rev_app_distr, <- app_assoc. cbn. cbv [id]. f_equal.
+               rewrite app_comm_cons'. rewrite <- E2. rewrite map_app, <- app_assoc. reflexivity.
+            -- rewrite rev_app_distr, <- app_assoc. cbn. cbv [id]. f_equal.
+               rewrite app_comm_cons'. rewrite <- E2. reflexivity.
+          * rewrite List.map_map in E2. apply map_eq_app in E2 as (l1&l2&E2&E2'&E2''). destruct l2; cbn in *; inv E2''. reflexivity.
+          * intros [ | ].
+            -- intros [ | ] % in_app_iff; exfalso. 
+               ++ apply in_rev in H. enough (In (inl b) (rev l0 ++ [s])) as L.
+                  { rewrite <- E2 in L. rewrite List.map_map in L. apply in_map_iff in L as (?&L&?). inv L. }
+                  apply in_app_iff. auto.
+               ++ cbn in H. destruct H as [ H | [] ]. inv H.
+           -- cbn. intros [ H1 | H2 ] % in_app_iff.
+              ++ apply in_rev in H1. enough (In (inr s0) (rev l0 ++ [s])) as L.
+                 { rewrite <- E2 in L. rewrite List.map_map in L. apply in_map_iff in L as (?&?&?). inv H. reflexivity. }
+                 apply in_app_iff. auto.
+              ++ cbn in H2. destruct H2 as [ H | [] ]. inv H. reflexivity.
+    }
+  Qed.
+            
+
+      
 
 End MatchList.
