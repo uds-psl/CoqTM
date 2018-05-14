@@ -270,9 +270,131 @@ Section MatchList.
   Qed.
 
 
+  (** ** Termination *)
+
+
+  Arguments plus : simpl never. Arguments mult : simpl never.
+
+
+  Lemma Skip_cons_Terminates :
+    projT1 (Skip_cons) ↓
+           (fun tin k =>
+              exists ls rs (x : X) (l : list X),
+                tin[@Fin0] = midtape (inl START :: ls) (inr (inl true))
+                                     (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) /\
+                 10 + 4 * length (encode x : list sigX) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Skip_cons. repeat TM_Correct. }
+    {
+      intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
+      exists 1, (8 + 4 * length (encode x : list sigX)). repeat split. 1-2: omega.
+      intros tmid () (_&H). TMSimp. clear H.
+      destruct (encode x : list sigX) eqn:E; cbn in *.
+      - destruct l as [ | x' l']; cbn; rewrite MoveToSymbol_TermTime_equation; cbn; omega.
+      - destruct l as [ | x' l']; cbn.
+        + rewrite MoveToSymbol_TermTime_midtape; cbn; auto. rewrite !map_length. omega.
+        + rewrite MoveToSymbol_TermTime_midtape; cbn; auto. rewrite !map_length. omega.
+    }
+  Qed.
+
+
+  Lemma M1_Terminates :
+    projT1 M1 ↓
+           (fun tin k =>
+              exists ls rs (x : X) (l : list X),
+                tin[@Fin0] = midtape (inl START :: ls) (inr (inl true))
+                                     (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) /\
+                 35 + 12 * length (encode x : list sigX) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold M1. repeat TM_Correct. eapply Skip_cons_WRealise. eapply Skip_cons_Terminates. }
+    {
+      intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
+      exists (10 + 4 * length (encode x)), (24 + 8 * length (encode x)). repeat split; try omega. eauto 6.
+      intros tmid (). intros (H&HInj); TMSimp. specialize H with (1 := eq_refl).
+      destruct l as [ | x' l']; TMSimp. (* Both cases are identical *)
+      1-2: exists 1, (22 + 8 * length (encode x)); repeat split; try omega.
+      - intros tmid2 (). intros (_&HInj2); TMSimp.
+        exists 3, (18 + 8 * length (encode x)). repeat split; try omega.
+        intros tmid3 (). intros (_&H3&H3'); TMSimp.
+        exists (16+8*length(encode x)), 1. repeat split; cbn; try omega.
+        + rewrite <- HIndex_HInj2. cbn.
+          destruct (rev (map inr (map inr (encode x)))) eqn:E1; cbn.
+          * rewrite CopySymbols_L_TermTime_equation. cbn. omega.
+          * rewrite CopySymbols_L_TermTime_midtape; cbn; auto.
+            enough (|l| <= |encode x|) by omega.
+            apply rev_eq_cons in E1. apply map_eq_app in E1 as (l1&l2&E1&E1'&E1'').
+            rewrite <- rev_length. rewrite E1'. rewrite map_length.
+            transitivity (|l1 ++ l2|). rewrite app_length. omega. rewrite <- E1. now rewrite map_length. 
+        + intros tmid4 () _. omega.
+      - intros tmid2 (). intros (_&HInj2); TMSimp.
+        exists 3, (18 + 8 * length (encode x)). repeat split; try omega.
+        intros tmid3 (). intros (_&H3&H3'); TMSimp.
+        exists (16+8*length(encode x)), 1. repeat split; cbn; try omega.
+        + rewrite <- HIndex_HInj2. cbn.
+          destruct (rev (map inr (map inr (encode x)))) eqn:E1; cbn.
+          * rewrite CopySymbols_L_TermTime_equation. cbn. omega.
+          * rewrite CopySymbols_L_TermTime_midtape; cbn; auto.
+            enough (|l| <= |encode x|) by omega.
+            apply rev_eq_cons in E1. apply map_eq_app in E1 as (l1&l2&E1&E1'&E1'').
+            rewrite <- rev_length. rewrite E1'. rewrite map_length.
+            transitivity (|l1 ++ l2|). rewrite app_length. omega. rewrite <- E1. now rewrite map_length. 
+        + intros tmid4 () _. omega.
+    }
+  Qed.
+
+
 
   (* TODO: Constructors *)
 
+  Lemma MatchList_Terminates :
+    projT1 MatchList ↓
+           (fun tin k =>
+              exists l : list X,
+                tin[@Fin0] ≃ l /\
+                isRight tin[@Fin1] /\
+                match l with
+                | nil => 5 <= k
+                | x::l' =>
+                  55 + 16 * length (encode x) <= k
+                end).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold MatchList. repeat TM_Correct.
+      - eapply M1_WRealise.
+      - eapply M1_Terminates.
+      - eapply Skip_cons_WRealise.
+      - eapply Skip_cons_Terminates.
+    }
+    {
+      cbn. intros tin k (l&HEncL&HRight&Hk).
+      destruct HEncL as (ls&HEncL); TMSimp.
+      destruct l as [ | x l']; cbn.
+      {
+        exists 1, 3. repeat split; try omega.
+        intros tmid (). intros ((_&H1)&HInj1); TMSimp.
+        exists 1, 1. repeat split; try omega.
+        intros tmid2 ymid2 ((H2&H2')&HInj2). apply Vector.cons_inj in H2' as (H2'&_). TMSimp.
+        omega.
+      }
+      {
+        exists 1, (53 + 16 * length (encode x)). repeat split; try omega.
+        intros tmid (). intros ((_&H1)&HInj1); TMSimp.
+        exists 1, (50 + 16 * length (encode x)). repeat split; try omega.
+        intros tmid2 ymid2 ((H2&H2')&HInj2). apply Vector.cons_inj in H2' as (H2'&_). TMSimp. rewrite <- H2'.
+        exists (35 + 12 * length (encode x)), (14 + 4 * length (encode x)). repeat split; try omega.
+        { rewrite map_app, <- app_assoc. eauto 6. }
+        intros tmid3 () H3'. 
+        rewrite map_app, <- app_assoc in H3'. specialize H3' with (1 := HRight) (2 := eq_refl). TMSimp.
+        exists (10 + 4 * length (encode x)), 3. repeat split; try omega. eauto 6.
+        intros tmid4 () (H4&HInj4); TMSimp. specialize H4 with (1 := eq_refl).
+        destruct l' as [ | x' l'']; TMSimp. (* both cases are equal *)
+        - exists 1, 1. repeat split; try omega. intros ? _ _. omega.
+        - exists 1, 1. repeat split; try omega. intros ? _ _. omega.
+      }
+    }
+  Qed.
 
 
 End MatchList.
