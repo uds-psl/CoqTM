@@ -466,6 +466,25 @@ Section MatchList.
 
     (* TODO: Termination *)
 
+
+    Lemma MoveRight'_Terminates :
+      projT1 MoveRight' ↓
+             (fun tin k =>
+                exists y : Y,
+                  tin[@Fin0] ≃ y /\
+                  10 + 4 * length (encode y) <= k).
+    Proof.
+      eapply TerminatesIn_monotone.
+      { unfold MoveRight'. repeat TM_Correct.
+        - eapply MoveRight_WRealise.
+        - eapply MoveRight_Terminates.
+      }
+      { intros tin k (y&HEncY&Hk).
+        exists (8 + 4 * length (encode y)), 1. repeat split; try omega; eauto.
+      }
+    Qed.
+      
+    
   End MoveRight'.
   
 
@@ -530,6 +549,40 @@ Section MatchList.
   Qed.
             
 
-      
+  Lemma Constr_cons_Terminates :
+    projT1 Constr_cons ↓
+           (fun tin k =>
+              exists (l: list X) (y: X),
+                tin[@Fin0] ≃ l /\
+                tin[@Fin1] ≃ y /\
+                31 + 12 * length (encode y) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Constr_cons. repeat TM_Correct.
+      - apply MoveRight'_WRealise with (Y := X).
+      - apply MoveRight'_Terminates with (Y := X).
+    }
+    {
+      intros tin k (l&y&HEncL&HEncY&Hk).
+      exists (10 + 4 * length (encode y)), (20 + 8 * length (encode y)). repeat split; try omega.
+      - cbn. eexists. split. eauto. rewrite map_length. omega.
+      - intros tmid () (H&HInj). TMSimp.
+        specialize (H _ HEncY) as (ls&HEncY1&HEncY2). TMSimp.
+        exists (16 + 8 * length (encode y)), 3. repeat split; try omega.
+        + destruct (rev (map inr (map inr (encode y)))) eqn:E; cbn in *.
+          * apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. TMSimp.
+            rewrite CopySymbols_L_TermTime_equation. cbn. omega.
+          * apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. TMSimp.
+            rewrite CopySymbols_L_TermTime_midtape; cbn; auto.
+            rewrite List.map_map in E. apply rev_eq_cons in E.
+            apply map_eq_app in E as (l1&l2&E&E'&E'').
+            rewrite E. transitivity (16 + 8 * |l1|).
+            setoid_rewrite <- map_length at 2. rewrite <- E'. now rewrite rev_length.
+            rewrite app_length. omega.
+        + intros tmid2 (). intros (H2&HInj2). TMSimp.
+          exists 1, 1. repeat split; try omega. intros ? _ _. omega.
+    }
+  Qed.
+
 
 End MatchList.
