@@ -426,66 +426,6 @@ Section MatchList.
 
   (** *** [cons] *)
 
-
-  (* TODO: -> Copy.v *)
-  (** Move to the right of an encoding, but one left before the end of the encoding *)
-  Section MoveRight'.
-
-    Variable Y : Type.
-    Variable sig : finType.
-    Hypothesis encX : codeable sig Y.
-
-    Definition MoveRight' : { M : mTM sig^+ 1 & states M -> unit } :=
-      MoveRight _;; Move _ L tt.
-
-    Definition MoveRight'_Rel : Rel (tapes sig^+ 1) (unit * tapes sig^+ 1) :=
-      Mk_R_p (ignoreParam (
-                  fun tin tout =>
-                    forall y : Y,
-                      tin ≃ y ->
-                      exists ls, (* This is equal to [[left tin]], but the relation for [MoveRight] isn't strong enough. *)
-                        right tout = [inl STOP] /\
-                        tape_local_l tout = rev (map inr (encode y)) ++ [inl START] ++ ls
-             )).
-
-    Lemma MoveRight'_WRealise : MoveRight' ⊫ MoveRight'_Rel.
-    Proof.
-      eapply WRealise_monotone.
-      { unfold MoveRight'. repeat TM_Correct. apply MoveRight_WRealise with (X := Y). }
-      {
-        intros tin ((), tout) H. intros y HEncY.
-        TMSimp; clear_trivial_eqs.
-        specialize (H _ HEncY) as (ls&HEncY'). TMSimp.
-        destruct (encode y) eqn:E.
-        - repeat econstructor.
-        - eexists. rewrite <- map_rev; cbn. destruct (map inr (rev l ++ [e])) eqn:E2.
-          { apply map_eq_nil in E2. symmetry in E2. now apply app_cons_not_nil in E2. }
-          cbn. split; auto.
-      }
-    Qed.
-
-    (* TODO: Termination *)
-
-
-    Lemma MoveRight'_Terminates :
-      projT1 MoveRight' ↓
-             (fun tin k =>
-                exists y : Y,
-                  tin[@Fin0] ≃ y /\
-                  10 + 4 * length (encode y) <= k).
-    Proof.
-      eapply TerminatesIn_monotone.
-      { unfold MoveRight'. repeat TM_Correct.
-        - eapply MoveRight_WRealise.
-        - eapply MoveRight_Terminates.
-      }
-      { intros tin k (y&HEncY&Hk).
-        exists (8 + 4 * length (encode y)), 1. repeat split; try omega; eauto.
-      }
-    Qed.
-      
-    
-  End MoveRight'.
   
 
   Definition Constr_cons : { M : mTM (bool + sigX)^+ 2 & states M -> unit } :=
@@ -506,7 +446,7 @@ Section MatchList.
   Lemma Constr_cons_WRealise : Constr_cons ⊫ Constr_cons_Rel.
   Proof.
     eapply WRealise_monotone.
-    { unfold Constr_cons. repeat TM_Correct. eapply MoveRight'_WRealise with (Y := X). }
+    { unfold Constr_cons. repeat TM_Correct. apply MoveRight'_WRealise with (X := X). }
     {
       intros tin ((), tout) H. intros l y HEncL HEncY.
       TMSimp; clear_trivial_eqs. specialize (H y HEncY) as (ls&HEncY1&HEncY2).
@@ -559,8 +499,8 @@ Section MatchList.
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Constr_cons. repeat TM_Correct.
-      - apply MoveRight'_WRealise with (Y := X).
-      - apply MoveRight'_Terminates with (Y := X).
+      - apply MoveRight'_WRealise with (X := X).
+      - apply MoveRight'_Terminates with (X := X).
     }
     {
       intros tin k (l&y&HEncL&HEncY&Hk).

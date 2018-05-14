@@ -405,6 +405,56 @@ Section Move.
     }
   Qed.
 
+
+
+  (** Move to the right of an encoding, but one left before the end of the encoding *)
+  Definition MoveRight' : { M : mTM sig^+ 1 & states M -> unit } :=
+    MoveRight;; Move _ L tt.
+
+  Definition MoveRight'_Rel : Rel (tapes sig^+ 1) (unit * tapes sig^+ 1) :=
+    Mk_R_p (ignoreParam (
+                fun tin tout =>
+                  forall x : X,
+                    tin ≃ x ->
+                    exists ls, (* This is equal to [[left tin]], but the relation for [MoveRight] isn't strong enough. *)
+                      right tout = [inl STOP] /\
+                      tape_local_l tout = rev (map inr (encode x)) ++ [inl START] ++ ls
+           )).
+
+  Lemma MoveRight'_WRealise : MoveRight' ⊫ MoveRight'_Rel.
+  Proof.
+    eapply WRealise_monotone.
+    { unfold MoveRight'. repeat TM_Correct. apply MoveRight_WRealise. }
+    {
+      intros tin ((), tout) H. intros x HEncX.
+      TMSimp; clear_trivial_eqs.
+      specialize (H _ HEncX) as (ls&HEncX'). TMSimp.
+      destruct (encode x) eqn:E.
+      - repeat econstructor.
+      - eexists. rewrite <- map_rev; cbn. destruct (map inr (rev l ++ [e])) eqn:E2.
+        { apply map_eq_nil in E2. symmetry in E2. now apply app_cons_not_nil in E2. }
+        cbn. split; auto.
+    }
+  Qed.
+
+  Lemma MoveRight'_Terminates :
+    projT1 MoveRight' ↓
+           (fun tin k =>
+              exists x : X,
+                tin[@Fin0] ≃ x /\
+                10 + 4 * length (encode x) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold MoveRight'. repeat TM_Correct.
+      - eapply MoveRight_WRealise.
+      - eapply MoveRight_Terminates.
+    }
+    { intros tin k (x&HEncX&Hk).
+      exists (8 + 4 * length (encode x)), 1. repeat split; try omega; eauto.
+    }
+  Qed.
+  
+    
 End Move.
 
 
