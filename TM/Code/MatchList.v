@@ -113,6 +113,13 @@ Section MatchList.
                                  (inr (inl true)) (map inr (encode x') ++ map inr (encode l') ++ inl STOP :: rs)
                 end)).
 
+  
+  Lemma stop_lemma x :
+    forall x0 : boundary + (bool + sigX), x0 el map inr (map inr (encode x)) -> stop x0 = false.
+  Proof.
+    rewrite List.map_map. intros ? (?&<-&?) % in_map_iff. cbn. reflexivity.
+  Qed.
+
 
   Lemma Skip_cons_WRealise : Skip_cons ⊫ Skip_cons_Rel.
   Proof.
@@ -121,24 +128,14 @@ Section MatchList.
     {
       intros tin ((), tout) H. intros ls rs x l HTin. TMSimp. clear_trivial_eqs. clear H3 HTin H1 H2.
       destruct l as [ | x' l']; cbn.
-      - destruct (encode x : list sigX) eqn:E; cbn.
-        + rewrite MoveToSymbol_Fun_equation; cbn. reflexivity.
-        + rewrite MoveToSymbol_correct_midtape; cbn; eauto.
-          * now rewrite <- !app_assoc.
-          * rewrite List.map_map. intros [ | ] (?&H1&H2) % in_map_iff; now inv H1.
-      - destruct (encode x : list sigX) eqn:E; cbn.
-        + destruct l'; cbn.
-          * rewrite MoveToSymbol_Fun_equation. cbn. f_equal. now rewrite !List.map_app, <- List.app_assoc.
-          * rewrite MoveToSymbol_Fun_equation.
-            cbn. f_equal. rewrite !List.map_map, !List.map_app, !List.map_map, <- List.app_assoc. cbn. f_equal.
-            now rewrite List.map_app, !List.map_map.
-        + rewrite MoveToSymbol_correct_midtape; cbn; eauto.
-          * rewrite <- app_assoc. f_equal. now rewrite map_app, <- app_assoc.
-          * rewrite List.map_map. intros ? (?&?&?) % in_map_iff; subst. cbn. reflexivity.
+      - rewrite MoveToSymbol_correct_moveright; cbn; auto.
+        + apply stop_lemma.
+      - rewrite MoveToSymbol_correct_moveright; cbn; auto.
+        + rewrite map_app, <- app_assoc. reflexivity.
+        + apply stop_lemma.
     }
   Qed.
   
-
 
   Definition M1_Rel : Rel (tapes (bool+sigX)^+ 2) (unit * tapes (bool+sigX)^+ 2) :=
     ignoreParam (
@@ -151,8 +148,6 @@ Section MatchList.
             tout[@Fin1] ≃ x).
             
 
-
-  
   Lemma M1_WRealise : M1 ⊫ M1_Rel.
   Proof.
     eapply WRealise_monotone.
@@ -165,67 +160,18 @@ Section MatchList.
 
       specialize H with (1 := eq_refl).
       destruct l as [ | x' l']; TMSimp.
-      - destruct (encode x : list sigX) as [ | ex exs] eqn:E; cbn in *.
-        + rewrite CopySymbols_L_Fun_equation in HCopy. cbn in HCopy. inv HCopy; TMSimp.
-          split; auto. repeat econstructor. f_equal. cbn. rewrite E. cbn. simpl_tape. reflexivity.
-        + unfold tape_move_left' at 1 in HCopy. 
-          rewrite <- app_assoc in HCopy. cbn in HCopy.
-          destruct (rev (map inr (map inr exs))) eqn:E2; cbn in *.
-          * apply rev_eq_nil, map_eq_nil, map_eq_nil in E2 as ->; cbn in *.
-            do 2 ( rewrite CopySymbols_L_Fun_equation in HCopy; cbn in * ). inv HCopy; TMSimp.
-            split; auto.
-            repeat econstructor. f_equal. simpl_tape. cbn. rewrite E. reflexivity.
-          * replace (l ++ inr (inr ex) :: inr (inl true) :: inl START :: ls) with ((l ++ [inr (inr ex)]) ++ inr (inl true) :: inl START :: ls) in HCopy by now rewrite <- app_assoc.
-            rewrite CopySymbols_L_correct_midtape in HCopy; cbn; auto.
-            -- inv HCopy; TMSimp. split.
-               ++ f_equal. rewrite rev_app_distr. cbn. f_equal.
-                  rewrite app_comm_cons'. replace (rev l ++ [s]) with (rev (s :: l)) by reflexivity. rewrite <- E2.
-                  now rewrite rev_involutive.
-               ++ repeat econstructor. f_equal. cbn. rewrite E.
-                  rewrite map_id. cbn. rewrite rev_app_distr. cbn. f_equal. cbv [id]. simpl_tape.
-                  rewrite app_comm_cons'. replace (rev l ++ [s]) with (rev (s :: l)) by reflexivity. rewrite <- E2.
-                  now rewrite rev_involutive.
-            -- apply rev_eq_cons in E2. rewrite List.map_map in E2.
-               apply map_eq_app in E2 as (ls1&ls2&->&E2&E2').
-               destruct ls2; cbn in *; inv E2'. cbn. reflexivity.
-            -- apply rev_eq_cons in E2. rewrite List.map_map in E2.
-               apply map_eq_app in E2 as (ls1&ls2&->&E2&E2').
-               destruct ls2; cbn in *; inv E2'. symmetry in H3. apply map_eq_nil in H3 as ->.
-               intros s [Hs % in_rev | Hs] % in_app_iff.
-               ++ rewrite E2 in Hs. apply in_map_iff in Hs as (s'&<-&?). cbn. reflexivity.
-               ++ destruct Hs as [<-|[]]. cbn. reflexivity.
-      - destruct  (encode x : list sigX) as [ | ex exs] eqn:E; cbn in *.
-        + rewrite CopySymbols_L_Fun_equation in HCopy. cbn in HCopy. inv HCopy; TMSimp.
-          split. f_equal. f_equal. now rewrite !List.map_app, List.map_map, <- List.app_assoc.
-          repeat econstructor. cbn. rewrite E. cbn. f_equal. simpl_tape. reflexivity.
-        + rewrite <- app_assoc in HCopy. cbn in HCopy. 
-          destruct (rev (map inr (map inr exs))) eqn:E2; cbn in *.
-          * apply rev_eq_nil, map_eq_nil, map_eq_nil in E2 as ->; cbn in *.
-            do 2 ( rewrite CopySymbols_L_Fun_equation in HCopy; cbn in * ). inv HCopy; TMSimp.
-            split. now rewrite map_app, <- app_assoc.
-            repeat econstructor. f_equal. simpl_tape. cbn. rewrite E. reflexivity.
-          * replace (l ++ inr (inr ex) :: inr (inl true) :: inl START :: ls) with ((l ++ [inr (inr ex)]) ++ inr (inl true) :: inl START :: ls) in HCopy by now rewrite <- app_assoc.
-            rewrite CopySymbols_L_correct_midtape in HCopy; cbn; auto.
-            -- inv HCopy; TMSimp. split.
-               ++ rewrite map_app, <- app_assoc. f_equal. rewrite rev_app_distr. cbn. f_equal.
-                  rewrite app_comm_cons'. replace (rev l ++ [s]) with (rev (s :: l)) by reflexivity. rewrite <- E2.
-                  now rewrite rev_involutive.
-               ++ repeat econstructor. f_equal. cbn. rewrite E.
-                  rewrite map_id. cbn. rewrite rev_app_distr. cbn. f_equal. cbv [id]. simpl_tape.
-                  rewrite app_comm_cons'. replace (rev l ++ [s]) with (rev (s :: l)) by reflexivity. rewrite <- E2.
-                  now rewrite rev_involutive.
-            -- apply rev_eq_cons in E2. rewrite List.map_map in E2.
-               apply map_eq_app in E2 as (ls1&ls2&->&E2&E2').
-               destruct ls2; cbn in *; inv E2'. cbn. reflexivity.
-            -- apply rev_eq_cons in E2. rewrite List.map_map in E2.
-               apply map_eq_app in E2 as (ls1&ls2&->&E2&E2').
-               destruct ls2; cbn in *; inv E2'. symmetry in H3. apply map_eq_nil in H3 as ->.
-               intros s [Hs % in_rev | Hs] % in_app_iff.
-               ++ rewrite E2 in Hs. apply in_map_iff in Hs as (s'&<-&?). cbn. reflexivity.
-               ++ destruct Hs as [<-|[]]. cbn. reflexivity.
+      - rewrite CopySymbols_L_correct_moveleft in HCopy; cbn; auto.
+        2: setoid_rewrite <- in_rev; apply stop_lemma.
+        inv HCopy. TMSimp.
+        cbn. rewrite !map_id, !rev_involutive. repeat econstructor. cbn. f_equal. simpl_tape. reflexivity.
+      - rewrite CopySymbols_L_correct_moveleft in HCopy; cbn; auto.
+        2: setoid_rewrite <- in_rev; apply stop_lemma.
+        inv HCopy. TMSimp.
+        cbn. rewrite !map_id, !rev_involutive. repeat econstructor.
+        + f_equal. rewrite map_app, <- app_assoc. reflexivity.
+        + cbn. f_equal. simpl_tape. reflexivity.
     }
   Qed.
-
 
 
   Definition MatchList_Rel : Rel (tapes (bool+sigX)^+ 2) (bool * tapes (bool+sigX)^+ 2) :=
@@ -283,19 +229,17 @@ Section MatchList.
               exists ls rs (x : X) (l : list X),
                 tin[@Fin0] = midtape (inl START :: ls) (inr (inl true))
                                      (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) /\
-                 10 + 4 * length (encode x : list sigX) <= k).
+                 6 + 4 * length (encode x : list sigX) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Skip_cons. repeat TM_Correct. }
     {
       intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
-      exists 1, (8 + 4 * length (encode x : list sigX)). repeat split. 1-2: omega.
+      exists 1, (4 + 4 * length (encode x : list sigX)). repeat split. 1-2: omega.
       intros tmid () (_&H). TMSimp. clear H.
-      destruct (encode x : list sigX) eqn:E; cbn in *.
-      - destruct l as [ | x' l']; cbn; rewrite MoveToSymbol_TermTime_equation; cbn; omega.
-      - destruct l as [ | x' l']; cbn.
-        + rewrite MoveToSymbol_TermTime_midtape; cbn; auto. rewrite !map_length. omega.
-        + rewrite MoveToSymbol_TermTime_midtape; cbn; auto. rewrite !map_length. omega.
+      destruct l as [ | x' l]; cbn.
+      - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. rewrite !map_length. omega.
+      - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. rewrite !map_length. omega.
     }
   Qed.
 
@@ -306,48 +250,36 @@ Section MatchList.
               exists ls rs (x : X) (l : list X),
                 tin[@Fin0] = midtape (inl START :: ls) (inr (inl true))
                                      (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) /\
-                 35 + 12 * length (encode x : list sigX) <= k).
+                 23 + 12 * length (encode x : list sigX) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold M1. repeat TM_Correct. eapply Skip_cons_WRealise. eapply Skip_cons_Terminates. }
     {
       intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
-      exists (10 + 4 * length (encode x)), (24 + 8 * length (encode x)). repeat split; try omega. eauto 6.
+      exists (6 + 4 * length (encode x)), (16 + 8 * length (encode x)). repeat split; try omega. eauto 6.
       intros tmid (). intros (H&HInj); TMSimp. specialize H with (1 := eq_refl).
       destruct l as [ | x' l']; TMSimp. (* Both cases are identical *)
-      1-2: exists 1, (22 + 8 * length (encode x)); repeat split; try omega.
+      1-2: exists 1, (14 + 8 * length (encode x)); repeat split; try omega.
       - intros tmid2 (). intros (_&HInj2); TMSimp.
-        exists 3, (18 + 8 * length (encode x)). repeat split; try omega.
+        exists 3, (10 + 8 * length (encode x)). repeat split; try omega.
         intros tmid3 (). intros (_&H3&H3'); TMSimp.
-        exists (16+8*length(encode x)), 1. repeat split; cbn; try omega.
+        exists (8+8*length(encode x)), 1. repeat split; cbn; try omega.
         + rewrite <- HIndex_HInj2. cbn.
-          destruct (rev (map inr (map inr (encode x)))) eqn:E1; cbn.
-          * rewrite CopySymbols_L_TermTime_equation. cbn. omega.
-          * rewrite CopySymbols_L_TermTime_midtape; cbn; auto.
-            enough (|l| <= |encode x|) by omega.
-            apply rev_eq_cons in E1. apply map_eq_app in E1 as (l1&l2&E1&E1'&E1'').
-            rewrite <- rev_length. rewrite E1'. rewrite map_length.
-            transitivity (|l1 ++ l2|). rewrite app_length. omega. rewrite <- E1. now rewrite map_length. 
+          rewrite CopySymbols_L_TermTime_moveleft; auto.
+          rewrite rev_length, !map_length. omega.
         + intros tmid4 () _. omega.
       - intros tmid2 (). intros (_&HInj2); TMSimp.
-        exists 3, (18 + 8 * length (encode x)). repeat split; try omega.
+        exists 3, (10 + 8 * length (encode x)). repeat split; try omega.
         intros tmid3 (). intros (_&H3&H3'); TMSimp.
-        exists (16+8*length(encode x)), 1. repeat split; cbn; try omega.
+        exists (8+8*length(encode x)), 1. repeat split; cbn; try omega.
         + rewrite <- HIndex_HInj2. cbn.
-          destruct (rev (map inr (map inr (encode x)))) eqn:E1; cbn.
-          * rewrite CopySymbols_L_TermTime_equation. cbn. omega.
-          * rewrite CopySymbols_L_TermTime_midtape; cbn; auto.
-            enough (|l| <= |encode x|) by omega.
-            apply rev_eq_cons in E1. apply map_eq_app in E1 as (l1&l2&E1&E1'&E1'').
-            rewrite <- rev_length. rewrite E1'. rewrite map_length.
-            transitivity (|l1 ++ l2|). rewrite app_length. omega. rewrite <- E1. now rewrite map_length. 
+          rewrite CopySymbols_L_TermTime_moveleft; auto.
+          rewrite rev_length, !map_length. omega.
         + intros tmid4 () _. omega.
     }
   Qed.
 
 
-
-  (* TODO: Constructors *)
 
   Lemma MatchList_Terminates :
     projT1 MatchList ↓
@@ -358,7 +290,7 @@ Section MatchList.
                 match l with
                 | nil => 5 <= k
                 | x::l' =>
-                  55 + 16 * length (encode x) <= k
+                  42 + 16 * length (encode x) <= k
                 end).
   Proof.
     eapply TerminatesIn_monotone.
@@ -380,15 +312,15 @@ Section MatchList.
         omega.
       }
       {
-        exists 1, (53 + 16 * length (encode x)). repeat split; try omega.
+        exists 1, (40 + 16 * length (encode x)). repeat split; try omega.
         intros tmid (). intros ((_&H1)&HInj1); TMSimp.
-        exists 1, (50 + 16 * length (encode x)). repeat split; try omega.
+        exists 1, (38 + 16 * length (encode x)). repeat split; try omega.
         intros tmid2 ymid2 ((H2&H2')&HInj2). apply Vector.cons_inj in H2' as (H2'&_). TMSimp. rewrite <- H2'.
-        exists (35 + 12 * length (encode x)), (14 + 4 * length (encode x)). repeat split; try omega.
+        exists (23 + 12 * length (encode x)), (14 + 4 * length (encode x)). repeat split; try omega.
         { rewrite map_app, <- app_assoc. eauto 6. }
         intros tmid3 () H3'. 
         rewrite map_app, <- app_assoc in H3'. specialize H3' with (1 := HRight) (2 := eq_refl). TMSimp.
-        exists (10 + 4 * length (encode x)), 3. repeat split; try omega. eauto 6.
+        exists (6 + 4 * length (encode x)), 3. repeat split; try omega. eauto 6.
         intros tmid4 () (H4&HInj4); TMSimp. specialize H4 with (1 := eq_refl).
         destruct l' as [ | x' l'']; TMSimp. (* both cases are equal *)
         - exists 1, 1. repeat split; try omega. intros ? _ _. omega.
@@ -443,6 +375,7 @@ Section MatchList.
             tout[@Fin1] ≃ y
       ).
 
+  
   Lemma Constr_cons_WRealise : Constr_cons ⊫ Constr_cons_Rel.
   Proof.
     eapply WRealise_monotone.
@@ -451,40 +384,11 @@ Section MatchList.
       intros tin ((), tout) H. intros l y HEncL HEncY.
       TMSimp; clear_trivial_eqs. specialize (H y HEncY) as (ls&HEncY1&HEncY2).
       destruct HEncL as (ls2&HEncL). TMSimp.
-      destruct (encode y) as [ | e es] eqn:E; cbn in *.
-      - apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. clear HEncY2. TMSimp.
-        rewrite CopySymbols_L_Fun_equation in H0. cbn in H0. inv H0. TMSimp.
-        repeat econstructor; f_equal; simpl_tape; cbn; rewrite E; cbn; reflexivity.
-      - rewrite <- app_assoc in HEncY2. cbn in *.
-        destruct (rev (map inr (map inr es))) eqn:E2; cbn in *.
-        + apply rev_eq_nil, map_eq_nil, map_eq_nil in E2 as ->.
-          apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. clear HEncY2. TMSimp.
-          rewrite <- app_nil_l in H0 at 1.
-          rewrite CopySymbols_L_correct_midtape in H0; cbn; auto. inv H0. TMSimp.
-          repeat econstructor; f_equal; simpl_tape; cbn; rewrite E; cbn; auto.
-        + apply rev_eq_cons in E2.
-          apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. clear HEncY2. TMSimp.
-          replace (l0 ++ inr (inr e) :: inl START :: ls) with ((l0 ++ [inr (inr e)]) ++ inl START :: ls) in H0
-            by now rewrite <- app_assoc.
-          rewrite CopySymbols_L_correct_midtape in H0; cbn; auto.
-          * inv H0. TMSimp. repeat econstructor; f_equal; simpl_tape; cbn; rewrite E; cbn; auto.
-            -- f_equal. rewrite map_id.
-               rewrite rev_app_distr, <- app_assoc. cbn. cbv [id]. f_equal.
-               rewrite app_comm_cons'. rewrite <- E2. rewrite map_app, <- app_assoc. reflexivity.
-            -- rewrite rev_app_distr, <- app_assoc. cbn. cbv [id]. f_equal.
-               rewrite app_comm_cons'. rewrite <- E2. reflexivity.
-          * rewrite List.map_map in E2. apply map_eq_app in E2 as (l1&l2&E2&E2'&E2''). destruct l2; cbn in *; inv E2''. reflexivity.
-          * intros [ | ].
-            -- intros [ | ] % in_app_iff; exfalso. 
-               ++ apply in_rev in H. enough (In (inl b) (rev l0 ++ [s])) as L.
-                  { rewrite <- E2 in L. rewrite List.map_map in L. apply in_map_iff in L as (?&L&?). inv L. }
-                  apply in_app_iff. auto.
-               ++ cbn in H. destruct H as [ H | [] ]. inv H.
-           -- cbn. intros [ H1 | H2 ] % in_app_iff.
-              ++ apply in_rev in H1. enough (In (inr s0) (rev l0 ++ [s])) as L.
-                 { rewrite <- E2 in L. rewrite List.map_map in L. apply in_map_iff in L as (?&?&?). inv H. reflexivity. }
-                 apply in_app_iff. auto.
-              ++ cbn in H2. destruct H2 as [ H | [] ]. inv H. reflexivity.
+      erewrite CopySymbols_L_correct in H0. 4: cbn; eauto. all: cbn; auto. 2: setoid_rewrite <- in_rev; apply stop_lemma.
+      inv H0. TMSimp.
+      repeat econstructor.
+      - f_equal. cbn. rewrite map_id, map_app, <- app_assoc, rev_involutive. simpl_tape. reflexivity.
+      - rewrite rev_involutive. cbn. reflexivity.
     }
   Qed.
             
@@ -495,7 +399,7 @@ Section MatchList.
               exists (l: list X) (y: X),
                 tin[@Fin0] ≃ l /\
                 tin[@Fin1] ≃ y /\
-                31 + 12 * length (encode y) <= k).
+                23 + 12 * length (encode y) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Constr_cons. repeat TM_Correct.
@@ -504,25 +408,15 @@ Section MatchList.
     }
     {
       intros tin k (l&y&HEncL&HEncY&Hk).
-      exists (10 + 4 * length (encode y)), (20 + 8 * length (encode y)). repeat split; try omega.
+      exists (10 + 4 * length (encode y)), (12 + 8 * length (encode y)). repeat split; try omega.
       - cbn. eexists. split. eauto. rewrite map_length. omega.
       - intros tmid () (H&HInj). TMSimp.
         specialize (H _ HEncY) as (ls&HEncY1&HEncY2). TMSimp.
-        exists (16 + 8 * length (encode y)), 3. repeat split; try omega.
-        + destruct (rev (map inr (map inr (encode y)))) eqn:E; cbn in *.
-          * apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. TMSimp.
-            rewrite CopySymbols_L_TermTime_equation. cbn. omega.
-          * apply (conj HEncY2) in HEncY1. apply midtape_tape_local_l_cons_right in HEncY1. TMSimp.
-            rewrite CopySymbols_L_TermTime_midtape; cbn; auto.
-            rewrite List.map_map in E. apply rev_eq_cons in E.
-            apply map_eq_app in E as (l1&l2&E&E'&E'').
-            rewrite E. transitivity (16 + 8 * |l1|).
-            setoid_rewrite <- map_length at 2. rewrite <- E'. now rewrite rev_length.
-            rewrite app_length. omega.
+        exists (8 + 8 * length (encode y)), 3. repeat split; try omega.
+        + erewrite CopySymbols_L_TermTime_local; eauto. rewrite rev_length, !map_length. omega.
         + intros tmid2 (). intros (H2&HInj2). TMSimp.
           exists 1, 1. repeat split; try omega. intros ? _ _. omega.
     }
   Qed.
-
 
 End MatchList.

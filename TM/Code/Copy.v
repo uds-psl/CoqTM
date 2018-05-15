@@ -62,6 +62,20 @@ Section Copy.
     - now rewrite <- !app_assoc in L.
   Qed.
 
+  Corollary CopySymbols_correct_moveright ls m rs x rs' t2:
+    (forall x, List.In x rs -> stop x = false) ->
+    stop x = true ->
+    CopySymbols_Fun stop f (tape_move_right' ls m (rs ++ x :: rs'), t2) =
+    (midtape (rev rs ++ m :: ls) x rs',
+     midtape (rev (map f rs) ++ left t2) (f x) (skipn (|rs|) (right t2))).
+  Proof.
+    intros HStopLs HStopX.
+    cbv [tape_move_left']. destruct rs as [ | s s'] eqn:E; cbn in *.
+    - rewrite CopySymbols_Fun_equation, HStopX; cbn. reflexivity.
+    - rewrite CopySymbols_correct_midtape; auto. subst. rewrite <- !app_assoc; cbn. reflexivity.
+  Qed.
+  
+
   Lemma CopySymbols_L_correct tltr str1 x str2 :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
@@ -98,6 +112,20 @@ Section Copy.
     - now rewrite <- !app_assoc in L.
   Qed.
 
+  Corollary CopySymbols_L_correct_moveleft ls x ls' m rs t2 :
+    (forall x, List.In x ls -> stop x = false) ->
+    stop x = true ->
+    CopySymbols_L_Fun stop f (tape_move_left' (ls ++ x :: ls') m rs, t2) =
+    (midtape ls' x (rev ls ++ m :: rs),
+     midtape (skipn (|ls|) (left t2)) (f x) (rev (map f ls) ++ right t2)).
+  Proof.
+    intros HStopLs HStopX.
+    cbv [tape_move_left']. destruct ls as [ | s s'] eqn:E; cbn in *.
+    - rewrite CopySymbols_L_Fun_equation, HStopX; cbn. reflexivity.
+    - rewrite CopySymbols_L_correct_midtape; auto. subst. rewrite <- !app_assoc; cbn. reflexivity.
+  Qed.
+  
+
   Lemma MoveToSymbol_correct t str1 str2 x :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
@@ -133,6 +161,18 @@ Section Copy.
     cbn in *. now rewrite <- app_assoc in L.
   Qed.
 
+  Corollary MoveToSymbol_correct_moveright ls m rs x rs' :
+    (forall x, List.In x rs -> stop x = false) ->
+    stop x = true ->
+    MoveToSymbol_Fun stop (tape_move_right' ls m (rs ++ x :: rs')) =
+    midtape (rev rs ++ m :: ls) x rs'.
+  Proof.
+    intros HStopR HStopX.
+    destruct rs as [ | s s'] eqn:E; cbn.
+    - rewrite MoveToSymbol_Fun_equation, HStopX. reflexivity.
+    - rewrite MoveToSymbol_correct_midtape; auto. rewrite <- !app_assoc. reflexivity.
+  Qed.
+
   Corollary MoveToSymbol_L_correct t str1 str2 x :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
@@ -156,6 +196,18 @@ Section Copy.
     unshelve epose proof (@MoveToSymbol_L_correct (midtape (ls ++ x :: ls') m rs) (m::ls) ls' x _ HStopX eq_refl) as L.
     { intros ? [->|?]; auto. }
     cbn in *. now rewrite <- app_assoc in L.
+  Qed.
+
+  Corollary MoveToSymbol_L_correct_moveleft ls x ls' m rs :
+    (forall x, List.In x ls -> stop x = false) ->
+    stop x = true ->
+    MoveToSymbol_L_Fun stop (tape_move_left' (ls ++ x :: ls') m rs) =
+    midtape ls' x (rev ls ++ m :: rs).
+  Proof.
+    intros HStopL HStopX.
+    destruct ls as [ | s s'] eqn:E; cbn.
+    - rewrite MoveToSymbol_L_Fun_equation, HStopX. reflexivity.
+    - rewrite MoveToSymbol_L_correct_midtape; auto. rewrite <- !app_assoc. reflexivity.
   Qed.
 
   Lemma MoveToSymbol_correct_toRight' (t : tape sig) x str :
@@ -222,6 +274,16 @@ Section Copy.
     cbn [length]. omega.
   Qed.
 
+  Corollary MoveToSymbol_TermTime_moveright ls m rs x rs' :
+    stop x = true ->
+    MoveToSymbol_TermTime stop (tape_move_right' ls m (rs ++ x :: rs')) <= 4 + 4 * length rs.
+  Proof.
+    intros HStop. destruct rs as [ | s s'] eqn:E; cbn.
+    - rewrite MoveToSymbol_TermTime_equation, HStop; cbn. omega.
+    - rewrite MoveToSymbol_TermTime_midtape; auto. omega.
+  Qed.
+
+
   Lemma MoveToSymbol_L_TermTime_local t r1 sym r2 :
     tape_local_l t = r1 ++ sym :: r2 ->
     stop sym = true ->
@@ -245,6 +307,14 @@ Section Copy.
     cbn [length]. omega.
   Qed.
 
+  Corollary MoveToSymbol_L_TermTime_moveleft ls ls' x m rs :
+    stop x = true ->
+    MoveToSymbol_L_TermTime stop (tape_move_left' (ls ++ x :: ls') m rs) <= 4 + 4 * length ls.
+  Proof.
+    intros HStop. destruct ls as [ | s s'] eqn:E; cbn.
+    - rewrite MoveToSymbol_L_TermTime_equation, HStop; cbn. omega.
+    - rewrite MoveToSymbol_L_TermTime_midtape; auto. omega.
+  Qed.
 
   Lemma MoveToSymbol_TermTime_dontstop t :
     MoveToSymbol_TermTime (fun x : sig => false) t <= 4 + 4 * (|tape_local t|).
@@ -289,6 +359,15 @@ Section Copy.
     intros. erewrite CopySymbols_TermTime_local with (r1 := m :: rs); cbn -[plus mult]; eauto. omega.
   Qed.
 
+  Corollary CopySymbols_TermTime_moveright ls m rs x rs' :
+    stop x = true ->
+    CopySymbols_TermTime stop (tape_move_right' ls m (rs ++ x :: rs')) <= 8 + 8 * length rs.
+  Proof.
+    intros HStop. destruct rs as [ | s s'] eqn:E; cbn.
+    - rewrite CopySymbols_TermTime_equation, HStop; cbn. omega.
+    - rewrite CopySymbols_TermTime_midtape; auto. omega.
+  Qed.
+
   Lemma CopySymbols_L_TermTime_local t r1 sym r2 :
     tape_local_l t = r1 ++ sym :: r2 ->
     stop sym = true ->
@@ -309,6 +388,16 @@ Section Copy.
   Proof.
     intros. erewrite CopySymbols_L_TermTime_local with (r1 := m :: ls); cbn -[plus mult]; eauto. omega.
   Qed.
+
+  Corollary CopySymbols_L_TermTime_moveleft ls ls' x m rs :
+    stop x = true ->
+    CopySymbols_L_TermTime stop (tape_move_left' (ls ++ x :: ls') m rs) <= 8 + 8 * length ls.
+  Proof.
+    intros HStop. destruct ls as [ | s s'] eqn:E; cbn.
+    - rewrite CopySymbols_L_TermTime_equation, HStop; cbn. omega.
+    - rewrite CopySymbols_L_TermTime_midtape; auto. omega.
+  Qed.
+  
 
 End Copy.
 
