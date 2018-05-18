@@ -69,7 +69,6 @@ Section Encode_sum.
   Hypothesis (cX : codable sig X) (cY : codable tau Y).
 
   Check fun x => encode (x:X) : list (bool+(sig+tau)).
-  Check TRetract_inr.
   Check _ : Retract sig (bool + (sig + tau)).
 
   Global Instance Encode_sum : codable (FinType(EqType(bool+(sig+tau)))) (X+Y) :=
