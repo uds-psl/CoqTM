@@ -98,7 +98,7 @@ Section MapCode.
   Notation "'g''" := (@TRetr_g (sig^+) (tau^+) retr').
 
   Variable X : Type.
-  Hypothesis enc_X : codeable sig X.
+  Hypothesis enc_X : codable sig X.
 
   (* Translation Functions *)
   Definition injectTape : tape (sig^+) -> tape (tau^+) := mapTape f'.
@@ -216,7 +216,7 @@ Section Computes_Change_Alphabet.
   Variable (sig tau : finType).
   Variable retr : TRetract sig tau.
 
-  Variable (X Y : Type) (cX : codeable sig X) (cY : codeable sig Y).
+  Variable (X Y : Type) (cX : codable sig X) (cY : codable sig Y).
   Variable (defX defY : sig).
   Variable (func : X -> Y).
 
@@ -339,7 +339,7 @@ Section Computes2_Change_Alphabet.
   Variable (f : sig -> tau) (g : tau -> option sig).
   Hypothesis retr : tight_retract f g.
 
-  Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
+  Variable (X Y Z : Type) (cX : codable sig X) (cY : codable sig Y) (cZ : codable sig Z).
   Variable (func : X -> Y -> Z).
   Variable (F : finType).
   Variable (param : X -> Y -> F).

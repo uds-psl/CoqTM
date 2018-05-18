@@ -405,7 +405,7 @@ End Copy.
 
 (** Move between the start and the end symbol *)
 Section Move.
-  Variable (sig: finType) (X:Type) (cX: codeable sig X).
+  Variable (sig: finType) (X:Type) (cX: codable sig X).
 
 
   Definition isStop  (s: sig^+) := match s with inl STOP => true | _ => false end.
@@ -549,7 +549,7 @@ End Move.
 
 (** Copy a value from to an internal (right) tape *)
 Section CopyValue.
-  Variable (sig: finType) (X:Type) (encX: codeable sig X).
+  Variable (sig: finType) (X:Type) (encX: codable sig X).
 
 
   Definition CopyValue :=

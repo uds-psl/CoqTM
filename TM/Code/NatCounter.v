@@ -290,7 +290,7 @@ Proof. pose proof (pow_tail_pow_aux 1 m n) as L. cbn in L. unfold tail_pow. omeg
 Section Computes2_Reset.
   Variable (sig : finType) (n : nat).
   Variable (i1 i2 : Fin.t n).
-  Variable (X Y Z : Type) (encX : codeable sig X) (encY : codeable sig Y) (encZ : codeable sig Z).
+  Variable (X Y Z : Type) (encX : codable sig X) (encY : codable sig Y) (encZ : codable sig Z).
 
   
   (* The 0th tape is the first input and doesn't change. The 1st tape is the second input and the output. *)

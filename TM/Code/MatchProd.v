@@ -12,7 +12,7 @@ Section Projection.
 
   Variable X Y : Type.
   Variable (sigX sigY : finType).
-  Hypothesis (codX : codeable sigX X) (codY : codeable sigY Y).
+  Hypothesis (codX : codable sigX X) (codY : codable sigY Y).
 
 
   Definition stop_X :=

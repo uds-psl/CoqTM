@@ -59,7 +59,7 @@ Section MatchList.
 
   Variable X : Type.
   Variable (sigX : finType).
-  Hypothesis (codX : codeable sigX X).
+  Hypothesis (codX : codable sigX X).
 
   Definition stop (s: (bool+sigX)^+) :=
     match s with

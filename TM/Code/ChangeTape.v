@@ -202,7 +202,7 @@ Section Swap2.
 Section ChangeAlphabet1.
   Variable (sig : finType).
   Variable (X Y : finType).
-  Hypothesis (enc_X : codeable sig X) (enc_Y : codeable sig Y).
+  Hypothesis (enc_X : codable sig X) (enc_Y : codable sig Y).
 
   (* [ 0, 1, ...,  n-1 ] *)
   Definition id_indexes n := tabulate_vec' (fun i : Fin.t n => i).

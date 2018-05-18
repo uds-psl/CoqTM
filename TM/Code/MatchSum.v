@@ -16,7 +16,7 @@ Section MatchSum.
   Variable X Y : Type.
 
   Variable (sigX sigY : finType).
-  Hypothesis (codX : codeable sigX X) (codY : codeable sigY Y).
+  Hypothesis (codX : codable sigX X) (codY : codable sigY Y).
 
   Definition MatchSum_Rel : Rel (tapes ((bool + (sigX+sigY))^+) 1) (bool * tapes ((bool + (sigX+sigY))^+) 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
@@ -115,7 +115,7 @@ Section MatchOption.
 
   Variable X : Type.
   Variable (sigX : finType).
-  Hypothesis (codX : codeable sigX X).
+  Hypothesis (codX : codable sigX X).
 
   Compute encode None.
   Compute encode (Some 42).
@@ -131,13 +131,13 @@ Section MatchOption.
 
   Let def : sig := inl default.
 
-  Local Instance codX' : codeable sig X.
+  Local Instance codX' : codable sig X.
   Proof.
     eapply Encode_Map. eapply codX. unshelve eapply TRetr_inv. econstructor.
   Abort.
 
   Typeclasses eauto := debug.
-  Check _ : codeable tau^+ X.
+  Check _ : codable tau^+ X.
 
   Definition MatchOption_Rel : Rel (tapes tau^+ 1) (bool * tapes tau^+ 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
@@ -247,7 +247,7 @@ Section MapSum.
 
   Variable n : nat.
   Variable (sigX sigY sigZ : inhabitedFinType).
-  Variable (X Y Z : Type) (codX : codeable sigX X) (codY : codeable sigY Y) (codZ : codeable sigZ Z).
+  Variable (X Y Z : Type) (codX : codable sigX X) (codY : codable sigY Y) (codZ : codable sigZ Z).
 
   Variable (inputTape outputTape : Fin.t n).
 

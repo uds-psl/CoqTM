@@ -89,7 +89,7 @@ Section Fix_Sig.
 
   Section Tape_Contains.
 
-    Context `{cx : codeable sig X}.
+    Context `{cx : codable sig X}.
 
     Definition tape_contains (t: tape (sig^+)) (x : X) :=
       exists r1, t = midtape r1 (inl START) (map inr (encode x) ++ [inl STOP]).
@@ -116,29 +116,29 @@ Section Fix_Sig.
 
   Section Encodes_Ext.
     Variable X : Type.
-    Variable (cod1 cod2 : codeable sig X).
+    Variable (cod1 cod2 : codable sig X).
 
     Lemma tape_contains_ext (t : tape (sig^+)) (x : X) :
-      encode (codeable := cod1) x = encode (codeable := cod2) x ->
+      encode (codable := cod1) x = encode (codable := cod2) x ->
       t ≃(cod1) x ->
       t ≃(cod2) x.
     Proof. intros HExt (r1&->). rewrite HExt. repeat econstructor. Qed.
 
     Lemma tape_encodes_ext' (t1 t2 : tape (sig^+)) (x : X) :
-      encode (codeable := cod1) x = encode (codeable := cod2) x ->
+      encode (codable := cod1) x = encode (codable := cod2) x ->
       t1 = t2 ->
       t1 ≃(cod1) x ->
       t2 ≃(cod2) x.
     Proof. intros HEq -> (r1&->). rewrite HEq. repeat econstructor. Qed.
 
     Lemma tape_contains_rev_ext (t : tape (sig^+)) (x : X) :
-      encode (codeable := cod1) x = encode (codeable := cod2) x ->
+      encode (codable := cod1) x = encode (codable := cod2) x ->
       t ≂(cod1) x ->
       t ≂(cod2) x.
     Proof. intros HExt (r1&->). rewrite HExt. repeat econstructor. Qed.
 
     Lemma tape_encodes_rev_ext' (t1 t2 : tape (sig^+)) (x : X) :
-      encode (codeable := cod1) x = encode (codeable := cod2) x ->
+      encode (codable := cod1) x = encode (codable := cod2) x ->
       t1 = t2 ->
       t1 ≂(cod1) x ->
       t2 ≂(cod2) x.
@@ -153,7 +153,7 @@ Section Fix_Sig.
 
   Section Computes.
     Variable n : nat.
-    Context `{cX: codeable sig X} `{cY: codeable sig Y}.
+    Context `{cX: codable sig X} `{cY: codable sig Y}.
     Variable F : finType.
 
     (*
@@ -252,7 +252,7 @@ Section Fix_Sig.
   Section Computes2.
     Variable n : nat.
     (* WARNING: [Z] is overloaded in Coq with the type of integer numbers! *)
-    Context `{cX: codeable sig X} `{cY: codeable sig Y} Z `{cZ: codeable sig Z}.
+    Context `{cX: codable sig X} `{cY: codable sig Y} Z `{cZ: codable sig Z}.
     Variable F : finType.
 
     (*
@@ -377,7 +377,7 @@ Section Computes_Gen.
 
 
   Variable (Res : Type).
-  Hypothesis (codRes : codeable sig Res).
+  Hypothesis (codRes : codable sig Res).
   Variable resTape : Fin.t n.
 
 
@@ -394,7 +394,7 @@ Section Computes_Gen.
       {
         par_tape :> Fin.t n;
         par_type : Type;
-        par_code :> codeable sig par_type;
+        par_code :> codable sig par_type;
       }.
 
   Definition param_genF (params : list comp_gen_param) :=
@@ -444,7 +444,7 @@ Section Test_Computes_Gen1.
   Variable sig : finType.
   Variable n_tapes : nat.
   Variable (i j : Fin.t n_tapes).
-  Variable (X Y : Type) (cX : codeable sig X) (cY : codeable sig Y).
+  Variable (X Y : Type) (cX : codable sig X) (cY : codable sig Y).
   Variable (f : X -> Y).
   Variable F : finType.
 
@@ -462,7 +462,7 @@ Section Test_Computes_Gen2.
   Variable sig : finType.
   Variable n_tapes : nat.
   Variable (i j k : Fin.t n_tapes).
-  Variable (X Y Z : Type) (cX : codeable sig X) (cY : codeable sig Y) (cZ : codeable sig Z).
+  Variable (X Y Z : Type) (cX : codable sig X) (cY : codable sig Y) (cZ : codable sig Z).
   Variable (f : X -> Y -> Z).
   Variable F : finType.
 
@@ -484,7 +484,7 @@ End Test_Computes_Gen2.
 
 Section Test_InitTape_Gen0.
   Variable sig : finType.
-  Variable (X : Type) (cX : codeable sig X).
+  Variable (X : Type) (cX : codable sig X).
   Variable x : X.
 
   Definition gen0 := Computes_Gen cX (Fin.F1 (n := 0)) [||] x.
