@@ -50,15 +50,14 @@ End InjectTape.
 
 Section InjectSurject.
   Variable sig tau : finType.
-  Variable (f : sig -> tau) (g : tau -> option sig).
-  Hypothesis I : retract f g.
+  Variable inj : Retract sig tau.
   Variable def : sig.
 
   Lemma surject_inject' (l : list sig) :
-    List.map (fun t : tau => match g t with
+    List.map (fun t : tau => match Retr_g t with
                           | Some s => s
                           | None => def
-                          end) (List.map f l) = l.
+                          end) (List.map Retr_f l) = l.
   Proof.
     induction l; cbn.
     - reflexivity.
@@ -66,7 +65,7 @@ Section InjectSurject.
   Qed.
   
   Lemma surject_inject_tape (t : tape sig) :
-    surjectTape g def (injectTape f t) = t.
+    surjectTape Retr_g def (injectTape Retr_f t) = t.
   Proof.
     unfold surjectTape, injectTape, surject.
     destruct t; cbn; f_equal; try rewrite retract_g_adjoint; auto; apply surject_inject'.
