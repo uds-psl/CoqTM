@@ -89,14 +89,15 @@ Section Fix_Sig.
 
   Section Tape_Contains.
 
-    Context `{cx : codable sig X}.
+    Context `{cX : codable sig X}.
 
-    Definition tape_contains (t: tape (sig^+)) (x : X) :=
+    Definition tape_contains' (t: tape (sig^+)) (x : X) :=
       exists r1, t = midtape r1 (inl START) (map inr (encode x) ++ [inl STOP]).
+    Definition tape_contains := tape_contains'.
 
-    Definition tape_contains_rev (t: tape (sig^+)) (x : X) :=
+    Definition tape_contains_rev' (t: tape (sig^+)) (x : X) :=
       exists r1, t = midtape (map inr (rev (encode x)) ++ inl START :: r1) (inl STOP) nil.
-
+    Definition tape_contains_rev := tape_contains_rev'.
 
     Lemma tape_contains_rev_isRight t x :
       tape_contains_rev t x ->
@@ -108,10 +109,14 @@ Section Fix_Sig.
   Arguments tape_contains : simpl never.
   Arguments tape_contains_rev : simpl never.
 
+  Arguments tape_contains' {X} (cX).
+  Arguments tape_contains_rev' {X} (cX).
+
+  (** The variant of the containing relations with prime allow to explicitely give and print the encoding of the type. *)
   Notation "t ≃ x" := (tape_contains t x) (at level 70, no associativity).
-  Notation "t ≃( c ) x" := (tape_contains (cx := c) t x) (at level 70, no associativity, only parsing).
+  Notation "t ≃( c ) x" := (tape_contains' c t x) (at level 70, no associativity).
   Notation "t ≂ x" := (tape_contains_rev t x) (at level 70, no associativity).
-  Notation "t ≂( c ) x" := (tape_contains_rev (cx := c) t x) (at level 70, no associativity, only parsing).
+  Notation "t ≂( c ) x" := (tape_contains_rev' c t x) (at level 70, no associativity).
 
 
   Section Encodes_Ext.
@@ -119,33 +124,32 @@ Section Fix_Sig.
     Variable (cod1 cod2 : codable sig X).
 
     Lemma tape_contains_ext (t : tape (sig^+)) (x : X) :
-      encode (codable := cod1) x = encode (codable := cod2) x ->
       t ≃(cod1) x ->
+      cod1 x = cod2 x ->
       t ≃(cod2) x.
-    Proof. intros HExt (r1&->). rewrite HExt. repeat econstructor. Qed.
+    Proof. intros (r1&->) ->. now repeat econstructor. Qed.
 
-    Lemma tape_encodes_ext' (t1 t2 : tape (sig^+)) (x : X) :
-      encode (codable := cod1) x = encode (codable := cod2) x ->
-      t1 = t2 ->
+    Lemma tape_contains_ext' (t1 t2 : tape (sig^+)) (x : X) :
       t1 ≃(cod1) x ->
+      cod1 x = cod2 x ->
+      t1 = t2 ->
       t2 ≃(cod2) x.
-    Proof. intros HEq -> (r1&->). rewrite HEq. repeat econstructor. Qed.
+    Proof. intros (r1&->) -> <-. now repeat econstructor. Qed.
 
     Lemma tape_contains_rev_ext (t : tape (sig^+)) (x : X) :
-      encode (codable := cod1) x = encode (codable := cod2) x ->
       t ≂(cod1) x ->
+      cod1 x = cod2 x ->
       t ≂(cod2) x.
-    Proof. intros HExt (r1&->). rewrite HExt. repeat econstructor. Qed.
+    Proof. intros (r1&->) ->. now repeat econstructor. Qed.
 
-    Lemma tape_encodes_rev_ext' (t1 t2 : tape (sig^+)) (x : X) :
-      encode (codable := cod1) x = encode (codable := cod2) x ->
-      t1 = t2 ->
+    Lemma tape_contains_rev_ext' (t1 t2 : tape (sig^+)) (x : X) :
       t1 ≂(cod1) x ->
+      cod1 x = cod2 x ->
+      t1 = t2 ->
       t2 ≂(cod2) x.
-    Proof. intros HEq -> (r1&->). rewrite HEq. repeat econstructor. Qed.
+    Proof. intros (r1&->) -> <-. now repeat econstructor. Qed.
 
   End Encodes_Ext.
-
 
 
 
@@ -360,10 +364,10 @@ Arguments Computes2_T {sig n X cX Y cY} r x y/.
 
 
 Notation "t ≃ x" := (tape_contains t x) (at level 70, no associativity).
-Notation "t ≃( c ) x" := (tape_contains (cx := c) t x) (at level 70, no associativity, only parsing).
+Notation "t ≃( cX ) x" := (tape_contains' cX t x) (at level 70, no associativity).
 
 Notation "t ≂ x" := (tape_contains_rev t x) (at level 70, no associativity).
-Notation "t ≂( c ) x" := (tape_contains_rev (cx := c) t x) (at level 70, no associativity, only parsing).
+Notation "t ≂( cX ) x" := (tape_contains_rev' cX t x) (at level 70, no associativity).
 
 
 
