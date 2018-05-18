@@ -17,8 +17,6 @@ Local Arguments finType_CS (X) {_ _}.
 Local Arguments skipn { A } !n !l.
 
 
-Local Arguments Encode_Nat : simpl never.
-
 (*
 Lemma nat_encode_length (n : nat) :
 | encode n : list bool | = S n.

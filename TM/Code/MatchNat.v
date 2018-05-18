@@ -5,13 +5,6 @@ Require Import TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Compound.TMTac.
 
 
-Lemma encode_nat_correct (n : nat) :
-  encode n = repeat true n ++ [false].
-Proof. induction n; cbn in *; f_equal; auto. Qed.
-
-Local Arguments Encode_Nat : simpl never.
-
-
 
 (* Basic pattern matching *)
 Section MatchNat.
@@ -44,10 +37,10 @@ Section MatchNat.
     { Unshelve. 4,6: reflexivity. all: omega. }
     {
       intros tin (yout&tout) H. intros n HEncN. TMSimp.
-      destruct HEncN as (r1&HEncN). rewrite encode_nat_correct in HEncN. TMSimp.
+      destruct HEncN as (r1&HEncN). TMSimp.
       destruct n; cbn in *; TMSimp.
       - repeat econstructor.
-      - repeat econstructor. now rewrite encode_nat_correct.
+      - repeat econstructor.
     }
   Qed.
 
@@ -79,8 +72,8 @@ Section MatchNat.
       {
         intros tin (yout, tout) H. intros n HEncN.
         TMSimp. clear all except HEncN.
-        destruct HEncN as (r1&->). cbn. simpl_tape. rewrite encode_nat_correct. cbn.
-        repeat econstructor. now rewrite encode_nat_correct.
+        destruct HEncN as (r1&->). cbn. simpl_tape.
+        repeat econstructor.
       }
     Qed.
 
