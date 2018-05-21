@@ -120,34 +120,19 @@ Section Fix_Sig.
 
 
   Section Encodes_Ext.
-    Variable X : Type.
-    Variable (cod1 cod2 : codable sig X).
+    Context `{cX : codable sig X} `{cY : codable sig Y}.
 
-    Lemma tape_contains_ext (t : tape (sig^+)) (x : X) :
-      t ≃(cod1) x ->
-      cod1 x = cod2 x ->
-      t ≃(cod2) x.
+    Lemma tape_contains_ext (t : tape (sig^+)) (x : X) (y : Y) :
+      t ≃(cX) x ->
+      cX x = cY y ->
+      t ≃(cY) y.
     Proof. intros (r1&->) ->. now repeat econstructor. Qed.
 
-    Lemma tape_contains_ext' (t1 t2 : tape (sig^+)) (x : X) :
-      t1 ≃(cod1) x ->
-      cod1 x = cod2 x ->
-      t1 = t2 ->
-      t2 ≃(cod2) x.
-    Proof. intros (r1&->) -> <-. now repeat econstructor. Qed.
-
-    Lemma tape_contains_rev_ext (t : tape (sig^+)) (x : X) :
-      t ≂(cod1) x ->
-      cod1 x = cod2 x ->
-      t ≂(cod2) x.
+    Lemma tape_contains_rev_ext (t : tape (sig^+)) (x : X) (y : Y) :
+      t ≃(cX) x ->
+      cX x = cY y ->
+      t ≃(cY) y.
     Proof. intros (r1&->) ->. now repeat econstructor. Qed.
-
-    Lemma tape_contains_rev_ext' (t1 t2 : tape (sig^+)) (x : X) :
-      t1 ≂(cod1) x ->
-      cod1 x = cod2 x ->
-      t1 = t2 ->
-      t2 ≂(cod2) x.
-    Proof. intros (r1&->) -> <-. now repeat econstructor. Qed.
 
   End Encodes_Ext.
 

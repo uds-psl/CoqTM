@@ -6,10 +6,6 @@ Require Import TM.Compound.TMTac.
 Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 
 
-(* This is good *)
-Local Arguments finType_CS (X) {_ _}.
-
-
 (* Basic pattern matching *)
 Section MatchSum.
 
@@ -86,14 +82,8 @@ Section MatchSum.
       { cbn. reflexivity. }
       {
         intros tin (()&tout) H.
-        Arguments tape_move : simpl never.
         cbn. intros y HEncY. destruct HEncY as (ls&HEncY). TMSimp; clear_trivial_eqs.
-        cbv [tape_move_mono] in *. cbn in *.
-        Arguments tape_move { _ _ _ } /.
-        cbn [tape_move_mono tape_move] in *.
-        
-        
-        repeat econstructor. f_equal. simpl_tape. cbn. simpl_tape. reflexivity.
+        repeat econstructor. f_equal. simpl_tape. cbn. reflexivity.
       }
     Qed.
 
@@ -101,11 +91,7 @@ Section MatchSum.
 
 End MatchSum.
 
-(*
-
 (** ** Reductions *)
-
-(* TODO!!! *)
 
 Require Import ChangeAlphabet LiftSigmaTau.
 
@@ -117,27 +103,24 @@ Section MatchOption.
   Variable (sigX : finType).
   Hypothesis (codX : codable sigX X).
 
-  Compute encode None.
+  Compute encode (None : option nat).
   Compute encode (Some 42).
 
   Let sig := FinType (EqType (bool + (sigX + Empty_set))).
   Let tau := FinType (EqType (bool + sigX)).
 
-  Let retr : TRetract sig tau .
-  Proof. econstructor. eapply tretract_sum; eauto. Defined.
+  Let retr : Retract sig tau := _.
 
-  Let retr' : TRetract sig^+ tau^+.
-  Proof. eapply ChangeAlphabet.retr'. eapply retr. Defined.
+  Let retr' : Retract sig^+ tau^+ := _.
 
   Let def : sig := inl default.
 
-  Local Instance codX' : codable sig X.
-  Proof.
-    eapply Encode_Map. eapply codX. unshelve eapply TRetr_inv. econstructor.
-  Abort.
-
-  Typeclasses eauto := debug.
+  Check _ : codable sig X.
+  Check _ : codable sig^+ X.
+  Check _ : codable tau X.
   Check _ : codable tau^+ X.
+  Check _ : codable tau (option X).
+  Check _ : codable tau^+ (option X).
 
   Definition MatchOption_Rel : Rel (tapes tau^+ 1) (bool * tapes tau^+ 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
@@ -145,91 +128,70 @@ Section MatchOption.
                 tin ≃ o ->
                 match o with
                 | Some x => tout ≃ x /\ yout = true
-                | None => tout ≃ tt /\ yout = false
+                | None => isRight tout /\ yout = false
                 end).
 
-  Definition MatchOption : { M : mTM (bool + sigX)^+ 1 & states M -> bool }.
-  Proof.
-    eapply Lift.
-    - cbn. eapply MatchSum with (sigX := sigX) (sigY := FinType (EqType Empty_set)).
-    - apply TRetract_Retract. apply retr'.
-    - refine [| inr def |].
-  Defined.
+
+  Definition MatchOption : { M : mTM tau^+ 1 & states M -> bool } :=
+    If (Lift (MatchSum (sigX) (FinType (EqType Empty_set))) retr' [| inr def |])
+       (Nop _ _ true)
+       (Move _ R false).
 
 
+  Definition opt_to_sum (o : option X) : X + unit :=
+    match o with
+    | Some x => inl x
+    | None => inr tt
+    end.
+  
+  
   Lemma MatchOption_Sem :
-    MatchOption ⊨c(5) MatchOption_Rel.
+    MatchOption ⊨c(7) MatchOption_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold MatchOption. eapply Lift_RealiseIn. eapply MatchSum_Sem with (X := X) (Y := Empty_set). }
+    { unfold MatchOption. repeat TM_Correct.
+      - eapply MatchSum_Sem with (X := X) (Y := unit).
+    }
     { cbn. reflexivity. }
     {
       intros tin (yout&tout) H. intros o HEncO.
-      destruct HEncO as (ls&HEncO). destruct o as [x| ]; TMSimp.
-      - specialize (H (inl x)). TMSimp. spec_assert H as (H&->).
-        { repeat econstructor. cbn. unfold surjectTapes. simpl_vector. TMSimp. f_equal. f_equal.
-          rewrite List.map_app, !List.map_map. cbn. reflexivity. }
-        autounfold with tape in H. simpl_vector in H. cbn in *.
-        split; auto.
-        Typeclasses eauto := debug.
-        Check contains_translate_tau2 (sig := sig) (tau := tau) (retr := retr) (enc_X := codX).
-        cbn in *.
-        unfold tape_contains in *.
-        Set Printing Implicit.
-        cbn in *.
-        .
+      unfold tape_contains in HEncO. (* This makes the (otherwise implicit) encoding visible *)
+      cbn in *.
 
-        Show Existentials.
+      destruct H; TMSimp.
+      { (* "Then" case *)
+        (* This part is the same for both branches *)
+        specialize (H (opt_to_sum o)). spec_assert H.
+        { autounfold with tape. cbn. erewrite nth_map2'. cbn. 
+          eapply contains_translate_tau1.
+          eapply tape_contains_ext with (X := option X); eauto.
+          destruct o; cbn; f_equal. rewrite !List.map_map. apply map_ext. cbn. auto.
+        }
+        destruct o as [ x | ]; cbn in *; destruct H as (H&H'); inv H'. split; auto.
+        (* We know now that o = Some x *)
 
-        instantiate (1 := ltac:(print_goal_cbn)).
+        autounfold with tape in H. cbn in H. rewrite nth_map2' in H. cbn in H.
+        unfold tape_contains in H. unfold tape_contains.
 
-
-        
-
-
-
-
-
-      
-      hnf. intros tin (yout&tout). intros H. destruct_tapes; cbn in *.
-      hnf in *. destruct yout; cbn in *.
-      {
-        intros [ v | ] Hv; cbn in *.
-        - specialize (H (inl v)).
-          spec_assert H as (x&H).
-          {
-            destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
-            eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
-            hnf. do 2 eexists. split. exact Hv1. exact Hv2.
-          }
-          inv H. eauto.
-        - specialize (H (inr tt)).
-          spec_assert H as (x&H1&H2).
-          {
-            destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
-            eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
-            hnf. do 2 eexists. split. exact Hv1. exact Hv2.
-          }
-          inv H1.
+        apply contains_translate_tau2 in H; unfold tape_contains in H.
+        - eapply tape_contains_ext with (1 := H). cbn. rewrite List.map_map. apply map_ext. auto.
+        - cbn. right. intros [ | ]; cbn; eauto.
       }
-      {
-        intros [ v | ] Hv; cbn in *.
-        - specialize (H (inl v)).
-          spec_assert H as (x&H1&H2).
-          {
-            destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
-            eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
-            hnf. do 2 eexists. split. exact Hv1. exact Hv2.
-          }
-          inv H1.
-        - specialize (H (inr tt)).
-          spec_assert H as (x&H).
-          {
-            destruct Hv as (r1&r2&Hv1&Hv2); cbn in *.
-            eapply (ChangeAlphabet.encodeTranslate_tau1 (inl true) (retr := retr')).
-            hnf. do 2 eexists. split. exact Hv1. exact Hv2.
-          }
-          inv H. eauto.
+      { (* "Else" case *)
+        specialize (H (opt_to_sum o)). spec_assert H.
+        { autounfold with tape. cbn. erewrite nth_map2'. cbn. 
+          eapply contains_translate_tau1.
+          eapply tape_contains_ext with (X := option X); eauto.
+          destruct o; cbn; f_equal. rewrite !List.map_map. apply map_ext. cbn. auto.
+        }
+        destruct o as [ x | ]; cbn in *; destruct H as (H&H'); inv H'. split; auto.
+        (* We know now that o = None *)
+
+        autounfold with tape in H. cbn in H. rewrite nth_map2' in H. cbn in H.
+        unfold tape_contains in H.
+        apply contains_translate_tau2 in H; unfold tape_contains in H.
+        - destruct H as (ls&->). cbn. repeat econstructor.
+        - cbn. right. intros [ | ]; cbn; eauto.
       }
     }
   Qed.
@@ -237,12 +199,7 @@ Section MatchOption.
 End MatchOption.
 
 
-(* TODO: Konstruktor für Listen *)
-
-
-(* TODO: Match für Zahlen: von Listen-Match ableiten *)
-
-
+(*
 Section MapSum.
 
   Variable n : nat.
