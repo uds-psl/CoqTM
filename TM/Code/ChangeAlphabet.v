@@ -145,11 +145,10 @@ Section MapCode.
   Qed.
 
   Lemma contains_translate_tau2 (x : X) (t : tape (tau^+)) :
-    surjectTape t ≃ x ->
     (~ def el encode x) \/ (forall t' : tau, exists s', Retr_g t' = Some s') ->
-    t ≃ x.
+    surjectTape t ≃ x -> t ≃ x.
   Proof.
-    intros (r1&HCode) HDef. cbn in *.
+    intros HDef. intros (r1&HCode). cbn in *.
     eapply mapTape_inv_midtape in HCode as (ls'&m'&rs'&->&->&HCode1&HCode2).
     repeat econstructor; cbn in *. f_equal.
     - unfold surject in HCode1. destruct m'; cbn in *. cbv [id] in *. now inv HCode1.
