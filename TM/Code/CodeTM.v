@@ -55,14 +55,15 @@ End IsRight.
 (** Type for start and stop symbols, isomorphic to [bool] *)
 
 Inductive boundary : Type :=
-| START : boundary
-| STOP  : boundary.
+| START   : boundary
+| STOP    : boundary
+| UNKNOWN : boundary.
 
 Instance boundary_eq : eq_dec boundary.
 Proof. unfold dec. decide equality. Defined.
 
 Instance boundary_fin : finTypeC (EqType boundary).
-Proof. split with (enum := [START; STOP]). cbn. intros []; cbn; reflexivity. Defined.
+Proof. split with (enum := [START; STOP; UNKNOWN]). cbn. intros []; cbn; reflexivity. Defined.
 
 
 Notation "sig '^+'" := (FinType(EqType(boundary + sig))) (at level 0) : type_scope.

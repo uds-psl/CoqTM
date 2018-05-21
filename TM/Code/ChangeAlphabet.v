@@ -91,7 +91,6 @@ Proof. intros H. destruct ls; cbn in *; now inv H. Qed.
 Section MapCode.
   Variable sig tau : finType.
   Variable retr : Retract sig tau.
-  Variable def : sig.
 
   (* [Retract_sum] isn't declared as instance *)
   Global Instance Retract_plus : Retract (sig^+) (tau^+) := Retract_sum _ _.
@@ -106,7 +105,7 @@ Section MapCode.
 
   (* Translation Functions *)
   Definition injectTape : tape (sig^+) -> tape (tau^+) := mapTape f'.
-  Definition surjectTape : tape (tau^+) -> tape (sig^+) := surjectTape g' (inr def).
+  Definition surjectTape : tape (tau^+) -> tape (sig^+) := surjectTape g' (inl UNKNOWN).
 
   (* The other direction does not hold *)
   Lemma surjectTape_injectTape t :
@@ -124,7 +123,7 @@ Section MapCode.
     split; intros (r1&HCode); subst; cbn in *; hnf.
     - repeat eexists. cbn. f_equal. rewrite map_app, !List.map_map. cbn. reflexivity.
     - unfold injectTape in HCode.
-      exists (surjectSymbols (inr def) _ r1).
+      exists (surjectSymbols (inl UNKNOWN) _ r1).
       apply mapTape_inv_midtape in HCode as (ls'&m'&rs'&->&->&HCode1&HCode2).
       rewrite map_map in HCode2.
       destruct m'; cbn in *; inv HCode1. cbv [id] in *. inv H0. clear H.
@@ -144,9 +143,22 @@ Section MapCode.
     eapply map_ext. intros. unfold surject. cbn. retract_adjoint. reflexivity.
   Qed.
 
+  Lemma surject_inject_inr (x : boundary) (str : list tau^+) (code : list sig) :
+    surjectSymbols (inl x) Retract_plus str = map inr code ->
+    exists str' : list tau, str = map inr str' /\ map Retr_g str' = map Some code.
+  Proof.
+    revert x code. induction str as [ | s str' IH]; intros; cbn in *.
+    - apply map_eq_nil' in H as ->. exists nil. cbn. tauto.
+    - destruct code as [ | c code']; cbn in *; inv H.
+      destruct s; cbn in *; inv H1.
+      specialize (IH _ _ H2) as (str''&->&IH). rewrite <- IH.
+      exists (e :: str''). cbn. split. auto. f_equal.
+      unfold surject, retract_sum_g in H0. destruct (Retr_g e) eqn:E; inv H0; auto.
+  Qed.
+  
   Lemma contains_translate_tau2 (x : X) (t : tape (tau^+)) :
     surjectTape t ≃ x ->
-    (~ def el encode x) \/ (forall t' : tau, exists s', Retr_g t' = Some s') ->
+    (forall s : tau, s el encode x -> exists s', Retr_g s = Some s') ->
     t ≃ x.
   Proof.
     intros (r1&HCode) HDef. cbn in *.
@@ -155,8 +167,8 @@ Section MapCode.
     - unfold surject in HCode1. destruct m'; cbn in *. cbv [id] in *. now inv HCode1.
       destruct (Retr_g e); inv HCode1.
     - symmetry in HCode2.
-      change (surjectSymbols (inr def) Retract_plus rs' = map inr (cX x) ++ [inl STOP]) in HCode2.
-      eapply surject_app in HCode2 as (str&str'&->&L1&L2).
+      change (surjectSymbols (inl UNKNOWN) Retract_plus rs' = map inr (cX x) ++ [inl STOP]) in HCode2.
+      eapply surject_app in HCode2 as (str1&str2&->&L1&L2).
       eapply inject_surject in L1 as ->; eauto.
       eapply inject_surject in L2 as ->; eauto.
       + f_equal. unfold injectSymbols. rewrite !map_map. eapply map_ext. intros. cbn. reflexivity.
@@ -164,18 +176,22 @@ Section MapCode.
         unfold surject in H. destruct t; cbn in *; swap 1 2. destruct (Retr_g e); inv H. inv H.
         intros [ | ]; intros [ | ]; try congruence; auto. inv H. eexists. cbn. reflexivity.
       + intros [ | ]; intros He; cbn; eauto.
-        destruct (Retr_g e) eqn:E1; cbn; eauto.
-        destruct HDef as [HDef1|HDef2].
-        { contradict HDef1.
-          eenough (List.In (inr def) (map inr (encode x))) as (?&?&?) % in_map_iff by congruence.
-          rewrite <- L1. eapply in_map_iff. eexists. unfold surject. instantiate (1 := inr e). cbn.
-          rewrite E1. auto. }
-        { specialize (HDef2 e) as (?&?). congruence. }
+        destruct (Retr_g e) eqn:E1; cbn; eauto. exfalso.
+        pose proof surject_inject_inr L1 as (str1'&->&L3).
+        apply in_map_iff in He as (?&HETmp&HE); inv HETmp.
+        enough (e el encode x) as L4.
+        {
+          specialize (HDef _ L4) as (?&?). congruence.
+        }
+        assert (None el map Retr_g str1') as L5.
+        {
+          rewrite <- E1. eapply in_map_iff; eauto.
+        }
+        rewrite L3 in L5. apply in_map_iff in L5 as (?&?&?). congruence.
   Qed.
 
-
   Corollary contains_surjectTapes_sameEnc (t1 t2 : tape (sig^+)) (x : X) :
-    (~ def el encode x) \/ (forall t' : tau, exists s', Retr_g t' = Some s') ->
+     (forall t' : tau, t' el encode x -> exists s', Retr_g t' = Some s') ->
     surjectTape (injectTape t1) = surjectTape (injectTape t2) ->
     t1 ≃ x -> t2 ≃ x.
   Proof.
@@ -185,7 +201,7 @@ Section MapCode.
   Qed.
 
   Corollary contains_surjectTapes_sameEnc' (t1 t2 : tape (tau^+)) (x : X) :
-    (~ def el encode x) \/ (forall t' : tau, exists s', Retr_g t' = Some s') ->
+     (forall t' : tau, t' el encode x -> exists s', Retr_g t' = Some s') ->
     surjectTape t1 = surjectTape t2 ->
     t1 ≃ x -> t2 ≃ x.
   Proof.
