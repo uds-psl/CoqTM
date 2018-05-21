@@ -199,27 +199,37 @@ Section MatchOption.
 End MatchOption.
 
 
-(*
 Section MapSum.
 
   Variable n : nat.
-  Variable (sigX sigY sigZ : inhabitedFinType).
+  Variable (sigX sigY sigZ : finType) (defX : sigX) (defY : sigY) (defZ : sigZ).
   Variable (X Y Z : Type) (codX : codable sigX X) (codY : codable sigY Y) (codZ : codable sigZ Z).
 
-  Variable (inputTape outputTape : Fin.t n).
+  Let sig_match := FinType(EqType (bool+(sigX+sigY))).
+  Let sig_M1 := FinType(EqType (sigX+sigZ)).
+  Let sig_M2 := FinType(EqType (sigY+sigZ)).
+  Let tau := FinType(EqType ((bool + (sigX + sigY)) + sigZ)).
 
-  Local Definition sig_add_sum : finType := FinType(EqType((bool+(sigX+sigY))+sigZ)).
-  Local Definition sig_add_X : finType := FinType(EqType(sigX+sigZ)).
-  Local Definition sig_add_Y : finType := FinType(EqType(sigY+sigZ)).
+  Let retr_match : Retract sig_match tau := _.
+  Let retr_M1 : Retract sig_M1 tau := Retract_sum _ _.
+  Let retr_M2 : Retract sig_M2 tau := Retract_sum _ _.
 
+  Let def_match : sig_match := inl default. (* [bool] *)
+  Let def_in_M1 : sig_M1 := inr default. (* [sigZ] *)
+  Let def_out_M1 : sig_M1 := inl default. (* [sigX] *)
+  Let def_in_M2 : sig_M2 := inr default. (* [sigZ] *)
+  Let def_out_M2 : sig_M2 := inl default. (* [sigY] *)
+  Let def_inl : sig_match := inr (inr default). (* [sigY] *)
+  Let def_inr : sig_match := inr (inl default). (* [sigX] *)
+  
   Variable f : X -> Z.
   Variable g : Y -> Z.
 
-  Variable M1 : { M : mTM (sig_add_X ^+) n & states M -> unit }.
-  Variable M2 : { M : mTM (sig_add_Y ^+) n & states M -> unit }.
+  Variable M1 : { M : mTM sig_M1^+ (S (S n)) & states M -> unit }.
+  Variable M2 : { M : mTM sig_M2^+ (S (S n)) & states M -> unit }.
 
-  Hypothesis M1_Computes : M1 ⊫ Computes_Rel inputTape outputTape _ _ f.
-  Hypothesis M2_Computes : M2 ⊫ Computes_Rel inputTape outputTape _ _ g.
+  Hypothesis M1_Computes : M1 ⊫ Computes_Rel f.
+  Hypothesis M2_Computes : M2 ⊫ Computes_Rel g.
 
   Definition map_sum : X + Y -> Z :=
     fun s => match s with
@@ -241,57 +251,77 @@ Section MapSum.
    * stehen. Dementsprechend wird die Injektion von [sigX] bzw. [sigY] als [default]-Symbol gewählt.
    *)
 
-  Definition MapSum : { M : mTM (sig_add_sum ^+) n & states M -> unit } :=
-    If (ChangeAlphabet (inl (default : bool)) _ (Inject (MatchSum sigX sigY) [|inputTape|]))
-      (ChangeAlphabet (inl (default : sigX)) _ M1)
-      (ChangeAlphabet (inl (default : sigY)) _ M2).
+  Definition MapSum : { M : mTM tau^+ (S (S n)) & states M -> unit } :=
+    If (Inject (Lift (MatchSum sigX sigY) (Retract_plus retr_match) [| inr def_match |]) [|Fin0|])
+       (ChangeAlphabet retr_M1 def_in_M1 def_out_M1 M1;;
+        Inject (Lift (Constr_inl sigX sigY) (Retract_plus retr_match) [| inr def_inl |]) [|Fin0|])
+       (ChangeAlphabet retr_M2 def_in_M2 def_out_M2 M2;;
+        Inject (Lift (Constr_inr sigX sigY) (Retract_plus retr_match) [| inr def_inr |]) [|Fin0|]).
 
 
-
-  Lemma MapSum_Computes : MapSum ⊫ Computes_Rel inputTape outputTape _ _ map_sum.
+  Lemma MapSum_Computes : MapSum ⊫ Computes_Rel map_sum.
   Proof.
     eapply WRealise_monotone.
-    {
-      unfold MapSum. repeat TM_Correct.
-      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_WRealise. eapply MatchSum_Sem.
-      - simple eapply (ChangeAlphabet_Computes_WRealise _ _ f).
-        + eapply M1_Computes.
-        + left. intros. cbn. intros (?&?&?) % in_map_iff. inv H.
-      - simple eapply (ChangeAlphabet_Computes_WRealise _ _ g).
-        + eapply M2_Computes.
-        + left. intros. cbn. intros (?&?&?) % in_map_iff. inv H.
+    { unfold MapSum. repeat TM_Correct.
+      - eapply RealiseIn_WRealise. apply MatchSum_Sem with (X := X) (Y := Y).
+      - eapply ChangeAlphabet_Computes_WRealise with (X := X) (Y := Z).
+        + apply M1_Computes.
+        + left; cbn; split; subst; intros x (?&H&?) % in_map_iff; cbn in *; inv H.
+      - eapply RealiseIn_WRealise. apply Constr_inl_Sem.
+      - eapply ChangeAlphabet_Computes_WRealise with (X := Y) (Y := Z).
+        + apply M2_Computes.
+        + left; cbn; split; subst; intros x (?&H&?) % in_map_iff; cbn in *; inv H.
+      - eapply RealiseIn_WRealise. apply Constr_inr_Sem.
     }
-    { clear M1_Computes M2_Computes M1 M2. hnf. intros tin (()&tout). intros H. destruct_tapes; cbn in *.
-      intros s H4. destruct H; destruct H as (tmid&H1&H2); hnf in H1, H2; cbn in H1, H2.
-      {
-        destruct H1 as (H1&H0); hnf in H0, H1. specialize (H1 s). spec_assert H1 as (x&->&H1).
-        { eapply ChangeAlphabet.encodeTranslate_tau1 in H4. autounfold with tape. simpl_tape. eauto. }
-        clear H0. subst; cbn. specialize (H2 x). spec_assert H2.
-        { clear H2 H4. autounfold with tape in H1. simpl_tape in H1.
-          eapply encodeTranslate_tau2 with (def := inr default).
-          - left. cbn. intros (?&?&?) % in_map_iff. inv H.
-          - unshelve eapply (encodeTranslate_tau2 _) in H1.
-            + left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
-            + eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
-        }
-        refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
+    {
+      intros tin ((), tout) H.
+      intros s HEncS HOut HInt.
+      destruct H; TMSimp.
+      { (* "Then" branche ([s = inl x]) *)
+        specialize (H s). spec_assert H.
+        { eapply contains_translate_tau1; auto. }
+        destruct s as [ x | y]; destruct H as (H&H'); inv H'.
+        rewrite (H1 Fin1 ltac:(vector_not_in)) in *.
+        apply contains_translate_tau2 in H; swap 1 2.
+        { left. cbn. unfold def_match. intros (?&C&?) % in_map_iff; cbv in C; inv C. }
+        unfold tape_contains in H, H0.
+        specialize (H0 x). spec_assert H0.
+        { eapply tape_contains_ext with (1 := H). cbn. rewrite !List.map_map. apply map_ext. cbn. cbv. auto. }
+        specialize (H0 HOut). spec_assert H0 as (HCompIn&HCompOut&HCompInt).
+        { intros i. rewrite <- H1; auto. vector_not_in. }
+        specialize (H2 x). spec_assert H2.
+        { apply contains_translate_tau1. eapply tape_contains_ext with (1 := HCompIn).
+          cbn. rewrite !List.map_map. apply map_ext. cbv. auto. }
+        apply contains_translate_tau2 in H2; swap 1 2.
+        { left. cbn. unfold def_inl. intros [ C | (?&C&?) % in_map_iff]; cbv in C; inv C. }
+        repeat split; cbn; auto.
+        + rewrite H3 in HCompOut. 2: vector_not_in. eapply tape_contains_ext with (1 := HCompOut).
+          cbn. rewrite List.map_map. apply map_ext. cbv. auto.
+        + intros i. specialize (HCompInt i). rewrite H3 in HCompInt. 2: vector_not_in. auto.
       }
-      {
-        destruct H1 as (H1&H0); hnf in H0, H1. specialize (H1 s). spec_assert H1 as (y&->&H1).
-        { eapply ChangeAlphabet.encodeTranslate_tau1 in H4. autounfold with tape. simpl_tape. eauto. }
-        clear H0. subst; cbn. specialize (H2 y). spec_assert H2.
-        { clear H2 H4. autounfold with tape in H1. simpl_tape in H1.
-          eapply encodeTranslate_tau2 with (def := inr (default : sigZ)).
-          - left. cbn. intros (?&?&?) % in_map_iff. inv H.
-          - unshelve eapply (encodeTranslate_tau2 _) in H1.
-            + left. cbn. intros (?&?&?) % in_map_iff. cbn in *. unfold retract_comp_f in H. inv H.
-            + eapply encodeTranslate_tau1. refine (tape_encodes_ext' _ _ H1); auto. cbn. rewrite !List.map_map. apply map_ext; auto.
-        }
-        refine (tape_encodes_ext _ H2). cbn. now rewrite List.map_map.
+      { (* "Else" branche ([s = inr y]) *)
+        specialize (H s). spec_assert H.
+        { eapply contains_translate_tau1; auto. }
+        destruct s as [ x | y]; destruct H as (H&H'); inv H'.
+        rewrite (H1 Fin1 ltac:(vector_not_in)) in *.
+        apply contains_translate_tau2 in H; swap 1 2.
+        { left. cbn. unfold def_match. intros (?&C&?) % in_map_iff; cbv in C; inv C. }
+        unfold tape_contains in H, H0.
+        specialize (H0 y). spec_assert H0.
+        { eapply tape_contains_ext with (1 := H). cbn. rewrite !List.map_map. apply map_ext. cbn. cbv. auto. }
+        specialize (H0 HOut). spec_assert H0 as (HCompIn&HCompOut&HCompInt).
+        { intros i. rewrite <- H1; auto. vector_not_in. }
+        specialize (H2 y). spec_assert H2.
+        { apply contains_translate_tau1. eapply tape_contains_ext with (1 := HCompIn).
+          cbn. rewrite !List.map_map. apply map_ext. cbv. auto. }
+        apply contains_translate_tau2 in H2; swap 1 2.
+        { left. cbn. unfold def_inr. intros [ C | (?&C&?) % in_map_iff]; cbv in C; inv C. }
+        repeat split; cbn; auto.
+        + rewrite H3 in HCompOut. 2: vector_not_in. eapply tape_contains_ext with (1 := HCompOut).
+          cbn. rewrite List.map_map. apply map_ext. cbv. auto.
+        + intros i. specialize (HCompInt i). rewrite H3 in HCompInt. 2: vector_not_in. auto.
       }
     }
   Qed.
 
 End MapSum.
-
-*)
