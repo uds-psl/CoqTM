@@ -37,14 +37,20 @@ Section Encode_finite.
 
 End Encode_finite.
 
-(*
+
+Instance Encode_unit : codable (FinType(EqType(Empty_set))) unit :=
+  {|
+    encode := fun x => nil
+  |}.
+
+
 Check @Encode_finite.
 Compute encode true.
 Compute encode (Fin10: Fin.t 11).
 (* This works thanks to the coercion above *)
 Check Encode_finite true.
 Check (_ : codable _ _) _.
-*)
+Compute encode tt.
 
 
 (** We restrict mapping of encodings to injective/retractable mappings. *)
@@ -148,11 +154,10 @@ Eval cbv in encode None.
 Compute encode false.
 Compute encode true.
 
+Compute encode (repeat tt 42).
 Compute encode 42.
 
 Compute encode (tt, tt).
-
-Compute encode [tt;tt;tt].
 
 Compute encode (inl 42).
 Compute encode (inr 42).
