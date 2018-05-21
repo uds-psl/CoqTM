@@ -356,18 +356,26 @@ End Fix_Sig.
 
 
 
+Arguments tape_contains : simpl never.
+Arguments tape_contains_rev : simpl never.
+
+(** In the ' version, the encodings are explicite. *)
+Arguments tape_contains' {sig X} (cX).
+Arguments tape_contains_rev' {sig X} (cX).
+
+Notation "t ≃ x" := (tape_contains t x) (at level 70, no associativity).
+Notation "t ≃( cX ) x" := (tape_contains' cX t x) (at level 70, no associativity, format "t  ≃( cX )   x").
+
+Notation "t ≂ x" := (tape_contains_rev t x) (at level 70, no associativity).
+Notation "t ≂( cX ) x" := (tape_contains_rev' cX t x) (at level 70, no associativity, format "t  ≂( cX )  x").
+
+
+
 Arguments Computes_Rel {sig n X cX Y cY F} f x y/.
 Arguments Computes_T {sig n X cX} r x y/.
 
 Arguments Computes2_Rel {sig n X cX Y cY Z cZ F} f x y/.
 Arguments Computes2_T {sig n X cX Y cY} r x y/.
-
-
-Notation "t ≃ x" := (tape_contains t x) (at level 70, no associativity).
-Notation "t ≃( cX ) x" := (tape_contains' cX t x) (at level 70, no associativity).
-
-Notation "t ≂ x" := (tape_contains_rev t x) (at level 70, no associativity).
-Notation "t ≂( cX ) x" := (tape_contains_rev' cX t x) (at level 70, no associativity).
 
 
 
