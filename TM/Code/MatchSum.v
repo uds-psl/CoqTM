@@ -306,15 +306,15 @@ Section MapSum.
         specialize (H0 x). spec_assert H0.
         { eapply tape_contains_ext with (1 := H). cbn. rewrite !List.map_map. apply map_ext. cbn. cbv. auto. }
         specialize (H0 HOut). spec_assert H0 as (HCompIn&HCompOut&HCompInt).
-        { intros i. rewrite <- H1; auto. vector_not_in. }
+        { intros i. rewrite H1; auto. vector_not_in. }
         specialize (H2 x). spec_assert H2.
         { apply contains_translate_tau1. eapply tape_contains_ext with (1 := HCompIn).
           cbn. rewrite !List.map_map. apply map_ext. cbv. auto. }
         apply contains_translate_tau2 in H2; swap 1 2.
         repeat split; cbn; auto.
-        + rewrite H3 in HCompOut. 2: vector_not_in. eapply tape_contains_ext with (1 := HCompOut).
+        + rewrite H3. 2: vector_not_in. eapply tape_contains_ext with (1 := HCompOut).
           cbn. rewrite List.map_map. apply map_ext. cbv. auto.
-        + intros i. specialize (HCompInt i). rewrite H3 in HCompInt. 2: vector_not_in. auto.
+        + intros i. specialize (HCompInt i). rewrite H3. 2: vector_not_in. auto.
       }
       { (* "Else" branche ([s = inr y]) *)
         specialize (H s). spec_assert H.
@@ -326,15 +326,15 @@ Section MapSum.
         specialize (H0 y). spec_assert H0.
         { eapply tape_contains_ext with (1 := H). cbn. rewrite !List.map_map. apply map_ext. cbn. cbv. auto. }
         specialize (H0 HOut). spec_assert H0 as (HCompIn&HCompOut&HCompInt).
-        { intros i. rewrite <- H1; auto. vector_not_in. }
+        { intros i. rewrite H1; auto. vector_not_in. }
         specialize (H2 y). spec_assert H2.
         { apply contains_translate_tau1. eapply tape_contains_ext with (1 := HCompIn).
           cbn. rewrite !List.map_map. apply map_ext. cbv. auto. }
         apply contains_translate_tau2 in H2; swap 1 2.
         repeat split; cbn; auto.
-        + rewrite H3 in HCompOut. 2: vector_not_in. eapply tape_contains_ext with (1 := HCompOut).
+        + rewrite H3. 2: vector_not_in. eapply tape_contains_ext with (1 := HCompOut).
           cbn. rewrite List.map_map. apply map_ext. cbv. auto.
-        + intros i. specialize (HCompInt i). rewrite H3 in HCompInt. 2: vector_not_in. auto.
+        + intros i. specialize (HCompInt i). rewrite H3. 2: vector_not_in. auto.
       }
     }
   Qed.

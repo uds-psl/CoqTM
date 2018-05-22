@@ -254,7 +254,7 @@ Proof.
     - apply Reset_WRealise with (X := nat). (* Don't forget the type here! *)
   }
   {
-    intros tin ((), tout) H. intros m n HEncM HEncN HOut HInt. TMSimp. clear HIndex_H0 HIndex_H1 HIndex_H2.
+    intros tin ((), tout) H. intros m n HEncM HEncN HOut HInt. TMSimp.
     specialize (HInt Fin0).
     specialize (H _ _ HEncM HEncN HOut HInt) as (H&H'&H''&H''').
     specialize (H0 _ H''').
@@ -483,7 +483,6 @@ Proof.
   {
     intros tin (yout, tout) H. intros c m' n HEncM' HEncN HEncC HInt3 HInt4. TMSimp.
     destruct H; TMSimp.
-    clear HIndex_H0 HIndex_H1 HIndex_H2 HIndex_H3 HIndex_H4 HIndex_H5 HIndex_H6 HIndex_H7 HIndex_H8 HIndex_H9 HIndex_H10 HIndex_H11 HIndex_H12 HIndex_H12 HIndex_H13 HIndex_H14 HIndex_H15.
     - specialize (H _ HEncM').
       destruct m' as [ | m']; TMSimp; inv_pair; try congruence.
       specialize (H1 _ _ HEncN HEncC HInt3).
@@ -588,7 +587,6 @@ Proof.
   {
     intros tin ((), tout) H. intros m n HEncM HEncN Hout HInt3 HInt4 HInt5.
     TMSimp.
-    clear HIndex_H0; clear HIndex_H1; clear HIndex_H2; clear HIndex_H3; clear HIndex_H4; clear HIndex_H5; clear HIndex_H6; clear HIndex_H7; clear HIndex_H8; clear HIndex_H9.
     specialize (H _ HEncM HInt5) as (H&H').
     specialize (H0 Hout).
     specialize H1 with (1 := H') (2 := HEncN) (3 := H0) (4 := HInt3) (5 := HInt4) as (H1&H2&H3&H4&H5).
@@ -609,12 +607,11 @@ Proof.
   }
   {
     intros tin ((), tout) H. cbn. intros m n HEncM HEncN HOut HInt. TMSimp.
-    clear HIndex_H0; clear HIndex_H1; clear HIndex_H2; clear HIndex_H3; clear HIndex_H4.
     specialize (HInt Fin0) as HInt3; specialize (HInt Fin1) as HInt4; specialize (HInt Fin2) as HInt5. clear HInt.
     specialize (H _ _ HEncM HEncN HOut HInt3 HInt4 HInt5) as (HComp1&HComp2&HComp3&HComp4&HComp5&HComp6).
     specialize (H0 _ HComp6).
     repeat split; auto.
-    intros i. destruct_fin i; auto.
+    intros i. destruct_fin i; TMSimp; auto.
   }
 Qed.
 

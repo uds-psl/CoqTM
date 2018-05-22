@@ -116,12 +116,17 @@ Section ReadChar.
   Lemma ReadChar_multi_Sem :
     ReadChar_multi ⊨c(1) ReadChar_multi_R.
   Proof.
-    eapply RealiseIn_monotone. eapply Inject_RealisesIn. vector_dupfree. eapply read_char_sem. omega.
-    hnf. intros tin (yout,tout) (H1&H2); hnf in *. intuition. hnf in *. cbn in *.
-    eapply VectorSpec.eq_nth_iff. intros p ? <-.
-    decide (p = k) as [->|d].
-    - now inv H0.
-    - eapply H2. vector_not_in.
+    eapply RealiseIn_monotone.
+    { unfold ReadChar_multi. repeat TM_Correct. }
+    { cbn. reflexivity. }
+    {
+      intros tin (yout, tout) H.
+      hnf. TMSimp; clear_trivial_eqs. split; auto.
+      eapply VectorSpec.eq_nth_iff; intros p ? <-.
+      decide (p = k) as [->|HnEq].
+      - apply H.
+      - symmetry. apply H0. vector_not_in.
+    }
   Qed.
 
 End ReadChar.

@@ -573,16 +573,13 @@ Section CopyValue.
     {
       intros tin ((), tout) H.
       intros x HEncX HRight.
-      destruct HRight as (r1&r2&HRight).
-      TMSimp. rewrite <- HIndex_H1 in *. clear HIndex_H1.
+      TMSimp. clear H1_0.
       apply H in HEncX. clear H. destruct HEncX as (r3&HEncX). rewrite HEncX in H0.
       erewrite CopySymbols_L_correct_midtape in H0; eauto. rewrite map_id in *.
-      - inv H0. TMSimp. repeat econstructor; f_equal; now rewrite map_rev, rev_involutive.
+      - inv H0. TMSimp. repeat econstructor; f_equal; rewrite map_rev, rev_involutive; repeat f_equal. now apply isRight_right.
       - intros ? (?&<-&?) % in_map_iff. reflexivity.
     }
   Qed.
-
-  (* TODO: Runtime *)
 
   Lemma CopyValue_Terminats :
     projT1 CopyValue ↓ (fun tin k => exists x:X, tin[@Fin0] ≃ x /\ 25 + 12 * (length (encode x : list sig)) <= k).

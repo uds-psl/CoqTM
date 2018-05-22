@@ -199,15 +199,15 @@ Section Fix_X2.
   Local Notation "'V' Z" := (Vector.t Z n) (at level 10).
 
   Definition Eq_in (f : Fin.t n -> Prop) : Rel (V X) (V X) :=
-    fun vx vy => forall i : Fin.t n, f i -> vx[@i] = vy[@i].
+    fun vx vy => forall i : Fin.t n, f i -> vy[@i] = vx[@i].
 
   Instance Eq_in_equivalence X (f : Fin.t n -> Prop) :
     Equivalence (@Eq_in X).
   Proof.
     econstructor.
     - econstructor.
-    - hnf. intros. hnf in *. intros. rewrite H; eauto.
-    - hnf. intros. hnf in *. intros. rewrite H, H0; eauto.
+    - hnf. intros. hnf in *. intros. rewrite <- H; eauto.
+    - hnf. intros. hnf in *. intros. rewrite <- H, <- H0; eauto.
   Qed.
 
 End Fix_X2.

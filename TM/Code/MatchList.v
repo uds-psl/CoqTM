@@ -155,7 +155,6 @@ Section MatchList.
     {
       intros tin ((), tout) H. intros ls rs x l HRight HTin0. TMSimp; clear_trivial_eqs.
       rename H3 into HCopy.
-      clear HIndex_H1 HIndex_H2 HIndex_H7.
       destruct HRight as (r1&r2&HRight). TMSimp. clear HRight.
 
       specialize H with (1 := eq_refl).
@@ -264,16 +263,14 @@ Section MatchList.
         exists 3, (10 + 8 * length (encode x)). repeat split; try omega.
         intros tmid3 (). intros (_&H3&H3'); TMSimp.
         exists (8+8*length(encode x)), 1. repeat split; cbn; try omega.
-        + rewrite <- HIndex_HInj2. cbn.
-          rewrite CopySymbols_L_TermTime_moveleft; auto.
+        + rewrite CopySymbols_L_TermTime_moveleft; auto.
           rewrite rev_length, !map_length. omega.
         + intros tmid4 () _. omega.
       - intros tmid2 (). intros (_&HInj2); TMSimp.
         exists 3, (10 + 8 * length (encode x)). repeat split; try omega.
         intros tmid3 (). intros (_&H3&H3'); TMSimp.
         exists (8+8*length(encode x)), 1. repeat split; cbn; try omega.
-        + rewrite <- HIndex_HInj2. cbn.
-          rewrite CopySymbols_L_TermTime_moveleft; auto.
+        + rewrite CopySymbols_L_TermTime_moveleft; auto.
           rewrite rev_length, !map_length. omega.
         + intros tmid4 () _. omega.
     }

@@ -326,7 +326,7 @@ Section LiftNM.
     {
       inv X. f_equal.
       rewrite map2_map_nth. f_equal.
-      symmetry. pose proof inject_correct as Lemma. unfold reorder in Lemma. now apply Lemma.
+      symmetry. pose proof inject_correct as L. unfold reorder in L. now apply L.
     }
     rewrite <- E3, <- E4. f_equal. f_equal. now apply map_map_nth.
   Qed.
@@ -377,9 +377,9 @@ Section LiftNM.
     intros H.
     split.
     - apply (H (reorder I t) i (mk_mconfig (cstate outc) (reorder I (ctapes outc)))).
-      pose proof (@sim_loop (initc injectM t) outc i) as Lemma. cbn in Lemma. now apply Lemma.
+      pose proof (@sim_loop (initc injectM t) outc i) as L. cbn in L. now apply L.
     - hnf. intros k HI. 
-      pose proof (@sim_eq_loop (initc injectM t) outc i k HI) as Lemma. cbn in Lemma. now apply Lemma.
+      pose proof (@sim_eq_loop (initc injectM t) outc i k HI) as L. cbn in L. symmetry. now apply L.
   Qed.
 
   Lemma propagate_step
@@ -729,19 +729,22 @@ Fail Check ltac:(vector_doesnt_contain 42 [|4;8;15;16;23;42|]; idtac "yes!").
 
 
 (*
- * The tactic [simpl_not_in_vector] tries to specialises hypothesises of the form 
+ * The tactic [simpl_not_in_vector] tries to specialise hypothesises of the form 
  * [H : forall i : Fin.t n, not_indexes [F1; ...; Fk] i -> _]
- * with [i := Fin0], ..., [i := Fin(n-1)].
+ * with [i := Fin0], ..., [i := Fin(n-1)] to new assumptions [H_0].
  *)
 
 Ltac simpl_not_in_vector_step H vect n m' :=
-  let H' := fresh "HIndex_" H in
+  let H' := fresh H "_" in
   tryif vector_contains m' vect
   then idtac (* skip m' *)
   else pose proof (H m' ltac:(vector_not_in)) as H'.
 
 Ltac simpl_not_in_vector_loop H vect n :=
-  do_n_times_fin n ltac:(fun m' => simpl_not_in_vector_step H vect n m').
+  let H' := fresh H "_" in
+  pose proof I as H';
+  do_n_times_fin n ltac:(fun m' => simpl_not_in_vector_step H vect n m');
+  clear H'.
   
 Ltac simpl_not_in_vector_one :=
   lazymatch goal with
@@ -757,12 +760,13 @@ Goal True.
   assert (forall i : Fin.t 10, not_indexes [|Fin8; Fin1; Fin2; Fin3|] i -> i = i) as HInj by firstorder.
   simpl_not_in_vector_one.
   Fail Check HInj.
-  Check (HIndex_HInj : Fin0 = Fin0).
-  Check (HIndex_HInj0 : Fin4 = Fin4).
-  Check (HIndex_HInj1 : Fin5 = Fin5).
-  Check (HIndex_HInj2 : Fin6 = Fin6).
-  Check (HIndex_HInj3 : Fin7 = Fin7).
-  Check (HIndex_HInj4 : Fin9 = Fin9).
+  Show Proof.
+  Check (HInj_0 : Fin0 = Fin0).
+  Check (HInj_1 : Fin4 = Fin4).
+  Check (HInj_2 : Fin5 = Fin5).
+  Check (HInj_3 : Fin6 = Fin6).
+  Check (HInj_4 : Fin7 = Fin7).
+  Check (HInj_5 : Fin9 = Fin9).
 Abort.
 
 
