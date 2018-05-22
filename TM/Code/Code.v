@@ -26,30 +26,21 @@ Arguments encode { sig } { X } { _ }.
 Coercion encode : codable >-> Funclass.
 
 
-Section Encode_finite.
-  (* HACK: [encode true] would not work if we just define [Variable X:finType] *)
-  Context `{fX: finTypeC X}.
-
-  Global Instance Encode_finite : codable (FinType X) (FinType X) :=
-    {
-      encode := fun x => [x];
-    }.
-
-End Encode_finite.
-
-
 Instance Encode_unit : codable (FinType(EqType(Empty_set))) unit :=
   {|
-    encode := fun x => nil
+    encode x := nil
   |}.
 
+Instance Encode_bool : codable (FinType(EqType(bool))) bool:=
+  {|
+    encode x := [x]
+  |}.
 
-Check @Encode_finite.
+  
+
 Compute encode true.
-Compute encode (Fin10: Fin.t 11).
 (* This works thanks to the coercion above *)
-Check Encode_finite true.
-Check (_ : codable _ _) _.
+Compute Encode_bool true.
 Compute encode tt.
 
 
