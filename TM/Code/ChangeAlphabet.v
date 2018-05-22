@@ -221,16 +221,6 @@ Section ChangeAlphabet.
 
 End ChangeAlphabet.
 
-(* Just unfold [ChangeAlphabet], the Sigma-Lift will take care of it. *)
-Ltac smpl_TM_ChangeAlphabet :=
-  match goal with
-  | [ |- ChangeAlphabet ?M ?r ⊫ ?R ] => unfold ChangeAlphabet
-  | [ |- projT1 (ChangeAlphabet ?M ?r) ↓ ?T ] => unfold ChangeAlphabet
-  end.
-
-Smpl Add smpl_TM_ChangeAlphabet : TM_Correct.
-
-
 
 
 Section Computes_Change_Alphabet.
