@@ -219,7 +219,6 @@ Section MatchOption.
   Definition Constr_None_Rel : Rel (tapes tau^+ 1) (unit * tapes tau^+ 1) :=
     Mk_R_p (ignoreParam(
                 fun tin tout =>
-                  forall x : X,
                     isRight tin ->
                     tout ≃ None)).
 
