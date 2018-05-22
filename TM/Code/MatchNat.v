@@ -16,7 +16,7 @@ Section MatchNat.
            tin ≃ n ->
            match n with
            | O =>
-             tout = tin /\ yout = false
+             tout ≃ 0 /\ yout = false
            | S n' =>
              tout ≃ n' /\ yout = true
            end).

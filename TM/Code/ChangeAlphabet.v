@@ -171,22 +171,11 @@ Section MapCode.
         rewrite L3 in L5. apply in_map_iff in L5 as (?&?&?). congruence.
   Qed.
 
-  Corollary contains_surjectTapes_sameEnc (t1 t2 : tape (sig^+)) (x : X) :
-     (forall t' : tau, t' el encode x -> exists s', Retr_g t' = Some s') ->
-    surjectTape (injectTape t1) = surjectTape (injectTape t2) ->
-    t1 ≃ x -> t2 ≃ x.
-  Proof.
-    intros HDef HEq HEnc; cbn in *.
-    eapply contains_translate_sig. eapply contains_translate_tau2; auto. rewrite <- HEq.
-    eapply contains_translate_tau1. eapply contains_translate_sig; eauto.
-  Qed.
-
-  Corollary contains_surjectTapes_sameEnc' (t1 t2 : tape (tau^+)) (x : X) :
-     (forall t' : tau, t' el encode x -> exists s', Retr_g t' = Some s') ->
+  Corollary contains_translate_eq (t1 t2 : tape (tau^+)) (x : X) :
     surjectTape t1 = surjectTape t2 ->
     t1 ≃ x -> t2 ≃ x.
   Proof.
-    intros HDef HEq HEnc.
+    intros HEq HEnc.
     eapply contains_translate_tau2; auto.
     rewrite <- HEq. now eapply contains_translate_tau1 in HEnc.
   Qed.

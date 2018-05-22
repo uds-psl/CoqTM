@@ -180,7 +180,7 @@ Section MatchList.
         isRight tin[@Fin1] ->
         match l with
         | nil =>
-          tin = tout /\
+          tout[@Fin0] ≃ nil /\
           yout = false
         | x :: l' =>
           tout[@Fin0] ≃ l' /\
@@ -195,18 +195,17 @@ Section MatchList.
     { unfold MatchList. repeat TM_Correct. eapply M1_WRealise. eapply Skip_cons_WRealise. }
     {
       intros tin (yout, tout) H. intros l HEncL HRight.
-      destruct HEncL as (ls&HEncL). TMSimp; clear_trivial_eqs.
-      destruct HRight as (ls'&rs'&HRight). TMSimp.
-
-      rewrite <- H1, <- H0 in *. (* clear H0 H1 HRight HIndex_H1 HIndex_H3. *)
-
+      TMSimp; clear_trivial_eqs.
+      destruct HEncL as (ls&HEncL). destruct HRight as (ls'&rs'&HRight). TMSimp.
+      rewrite <- H0 in *.
       destruct l as [ | x l'] in *; cbn in *; TMSimp; clear_trivial_eqs.
       { (* nil *)
-        split; auto. destruct_tapes; cbn in *; subst. cbn; simpl_tape. reflexivity.
+        rewrite <- H0. split; auto. repeat econstructor; cbn; simpl_tape.
       }
       { (* cons *)
-        rewrite map_app, <- app_assoc in H1. symmetry in H1.
-        specialize (H _ _ _ _ ltac:(now repeat econstructor) H1) as (H&H'). TMSimp.
+        rewrite map_app, <- app_assoc in H0. symmetry in H0.
+        specialize (H _ _ _ _ ltac:(now repeat econstructor) H0).
+        TMSimp.
         specialize H2 with (1 := eq_refl).
         destruct l' as [ | x' l'']; TMSimp.
         - repeat split; auto. repeat econstructor. f_equal. simpl_tape. cbn. reflexivity.

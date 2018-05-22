@@ -111,7 +111,8 @@ Definition Add_Step_Rel : Rel (tapes (bool^+) 2) ((bool * unit) * tapes (bool^+)
       tin [@Fin1] ≃ b ->
       match b with
       | O =>
-        tout = tin /\
+        tout[@Fin0] ≃ a /\
+        tout[@Fin1] ≃ b /\
         yout = (false, tt)
       | S b' =>
         tout[@Fin0] ≃ S a /\
@@ -133,7 +134,6 @@ Proof.
     destruct H; TMSimp inv_pair; clear_trivial_eqs.
     - specialize (H _ HEncB). destruct b; TMSimp; try congruence. repeat split; auto.
     - specialize (H _ HEncB). destruct b; TMSimp; try congruence. split; auto.
-      destruct_tapes; cbn in *; subst; auto.
   }
 Qed.
 
@@ -458,12 +458,16 @@ Definition Mult_Step_Rel : Rel (tapes (bool^+) 5) ((bool * unit) * tapes (bool^+
       isRight tin[@Fin4] ->
       match m' with
       | O =>
-        tout = tin /\
+        tout[@Fin0] ≃ m' /\
+        tout[@Fin1] ≃ n /\
+        tout[@Fin2] ≃ c /\
+        isRight tout[@Fin3] /\
+        isRight tout[@Fin4] /\
         yout = (false, tt) (* return *)
       | S m'' =>
         tout[@Fin0] ≃ m'' /\
-        tout[@Fin1] ≃  n /\
-        tout[@Fin2] ≃  n + c /\
+        tout[@Fin1] ≃ n /\
+        tout[@Fin2] ≃ n + c /\
         isRight tout[@Fin3] /\
         isRight tout[@Fin4] /\
         yout = (true, tt) (* contine *)
@@ -495,7 +499,6 @@ Proof.
     - specialize (H _ HEncM').
       destruct m' as [ | m']; TMSimp; inv_pair; try congruence.
       split; auto.
-      destruct_tapes; cbn in *; subst; repeat f_equal; auto.
   }
 Qed.
 
