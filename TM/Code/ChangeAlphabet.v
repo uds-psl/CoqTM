@@ -211,17 +211,24 @@ Arguments Retract_plus : simpl never.
 
 
 Section ChangeAlphabet.
-  Variable (sig tau : finType) (retr : Retract sig tau).
+  Variable (sig tau : finType).
   Variable (n : nat) (F : finType).
   Variable pM : {M : mTM sig^+ n & states M -> F}.
+  Variable (retr : Retract sig tau).
 
   Definition ChangeAlphabet : {M : mTM tau^+ n & states M -> F} :=
     Lift pM (Retract_plus retr) (Vector.const (inl UNKNOWN) n).
 
-
 End ChangeAlphabet.
 
+(* Just unfold [ChangeAlphabet], the Sigma-Lift will take care of it. *)
+Ltac smpl_TM_ChangeAlphabet :=
+  match goal with
+  | [ |- ChangeAlphabet ?M ?r ⊫ ?R ] => unfold ChangeAlphabet
+  | [ |- projT1 (ChangeAlphabet ?M ?r) ↓ ?T ] => unfold ChangeAlphabet
+  end.
 
+Smpl Add smpl_TM_ChangeAlphabet : TM_Correct.
 
 
 
@@ -245,7 +252,7 @@ Section Computes_Change_Alphabet.
 
   Lemma ChangeAlphabet_Computes :
     pM ⊫ Computes_Rel func ->
-    ChangeAlphabet _ pM ⊫ Computes_Rel func.
+    ChangeAlphabet pM _ ⊫ Computes_Rel func.
   Proof.
     intros H. eapply WRealise_monotone.
     {
@@ -266,7 +273,6 @@ Section Computes_Change_Alphabet.
       + eapply contains_translate_tau2; eauto.
       + intros i. specialize (HComp3 i).
         erewrite VectorSpec.nth_map2 in HComp3; eauto. cbn in HComp3. rewrite VectorSpec.const_nth in HComp3.
-        change (isRight (surjectTape _ tout[@Fin.FS (Fin.FS i)])) in HComp3.
         now eapply surjectTape_isRight' in HComp3.
     }
   Qed.
