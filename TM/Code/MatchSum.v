@@ -186,6 +186,58 @@ Section MatchOption.
     }
   Qed.
 
+
+  Definition Constr_Some_Rel : Rel (tapes tau^+ 1) (unit * tapes tau^+ 1) :=
+    Mk_R_p (ignoreParam(
+                fun tin tout =>
+                  forall x : X,
+                    tin ≃ x ->
+                    tout ≃ Some x)).
+
+  Definition Constr_Some : { M : mTM tau^+ 1 & states M -> unit } :=
+    ChangeAlphabet (Constr_inl sigX (FinType (EqType Empty_set))) _.
+
+  Lemma Constr_Some_Sem : Constr_Some ⊨c(3) Constr_Some_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    { unfold Constr_Some. unfold ChangeAlphabet. repeat TM_Correct. apply Constr_inl_Sem. }
+    { cbn. reflexivity. }
+    {
+      intros tin ((), tout) H.
+      intros x HEncX. TMSimp.
+      simpl_tape in H. cbn in H.
+      unfold tape_contains in *.
+      specialize (H x). spec_assert H.
+      { eapply contains_translate_tau1. unfold tape_contains. eapply tape_contains_ext with (1 := HEncX).
+        cbn. rewrite !List.map_map. apply map_ext. cbv. auto. }
+      apply contains_translate_tau2 in H. unfold tape_contains in H.
+      eapply tape_contains_ext with (1 := H). cbn. now rewrite !List.map_map.
+    }
+  Qed.
+
+  
+  Definition Constr_None_Rel : Rel (tapes tau^+ 1) (unit * tapes tau^+ 1) :=
+    Mk_R_p (ignoreParam(
+                fun tin tout =>
+                  forall x : X,
+                    isRight tin ->
+                    tout ≃ None)).
+
+  Definition Constr_None : { M : mTM tau^+ 1 & states M -> unit } :=
+    WriteMove (Some (inl STOP), L) tt;; WriteMove (Some (inr (inl false)), L) tt;; Write (inl START) tt.
+
+  Lemma Constr_None_Sem : Constr_None ⊨c(5) Constr_None_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    { unfold Constr_None. repeat TM_Correct. }
+    { cbn. reflexivity. }
+    {
+      intros tin ((), tout) H.
+      intros HRight. TMSimp; clear_trivial_eqs.
+      repeat econstructor. cbn. f_equal. simpl_tape. cbn. f_equal. f_equal. now apply isRight_right.
+    }
+  Qed.
+
 End MatchOption.
 
 
