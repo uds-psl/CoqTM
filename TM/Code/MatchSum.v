@@ -109,12 +109,6 @@ Section MatchOption.
   Let sig := FinType (EqType (bool + (sigX + Empty_set))).
   Let tau := FinType (EqType (bool + sigX)).
 
-  Let retr : Retract sig tau := _.
-
-  Let retr' : Retract sig^+ tau^+ := _.
-
-  Let def : sig := inl default.
-
   Check _ : codable sig X.
   Check _ : codable sig^+ X.
   Check _ : codable tau X.
@@ -131,12 +125,10 @@ Section MatchOption.
                 | None => isRight tout /\ yout = false
                 end).
 
-
   Definition MatchOption : { M : mTM tau^+ 1 & states M -> bool } :=
-    If (Lift (MatchSum (sigX) (FinType (EqType Empty_set))) retr' [| inr def |])
+    If (ChangeAlphabet (MatchSum (sigX) (FinType (EqType Empty_set))) _)
        (Nop _ _ true)
        (Move _ R false).
-
 
   Definition opt_to_sum (o : option X) : X + unit :=
     match o with
@@ -149,7 +141,7 @@ Section MatchOption.
     MatchOption ⊨c(7) MatchOption_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold MatchOption. repeat TM_Correct.
+    { unfold MatchOption. repeat TM_Correct. unfold ChangeAlphabet. repeat TM_Correct.
       - eapply MatchSum_Sem with (X := X) (Y := unit).
     }
     { cbn. reflexivity. }
@@ -174,8 +166,7 @@ Section MatchOption.
         unfold tape_contains in H. unfold tape_contains.
 
         apply contains_translate_tau2 in H; unfold tape_contains in H.
-        - eapply tape_contains_ext with (1 := H). cbn. rewrite List.map_map. apply map_ext. auto.
-        - cbn. right. intros [ | ]; cbn; eauto.
+        eapply tape_contains_ext with (1 := H). cbn. rewrite List.map_map. apply map_ext. auto.
       }
       { (* "Else" case *)
         specialize (H (opt_to_sum o)). spec_assert H.
@@ -190,8 +181,7 @@ Section MatchOption.
         autounfold with tape in H. cbn in H. rewrite nth_map2' in H. cbn in H.
         unfold tape_contains in H.
         apply contains_translate_tau2 in H; unfold tape_contains in H.
-        - destruct H as (ls&->). cbn. repeat econstructor.
-        - cbn. right. intros [ | ]; cbn; eauto.
+        destruct H as (ls&->). cbn. repeat econstructor.
       }
     }
   Qed.
@@ -210,18 +200,6 @@ Section MapSum.
   Let sig_M2 := FinType(EqType (sigY+sigZ)).
   Let tau := FinType(EqType ((bool + (sigX + sigY)) + sigZ)).
 
-  Let retr_match : Retract sig_match tau := _.
-  Let retr_M1 : Retract sig_M1 tau := Retract_sum _ _.
-  Let retr_M2 : Retract sig_M2 tau := Retract_sum _ _.
-
-  Let def_match : sig_match := inl default. (* [bool] *)
-  Let def_in_M1 : sig_M1 := inr default. (* [sigZ] *)
-  Let def_out_M1 : sig_M1 := inl default. (* [sigX] *)
-  Let def_in_M2 : sig_M2 := inr default. (* [sigZ] *)
-  Let def_out_M2 : sig_M2 := inl default. (* [sigY] *)
-  Let def_inl : sig_match := inr (inr default). (* [sigY] *)
-  Let def_inr : sig_match := inr (inl default). (* [sigX] *)
-  
   Variable f : X -> Z.
   Variable g : Y -> Z.
 
@@ -237,41 +215,30 @@ Section MapSum.
           | inr y => g y
           end.
 
-  (*
-   * Erklärung der default-Werte:
-   * Generell gilt, dass ein default-Symbol angegeben werden muss, dass nicht Teil der Kodierung der Ausgabe ist.
-   * Die [MatchSum] Maschine arbeitet auf [X+Y], welches über [bool + (sigX + sigY)].
-   * Diese wird auf das Alphabet [Bool + (sigX + sigY) + sigZ] geliftet.  Es muss also ein TRetract von [bool + (sigX + sigY)] nach
-   * [Bool + (sigX + sigY) + sigZ] angegeben werden, der automatisch bestimmt wird.  Für die Zeichen in dem größeren Alphabet muss
-   * ein Zeichen aus dem kleineren Alphabet angegeben werden, auf das die nicht zurück-übersetztbaren Zeichen gemappt wird.
-   * Jetzt darf die Kodierung des Ergebnisses der Maschine (dies ist ein X bzw. ein Y, welches über sigX + sigY kodiert ist), das
-   * [default]-Zeichen nicht enthalten.  Daher bietet sich [inl (default : bool)] an, i.e. die Injektion von einem beliebigen [bool].
-   * M1 und M2 arbeiten jeweils über dem Alphabet [sigX + sigZ], bzw. [sigY + sigZ] und geben jeweils einen Z-Wert zurück, der über die
-   * nach rechts gemappte Kodierung [sigX + sigZ] bzw. [sigY + sigZ].  In der Ausgabe darf also kein Symbol von [sigX] bzw. [sigY]
-   * stehen. Dementsprechend wird die Injektion von [sigX] bzw. [sigY] als [default]-Symbol gewählt.
-   *)
+  
+  (* This kind of retracts can only be infered semi-automatically, because [Retract_sum] is no typeclass instance. *)
+  (* In this case, we map [inl x] to [inl (inr (inl x))] and [inr z] to [inr z]. *)
+  Local Instance retr_M1 : Retract sig_M1 tau := Retract_sum _ _.
+  Local Instance retr_M2 : Retract sig_M2 tau := Retract_sum _ _.
+
 
   Definition MapSum : { M : mTM tau^+ (S (S n)) & states M -> unit } :=
-    If (Inject (Lift (MatchSum sigX sigY) (Retract_plus retr_match) [| inr def_match |]) [|Fin0|])
-       (ChangeAlphabet retr_M1 def_in_M1 def_out_M1 M1;;
-        Inject (Lift (Constr_inl sigX sigY) (Retract_plus retr_match) [| inr def_inl |]) [|Fin0|])
-       (ChangeAlphabet retr_M2 def_in_M2 def_out_M2 M2;;
-        Inject (Lift (Constr_inr sigX sigY) (Retract_plus retr_match) [| inr def_inr |]) [|Fin0|]).
+    If (Inject (ChangeAlphabet (MatchSum sigX sigY) _) [|Fin0|])
+       (ChangeAlphabet M1 _;;
+        Inject (ChangeAlphabet (Constr_inl sigX sigY) _) [|Fin0|])
+       (ChangeAlphabet M2 _;;
+        Inject (ChangeAlphabet (Constr_inr sigX sigY) _) [|Fin0|]).
 
 
   Lemma MapSum_Computes : MapSum ⊫ Computes_Rel map_sum.
   Proof.
     eapply WRealise_monotone.
     { unfold MapSum. repeat TM_Correct.
-      - eapply RealiseIn_WRealise. apply MatchSum_Sem with (X := X) (Y := Y).
-      - eapply ChangeAlphabet_Computes_WRealise with (X := X) (Y := Z).
-        + apply M1_Computes.
-        + left; cbn; split; subst; intros x (?&H&?) % in_map_iff; cbn in *; inv H.
-      - eapply RealiseIn_WRealise. apply Constr_inl_Sem.
-      - eapply ChangeAlphabet_Computes_WRealise with (X := Y) (Y := Z).
-        + apply M2_Computes.
-        + left; cbn; split; subst; intros x (?&H&?) % in_map_iff; cbn in *; inv H.
-      - eapply RealiseIn_WRealise. apply Constr_inr_Sem.
+      - unfold ChangeAlphabet. eapply RealiseIn_WRealise. TM_Correct. apply MatchSum_Sem with (X := X) (Y := Y).
+      - eapply ChangeAlphabet_Computes with (X := X) (Y := Z). apply M1_Computes.
+      - unfold ChangeAlphabet. eapply RealiseIn_WRealise. TM_Correct. apply Constr_inl_Sem.
+      - eapply ChangeAlphabet_Computes with (X := Y) (Y := Z). apply M2_Computes.
+      - unfold ChangeAlphabet. eapply RealiseIn_WRealise. TM_Correct. apply Constr_inr_Sem.
     }
     {
       intros tin ((), tout) H.
@@ -282,8 +249,7 @@ Section MapSum.
         { eapply contains_translate_tau1; auto. }
         destruct s as [ x | y]; destruct H as (H&H'); inv H'.
         rewrite (H1 Fin1 ltac:(vector_not_in)) in *.
-        apply contains_translate_tau2 in H; swap 1 2.
-        { left. cbn. unfold def_match. intros (?&C&?) % in_map_iff; cbv in C; inv C. }
+        apply contains_translate_tau2 in H.
         unfold tape_contains in H, H0.
         specialize (H0 x). spec_assert H0.
         { eapply tape_contains_ext with (1 := H). cbn. rewrite !List.map_map. apply map_ext. cbn. cbv. auto. }
@@ -293,7 +259,6 @@ Section MapSum.
         { apply contains_translate_tau1. eapply tape_contains_ext with (1 := HCompIn).
           cbn. rewrite !List.map_map. apply map_ext. cbv. auto. }
         apply contains_translate_tau2 in H2; swap 1 2.
-        { left. cbn. unfold def_inl. intros [ C | (?&C&?) % in_map_iff]; cbv in C; inv C. }
         repeat split; cbn; auto.
         + rewrite H3 in HCompOut. 2: vector_not_in. eapply tape_contains_ext with (1 := HCompOut).
           cbn. rewrite List.map_map. apply map_ext. cbv. auto.
@@ -305,7 +270,6 @@ Section MapSum.
         destruct s as [ x | y]; destruct H as (H&H'); inv H'.
         rewrite (H1 Fin1 ltac:(vector_not_in)) in *.
         apply contains_translate_tau2 in H; swap 1 2.
-        { left. cbn. unfold def_match. intros (?&C&?) % in_map_iff; cbv in C; inv C. }
         unfold tape_contains in H, H0.
         specialize (H0 y). spec_assert H0.
         { eapply tape_contains_ext with (1 := H). cbn. rewrite !List.map_map. apply map_ext. cbn. cbv. auto. }
@@ -315,7 +279,6 @@ Section MapSum.
         { apply contains_translate_tau1. eapply tape_contains_ext with (1 := HCompIn).
           cbn. rewrite !List.map_map. apply map_ext. cbv. auto. }
         apply contains_translate_tau2 in H2; swap 1 2.
-        { left. cbn. unfold def_inr. intros [ C | (?&C&?) % in_map_iff]; cbv in C; inv C. }
         repeat split; cbn; auto.
         + rewrite H3 in HCompOut. 2: vector_not_in. eapply tape_contains_ext with (1 := HCompOut).
           cbn. rewrite List.map_map. apply map_ext. cbv. auto.
