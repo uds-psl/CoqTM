@@ -40,7 +40,9 @@ TM/Code/MatchList.v
 # Defect files
 # TM/Code/MatchProd.v
 # TM/Code/NatCounter.v
+
 TM/Code/NatTM.v
+TM/Code/ListTM.v
 
 # Basic Machines
 TM/Basic/Nop.v
