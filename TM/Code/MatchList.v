@@ -181,6 +181,7 @@ Section MatchList.
         match l with
         | nil =>
           tout[@Fin0] ≃ nil /\
+          isRight tout[@Fin1] /\
           yout = false
         | x :: l' =>
           tout[@Fin0] ≃ l' /\
@@ -200,7 +201,9 @@ Section MatchList.
       rewrite <- H0 in *.
       destruct l as [ | x l'] in *; cbn in *; TMSimp; clear_trivial_eqs.
       { (* nil *)
-        rewrite <- H0. split; auto. repeat econstructor; cbn; simpl_tape.
+        rewrite <- H0. split; auto.
+        - repeat econstructor; cbn; simpl_tape.
+        - repeat econstructor.
       }
       { (* cons *)
         rewrite map_app, <- app_assoc in H0. symmetry in H0.
