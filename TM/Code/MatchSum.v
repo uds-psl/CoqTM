@@ -126,7 +126,7 @@ Section MatchOption.
                 end).
 
   Definition MatchOption : { M : mTM tau^+ 1 & states M -> bool } :=
-    If (ChangeAlphabet (MatchSum (sigX) (FinType (EqType Empty_set))) _)
+    If (ChangeAlphabet (MatchSum (sigX) (FinType (EqType Empty_set))) (Retract_sum _ _))
        (Nop _ _ true)
        (Move _ R false).
 
@@ -150,14 +150,14 @@ Section MatchOption.
       unfold tape_contains in HEncO. (* This makes the (otherwise implicit) encoding visible *)
       cbn in *.
 
-      destruct H; TMSimp.
+      destruct H; TMSimp; unfold tau in *.
       { (* "Then" case *)
         (* This part is the same for both branches *)
         specialize (H (opt_to_sum o)). spec_assert H.
         { autounfold with tape. cbn. erewrite nth_map2'. cbn. 
           eapply contains_translate_tau1.
-          eapply tape_contains_ext with (X := option X); eauto.
-          destruct o; cbn; f_equal. rewrite !List.map_map. apply map_ext. cbn. auto.
+          eapply tape_contains_ext with (1 := HEncO).
+          destruct o; cbn; f_equal. rewrite !List.map_map. apply map_ext. cbv; auto.
         }
         destruct o as [ x | ]; cbn in *; destruct H as (H&H'); inv H'. split; auto.
         (* We know now that o = Some x *)
@@ -172,8 +172,8 @@ Section MatchOption.
         specialize (H (opt_to_sum o)). spec_assert H.
         { autounfold with tape. cbn. erewrite nth_map2'. cbn. 
           eapply contains_translate_tau1.
-          eapply tape_contains_ext with (X := option X); eauto.
-          destruct o; cbn; f_equal. rewrite !List.map_map. apply map_ext. cbn. auto.
+          eapply tape_contains_ext with (1 := HEncO).
+          destruct o; cbn; f_equal. rewrite !List.map_map. apply map_ext. cbv; auto.
         }
         destruct o as [ x | ]; cbn in *; destruct H as (H&H'); inv H'. split; auto.
         (* We know now that o = None *)
@@ -181,6 +181,7 @@ Section MatchOption.
         autounfold with tape in H. cbn in H. rewrite nth_map2' in H. cbn in H.
         unfold tape_contains in H.
         apply contains_translate_tau2 in H; unfold tape_contains in H.
+        rewrite H1.
         destruct H as (ls&->). cbn. repeat econstructor.
       }
     }
@@ -195,7 +196,7 @@ Section MatchOption.
                     tout ≃ Some x)).
 
   Definition Constr_Some : { M : mTM tau^+ 1 & states M -> unit } :=
-    ChangeAlphabet (Constr_inl sigX (FinType (EqType Empty_set))) _.
+    ChangeAlphabet (Constr_inl sigX (FinType (EqType Empty_set))) (Retract_sum _ _).
 
   Lemma Constr_Some_Sem : Constr_Some ⊨c(3) Constr_Some_Rel.
   Proof.

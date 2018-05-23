@@ -104,7 +104,7 @@ Section MapCode.
       exists (surjectSymbols (inl UNKNOWN) _ r1).
       apply mapTape_inv_midtape in HCode as (ls'&m'&rs'&->&->&HCode1&HCode2).
       rewrite map_map in HCode2.
-      destruct m'; cbn in *; inv HCode1. cbv [id] in *. inv H0. clear H.
+      destruct m'; cbn in *; inv HCode1.
       f_equal.
       + unfold surjectSymbols. rewrite map_map. rewrite <- map_id at 1. eapply map_ext.
         intros [ | ]; cbn. reflexivity. unfold surject. cbn. retract_adjoint. reflexivity.
