@@ -1,8 +1,7 @@
 Require Export TM.Prelim TM.TM TM.Code.Code.
-Require Import TM.Combinators.SequentialComposition.
-Require Import TM.Relations.
-Require Import TM.LiftSigmaTau.
-Require Import TM.Compound.TMTac.
+Require Export TM.LiftSigmaTau TM.LiftMN.
+Require Export TM.Combinators.Combinators.
+Require Export TM.Compound.TMTac.
 
 
 (* Tape proposition that says that the pointer is on (but not off) the right-most symbol *)
