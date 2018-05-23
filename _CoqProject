@@ -48,7 +48,7 @@ TM/Code/ListTM.v
 TM/Basic/Nop.v
 TM/Basic/Mono.v
 TM/Basic/Multi.v
-TM/Basic/WriteString.v
+# TM/Basic/WriteString.v
 
 # Compound Machines
 # TM/Compound.v
