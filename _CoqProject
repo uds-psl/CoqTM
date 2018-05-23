@@ -27,7 +27,7 @@ TM/Mirror.v
 TM/Code/Code.v
 TM/Code/CodeTM.v
 
-# TM/Code/WriteValue.v
+TM/Code/WriteValue.v
 # TM/Code/FinTM.v
 # TM/Code/BoolTM.v
 
@@ -48,7 +48,7 @@ TM/Code/ListTM.v
 TM/Basic/Nop.v
 TM/Basic/Mono.v
 TM/Basic/Multi.v
-# TM/Basic/WriteString.v
+TM/Basic/WriteString.v
 
 # Compound Machines
 # TM/Compound.v
