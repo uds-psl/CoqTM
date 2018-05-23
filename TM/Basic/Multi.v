@@ -35,9 +35,7 @@ Section MovePar.
     }
     {
       hnf in *. intros tin (yout&tout). destruct_tapes. cbn -[Vector.nth] in *.
-      intros ((()&t1)&((_&H1)&H2)&(H3&H4)&H5); hnf in *; subst; split; auto; destruct_tapes.
-      specialize (H5 Fin.F1 ltac:(vector_not_in)); cbn in H5; subst. cbn in H1, H4; subst.
-      specialize (H2 (Fin.FS Fin.F1) ltac:(vector_not_in)); cbn in H2; subst. auto.
+      TMSimp; clear_trivial_eqs. auto.
     }
   Qed.
   

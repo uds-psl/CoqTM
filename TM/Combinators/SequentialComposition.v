@@ -17,7 +17,7 @@ Section Composition.
   Lemma Seq_WRealise (R1 : Rel _ (_ * _)) (R2 : Rel _ (F2 * _)) :
     pM1 ⊫ R1 ->
     pM2 ⊫ R2 ->
-    Seq ⊫ (⋃_y R1 |_ y) ∘ R2.
+    Seq ⊫ ⋃_y ((R1 |_ y) ∘ R2).
   Proof.
     intros.
     eapply WRealise_monotone.
@@ -56,7 +56,7 @@ Section Composition.
   Lemma Seq_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) k1 k2:
     pM1 ⊨c(k1) R1 ->
     pM2 ⊨c(k2) R2 ->
-    Seq ⊨c(1 + k1 + k2) (⋃_y R1 |_y) ∘ R2.
+    Seq ⊨c(1 + k1 + k2) ⋃_y ((R1 |_y) ∘ R2).
   Proof.
     intros H1 H2.
     eapply RealiseIn_monotone.
@@ -70,7 +70,7 @@ Section Composition.
   Lemma Seq_Realise (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) :
     pM1 ⊨ R1 ->
     pM2 ⊨ R2 ->
-    Seq ⊨ (⋃_y R1 |_y) ∘ R2.
+    Seq ⊨ ⋃_y ((R1 |_y) ∘ R2).
   Proof.
     intros H1 H2. 
     eapply Realise_monotone.
