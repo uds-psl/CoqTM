@@ -64,9 +64,6 @@ Arguments rimplication { X Y } ( R S ) x y /.
 Definition ignoreParam X Y Z (R : Rel X Z) : Rel X (Y * Z)  := fun x '(y,z) => R x z.
 Arguments ignoreParam {X Y Z} ( R ) x y /.
 
-Definition hideParam X Y Z (R : Rel X Z) : Rel (Y * X) Z := fun '(_,x) z => R x z.
-Arguments hideParam {X Y Z} ( R ) x y /.
-
 Definition rUnion (X Y : Type) (F : Type) (R : F -> Rel X Y) : Rel X Y := 
   fun x y => exists f, R f x y.
 Notation "'⋃_' f R" := (rUnion (fun f => R)) (at level 50, f at level 9, R at next level, format "'⋃_' f  R"). (* Todo: This does not work if f is higher than 9. Why? *)
@@ -216,14 +213,6 @@ Arguments Eq_in { X n } P x y / : rename.
 
 Definition IdR (X : Type) : Rel X X := eq.
 Arguments IdR { X } x y /.
-
-Lemma ignore_hideParam X Y Z A (R1 : Rel X Y) (R2 : Rel Y Z) (a : A):
-  ignoreParam (Y := A) R1 ∘ hideParam R2 =2 R1 ∘ R2.
-Proof.
-  split; intros ? ?; cbn; firstorder; try destruct x0; firstorder.
-  exists (a, x0). firstorder.
-Qed.
-
 
 
 Inductive star X (R: Rel X X) : Rel X X :=
@@ -453,12 +442,6 @@ Proof.
   cbv. firstorder; destruct *; firstorder.
 Qed.
 
-
-Instance eqrel_hideParam_proper X Y Z :
-  Proper (@eqrel X Z ==> @eqrel (Y * X) Z) (@hideParam X Y Z).
-Proof.
-  cbv. firstorder; destruct *; firstorder.
-Qed.
 
 Lemma compose_id X Y (R : Rel X Y) :
   R ∘ (@IdR _) =2 R.
