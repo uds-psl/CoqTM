@@ -9,49 +9,6 @@ Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 Require Import TM.Code.Copy.
 
 
-(* This is good *)
-Arguments finType_CS (X) {_ _}.
-
-
-
-(* TODO: -> base *)
-Lemma rev_eq_nil (Z: Type) (l: list Z) :
-  rev l = nil -> l = nil.
-Proof. intros. destruct l; cbn in *. reflexivity. symmetry in H. now apply app_cons_not_nil in H. Qed.
-
-Lemma map_eq_nil (Y Z: Type) (f: Y->Z) (l: list Y) :
-  map f l = nil -> l = nil.
-Proof. intros. destruct l; cbn in *. reflexivity. congruence. Qed.
-
-Lemma map_eq_cons (A B: Type) (f: A->B) (ls: list A) (y: B) (ys: list B) :
-  map f ls = y :: ys ->
-  exists x xs, ls = x :: xs /\
-          y = f x /\
-          ys = map f xs.
-Proof. induction ls; intros H; cbn in *; inv H; eauto. Qed.
-
-Lemma map_eq_app (A B: Type) (f: A -> B) (ls : list A) (xs ys : list B) :
-  map f ls = xs ++ ys ->
-  exists ls1 ls2, ls = ls1 ++ ls2 /\
-             xs = map f ls1 /\
-             ys = map f ls2.
-Proof.
-  revert xs ys. induction ls; intros; cbn in *.
-  - symmetry in H. apply app_eq_nil in H as (->&->). exists nil, nil. cbn. tauto.
-  - destruct xs; cbn in *.
-    + exists nil. eexists. repeat split. cbn. now subst.
-    + inv H. specialize IHls with (1 := H2) as (ls1&ls2&->&->&->).
-      repeat econstructor. 2: instantiate (1 := a :: ls1). all: reflexivity.
-Qed.
-  
-
-Lemma rev_eq_cons (A: Type) (ls: list A) (x : A) (xs: list A) :
-  rev ls = x :: xs ->
-  ls = rev xs ++ [x].
-Proof. intros H. rewrite <- rev_involutive at 1. rewrite H. cbn. reflexivity. Qed.
-
-
-
 Section MatchList.
 
   (** ** Definition *)
@@ -360,7 +317,7 @@ Section MatchList.
   
 
   Definition Constr_cons : { M : mTM (bool + sigX)^+ 2 & states M -> unit } :=
-    Inject (MoveRight' _) [|Fin1|];;
+    Inject (MoveRight _;; Move _ L tt) [|Fin1|];;
     Inject (CopySymbols_L stop id) [|Fin1;Fin0|];;
     Inject (WriteMove (Some (inr (inl true)), L) tt;; Write (inl START) tt) [|Fin0|].
 
@@ -378,16 +335,19 @@ Section MatchList.
   Lemma Constr_cons_WRealise : Constr_cons ⊫ Constr_cons_Rel.
   Proof.
     eapply WRealise_monotone.
-    { unfold Constr_cons. repeat TM_Correct. apply MoveRight'_WRealise with (X := X). }
+    { unfold Constr_cons. repeat TM_Correct. apply MoveRight_WRealise with (X := X). }
     {
       intros tin ((), tout) H. intros l y HEncL HEncY.
-      TMSimp; clear_trivial_eqs. specialize (H y HEncY) as (ls&HEncY1&HEncY2).
+      TMSimp; clear_trivial_eqs.
+      specialize (H y HEncY) as (ls&H). TMSimp.
       destruct HEncL as (ls2&HEncL). TMSimp.
-      erewrite CopySymbols_L_correct in H0. 4: cbn; eauto. all: cbn; auto. 2: setoid_rewrite <- in_rev; apply stop_lemma.
+      rewrite CopySymbols_L_correct_moveleft in H0; swap 1 2; auto.
+      { intros ? (?&<-& (?&<-&?) % in_rev % in_map_iff) % in_map_iff. cbn. reflexivity. }
       inv H0. TMSimp.
       repeat econstructor.
-      - f_equal. cbn. rewrite map_id, map_app, <- app_assoc, rev_involutive. simpl_tape. reflexivity.
-      - rewrite rev_involutive. cbn. reflexivity.
+      - cbn. f_equal. simpl_tape. rewrite map_id. rewrite !map_rev, rev_involutive. f_equal.
+        now rewrite !List.map_map, map_app, <- app_assoc, List.map_map.
+      - f_equal. now rewrite !map_rev, rev_involutive.
     }
   Qed.
             
@@ -402,17 +362,18 @@ Section MatchList.
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Constr_cons. repeat TM_Correct.
-      - apply MoveRight'_WRealise with (X := X).
-      - apply MoveRight'_Terminates with (X := X).
+      - apply MoveRight_WRealise with (X := X).
+      - apply MoveRight_WRealise with (X := X).
+      - apply MoveRight_Terminates with (X := X).
     }
     {
       intros tin k (l&y&HEncL&HEncY&Hk).
       exists (10 + 4 * length (encode y)), (12 + 8 * length (encode y)). repeat split; try omega.
-      - cbn. eexists. split. eauto. rewrite map_length. omega.
+      - cbn. do 2 eexists. split; eauto. rewrite map_length. omega.
       - intros tmid () (H&HInj). TMSimp.
-        specialize (H _ HEncY) as (ls&HEncY1&HEncY2). TMSimp.
+        specialize (H _ HEncY) as (ls&HEncY'). TMSimp.
         exists (8 + 8 * length (encode y)), 3. repeat split; try omega.
-        + erewrite CopySymbols_L_TermTime_local; eauto. rewrite rev_length, !map_length. omega.
+        + erewrite CopySymbols_L_TermTime_moveleft; eauto. rewrite map_length, rev_length, map_length. omega.
         + intros tmid2 (). intros (H2&HInj2). TMSimp.
           exists 1, 1. repeat split; try omega. intros ? _ _. omega.
     }
