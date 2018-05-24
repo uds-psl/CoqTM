@@ -39,7 +39,6 @@ TM/Code/MatchList.v
 
 # Defect files
 # TM/Code/MatchProd.v
-# TM/Code/NatCounter.v
 
 TM/Code/NatTM.v
 TM/Code/ListTM.v
@@ -51,9 +50,7 @@ TM/Basic/Multi.v
 TM/Basic/WriteString.v
 
 # Compound Machines
-# TM/Compound.v
 TM/Compound/TMTac.v
 TM/Compound/Peek.v
 TM/Compound/MoveToSymbol.v
 TM/Compound/CopySymbols.v
-# TM/Compound/FindSymbol.v
