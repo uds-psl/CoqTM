@@ -447,18 +447,6 @@ Section LiftNM.
     - hnf. intros k ik1. pose proof (@sim_eq_loop _ _ i k ik1 X') as H. now inv H.
   Qed.
 
-  Lemma Inject_Realises R :
-    pM ⊨ R ->
-    Inject ⊨ lift_gen_eq_p I R.
-  Proof.
-    intros H initTapes. hnf in *.
-    specialize (H (reorder I initTapes)) as (outc&i&H1&H2).
-    pose proof (@propagate_loop i (initc injectM initTapes) outc H1) as (X&X').
-    eexists. exists i. split. eassumption. cbn. hnf. split.
-    - hnf. cbn in *. now rewrite inject_correct.
-    - hnf. intros k ik1. pose proof (@sim_eq_loop _ _ i k ik1 X') as H. now inv H.
-  Qed.
-
   Lemma Inject_Terminates T :
     projT1 pM ↓ T ->
     projT1 Inject ↓ liftT_gen I T.

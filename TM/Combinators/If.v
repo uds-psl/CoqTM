@@ -1,6 +1,6 @@
 Require Import Match.
 
-Section Composition.
+Section If.
 
   Variable n : nat.
   Variable sig : finType.
@@ -85,22 +85,6 @@ Section Composition.
     - hnf. intros H2 (f& t). intros ([ | ]& (y & H3&H3')). left. hnf. eauto. right. hnf. eauto.
   Qed.
 
-  Lemma If_Realise (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) :
-    pM1 ⊨ R1 ->
-    pM2 ⊨ R2 ->
-    pM3 ⊨ R3 ->
-    If ⊨ (R1 |_true) ∘ R2 ∪ (R1 |_false) ∘ R3.
-  Proof.
-    intros.
-    eapply Realise_monotone.
-    eapply Match_Realise; eauto.
-    - intros. cbn in f. destruct f.
-      + eapply Realise_monotone. eassumption.
-        instantiate (1 := fun t => match t with true => R2 | _ => R3 end). reflexivity.
-      + eapply Realise_monotone. destruct pM3. eassumption. firstorder.
-    - hnf. intros H2 (f& t). intros ([ | ]& (y & H3&H3')). left. hnf. eauto. right. hnf. eauto.
-  Qed.
-    
-End Composition.
+End If.
 
 Arguments If : simpl never.

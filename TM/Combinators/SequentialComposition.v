@@ -67,19 +67,6 @@ Section Composition.
     - firstorder.
   Qed.
 
-  Lemma Seq_Realise (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) :
-    pM1 ⊨ R1 ->
-    pM2 ⊨ R2 ->
-    Seq ⊨ ⋃_y ((R1 |_y) ∘ R2).
-  Proof.
-    intros H1 H2. 
-    eapply Realise_monotone.
-    eapply (Match_Realise).
-    - eapply H1.
-    - intros f.  eapply H2.
-    - firstorder.
-  Qed.
-
 End Composition.
 
 Notation "A ;; B" := (Seq A B) (right associativity, at level 65).

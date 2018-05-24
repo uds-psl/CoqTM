@@ -280,20 +280,6 @@ Section Match.
     now apply Match_merge.
   Qed.
 
-
-  Lemma Match_Realise (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) :
-    pM1 ⊨ R1 ->
-    (forall f : F, pMf f ⊨ R2 f) ->
-    MATCH ⊨ (⋃_f (R1 |_ f) ∘ R2 f).
-  Proof.
-    intros Term1 Term2 t.
-    specialize (Term1 t) as (outc'&j&Term1&Term1').
-    specialize (Term2 (p1 (cstate outc')) (ctapes outc')) as (outc''&i&Term2&Term2').
-    exists (lift_confR outc''), (j + S i). split.
-    - eapply Match_merge; eauto.
-    - hnf. exists (p1 (cstate outc')). exists (ctapes outc'). repeat split; hnf; trivial.
-  Qed.
-
 End Match.
 (* Arguments MATCH {n} {sig} {F} pM1 {_} pMf : clear implicits. *)
 

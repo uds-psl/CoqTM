@@ -195,7 +195,7 @@ End Test.
   Proof.
     eapply WRealise_monotone.
     {
-      unfold CopySymbols. eapply While_WRealise. eapply Realise_WRealise, RealiseIn_Realise. eapply M1_RealiseIn.
+      unfold CopySymbols. eapply While_WRealise. eapply RealiseIn_WRealise. eapply M1_RealiseIn.
     }
     {
       hnf. intros tin (y1&tout) H. hnf in *. destruct H as (t1&H&H2). hnf in *.

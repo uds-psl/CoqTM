@@ -152,7 +152,7 @@ Section move_to_symbol.
   Proof.
     eapply WRealise_monotone.
     {
-      unfold MoveToSymbol. eapply While_WRealise. eapply Realise_WRealise, RealiseIn_Realise. eapply M1_RealiseIn.
+      unfold MoveToSymbol. eapply While_WRealise. eapply RealiseIn_WRealise. eapply M1_RealiseIn.
     }
     {
 

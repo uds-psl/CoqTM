@@ -1,7 +1,6 @@
-(** * Definition of Multitape Turing Machines 
-    
-    - definitions taken from Asperti, Riciotti "Formalizing Turing Machines" and accompanying Matita foramlisation
+(** * Definition of Multi-Tape Turing Machines 
  *)
+(** Some definitions inspired from Asperti, Riciotti "Formalizing Turing Machines" and accompanying Matita foramlisation  *)
 
 Require Export TM.Prelim TM.Relations.
 Require Import Shared.Vectors.Vectors.
@@ -82,16 +81,6 @@ we are on the right extremity of a non-empty tape (right overflow). *)
   Qed.
   
   
-  (** ** Definition of Multitape Turing Machines *)
-
-  Record mTM (tapes_no:nat) : Type :=
-    {
-      states : finType; (* states of the TM *)
-      trans : states * (Vector.t (option sig) tapes_no) -> states * (Vector.t ((option sig) * move) tapes_no); (* the transition function *)
-      start: states; (* the start state *)
-      halt : states -> bool (* decidable subset of halting states *)
-    }.
-
   (** Definition of tape movements *)
 
   Definition tape_move_right' ls a rs :=
@@ -179,256 +168,7 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     | Some s0 => midtape (left t) s0 (right t)
     end.
 
-  (** A single step of the machine *)
-  
-  Definition tape_move_mono (t : tape) (mv : option sig * move) :=
-    tape_move (tape_write t (fst mv)) (snd mv).
-
-  (** One step on each tape *)
-  
-  Definition tape_move_multi (n : nat) (ts : tapes n) (actions : Vector.t (option sig * move) n) :=
-    Vector.map2 tape_move_mono ts actions.
-
-  (** ** Configurations of TMs *)
-  
-  Record mconfig (states:finType) (n:nat): Type :=
-    mk_mconfig
-      {
-        cstate : states;
-        ctapes : tapes n
-      }.
-
-  (** Currently read characters on all tapes *)
-  Definition current_chars := fun (n : nat) (tapes : tapes n) => Vector.map current tapes.
-
-  (** ** Machine execution *)
-  
-  Definition step n (M:mTM n) (c:mconfig (states M) n) :=
-    let (news,actions) := trans (cstate c, current_chars  (ctapes c)) in 
-    mk_mconfig news (tape_move_multi (ctapes c) actions).
-
-  (** Run the machine i steps until it halts *)
-  Definition loopM n (M :mTM n) (i : nat) cin :=
-    loop i (@step n M) (fun c => halt (cstate c)) cin.
-  
-  (** Initial configuration *)  
-  Definition initc n (M : mTM n) tapes :=
-    mk_mconfig (n := n) (@start n M) tapes.
-
-  (** ** Realisation of machines *)
-
-  Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
-  
-  Definition WRealise n (F : finType) (pM : { M : mTM n & (states M -> F)}) (R : Rel (tapes _) (F * tapes _)) :=
-    forall t i outc, loopM i (initc (projT1 pM) t) = Some outc -> R t ((projT2 pM) (cstate outc), ctapes outc).
-  Arguments WRealise {n F} pM R.
-
-  Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 30, format "M  '⊫'  R").
-  Notation "M '⊫(' p ')' R" := (WRealise (M; p) R) (no associativity, at level 30, format "M  '⊫(' p ')'  R").
-
-  (* That's still equivalent to Asperti's definition *)
-  Goal forall n (M : mTM n) R, WRealise (M ; fun x => x) (fun x y => R x (snd y) ) <->
-                          forall t i outc, loopM i (initc M t) = Some outc -> R t (ctapes outc).
-  Proof.
-    firstorder.
-  Qed.
-
-  (** *** Basic Properties *)
-
-  Fact WRealise_monotone n (F : finType) (pM : { M : mTM n & states M -> F }) (R1 R2 : Rel (tapes _) (F * tapes _)) :
-    pM ⊫ R1 -> R1 <<=2 R2 -> pM ⊫ R2.
-  Proof.
-    unfold WRealise. eauto. 
-  Qed.
-
-  Fact WRealise_changeP n (M:mTM n) (F : finType) (f f' : states M -> F) (R : Rel (tapes _) (F * tapes _)) :
-    WRealise (M; f) R -> (forall s, f s = f' s) -> WRealise (M ; f') R.
-  Proof.
-    intros ? ? ? ? ? ?. cbn. rewrite <- H0. firstorder.
-  Qed.
-
-  (** *** Properties of total TMs *)
-
-  Definition Realise {n : nat} {F : finType} (pM : { M : mTM n & (states M -> F) }) (R : Rel (tapes _) (F * tapes _)) :=
-    forall (input : tapes n),
-    exists outc k, loopM k (initc (projT1 pM) input) = Some outc /\
-              R input ((projT2 pM (cstate outc)), ctapes outc).
-  Notation "M '⊨' R" := (Realise M R) (no associativity, at level 45, format "M  '⊨'  R").
-  Notation "M '⊨(' p ')' R" := (Realise (M;p) R) (no associativity, at level 45, format "M  '⊨(' p ')'  R").
-
-  Lemma Realise_monotone n (F : finType) (pM : { M : mTM n & (states M -> F) }) R1 R2 :
-    pM ⊨ R1 -> R1 <<=2 R2 -> pM ⊨ R2.
-  Proof.
-    intros. hnf in *. firstorder.
-  Qed.
-
-  Lemma Realise_WRealise n (F : finType) (pM : { M : mTM n & (states M -> F) }) R :
-    pM ⊨ R -> pM ⊫ R.
-  Proof.
-    intros H. intros input k outc H1.
-    pose proof (H input) as (outc'&k'&H2&H3).
-    now rewrite (loop_functional H1 H2) in *.
-  Qed.
-
-  Definition TerminatesIn {n : nat} (M : mTM n) (T : Rel (tapes n) nat) :=
-    forall tin k, T tin k -> exists conf, loopM k (initc M tin) = Some conf.
-  Arguments TerminatesIn { _ } _.
-  Notation "M ↓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '↓'  T").
-
-  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : Rel (tapes _) _) :
-    M ↓ T1 -> (T2 <<=2 T1) -> M ↓ T2.
-  Proof.
-    intros H1 H2. firstorder.
-  Qed.
-
-  Lemma TerminatesIn_monotone' {n : nat} (M : mTM n) (T1 T2 : Rel (tapes _) _) :
-    M ↓ T1 -> (forall tin k1, T2 tin k1 -> exists k2, k2 <= k1 /\ T1 tin k2) -> M ↓ T2.
-  Proof.
-    intros H1 H2. hnf. intros tin k1 Hk.
-    specialize (H2 tin k1 Hk) as (k3&Hk3&Hk3').
-    hnf in H1. specialize (H1 tin k3 Hk3') as (oconf&HLoop).
-    exists oconf. eapply loop_ge; eauto.
-  Qed.
-
-  Lemma WRealise_to_Realise n (F : finType) (pM : { M : mTM n & (states M -> F) }) R T :
-    projT1 pM ↓ T ->
-    (forall t, exists k, T t k) ->
-    pM ⊫ R -> pM ⊨ R.
-  Proof.
-    intros H1 H2 H3. intros input. hnf in *. specialize (H2 input) as (k&Hk). specialize (H1 _ _ Hk) as (oconf&HL). eauto.
-  Qed.
-
-  Definition RealiseIn n (F : finType) (pM : { M : mTM n & (states M -> F) }) R (k : nat) :=
-    forall input, exists outc, loopM k (initc (projT1 pM) input) = Some outc /\ R input ((projT2 pM (cstate outc)), ctapes outc).
-  Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
-  Notation "M '⊨c(' p ',' k ')' R" := (RealiseIn (M; p) R k) (no associativity, at level 45, format "M  '⊨c(' p ',' k ')'  R").
-
-  Lemma RealiseIn_Realise n (F : finType) (pM : { M : mTM n & (states M -> F) }) R (k : nat) :
-    pM ⊨c(k) R -> pM ⊨ R.
-  Proof. firstorder. Qed.
-
-  Fact RealiseIn_monotone n (F : finType) (pM : { M : mTM n & (states M -> F) }) (R1 R2 : Rel (tapes _) (F * tapes _)) k1 k2 :
-    pM ⊨c(k1) R1 -> k1 <= k2 -> R1 <<=2 R2  -> pM ⊨c(k2) R2.
-  Proof.
-    unfold RealiseIn. intros H1 H2 H3 input.
-    specialize (H1 input) as (outc & H1). exists outc.
-    split.
-    - unfold loopM. eapply loop_ge; eauto. intuition.
-    - intuition.
-  Qed.
-
-  Fact RealiseIn_monotone' n (F : finType) (pM : { M : mTM n & (states M -> F) }) (R1 : Rel (tapes _) (F * tapes _)) k1 k2 :
-    pM ⊨c(k1) R1 -> k1 <= k2 -> pM ⊨c(k2) R1.
-  Proof.
-    intros H1 H2. eapply RealiseIn_monotone. eapply H1. assumption. firstorder.
-  Qed.
-
-  Fact RealiseIn_split n (F : finType) (pM : { M : mTM n & (states M -> F) }) R1 R2 (k : nat) :
-    pM ⊨c(k) R1 /\ pM ⊨c(k) R2 <-> pM ⊨c(k) R1 ∩ R2.
-  Proof.
-    split; swap 1 2; [ intros H | intros (H1&H2)]; repeat intros ?. hnf; firstorder eauto.
-    specialize (H1 input) as (outc &H1&H1'). specialize (H2 input) as (outc2&H2&H2').
-    pose proof loop_functional H1 H2 as <-. exists outc. split; hnf; eauto.
-  Qed.
-  
-  Fact Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
-    pM ⊫ R /\ projT1 pM ↓ (fun _ i => i >= k) <-> pM ⊨c(k) R.
-  Proof.
-    split.
-    - intros (HR & Ht) t. edestruct (Ht t k). cbn; omega. eauto.
-    - intros H.
-      split.
-      + intros t i cout Hc.
-        destruct (H t) as (? & ? & ?).
-        cutrewrite (cout = x).
-        eassumption.
-        eapply loop_functional; eauto.
-      + intros t i Hi.
-        edestruct (H t) as (? & ? & ?). 
-        exists x. eapply loop_ge; eauto.
-  Qed.
-
-  Fact RealiseIn_WRealise n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
-    pM ⊨c(k) R -> pM ⊫ R.
-  Proof. now intros (?&?) % Realise_total. Qed.
-
-  Fact RealiseIn_terminatesIn n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
-    pM ⊨c(k) R -> projT1 pM ↓ (fun tin l => k <= l). 
-  Proof.
-    intros HRel. hnf. intros tin l HSteps. hnf in HRel. specialize (HRel tin) as (outc&HLoop&Rloop).
-    exists outc. eapply loop_ge; eauto.
-  Qed.
-  
-  Fact RealiseIn_changeP n (M:mTM n) (F : finType) (f f' : states M -> F) (R : Rel (tapes _) (F * tapes _)) k :
-    RealiseIn (M; f) R k -> (forall s, f s = f' s) -> RealiseIn (M ; f') R k.
-  Proof.
-    destruct M. cbn in *. unfold RealiseIn. cbn. firstorder congruence.
-  Qed.
-
-  Fact RealiseIn_strengthen n (F : finType) (pM : { M : mTM n & states M -> F}) (R1 R2 : Rel (tapes _) (F * tapes _)) k :
-    WRealise pM R2 -> RealiseIn pM R1 k -> RealiseIn pM (R1 ∩ R2) k.
-  Proof.
-    intros HwR HR t. destruct (HR t) as (outc & ?). exists outc. firstorder.
-  Qed.
-
-  Fact WRealise_strengthen n (F : finType) (pM : { M : mTM n & states M -> F}) (R1 R2 : Rel (tapes _) (F * tapes _)) :
-    WRealise pM R2 -> WRealise pM R1 -> WRealise pM (R1 ∩ R2).
-  Proof.
-    intros HwR HR t. firstorder.
-  Qed.
-
-  (** ** Canonical relations *)
-
-  Section CanonicalRelation1.
-    Variable (n : nat).
-    Variable (F : finType).
-    Variable (pM : { M : mTM n & states  M -> F }).
-
-    Definition R_canonical : Rel (tapes n) (F * tapes n) :=
-      fun t1 '(y, t2) =>
-        exists outc k, loopM (M := projT1 pM) k (initc (projT1 pM) t1) = Some outc /\
-                  ctapes outc = t2 /\ projT2 pM (cstate outc) = y.
-
-    Lemma WRealise_R_mTM :
-      pM ⊫ R_canonical.
-    Proof. hnf. firstorder eauto. Qed.
-
-    Lemma R_canonical_functional : functional R_canonical.
-    Proof.
-      hnf. intros x (y1&z1) (y2&z2) (c1&k1&H1&<-&H1') (c2&k2&H2&<-&H2').
-      pose proof loop_functional H1 H2 as ->. congruence.
-    Qed.
-
-  End CanonicalRelation1.
-
-  Section CanonicalRelation2.
-    Variable (n : nat).
-    Variable (M : mTM n).
-
-    Definition T_canonical : Rel (tapes n) nat :=
-      fun t k => exists outc, loopM (M := M) k (initc M t) = Some outc.
-
-    Lemma T_canonical_TerminatesIn :
-      M ↓ T_canonical.
-    Proof. firstorder. Qed.
-
-  End CanonicalRelation2.
-
 End Fix_Sigma.
-
-(* Arguments Realise {sig} {n} M {F} f R : clear implicits. *)
-(* Arguments WRealise {sig n F} pM R : clear implicits. *)
-(* Arguments RealiseIn {sig n F} pM R k : clear implicits. *)
-Arguments TerminatesIn {_} {_} _.
-
-Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
-Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 60, format "M  '⊫'  R").
-Notation "M '⊫(' f ')' R" := ((M;f) ⊫ R) (no associativity, at level 60, format "M  '⊫(' f ')'  R").
-Notation "M '⊨' R" := (Realise M R) (no associativity, at level 60, format "M  '⊨'  R").
-Notation "M '⊨(' f ')' R" := ((M;f) ⊫ R) (no associativity, at level 60, format "M  '⊨(' f ')'  R").
-Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
-Notation "M '⊨c(' f ',' k ')' R" := (RealiseIn (M; f) R k) (no associativity, at level 45, format "M  '⊨c(' f ',' k ')'  R").
-Notation "M '↓' t" := (TerminatesIn M t) (no associativity, at level 60, format "M  '↓'  t").
 
 (* Destruct a vector of tapes of known size *)
 Ltac destruct_tapes := unfold tapes in *; destruct_vector.
@@ -856,23 +596,228 @@ Hint Rewrite tape_local_l_move_left' : tape.
 
 
 
+
+(** ** Definition of Multi-Tape Turing Machines *)
+Section Semantics.
+
+  Variable sig : finType.
+  
+
+  Record mTM (n:nat) : Type :=
+    {
+      states : finType; (* states of the TM *)
+      trans : states * (Vector.t (option sig) n) -> states * (Vector.t ((option sig) * move) n); (* the transition function *)
+      start: states; (* the start state *)
+      halt : states -> bool (* decidable subset of halting states *)
+    }.
+
+  (** Partitioned Multi-Tape Turing Machines *)
+  Definition pTM (F: finType) (n:nat) := { M : mTM n & states M -> F }.
+  
+
+  (** A single step of the machine *)
+  
+  Definition tape_move_mono (t : tape sig) (mv : option sig * move) :=
+    tape_move (tape_write t (fst mv)) (snd mv).
+
+  (** One step on each tape *)
+  
+  Definition tape_move_multi (n : nat) (ts : tapes sig n) (actions : Vector.t (option sig * move) n) :=
+    Vector.map2 tape_move_mono ts actions.
+
+  (** *** Configurations of TMs *)
+  
+  Record mconfig (states:finType) (n:nat): Type :=
+    mk_mconfig
+      {
+        cstate : states;
+        ctapes : tapes sig n
+      }.
+
+  (** Currently read characters on all tapes *)
+  Definition current_chars (n : nat) (tapes : tapes sig n) := Vector.map (@current _) tapes.
+
+
+  (** *** Machine execution *)
+  
+  Definition step n (M:mTM n) (c:mconfig (states M) n) :=
+    let (news,actions) := trans (cstate c, current_chars  (ctapes c)) in 
+    mk_mconfig news (tape_move_multi (ctapes c) actions).
+
+  (** Run the machine i steps until it halts *)
+  Definition loopM n (M : mTM n) (i : nat) cin :=
+    loop i (@step n M) (fun c => halt (cstate c)) cin.
+  
+  (** Initial configuration *)  
+  Definition initc n (M : mTM n) tapes :=
+    mk_mconfig (n := n) (@start n M) tapes.
+
+
+  (** *** Realisation *)
+
+  Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
+
+  (** Parametrised relations *)
+  Definition pRel (F: finType) (n : nat) := Rel (tapes sig n) (F * tapes sig n).
+
+  (** A (partitioned) machine [M] realises a (parametrised) relation [R], if: for every tape vectors [t], if [M] with [t] terminates in a configuration [c], then [R (t), (projT2 M (cstate c), ctapes c)], which means that the pair of the input tape vectors, the partition where the machine terminated, and the output tape, must be in the relation [R]. *)
+  
+  Definition WRealise n F (pM : pTM n F) (R : pRel n F) :=
+    forall t i outc, loopM i (initc (projT1 pM) t) = Some outc -> R t (projT2 pM (cstate outc), ctapes outc).
+
+  Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 30, format "M  '⊫'  R").
+
+  Lemma WRealise_monotone n (F : finType) (pM : pTM F n) R1 R2 :
+    pM ⊫ R1 -> R1 <<=2 R2 -> pM ⊫ R2.
+  Proof. firstorder. Qed.
+
+
+  (** *** Termination/Runtime *)
+
+  (** A machine is said to "terminate in" a relation [T : Rel (tapes sig n) nat], if for every pair of input tape vectors [t] and step numbers [i], there exists an output configuration [cout] that [M] reaches from [t] in [i] steps. *)
+
+  Definition tRel n := Rel (tapes sig n) nat.
+
+  Definition TerminatesIn {n : nat} (M : mTM n) (T : tRel n) :=
+    forall tin k, T tin k -> exists conf, loopM k (initc M tin) = Some conf.
+  
+
+  Arguments TerminatesIn { _ } _.
+  Notation "M ↓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '↓'  T").
+
+  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : tRel n) :
+    M ↓ T1 -> (T2 <<=2 T1) -> M ↓ T2.
+  Proof.
+    intros H1 H2. firstorder.
+  Qed.
+
+  Lemma TerminatesIn_extend {n : nat} (M : mTM n) (T1 T2 : tRel n) :
+    M ↓ T1 -> (forall tin k1, T2 tin k1 -> exists k2, k2 <= k1 /\ T1 tin k2) -> M ↓ T2.
+  Proof.
+    intros H1 H2. hnf. intros tin k1 Hk.
+    specialize (H2 tin k1 Hk) as (k3&Hk3&Hk3').
+    hnf in H1. specialize (H1 tin k3 Hk3') as (oconf&HLoop).
+    exists oconf. eapply loop_ge; eauto.
+  Qed.
+
+
+  (** Realisation and termination in constant time *)
+  Definition RealiseIn n (F : finType) (pM : pTM F n) (R : pRel F n) (k : nat) :=
+    forall input, exists outc, loopM k (initc (projT1 pM) input) = Some outc /\ R input ((projT2 pM (cstate outc)), ctapes outc).
+  Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
+
+  Fact RealiseIn_monotone n (F : finType) (pM : pTM F n) (R1 R2 : pRel F n) k1 k2 :
+    pM ⊨c(k1) R1 -> k1 <= k2 -> R1 <<=2 R2  -> pM ⊨c(k2) R2.
+  Proof.
+    unfold RealiseIn. intros H1 H2 H3 input.
+    specialize (H1 input) as (outc & H1). exists outc.
+    split.
+    - unfold loopM. eapply loop_ge; eauto. intuition.
+    - intuition.
+  Qed.
+
+  Fact RealiseIn_monotone' n (F : finType) (pM : pTM F n) (R1 : pRel F n) k1 k2 :
+    pM ⊨c(k1) R1 -> k1 <= k2 -> pM ⊨c(k2) R1.
+  Proof.
+    intros H1 H2. eapply RealiseIn_monotone. eapply H1. assumption. firstorder.
+  Qed.
+
+  Fact RealiseIn_split n (F : finType) (pM : pTM F n) R1 R2 (k : nat) :
+    pM ⊨c(k) R1 /\ pM ⊨c(k) R2 <-> pM ⊨c(k) R1 ∩ R2.
+  Proof.
+    split; swap 1 2; [ intros H | intros (H1&H2)]; repeat intros ?. hnf; firstorder eauto.
+    specialize (H1 input) as (outc &H1&H1'). specialize (H2 input) as (outc2&H2&H2').
+    pose proof loop_functional H1 H2 as <-. exists outc. split; hnf; eauto.
+  Qed.
+  
+  Fact Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
+    pM ⊫ R /\ projT1 pM ↓ (fun _ i => i >= k) <-> pM ⊨c(k) R.
+  Proof.
+    split.
+    - intros (HR & Ht) t. edestruct (Ht t k). cbn; omega. eauto.
+    - intros H.
+      split.
+      + intros t i cout Hc.
+        destruct (H t) as (? & ? & ?).
+        cutrewrite (cout = x).
+        eassumption.
+        eapply loop_functional; eauto.
+      + intros t i Hi.
+        edestruct (H t) as (? & ? & ?). 
+        exists x. eapply loop_ge; eauto.
+  Qed.
+
+  Fact RealiseIn_WRealise n (F : finType) (pM : pTM F n) R k :
+    pM ⊨c(k) R -> pM ⊫ R.
+  Proof. now intros (?&?) % Realise_total. Qed.
+
+  Fact RealiseIn_terminatesIn n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
+    pM ⊨c(k) R -> projT1 pM ↓ (fun tin l => k <= l). 
+  Proof.
+    intros HRel. hnf. intros tin l HSteps. hnf in HRel. specialize (HRel tin) as (outc&HLoop&Rloop).
+    exists outc. eapply loop_ge; eauto.
+  Qed.
+  
+  Fact WRealise_strengthen n (F : finType) (pM : pTM F n) R1 R2 :
+    WRealise pM R2 -> WRealise pM R1 -> WRealise pM (R1 ∩ R2).
+  Proof.
+    intros HwR HR t. firstorder.
+  Qed.
+
+
+  (** *** Canonical relations *)
+
+  Section CanonicalRelation1.
+    Variable (n : nat).
+    Variable (F : finType).
+    Variable (pM : { M : mTM n & states  M -> F }).
+
+    Definition R_canonical : pRel F n :=
+      fun t1 '(y, t2) =>
+        exists outc k, loopM (M := projT1 pM) k (initc (projT1 pM) t1) = Some outc /\
+                  ctapes outc = t2 /\ projT2 pM (cstate outc) = y.
+
+    Lemma WRealise_R_mTM :
+      pM ⊫ R_canonical.
+    Proof. hnf. firstorder eauto. Qed.
+
+    Lemma R_canonical_functional : functional R_canonical.
+    Proof.
+      hnf. intros x (y1&z1) (y2&z2) (c1&k1&H1&<-&H1') (c2&k2&H2&<-&H2').
+      pose proof loop_functional H1 H2 as ->. congruence.
+    Qed.
+
+  End CanonicalRelation1.
+
+  Section CanonicalRelation2.
+    Variable (n : nat).
+    Variable (M : mTM n).
+
+    Definition T_canonical : tRel n :=
+      fun t k => exists outc, loopM (M := M) k (initc M t) = Some outc.
+
+    Lemma T_canonical_TerminatesIn :
+      M ↓ T_canonical.
+    Proof. firstorder. Qed.
+
+  End CanonicalRelation2.
+
+
+End Semantics.
+
+
+
+
+Arguments TerminatesIn {_} {_} _.
+
+Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
+Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 60, format "M  '⊫'  R").
+Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
+Notation "M '↓' t" := (TerminatesIn M t) (no associativity, at level 60, format "M  '↓'  t").
+
+
 Arguments current_chars : simpl never.
 Hint Unfold current_chars : tape.
-
-
-
-(** Automatisation of the generation of relations *)
-
-(* Create the smpl tactic databases *)
-Smpl Create TM_Correct.
-
-(* This tactics apply exactly one tactic from the corresponding hint database *)
-Ltac TM_Correct := smpl TM_Correct.
-
-Smpl Add progress eauto : TM_Correct.
-(* todo: get rid of that *)
-Smpl Add rewrite <- sigT_eta : TM_Correct.
-
 
 
 (* Auxiliary function to actually execute a machine *)
@@ -881,3 +826,21 @@ Definition execTM (sig : finType) (n : nat) (M : mTM sig n) (steps : nat) (tapes
 
 Definition execTM_p (sig : finType) (n : nat) (F : finType) (pM : { M : mTM sig n & states M -> F }) (steps : nat) (tapes : tapes sig n) :=
   option_map (fun x => (ctapes x, projT2 pM (cstate x))) (loopM steps (initc (projT1 pM) tapes)).
+
+
+
+(** ** Automatisation of the generation of relations *)
+
+(* Create the smpl tactic databases *)
+Smpl Create TM_Correct.
+
+(* This tactics apply exactly one tactic from the corresponding hint database *)
+Ltac TM_Correct := smpl TM_Correct.
+
+Smpl Add progress eauto : TM_Correct.
+
+(*
+(* TODO: get rid of that *)
+Smpl Add rewrite <- sigT_eta : TM_Correct.
+*)
+

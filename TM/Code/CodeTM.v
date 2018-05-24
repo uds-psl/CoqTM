@@ -193,15 +193,6 @@ Section Fix_Sig.
         - eapply Computes_ext.
       Qed.
 
-      Lemma Computes_Ext_Realise :
-        pM ⊨ Computes_Rel f' ->
-        pM ⊨ Computes_Rel f.
-      Proof.
-        intros H. eapply Realise_monotone.
-        - eapply H.
-        - eapply Computes_ext.
-      Qed.
-
       Lemma Computes_Ext_RealiseIn (k : nat) :
         pM ⊨c(k) Computes_Rel f' ->
         pM ⊨c(k) Computes_Rel f.
@@ -289,15 +280,6 @@ Section Fix_Sig.
         pM ⊫ Computes2_Rel f.
       Proof.
         intros H. eapply WRealise_monotone.
-        - eapply H.
-        - eapply Computes2_ext.
-      Qed.
-
-      Lemma Computes2_Ext_Realise :
-        pM ⊨ Computes2_Rel f' ->
-        pM ⊨ Computes2_Rel f.
-      Proof.
-        intros H. eapply Realise_monotone.
         - eapply H.
         - eapply Computes2_ext.
       Qed.

@@ -74,8 +74,8 @@ Section Copy.
       eapply Inject_RealisesIn; [ vector_dupfree| eapply read_char_sem].
       instantiate (2 := fun o : option sig => match o with Some s => _ | None => _ end).
       intros [ s | ]; cbn.
-      eapply Inject_RealisesIn; [ vector_dupfree| eapply Write_Sem].
-      eapply RealiseIn_monotone'. eapply Nop_total. omega.
+      - eapply Inject_RealisesIn; [ vector_dupfree| eapply Write_Sem].
+      - eapply RealiseIn_monotone'. eapply Nop_total. omega.
     }
     {
       cbn. omega.
