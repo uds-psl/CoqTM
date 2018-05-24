@@ -427,7 +427,7 @@ Section Nth.
       repeat split; cbn.
       - rewrite <- Hk.
         subst tau.
-        (* Somehow, [generalize] doesn't work here as exspected. *)
+        (* Somehow, [generalize] doesn't work here as expected. *)
         enough (forall a b c d,
                    25 + 12 * a +
                    S (44 + Nth_Loop_steps l n + 4 * b + 4 * c + 12 * d) <=
