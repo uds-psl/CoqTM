@@ -19,13 +19,13 @@ Section move_to_symbol.
    * Else move one to the right and return [ Some false ].
    *)
   Definition M1 : { M : mTM sig 1 & states M -> bool * unit} :=
-    MATCH (Read_char _)
+    MATCH (Read_char)
           (fun b : option sig =>
              match b with
              | Some x => if f x
-                        then mono_Nop _ (false, tt) (* found the symbol, break *)
-                        else Move _ R (true, tt) (* wrong symbol, move right and continue *)
-             | _ => mono_Nop _ (false, tt) (* there is no such symbol, break *)
+                        then mono_Nop (false, tt) (* found the symbol, break *)
+                        else Move R (true, tt) (* wrong symbol, move right and continue *)
+             | _ => mono_Nop (false, tt) (* there is no such symbol, break *)
              end).
 
   Definition M1_Fun : tape sig -> tape sig :=

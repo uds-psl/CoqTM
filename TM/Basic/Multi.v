@@ -21,7 +21,7 @@ Section MovePar.
                               t'[@Fin.FS Fin.F1] = tape_move t[@Fin.FS Fin.F1] D2) ||_ def.
 
   Definition MovePar : { M : mTM sig 2 & states M -> F} :=
-    Inject (Move _ D1 tt) [|Fin.F1|];; Inject (Move _ D2 def) [|Fin.FS Fin.F1|].
+    Inject (Move D1 tt) [|Fin.F1|];; Inject (Move D2 def) [|Fin.FS Fin.F1|].
 
   Lemma MovePar_Sem : MovePar ⊨c(3) MovePar_R.
   Proof.
@@ -42,6 +42,7 @@ Section MovePar.
 End MovePar.
 
 Arguments MovePar_R { sig } ( D1 D2 ) { F } ( def ) x y /.
+Arguments MovePar {sig} (D1 D2) {F} def.
 Arguments MovePar : simpl never.
 
 
@@ -52,10 +53,10 @@ Section Copy.
   Variable f : sig -> sig.
 
   Definition Copy_char : { M : mTM sig 2 & states M -> bool} :=
-    MATCH (Inject (Read_char sig) [|Fin.F1|])
+    MATCH (Inject Read_char [|Fin.F1|])
           (fun s : option sig =>
              match s with
-               None =>  Nop _ _ false
+               None =>  Nop false
              | Some s => Inject (Write (f s) true) [|Fin.FS Fin.F1|]
              end).
 
@@ -96,6 +97,7 @@ Section Copy.
 End Copy.
 
 Arguments Copy_char_R { sig } ( f ) x y /.
+Arguments Copy_char { sig }.
 Arguments Copy_char : simpl never.
 
 
@@ -105,17 +107,17 @@ Section ReadChar.
   Variable sig : finType.
   Variable (n : nat) (k : Fin.t n).
 
-  Definition ReadChar_multi : { M : mTM sig n & states M -> option sig} :=
-    Inject (Read_char _) [|k|].
+  Definition ReadChar_at : { M : mTM sig n & states M -> option sig} :=
+    Inject Read_char [|k|].
 
-  Definition ReadChar_multi_R  : Rel (tapes sig n) (option sig * tapes sig n) :=
+  Definition ReadChar_at_R  : Rel (tapes sig n) (option sig * tapes sig n) :=
     (fun (t : tapes sig n) '(s,t') => s = current t[@k]) ∩ ignoreParam (@IdR _).
 
-  Lemma ReadChar_multi_Sem :
-    ReadChar_multi ⊨c(1) ReadChar_multi_R.
+  Lemma ReadChar_at_Sem :
+    ReadChar_at ⊨c(1) ReadChar_at_R.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold ReadChar_multi. repeat TM_Correct. }
+    { unfold ReadChar_at. repeat TM_Correct. }
     { cbn. reflexivity. }
     {
       intros tin (yout, tout) H.
@@ -129,21 +131,22 @@ Section ReadChar.
 
 End ReadChar.
 
-Arguments ReadChar_multi : simpl never.
-Arguments ReadChar_multi_R { sig n } ( k ) x y /.
+Arguments ReadChar_at : simpl never.
+Arguments ReadChar_at {sig n} k.
+Arguments ReadChar_at_R { sig n } ( k ) x y /.
 
 
 Ltac smpl_TM_Multi :=
   match goal with
-  | [ |- MovePar _ _ _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply MovePar_Sem
-  | [ |- MovePar _ _ _ _ ⊨c(_) _ ] => eapply MovePar_Sem
-  | [ |- projT1 (MovePar _ _ _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply MovePar_Sem
+  | [ |- MovePar _ _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply MovePar_Sem
+  | [ |- MovePar _ _ _ ⊨c(_) _ ] => eapply MovePar_Sem
+  | [ |- projT1 (MovePar _ _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply MovePar_Sem
   | [ |- Copy_char _ ⊨ _ ] => eapply RealiseIn_Realise; eapply Copy_char_Sem
   | [ |- Copy_char _ ⊨c(_) _ ] => eapply Copy_char_Sem
   | [ |- projT1 (Copy_char _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply Copy_char_Sem
-  | [ |- ReadChar_multi _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply ReadChar_multi_Sem
-  | [ |- ReadChar_multi _ _ ⊨c(_) _ ] => eapply ReadChar_multi_Sem
-  | [ |- projT1 (ReadChar_multi _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply ReadChar_multi_Sem
+  | [ |- ReadChar_at _ ⊨ _ ] => eapply RealiseIn_Realise; eapply ReadChar_at_Sem
+  | [ |- ReadChar_at _ ⊨c(_) _ ] => eapply ReadChar_at_Sem
+  | [ |- projT1 (ReadChar_at _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply ReadChar_at_Sem
   end.
 
 Smpl Add smpl_TM_Multi : TM_Correct.

@@ -16,8 +16,8 @@ Section Write_String.
 
   Fixpoint WriteString (l : list sig) : {M : mTM sig 1 & states M -> unit} :=
     match l with
-    | [] => mono_Nop sig tt
-    | x :: xs => WriteMove (Some x, D) tt ;; WriteString xs
+    | [] => mono_Nop tt
+    | x :: xs => WriteMove x D tt ;; WriteString xs
     end.
 
   Fixpoint WriteString_Fun (t : tape sig) (str : list sig) :=
@@ -34,7 +34,7 @@ Section Write_String.
     match str with
     | nil => mono_Nop_R tt
     | s :: str' =>
-      WriteMove_R (Some s, D) tt |_tt ∘ WriteString_sem_fix str'
+      WriteMove_R s D tt |_tt ∘ WriteString_sem_fix str'
     end.
     
   Lemma WriteString_fix_Sem (str : list sig) :

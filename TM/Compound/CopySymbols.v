@@ -22,7 +22,7 @@ Section CopySymbols.
   Variable g : sig -> sig.
 
   Definition M1 : { M : mTM sig 2 & states M -> bool * unit} :=
-    MATCH (ReadChar_multi _ Fin.F1)
+    MATCH (ReadChar_at Fin.F1)
           (fun b : option sig =>
              match b with
              | Some x =>
@@ -32,8 +32,8 @@ Section CopySymbols.
                  Inject (Write (g x) (false, tt)) [|Fin.FS Fin.F1|]
                else (* wrong symbol: write it to tape 1 and move both tapes right and continue *)
                  Inject (Write (g x) tt) [|Fin.FS Fin.F1|];;
-                 MovePar _ R R (true, tt)
-             | _ => Nop _ _ (false, tt) (* there is no such symbol, break and return false *)
+                 MovePar R R (true, tt)
+             | _ => Nop (false, tt) (* there is no such symbol, break and return false *)
              end).
 
   Definition M1_Fun : tape sig * tape sig -> tape sig * tape sig :=

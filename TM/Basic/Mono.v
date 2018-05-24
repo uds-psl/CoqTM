@@ -29,52 +29,6 @@ End Mk_Mono.
 
 Arguments Mk_R_p { sig F } ( R ) x y /.
 
-Section test_char.
-
-  Variable sig : finType.
-  Variable f : sig -> bool.
-
-  Definition tc_start : fourStates := Fin.F1.
-  Definition tc_true  : fourStates := Fin.FS (Fin.F1).
-  Definition tc_false : fourStates := Fin.FS (Fin.FS (Fin.F1)).
-  Definition tc_None  : fourStates := Fin.FS (Fin.FS (Fin.FS Fin.F1)).
-
-  Definition Test_Char_TM :=
-    Mk_Mono_TM (states := fourStates)
-      (fun s c => (match c with Some e => if f e then tc_true else tc_false | None => tc_None end , (None, TM.N) ))
-      tc_start (fun x => negb (Fin.eqb x tc_start)).
-
-  Definition Test_Char_p : fourStates -> option bool :=
-    fun x => if Fin.eqb x tc_true then Some true else
-            if Fin.eqb x tc_false then Some false else
-              None.
-
-  Definition TEST_CHAR := (Test_Char_TM; Test_Char_p).
-
-  Lemma test_chr_Sem :
-    TEST_CHAR ⊨c(1)
-                 Mk_R_p
-                 (ignoreParam (@IdR _) ∩
-                              (fun (t : tape sig) (Y : option bool * tape sig) =>
-                                 match Y with
-                                   (Some b, t2) => exists c, current t = Some c /\ f c = b
-                                 | (None, t2) => current t = None
-                                 end
-                              )
-                 ).
-  Proof.
-    hnf. intros intapes. destruct_tapes. cbn; cbv [current_chars]; cbn.
-    destruct (current h) eqn:E; cbn.
-    - destruct (f e) eqn:Ef; cbn.
-      + exists (mk_mconfig tc_true  [| h |]). cbn in *. repeat split; hnf; eauto.
-      + exists (mk_mconfig tc_false [| h |]). cbn in *. repeat split; hnf; eauto.
-    - exists (mk_mconfig tc_None [| h |]). cbn in *. repeat split; hnf; eauto.
-  Qed.
-
-End test_char.
-
-Arguments TEST_CHAR : simpl never.
-
 
 Section Write.
 
@@ -139,7 +93,8 @@ Section Move.
 End Move.
 
 Arguments Move : simpl never.
-Arguments Move_R { sig } ( D ) { F } ( p ) x y / : rename.
+Arguments Move { sig } D { F } f.
+Arguments Move_R { sig } ( D ) { F } ( f ) x y /.
 
 
 
@@ -147,11 +102,12 @@ Arguments Move_R { sig } ( D ) { F } ( p ) x y / : rename.
 Section WriteMove.
 
   Variable sig : finType.
-  Variable (act : option sig * TM.move).
+  Variable w : sig.
+  Variable D : move.
   Variable (F : finType) (f : F).
 
   Definition write_move_trans : bool -> option sig -> bool * (option sig * move) :=
-    fun _ _ => (true, act).
+    fun _ _ => (true, (Some w, D)).
   
   Definition WriteMove_TM : mTM sig 1 :=
     Mk_Mono_TM write_move_trans false (fun q => q).
@@ -160,7 +116,7 @@ Section WriteMove.
 
   Definition WriteMove_R :=
     Mk_R_p (F := F)
-           (fun t '(y, t') => y = f /\ t' = tape_move_mono t act).
+           (fun t '(y, t') => y = f /\ t' = tape_move (tape_write t (Some w)) D).
   
   Lemma WriteMove_Sem :
     WriteMove ⊨c(1) WriteMove_R.
@@ -171,41 +127,10 @@ Section WriteMove.
 End WriteMove.
 
 Arguments WriteMove : simpl never.
-Arguments WriteMove_R { sig } act { F } p x y / : rename.
+Arguments WriteMove_R { sig } (w D) { F } p x y / : rename.
 
 
-(*
-Section test_null.
-  
-  Variable tapes_no : nat.
-  Variable sig : finType.
-  
-  Variable on_tape : nat.
-  Hypothesis is_a_tape : on_tape < S tapes_no.
-
-  Definition test_null := test_chr is_a_tape (fun _ : sig => true).
-  
-  Lemma test_null_sem :
-    test_null ⊨(fun x : threeStates => Fin.eqb x tc_true,1)
-              (fun t p =>
-                 let (b, t') := p in
-                 t = t' /\
-                 ( (current (get_at is_a_tape t) = None /\ b = false) \/
-                   exists c : sig, current (get_at is_a_tape t) = Some c /\ b = true)).
-  Proof.
-    intros t.
-    destruct (current (get_at is_a_tape t)) eqn:E.
-    - exists (mk_mconfig tc_true t).
-      simpl_TM. now rewrite E.
-    - exists (mk_mconfig tc_false t). simpl_TM. now rewrite E.
-  Qed.
-
-  Definition Test_null := ( test_null ; fun x : threeStates => Fin.eqb x tc_true).
-
-End test_null.
-*)
-
-Section read_char.
+Section Read_char.
 
   Variable sig : finType.
   Definition rc_states : finType := FinType (EqType ((bool + sig)%type)).
@@ -232,9 +157,10 @@ Section read_char.
     - exists (mk_mconfig (inl false) [|h|]). unfold step. cbn; autounfold with tape; cbn. rewrite E. cbn. repeat (try split; auto; hnf).
   Qed.
 
-End read_char.
+End Read_char.
 
 Arguments Read_char : simpl never.
+Arguments Read_char {sig}.
 Arguments read_char_R sig x y /.
 
 
@@ -262,29 +188,27 @@ Section Mono_Nop.
 End Mono_Nop.
 
 Arguments mono_Nop : simpl never.
+Arguments mono_Nop {sig F} f.
 Arguments mono_Nop_R { sig F } ( p ) x y / : rename.
 
 
 Ltac smpl_TM_Mono :=
   match goal with
-  | [ |- TEST_CHAR _ ⊨ _] => eapply RealiseIn_Realise; eapply test_chr_Sem
-  | [ |- TEST_CHAR _ ⊨c(_) _] => eapply test_chr_Sem
-  | [ |- projT1 (TEST_CHAR _) ↓ _] => eapply RealiseIn_terminatesIn; eapply test_chr_Sem
   | [ |- Write _ _ ⊨ _] => eapply RealiseIn_Realise; eapply Write_Sem
   | [ |- Write _ _ ⊨c(_) _] => eapply Write_Sem
   | [ |- projT1 (Write _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Write_Sem
-  | [ |- Move _ _ _ ⊨ _] => eapply RealiseIn_Realise; eapply Move_Sem
-  | [ |- Move _ _ _ ⊨c(_) _] => eapply Move_Sem
-  | [ |- projT1 (Move _ _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Move_Sem
-  | [ |- WriteMove _ _ ⊨ _] => eapply RealiseIn_Realise; eapply WriteMove_Sem
-  | [ |- WriteMove _ _ ⊨c(_) _] => eapply WriteMove_Sem
-  | [ |- projT1 (WriteMove _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply WriteMove_Sem
-  | [ |- Read_char _ ⊨ _] => eapply RealiseIn_Realise; eapply read_char_sem
-  | [ |- Read_char _ ⊨c(_) _] => eapply read_char_sem
-  | [ |- projT1 (Read_char _) ↓ _] => eapply RealiseIn_terminatesIn; eapply read_char_sem
-  | [ |- mono_Nop _ _ ⊨ _] => eapply RealiseIn_Realise; eapply mono_Nop_Sem
-  | [ |- mono_Nop _ _ ⊨c(_) _] => eapply mono_Nop_Sem
-  | [ |- projT1 (mono_Nop _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply mono_Nop_Sem
+  | [ |- Move _ _ ⊨ _] => eapply RealiseIn_Realise; eapply Move_Sem
+  | [ |- Move _ _ ⊨c(_) _] => eapply Move_Sem
+  | [ |- projT1 (Move _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Move_Sem
+  | [ |- WriteMove _ _ _ ⊨ _] => eapply RealiseIn_Realise; eapply WriteMove_Sem
+  | [ |- WriteMove _ _ _ ⊨c(_) _] => eapply WriteMove_Sem
+  | [ |- projT1 (WriteMove _ _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply WriteMove_Sem
+  | [ |- Read_char ⊨ _] => eapply RealiseIn_Realise; eapply read_char_sem
+  | [ |- Read_char ⊨c(_) _] => eapply read_char_sem
+  | [ |- projT1 (Read_char) ↓ _] => eapply RealiseIn_terminatesIn; eapply read_char_sem
+  | [ |- mono_Nop _ ⊨ _] => eapply RealiseIn_Realise; eapply mono_Nop_Sem
+  | [ |- mono_Nop _ ⊨c(_) _] => eapply mono_Nop_Sem
+  | [ |- projT1 (mono_Nop _) ↓ _] => eapply RealiseIn_terminatesIn; eapply mono_Nop_Sem
   end.
 
 Smpl Add smpl_TM_Mono : TM_Correct.

@@ -38,15 +38,16 @@ Section Nop.
 End Nop.
 
 Arguments null_action {_ _}.
+Arguments Nop {n sig F} f.
 Arguments Nop : simpl never.
 
 Arguments Nop_Rel {n sig F} (f) x y/.
 
 Ltac smpl_TM_Nop :=
   match goal with
-  | [ |- Nop _ _ _ ⊨ _] => eapply Nop_sem
-  | [ |- Nop _ _ _ ⊨c(_) _] => eapply Nop_total
-  | [ |- projT1 (Nop _ _ _) ↓ _] => eapply RealiseIn_terminatesIn, Nop_total
+  | [ |- Nop _ ⊨ _] => eapply Nop_sem
+  | [ |- Nop _ ⊨c(_) _] => eapply Nop_total
+  | [ |- projT1 (Nop _) ↓ _] => eapply RealiseIn_terminatesIn, Nop_total
   end.
 
 Smpl Add smpl_TM_Nop : TM_Correct.

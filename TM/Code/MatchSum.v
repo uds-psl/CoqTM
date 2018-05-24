@@ -24,12 +24,12 @@ Section MatchSum.
 
 
   Definition MatchSum : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> bool } :=
-    Move _ R tt;; (* skip the [START] symbol *)
-    MATCH (Read_char _) (* read the "constructor" symbol *)
+    Move R tt;; (* skip the [START] symbol *)
+    MATCH (Read_char) (* read the "constructor" symbol *)
           (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding partition *)
                  | Some (inr (inl true))  => Write (inl START) true  (* inl *)
                  | Some (inr (inl false)) => Write (inl START) false (* inr *)
-                 | _ => mono_Nop _ true (* invalid input *)
+                 | _ => mono_Nop true (* invalid input *)
                  end).
 
   Lemma MatchSum_Sem : MatchSum ⊨c(5) MatchSum_Rel.
@@ -57,10 +57,10 @@ Section MatchSum.
       Mk_R_p (ignoreParam (fun tin tout => forall y:Y, tin ≃ y -> tout ≃ inr y)).
 
     Definition Constr_inl : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> unit } :=
-      WriteMove (Some (inr (inl true)), L) tt;; Write (inl START) tt.
+      WriteMove (inr (inl true)) L tt;; Write (inl START) tt.
 
     Definition Constr_inr : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> unit } :=
-      WriteMove (Some (inr (inl false)), L) tt;; Write (inl START) tt.
+      WriteMove (inr (inl false)) L tt;; Write (inl START) tt.
 
 
     Lemma Constr_inl_Sem : Constr_inl ⊨c(3) Constr_inl_Rel.
@@ -127,8 +127,8 @@ Section MatchOption.
 
   Definition MatchOption : { M : mTM tau^+ 1 & states M -> bool } :=
     If (ChangeAlphabet (MatchSum (sigX) (FinType (EqType Empty_set))) (Retract_sum _ _))
-       (Nop _ _ true)
-       (Move _ R false).
+       (Nop true)
+       (Move R false).
 
   Definition opt_to_sum (o : option X) : X + unit :=
     match o with
@@ -224,7 +224,7 @@ Section MatchOption.
                     tout ≃ None)).
 
   Definition Constr_None : { M : mTM tau^+ 1 & states M -> unit } :=
-    WriteMove (Some (inl STOP), L) tt;; WriteMove (Some (inr (inl false)), L) tt;; Write (inl START) tt.
+    WriteMove (inl STOP) L tt;; WriteMove (inr (inl false)) L tt;; Write (inl START) tt.
 
   Lemma Constr_None_Sem : Constr_None ⊨c(5) Constr_None_Rel.
   Proof.

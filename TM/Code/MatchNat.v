@@ -22,12 +22,12 @@ Section MatchNat.
            end).
 
   Definition MatchNat : { M : mTM (bool^+) 1 & states M -> bool } :=
-    Move _ R tt;;
-    MATCH (Read_char _)
+    Move R tt;;
+    MATCH (Read_char)
           (fun o => match o with
                  | Some (inr true)  => Write (inl START) true (* S *)
-                 | Some (inr false) => Move _ L false (* O *)
-                 | _ => mono_Nop _ true (* invalid input *)
+                 | Some (inr false) => Move L false (* O *)
+                 | _ => mono_Nop true (* invalid input *)
                  end).
 
   Lemma MatchNat_Sem : MatchNat ⊨c(5) MatchNat_Rel.
@@ -52,7 +52,7 @@ Section MatchNat.
       Mk_R_p (ignoreParam (fun tin tout => forall n : nat, tin ≃ n -> tout ≃ S n)).
 
     Definition Constr_S : { M : mTM (bool^+) 1 & states M -> unit } :=
-      WriteMove (Some (inr true), L) tt;; Write (inl START) tt.
+      WriteMove (inr true) L tt;; Write (inl START) tt.
 
 
     (*
@@ -83,8 +83,8 @@ Section MatchNat.
 
 
     Definition Constr_O : { M : mTM (bool^+) 1 & states M -> unit } :=
-        WriteMove (Some (inl STOP), L) tt;;
-        WriteMove (Some (inr false), L) tt;;
+        WriteMove (inl STOP) L tt;;
+        WriteMove (inr false) L tt;;
         Write (inl START) tt.
 
     Lemma Constr_O_Sem : Constr_O ⊨c(5) O_Rel.

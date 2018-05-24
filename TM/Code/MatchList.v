@@ -27,28 +27,28 @@ Section MatchList.
   
 
   Definition Skip_cons : { M : mTM (bool + sigX)^+ 1 & states M -> unit } :=
-    Move _ R tt;;
+    Move R tt;;
     Return (MoveToSymbol stop) tt.
 
 
   Definition M1 : { M : mTM (bool + sigX)^+ 2 & states M -> unit } :=
     Inject Skip_cons [|Fin0|];;
     Inject (Write (inl STOP) tt) [|Fin1|];;
-    MovePar _ L L tt;;
+    MovePar L L tt;;
     CopySymbols_L stop id;;
     Inject (Write (inl START) tt) [|Fin1|].
 
   Definition MatchList : { M : mTM (bool + sigX)^+ 2 & states M -> bool } :=
-    Inject (Move _ R tt) [|Fin0|];;
-    MATCH (Inject (Read_char _) [|Fin0|])
+    Inject (Move R tt) [|Fin0|];;
+    MATCH (Inject (Read_char) [|Fin0|])
           (fun s => match s with
                  | Some (inr (inl false)) => (* nil *)
-                   Inject (Move _ L false) [|Fin0|]
+                   Inject (Move L false) [|Fin0|]
                  | Some (inr (inl true)) => (* cons *)
                    M1;; 
                    Inject Skip_cons [|Fin0|];;
-                   Inject (Move _ L tt;; Write (inl START) true) [|Fin0|]
-                 | _ => Nop _ _ true (* invalid input *)
+                   Inject (Move L tt;; Write (inl START) true) [|Fin0|]
+                 | _ => Nop true (* invalid input *)
                  end).
 
 
@@ -293,7 +293,7 @@ Section MatchList.
   (** *** [nil] *)
   
   Definition Constr_nil : { M : mTM (bool + sigX)^+ 1 & states M -> unit } :=
-    WriteMove (Some (inl STOP), L) tt;; WriteMove (Some (inr (inl false)), L) tt;; Write (inl START) tt.
+    WriteMove (inl STOP) L tt;; WriteMove (inr (inl false)) L tt;; Write (inl START) tt.
 
 
   Definition Constr_nil_Rel : Rel (tapes (bool+sigX)^+ 1) (unit * tapes (bool+sigX)^+ 1) :=
@@ -317,9 +317,9 @@ Section MatchList.
   
 
   Definition Constr_cons : { M : mTM (bool + sigX)^+ 2 & states M -> unit } :=
-    Inject (MoveRight _;; Move _ L tt) [|Fin1|];;
+    Inject (MoveRight _;; Move L tt) [|Fin1|];;
     Inject (CopySymbols_L stop id) [|Fin1;Fin0|];;
-    Inject (WriteMove (Some (inr (inl true)), L) tt;; Write (inl START) tt) [|Fin0|].
+    Inject (WriteMove (inr (inl true)) L tt;; Write (inl START) tt) [|Fin0|].
 
   Definition Constr_cons_Rel : Rel (tapes (bool+sigX)^+ 2) (unit * tapes (bool+sigX)^+ 2) :=
     ignoreParam (
