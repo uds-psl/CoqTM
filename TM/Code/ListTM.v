@@ -12,11 +12,11 @@ Local Arguments skipn { A } !n !l.
 
 Section Nth.
 
-  Variable (sigX : finType) (X : Type) (encX : codable sigX X).
+  Variable (sigX : finType) (X : Type) (cX : codable sigX X).
   Hypothesis (defX: inhabitedC sigX).
 
   Let tau := FinType (EqType (bool + sigX)).
-  
+
   Check _ : codable tau nat.
   Check _ : codable tau X.
   Check _ : codable tau (list X).
@@ -236,6 +236,235 @@ Section Nth.
       - intros i. destruct_fin i; TMSimp; auto.
     }
   Qed.
-      
-  
+
+
+  (** ** Runtime *)
+
+
+  Arguments plus : simpl never. Arguments mult : simpl never.
+
+  Definition Nth_Step_steps l n :=
+    6 + (* [5] for [MatchNat], [1] for first [If] *)
+    match n, l with
+    | S n, x :: l' =>
+      51 + 20 * length (cX x) (* [1] for [If], [42+16*|x|] for [MatchList], [8+4*|x|] for Reset *)
+    | S n, nil =>
+      11 (* [1] for [If], [5] for [MatchList], [5] for [Constr_None] *)
+    | O, x :: l =>
+      46 + 16 * length (cX x) (* [1] for [42+16*|x|] for [MatchList], [3] for [Constr_Some] *)
+    | 0, nil =>
+      11 (* [1] for [If], [5] for [MatchList], [5] for [Constr_None] *)
+    end.
+
+  Definition Nth_Step_T : tRel tau^+ 3 :=
+    fun tin k =>
+      exists (l : list X) (n : nat),
+        tin[@Fin0] ≃ l /\
+        tin[@Fin1] ≃ n /\
+        isRight tin[@Fin2] /\
+        Nth_Step_steps l n <= k.
+
+  Lemma Nth_Step_Terminates : projT1 Nth_Step ↓ Nth_Step_T.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Nth_Step. repeat TM_Correct.
+      - unfold ChangeAlphabet. TM_Correct. eapply RealiseIn_Realise. apply MatchNat_Sem.
+      - unfold ChangeAlphabet. TM_Correct. eapply RealiseIn_terminatesIn. apply MatchNat_Sem.
+      - apply MatchList_Realise with (X := X).
+      - apply MatchList_Terminates with (X := X).
+      - unfold Reset. apply MoveRight_Terminates with (X := X).
+      - eapply RealiseIn_terminatesIn. apply Constr_None_Sem with (X := X).
+      - apply MatchList_Realise with (X := X).
+      - apply MatchList_Terminates with (X := X).
+      - eapply RealiseIn_terminatesIn. apply Constr_Some_Sem with (X := X).
+      - eapply RealiseIn_terminatesIn. apply Constr_None_Sem with (X := X).
+    }
+    {
+      unfold Nth_Step_T, Nth_Step_steps. intros tin k (l&n&HEncL&HEncN&HRight&Hk).
+      destruct n as [ | n'], l as [ | x l']; exists 5.
+      { (* n = 0, l = nil *)
+        exists 11. repeat split; cbn; try omega.
+        intros tmid ymid (H&HInj); TMSimp.
+        specialize (H _ (contains_translate_tau1 HEncN)) as (H % contains_translate_tau2 & ->).
+        exists 5, 5. repeat split. omega.
+        - exists nil. repeat split; eauto.
+        - intros tmid2 ymid2 (H2&HInj2). TMSimp. specialize (H2 nil) with (1 := HEncL) (2 := HRight) as (H2&H2'&->). omega.
+      }
+      { (* n = 0, l = x :: l' *)
+        exists (46 + 16 * length (cX x)). repeat split; cbn; try omega.
+        intros tmid ymid (H&HInj); TMSimp.
+        specialize (H _ (contains_translate_tau1 HEncN)) as (H % contains_translate_tau2 & ->).
+        exists (42+16*length(cX x)), 3. repeat split; try omega.
+        - exists (x :: l'). repeat split; auto.
+          apply tape_contains_ext with (1 := HEncL). cbn. f_equal. now rewrite !List.map_app, !List.map_map, map_id.
+        - intros tmid2 ymid2 (H2&HInj2). TMSimp.
+          specialize (H2 (x :: l')) with (2 := HRight) as (H2&H2'&->); try omega.
+          apply tape_contains_ext with (1 := HEncL). cbn. f_equal. now rewrite !List.map_app, !List.map_map, map_id.
+      }
+      { (* n = S n'; l = nil *)
+        exists 11. repeat split; cbn; try omega.
+        intros tmid ymid (H&HInj); TMSimp.
+        specialize (H _ (contains_translate_tau1 HEncN)) as (H % contains_translate_tau2 & ->).
+        exists 5, 5. repeat split; cbn; try omega.
+        - exists nil. auto.
+        - intros tmid2 ymid2 (H2&HInj2). TMSimp. specialize (H2 nil) with (1 := HEncL) (2 := HRight) as (H2&H2'&->). omega.
+      }
+      { (* n = S n; l = x :: l' *)
+        exists (51 + 20 * length (cX x)). repeat split; cbn; try omega.
+        intros tmid ymid (H&HInj); TMSimp.
+        specialize (H _ (contains_translate_tau1 HEncN)) as (H % contains_translate_tau2 & ->).
+        exists (42+16*length (cX x)), (8+4*length (cX x)). repeat split; try omega.
+        - exists (x :: l'). repeat split; auto.
+          apply tape_contains_ext with (1 := HEncL). cbn. f_equal. now rewrite !List.map_app, !List.map_map, map_id.
+        - intros tmid2 ymid2 (H2&HInj2). TMSimp.
+          specialize (H2 (x :: l')) with (2 := HRight) as (H2&H2'&->).
+          + apply tape_contains_ext with (1 := HEncL). cbn. f_equal. now rewrite !List.map_app, !List.map_map, map_id.
+          + exists x. repeat split; auto. rewrite map_length. omega.
+      }
+    }
+  Qed.
+
+
+  Fixpoint Nth_Loop_steps l n :=
+    match n, l with
+    | S n', x :: l' => S (Nth_Step_steps l n) + Nth_Loop_steps l' n' (* Only recursion case *)
+    | _, _ => S (Nth_Step_steps l n)
+    end.
+
+
+  Definition Nth_Loop_T : tRel tau^+ 3 :=
+    fun tin k =>
+      exists (l : list X) (n : nat),
+        tin[@Fin0] ≃ l /\
+        tin[@Fin1] ≃ n /\
+        isRight tin[@Fin2] /\
+        Nth_Loop_steps l n <= k.
+
+  Lemma Nth_Loop_Terminates : projT1 Nth_Loop ↓ Nth_Loop_T.
+  Proof.
+    unfold Nth_Loop. repeat TM_Correct.
+    { apply Nth_Step_Realise. }
+    { apply Nth_Step_Terminates. }
+    {
+      unfold Nth_Loop_T. intros tin k (l&n&HEncL&HEncN&HRight&Hk).
+      destruct n as [ | n'] eqn:E1, l as [ | x l'] eqn:E2; exists (Nth_Step_steps l n); subst.
+      {
+        split. hnf. do 2 eexists. repeat split; eauto.
+        intros b ymid tmid H. cbn in H.
+        specialize H with (1 := HEncL) (2 := HEncN) (3 := HRight); destruct H as (H1&H2&H3&H4); inv H4.
+        cbv in Hk; cbv. omega.
+      }
+      {
+        split. hnf. do 2 eexists. repeat split; eauto.
+        intros b ymid tmid H. cbn in H.
+        specialize H with (1 := HEncL) (2 := HEncN) (3 := HRight); destruct H as (H1&H2&H3&H4); inv H4.
+        cbv in Hk; cbv. omega.
+      }
+      {
+        split. hnf. do 2 eexists. repeat split; eauto.
+        intros b ymid tmid H. cbn in H.
+        specialize H with (1 := HEncL) (2 := HEncN) (3 := HRight); destruct H as (H1&H2&H3&H4); inv H4.
+        cbv in Hk; cbv. omega.
+      }
+      {
+        split. hnf. do 2 eexists. repeat split; eauto.
+        intros b ymid tmid H. cbn in H.
+        specialize H with (1 := HEncL) (2 := HEncN) (3 := HRight); destruct H as (H1&H2&H3&H4); inv H4.
+        cbn in *.
+        exists (Nth_Loop_steps l' n'). repeat split.
+        - exists l', n'. eauto.
+        - rewrite <- Hk. cbv [Nth_Step_steps]. omega.
+      }
+    }
+  Qed.
+
+  Arguments Encode_list : simpl never.
+  Arguments Encode_nat : simpl never.
+
+  (* 25 + 12 * | encode l | for Copy l *)
+  (* 25 + 12 * | encode n| for Copy n *)
+  (* [Nth_Loop_steps l n] for the Loop *)
+  (* 8 + 4 * | encode (skipn (S n)) | for Reset l *)
+  (* 8 + 4 * | encode (n - (S (length l))) | for Reset n *)
+  Definition Nth_steps l n :=
+    70 +
+    Nth_Loop_steps l n +
+    4 * length (Encode_list cX (skipn (S n) l)) +
+    4 * length (Encode_nat (n - (S (length l)))) +
+    12 * length (Encode_list cX l) +
+    12 * length (Encode_nat n).
+
+  Definition Nth_T : tRel tau^+ 5 :=
+    fun tin k =>
+      exists (l : list X) (n : nat),
+        tin[@Fin0] ≃ l /\
+        tin[@Fin1] ≃ n /\
+        isRight tin[@Fin2] /\
+        isRight tin[@Fin3] /\
+        isRight tin[@Fin4] /\
+        Nth_steps l n <= k.
+
+  Lemma Nth_Terminates : projT1 Nth ↓ Nth_T.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Nth. repeat TM_Correct.
+      - apply CopyValue_Realise with (X := list X).
+      - apply CopyValue_Terminats with (X := list X).
+      - apply CopyValue_Realise with (X := nat).
+      - apply CopyValue_Terminats with (X := nat).
+      - apply Nth_Loop_Realise.
+      - apply Nth_Loop_Terminates.
+      - apply Reset_Realise with (X := list X).
+      - apply MoveRight_Terminates with (X := list X).
+      - apply MoveRight_Terminates with (X := nat).
+    }
+    {
+      intros tin k (l&n&HEncL&HEncN&HRight2&HRight3&HRight4&Hk). unfold Nth_steps in Hk.
+      exists (25 + 12 * length (Encode_list cX (l))).
+      exists (44 + Nth_Loop_steps l n +
+         4 * length (Encode_list cX (skipn (S n) l)) + 4 * length (Encode_nat (n - (S (length l)))) +
+         12 * length (Encode_nat n)).
+      repeat split; cbn.
+      - rewrite <- Hk.
+        subst tau.
+        (* Somehow, [generalize] doesn't work here as exspected. *)
+        enough (forall a b c d,
+                   25 + 12 * a +
+                   S (44 + Nth_Loop_steps l n + 4 * b + 4 * c + 12 * d) <=
+                   70 + Nth_Loop_steps l n + 4 * b + 4 * c +
+                   12 * a + 12 * d
+               ) by auto; intros. omega.
+      - exists l. repeat split. cbn. eauto. rewrite map_length. omega.
+      - intros tmid () (H1&HInj1). TMSimp.
+        exists (25 + 12 * length (Encode_nat n)).
+        exists (18 + Nth_Loop_steps l n + 4 * length (Encode_list cX (skipn (S n) l)) + 4 * length (Encode_nat (n - (S (length l))))).
+        repeat split.
+        + enough (forall a b c,
+                     25 + 12 * a +
+                     S (18 + Nth_Loop_steps l n + 4 * b + 4 * c) <=
+                     44 + Nth_Loop_steps l n + 4 * b + 4 * c + 12 * a
+                 ) as H by auto; intros. omega.
+        + exists n. repeat split. auto. rewrite map_length. reflexivity. (* [omega] doesn't work, but [reflexivity] ? *)
+        + intros tmid2 () (H2&HInj2); TMSimp.
+          specialize H2 with (1 := HEncN) (2 := HRight4) as (H2&H2').
+          specialize H1 with (x := l). destruct H1 as (H1&H1'); auto.
+          exists (Nth_Loop_steps l n).
+          exists (17 + 4 * length (Encode_list cX (skipn (S n) l)) + 4 * length (Encode_nat (n - (S (length l))))).
+          repeat split.
+          * enough (forall a b,
+                       Nth_Loop_steps l n + S (17 + 4 * a + 4 * b) <=
+                       18 + Nth_Loop_steps l n + 4 * a + 4 * b) by auto; intros; omega.
+          * hnf. cbn. exists l, n. auto.
+          * intros tmid3 () (H3&HInj3).
+            specialize H3 with (1 := H1') (2 := H2') (3 := HRight2) as (H3&H3'&H3'').
+            exists (8 + 4 * length (Encode_list cX (skipn (S n) l))).
+            exists (8 + 4 * length (Encode_nat (n - S (length l)))).
+            repeat split.
+            -- omega.
+            -- eexists. repeat split. eauto. rewrite map_length. auto.
+            -- intros tmid4 () (H4&HInj4); TMSimp. specialize H4 with (1 := H3).
+               eexists. repeat split. eauto. rewrite map_length. auto.
+    }
+  Qed.
+
 End Nth.
