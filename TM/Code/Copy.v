@@ -438,7 +438,7 @@ Section Move.
     { unfold MoveRight. repeat TM_Correct. }
     {
       intros tin ((), tout) H. intros x HEncX.
-      TMSimp; clear_trivial_eqs. clear H0 H1.
+      TMSimp; clear_trivial_eqs. clear H0.
       destruct HEncX as (r1&->).
       erewrite MoveToSymbol_correct_midtape; eauto.
       - repeat econstructor. now rewrite map_rev.
@@ -452,7 +452,7 @@ Section Move.
     { unfold MoveLeft. repeat TM_Correct. }
     {
       intros tin ((), tout) H. intros x HEncX.
-      TMSimp; clear_trivial_eqs. clear H0 H1.
+      TMSimp; clear_trivial_eqs. clear H0.
       destruct HEncX as (r1&->).
       erewrite MoveToSymbol_L_correct_midtape; eauto.
       - repeat econstructor. now rewrite <- map_rev, rev_involutive.

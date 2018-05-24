@@ -18,14 +18,14 @@ Section move_to_symbol.
    * If the read symbol fulfills [ f ], return [ Some true ].
    * Else move one to the right and return [ Some false ].
    *)
-  Definition M1 : { M : mTM sig 1 & states M -> bool * bool} :=
+  Definition M1 : { M : mTM sig 1 & states M -> bool * unit} :=
     MATCH (Read_char _)
           (fun b : option sig =>
              match b with
              | Some x => if f x
-                        then mono_Nop _ (false, true) (* found the symbol, break and return true *)
-                        else Move _ R (true, false) (* wrong symbol, move right and continue *)
-             | _ => mono_Nop _ (false, false) (* there is no such symbol, break and return false *)
+                        then mono_Nop _ (false, tt) (* found the symbol, break *)
+                        else Move _ R (true, tt) (* wrong symbol, move right and continue *)
+             | _ => mono_Nop _ (false, tt) (* there is no such symbol, break *)
              end).
 
   Definition M1_Fun : tape sig -> tape sig :=
@@ -35,13 +35,13 @@ Section move_to_symbol.
       | _ => t1
       end.
 
-  Definition M1_Rel : Rel (tapes sig 1) (bool * bool * tapes sig 1) :=
+  Definition M1_Rel : Rel (tapes sig 1) (bool * unit * tapes sig 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
               tout = M1_Fun tin /\
               (
-                (yout = (false, true)  /\ exists s, current tin = Some s /\ f s = true ) \/
-                (yout = (true, false)  /\ exists s, current tin = Some s /\ f s = false) \/
-                (yout = (false, false) /\ current tin = None)
+                (yout = (false, tt) /\ exists s, current tin = Some s /\ f s = true ) \/
+                (yout = (true,  tt) /\ exists s, current tin = Some s /\ f s = false) \/
+                (yout = (false, tt) /\ current tin = None)
               )
            ).  
 
@@ -76,7 +76,7 @@ Section move_to_symbol.
    * The main loop of the machine.
    * Execute M1 in a loop until M1 returned [ None ] or [ Some true ]
    *)
-  Definition MoveToSymbol : { M : mTM sig 1 & states M -> bool } := WHILE M1.
+  Definition MoveToSymbol : { M : mTM sig 1 & states M -> unit } := WHILE M1.
   
   Definition rlength (t : tape sig) :=
     match t with
@@ -138,14 +138,8 @@ Section move_to_symbol.
   Qed.
 
   
-  Definition MoveToSymbol_Rel : Rel (tapes sig 1) (bool * tapes sig 1) :=
-    Mk_R_p (fun tin '(yout, tout) =>
-              tout = MoveToSymbol_Fun tin /\
-              (
-                (yout = true  /\ exists s, current tout = Some s /\ f s = true ) \/
-                (yout = false /\ current tout = None)
-              )
-           ).
+  Definition MoveToSymbol_Rel : Rel (tapes sig 1) (unit * tapes sig 1) :=
+    Mk_R_p (ignoreParam (fun tin tout => tout = MoveToSymbol_Fun tin)).
 
   Lemma MoveToSymbol_Realise :
     MoveToSymbol ⊨ MoveToSymbol_Rel.
@@ -272,25 +266,18 @@ Section move_to_symbol.
     - destruct t, t'; cbn in *; auto; congruence.
   Qed.
 
-  Definition MoveToSymbol_L_Rel : Rel (tapes sig 1) (FinType (EqType bool) * tapes sig 1) :=
-    Mk_R_p (fun tin '(yout, tout) =>
-              tout = MoveToSymbol_L_Fun tin /\
-              (
-                (yout = true  /\ exists s, current tout = Some s /\ f s = true ) \/
-                (yout = false /\ current tout = None)
-              )
-           ).
+  Definition MoveToSymbol_L_Rel : Rel (tapes sig 1) (unit * tapes sig 1) :=
+    Mk_R_p (ignoreParam (fun tin tout => tout = MoveToSymbol_L_Fun tin)).
 
   Lemma MoveToSymbol_L_Realise :
     MoveToSymbol_L ⊨ MoveToSymbol_L_Rel.
   Proof.
     eapply Realise_monotone.
     - eapply Mirror_Realise. eapply MoveToSymbol_Realise.
-    - intros tin (y&tout) H. hnf in *. destruct_tapes; cbn in *. destruct H as (H1&H2); hnf in *.
-      symmetry in H1. apply MoveToSymbol_mirror in H1 as ->. TMCrush simpl_tape in *; TMSolve 6.
+    - intros tin (y&tout) H. hnf in *. destruct_tapes; cbn in *. rewrite mirror_tapes_nth in H. cbn in H.
+      symmetry in H. apply MoveToSymbol_mirror in H as ->. TMCrush simpl_tape in *; TMSolve 6.
   Qed.
 
-  (* TODO: Reduce Termination, from termination of MoveTosymbol_R *)
 
   Function MoveToSymbol_L_TermTime (t : tape sig) { measure llength t } : nat :=
     match t with

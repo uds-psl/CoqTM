@@ -83,7 +83,7 @@ Section MatchList.
     eapply Realise_monotone.
     { unfold Skip_cons. repeat TM_Correct. }
     {
-      intros tin ((), tout) H. intros ls rs x l HTin. TMSimp. clear_trivial_eqs. clear H3 HTin H1 H2.
+      intros tin ((), tout) H. intros ls rs x l HTin. TMSimp. clear_trivial_eqs. clear HTin H1 H2.
       destruct l as [ | x' l']; cbn.
       - rewrite MoveToSymbol_correct_moveright; cbn; auto.
         + apply stop_lemma.
