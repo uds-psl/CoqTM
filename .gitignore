@@ -24,3 +24,6 @@ Makefile.coq
 
 // Vim files
 *.sw*
+
+// TODO files
+TODO
