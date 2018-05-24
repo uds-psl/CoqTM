@@ -145,9 +145,9 @@ Local Definition stop : (bool^+) -> bool := stop (@dontStop _). (* halt only at 
 Definition Reset : { M : mTM (bool^+) 1 & states M -> unit } :=
   MoveToSymbol_L stop;; Move _ R tt.
 
-Lemma Reset_WRealises : Reset ⊫ Reset_Rel.
+Lemma Reset_Realises : Reset ⊨ Reset_Rel.
 Proof.
-  eapply WRealise_monotone.
+  eapply Realise_monotone.
   { unfold Reset. repeat TM_Correct. }
   {
     intros tin ((), tout) H. intros m n r1 r2 HCount. TMSimp destruct_tapes. clear_trivial_eqs. clear H1.
@@ -315,11 +315,11 @@ Section Computes2_Reset.
 
     Variable pM : { M : mTM sig^+ n & states M -> unit }.
 
-    Lemma Computes2_Reset_Ext_WRealise :
-      pM ⊫ Computes2_Reset_Rel f' ->
-      pM ⊫ Computes2_Reset_Rel f.
+    Lemma Computes2_Reset_Ext_Realise :
+      pM ⊨ Computes2_Reset_Rel f' ->
+      pM ⊨ Computes2_Reset_Rel f.
     Proof.
-      intros H. eapply WRealise_monotone.
+      intros H. eapply Realise_monotone.
       - eapply H.
       - eapply Computes2_Reset_ext.
     Qed.
@@ -343,7 +343,7 @@ Section Iter1.
     end.
 
   Variable M1 : { M : mTM (bool^+) 1 & states M -> unit }.
-  Hypothesis M1_computes : M1 ⊫ Computes_Rel Fin.F1 Fin.F1 _ _ f.
+  Hypothesis M1_computes : M1 ⊨ Computes_Rel Fin.F1 Fin.F1 _ _ f.
 
   Definition Iter_Step : { M : mTM _ 2 & states M -> bool * unit } :=
     If (Inject CountDown [|Fin0|])
@@ -376,12 +376,12 @@ Section Iter1.
       ).
 
 
-  Lemma Iter_Step_WRealise : Iter_Step ⊫ Iter_Step_Rel.
+  Lemma Iter_Step_Realise : Iter_Step ⊨ Iter_Step_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     {
       unfold Iter_Step. repeat TM_Correct.
-      - eapply RealiseIn_WRealise. apply CountDown_Sem.
+      - eapply RealiseIn_Realise. apply CountDown_Sem.
     }
     {
       intros tin (yout, tout) H. TMSimp. destruct H; TMSimp (first [ inv_pair | destruct_tapes]); clear_trivial_eqs.
@@ -402,10 +402,10 @@ Section Iter1.
       ).
 
 
-  Lemma Iter_WRealise : Iter ⊫ Iter_Rel.
+  Lemma Iter_Realise : Iter ⊨ Iter_Rel.
   Proof.
-    eapply WRealise_monotone.
-    { unfold Iter. repeat TM_Correct. apply Iter_Step_WRealise. }
+    eapply Realise_monotone.
+    { unfold Iter. repeat TM_Correct. apply Iter_Step_Realise. }
     {
       intros tin ((), tout) (tmid&HStar&HLastStep).
       induction HStar as [ tin | tin tmid1 tmid2 HStar _ IH]; intros m n n' r1 r2 H1 H2.
@@ -418,9 +418,9 @@ Section Iter1.
     }
   Qed.
 
-  Lemma Iter_Computes : Iter ⊫ Computes2_Rel Fin0 Fin1 Fin1 _ _ _ iter.
+  Lemma Iter_Computes : Iter ⊨ Computes2_Rel Fin0 Fin1 Fin1 _ _ _ iter.
   Proof.
-    eapply WRealise_monotone. apply Iter_WRealise.
+    eapply Realise_monotone. apply Iter_Realise.
     intros tin ((), tout) H. intros m n HEncM HEncN. hnf in H.
     destruct HEncM as (r1&r2&HEncM % tape_encodes_l_natCounterIsM).
     now specialize (H m m n r1 r2 HEncM HEncN) as (?&?).
@@ -436,21 +436,21 @@ Section Iter1.
             tout[@Fin1] ≂ iter m' n
       ).
 
-  Lemma Iter_Reset_WRealise : Iter_Reset ⊫ Iter_Reset_Rel.
+  Lemma Iter_Reset_Realise : Iter_Reset ⊨ Iter_Reset_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     - unfold Iter_Reset. repeat TM_Correct.
-      + apply Iter_WRealise.
-      + apply Reset_WRealises.
+      + apply Iter_Realise.
+      + apply Reset_Realises.
     - intros tin ((), tout) H. intros m n n' r1 r2 HEncM HEncN. hnf in H.
       destruct H as ((()&tmid) & H1 & H2 & H3). cbn in *. simpl_not_in. rewrite H3 in *.
       specialize (H1 _ _ _ _ _ HEncM HEncN) as (H1&H1'). rewrite <- H3 in *.
       specialize (H2 _ _ _ _ H1). split; auto.
   Qed.
 
-  Lemma Iter_Reset_Computes : Iter_Reset ⊫ Computes2_Reset_Rel Fin0 Fin1 _ _ _ iter.
+  Lemma Iter_Reset_Computes : Iter_Reset ⊨ Computes2_Reset_Rel Fin0 Fin1 _ _ _ iter.
   Proof.
-    eapply WRealise_monotone. eapply Iter_Reset_WRealise.
+    eapply Realise_monotone. eapply Iter_Reset_Realise.
     intros tin ((), tout) H. intros m n HEncM HEncN. hnf in H.
     destruct HEncM as (r1 & r2 & HEncM % tape_encodes_l_natCounterIsM).
     specialize (H _ _ _ _ _ HEncM HEncN) as (H1&H2). split; auto.
@@ -475,7 +475,7 @@ Section Iter1.
     eapply TerminatesIn_monotone.
     {
       unfold Iter_Step. repeat TM_Correct. 
-      - eapply RealiseIn_WRealise. apply CountDown_Sem.
+      - eapply RealiseIn_Realise. apply CountDown_Sem.
       - eapply RealiseIn_terminatesIn. apply CountDown_Sem.
     }
     {
@@ -527,7 +527,7 @@ Section Iter1.
                        Iter_steps m' n <= i).
   Proof.
     unfold Iter. repeat TM_Correct.
-    { apply Iter_Step_WRealise. }
+    { apply Iter_Step_Realise. }
     { eapply Iter_Step_Terminates. }
     {
       intros tin i (m&m'&n&r1&r2&HEncM&HEncN&Hi).
@@ -563,7 +563,7 @@ Section Iter1.
   Proof.
     eapply TerminatesIn_monotone.
     - unfold Iter_Reset. repeat TM_Correct.
-      + apply Iter_WRealise.
+      + apply Iter_Realise.
       + apply Iter_Terminates'.
       + apply Reset_Terminates.
     - intros tin i (m&m'&n&r1&r2&HEncM&HEncN&Hi).
@@ -600,23 +600,23 @@ Proof.
   omega. rewrite IHm. omega.
 Qed.
 
-Lemma Add_WRealise' :
-  Add ⊫ Computes2_Reset_Rel Fin0 Fin1 _ _ _ tail_plus.
+Lemma Add_Realise' :
+  Add ⊨ Computes2_Reset_Rel Fin0 Fin1 _ _ _ tail_plus.
 Proof.
-  eapply Computes2_Reset_Ext_WRealise.
+  eapply Computes2_Reset_Ext_Realise.
   - refine tail_add_iter.
   - unfold Add. apply Iter_Reset_Computes.
-    eapply WRealise_monotone. 
-    + eapply RealiseIn_WRealise. apply Constr_S_Sem.
+    eapply Realise_monotone. 
+    + eapply RealiseIn_Realise. apply Constr_S_Sem.
     + intros tin ((), tout) H. hnf in *. auto.
 Qed.
 
-Lemma Add_WRealise :
-  Add ⊫ Computes2_Reset_Rel Fin0 Fin1 _ _ _ plus.
+Lemma Add_Realise :
+  Add ⊨ Computes2_Reset_Rel Fin0 Fin1 _ _ _ plus.
 Proof.
-  eapply Computes2_Reset_Ext_WRealise.
+  eapply Computes2_Reset_Ext_Realise.
   - apply plus_tail_plus.
-  - apply Add_WRealise'.
+  - apply Add_Realise'.
 Qed.
 
 
@@ -627,7 +627,7 @@ Lemma Add_Terminates :
 Proof.
   unfold add_step_count. eapply TerminatesIn_monotone.
   - unfold Add. apply Iter_Reset_Terminates.
-    + eapply RealiseIn_WRealise. apply Constr_S_Sem.
+    + eapply RealiseIn_Realise. apply Constr_S_Sem.
     + eapply TerminatesIn_monotone. eapply RealiseIn_terminatesIn. apply Constr_S_Sem.
       instantiate (1 := fun _ => 5). intros. hnf.
       destruct H as (?&?&H). omega.
@@ -676,7 +676,7 @@ Section Iter2.
   Variable M1 : { M : mTM (bool^+) n & states M -> unit }.
   Variable (i1 i2 : Fin.t n).
   Hypothesis i_disj: i1 <> i2.
-  Hypothesis M1_computes : M1 ⊫ Computes2_Reset_Rel i1 i2 _ _ _ f.
+  Hypothesis M1_computes : M1 ⊨ Computes2_Reset_Rel i1 i2 _ _ _ f.
 
   Local Definition indexes_M1 : Vector.t (Fin.t (S n)) n :=
     Vector.map (fun k => Fin.FS k) (Fin_initVect _).
@@ -746,14 +746,14 @@ Section Iter2.
             )
       ).
 
-  Lemma Iter2_Step_WRealise :
-    Iter2_Step ⊫ Iter2_Step_Rel.
+  Lemma Iter2_Step_Realise :
+    Iter2_Step ⊨ Iter2_Step_Rel.
   Proof.
-    unfold Iter2_Step_Rel. eapply WRealise_monotone.
+    unfold Iter2_Step_Rel. eapply Realise_monotone.
     {
       unfold Iter2_Step. repeat TM_Correct.
-      - eapply RealiseIn_WRealise. apply CountDown_Sem.
-      - apply Inject_WRealise.
+      - eapply RealiseIn_Realise. apply CountDown_Sem.
+      - apply Inject_Realise.
         + apply indexes_M1_dupfree.
         + apply M1_computes.
     }
@@ -790,12 +790,12 @@ Section Iter2.
             tout[@Fin.FS i2] ≂ tail_iter2 s x' y
       ).
 
-  Lemma Iter2_Loop_WRealise :
-    Iter2_Loop ⊫ Iter2_Loop_Rel.
+  Lemma Iter2_Loop_Realise :
+    Iter2_Loop ⊨ Iter2_Loop_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     {
-      unfold Iter2_Loop. repeat TM_Correct. apply Iter2_Step_WRealise.
+      unfold Iter2_Loop. repeat TM_Correct. apply Iter2_Step_Realise.
     }
     {
       intros tin ((), tout) H. intros x x' y s r1 r2 HEncX HEncY HEncS .
@@ -817,13 +817,13 @@ Section Iter2.
     Iter2_Loop. (* Execute the loop. *)
 
 
-  Lemma Iter2_Computes' (s : nat) : Iter2 s ⊫ Computes2_Rel Fin0 (Fin.FS i1) (Fin.FS i2) _ _ _ (tail_iter2 s).
+  Lemma Iter2_Computes' (s : nat) : Iter2 s ⊨ Computes2_Rel Fin0 (Fin.FS i1) (Fin.FS i2) _ _ _ (tail_iter2 s).
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     {
       unfold Iter2. repeat TM_Correct.
-      - eapply RealiseIn_WRealise. apply InitTape_Sem.
-      - apply Iter2_Loop_WRealise.
+      - eapply RealiseIn_Realise. apply InitTape_Sem.
+      - apply Iter2_Loop_Realise.
     }
     {
       intros tin ((), tout) H. intros x y HEncX HEncY.
@@ -835,8 +835,8 @@ Section Iter2.
     }
   Qed.
 
-  Lemma Iter2_Computes (s : nat) : Iter2 s ⊫ Computes2_Rel Fin0 (Fin.FS i1) (Fin.FS i2) _ _ _ (iter2 s).
-  Proof. eapply Computes2_Ext_WRealise. apply tail_iter2_iter2. apply Iter2_Computes'. Qed.
+  Lemma Iter2_Computes (s : nat) : Iter2 s ⊨ Computes2_Rel Fin0 (Fin.FS i1) (Fin.FS i2) _ _ _ (iter2 s).
+  Proof. eapply Computes2_Ext_Realise. apply tail_iter2_iter2. apply Iter2_Computes'. Qed.
 
 
   (** Termination *)
@@ -858,7 +858,7 @@ Section Iter2.
     eapply TerminatesIn_monotone.
     {
       unfold Iter2_Step. repeat TM_Correct. 
-      - eapply RealiseIn_WRealise. apply CountDown_Sem.
+      - eapply RealiseIn_Realise. apply CountDown_Sem.
       - eapply RealiseIn_terminatesIn. apply CountDown_Sem.
       - apply Inject_Terminates.
         + apply indexes_M1_dupfree.
@@ -931,7 +931,7 @@ Section Iter2.
                         Iter2_steps s x' y <= i).
   Proof.
     unfold Iter2_Loop. repeat TM_Correct.
-    { apply Iter2_Step_WRealise. }
+    { apply Iter2_Step_Realise. }
     { eapply Iter2_Step_Terminates. }
     {
       intros tin i (s&x&x'&y&r1&r2&HEncM&HEncN&HEncS&Hi).
@@ -961,7 +961,7 @@ Section Iter2.
     eapply TerminatesIn_monotone.
     {
       unfold Iter2. repeat TM_Correct.
-      - eapply RealiseIn_WRealise. apply InitTape_Sem.
+      - eapply RealiseIn_Realise. apply InitTape_Sem.
       - eapply RealiseIn_terminatesIn. apply InitTape_Sem.
       - apply Iter2_Loop_Terminates.
     }
@@ -1004,14 +1004,14 @@ Lemma mult_iter2 x y :
   x * y = iter2 plus 0 x y.
 Proof. rewrite iter2_mult. rewrite <- mult_tail_mult_aux. cbn. omega. Qed.
 
-Lemma Mult_WRealise :
-  Mult ⊫ Computes2_Rel Fin0 Fin1 Fin2 _ _ _ mult.
+Lemma Mult_Realise :
+  Mult ⊨ Computes2_Rel Fin0 Fin1 Fin2 _ _ _ mult.
 Proof.
-  eapply Computes2_Ext_WRealise.
+  eapply Computes2_Ext_Realise.
   - apply mult_iter2.
   - unfold Mult. apply Iter2_Computes with (i1 := Fin0) (i2 := Fin1).
     + intros H. inv H.
-    + apply Add_WRealise.
+    + apply Add_Realise.
 Qed.
 
 
@@ -1032,7 +1032,7 @@ Proof.
   eapply TerminatesIn_monotone.
   - unfold Mult. eapply Iter2_Terminates with (i1 := Fin0).
     + congruence.
-    + eapply Add_WRealise.
+    + eapply Add_Realise.
     + eapply Add_Terminates.
   - intros tin i (x&y&HEncX&HEncY&Hk). do 2 eexists. split. eauto. split. eauto. rewrite <- Hk. apply Nat.eq_le_incl.
     apply mult_steps.
@@ -1057,13 +1057,13 @@ Lemma power_iter2 x y :
 Proof. rewrite iter2_power. rewrite <- pow_tail_pow_aux. cbn. omega. Qed.
 
 
-Lemma Power_WRealise :
-  Power ⊫ Computes2_Rel ltac:(getFin 0) ltac:(getFin 1) ltac:(getFin 0) _ _ _ pow.
+Lemma Power_Realise :
+  Power ⊨ Computes2_Rel ltac:(getFin 0) ltac:(getFin 1) ltac:(getFin 0) _ _ _ pow.
 Proof.
-  eapply Computes2_Ext_WRealise.
+  eapply Computes2_Ext_Realise.
   - apply power_iter2.
   - unfold Power. apply Iter2_Computes.
     + intros H. inv H.
-    + apply Mult_WRealise.
+    + apply Mult_Realise.
 Qed.
 *)

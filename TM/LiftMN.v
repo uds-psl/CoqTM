@@ -370,9 +370,9 @@ Section LiftNM.
   Qed.
 
   
-  Lemma Inject_WRealise (R : Rel (tapes sig m) (F * tapes sig m)) :
-    pM ⊫ R ->
-    Inject ⊫ lift_gen_eq_p I R.
+  Lemma Inject_Realise (R : Rel (tapes sig m) (F * tapes sig m)) :
+    pM ⊨ R ->
+    Inject ⊨ lift_gen_eq_p I R.
   Proof.
     intros H.
     split.
@@ -557,7 +557,7 @@ Ltac smpl_dupfree :=
 
 Ltac smpl_TM_LiftN :=
   match goal with
-  | [ |- Inject _ _ ⊫ _] => apply Inject_WRealise; [ smpl_dupfree | ]
+  | [ |- Inject _ _ ⊨ _] => apply Inject_Realise; [ smpl_dupfree | ]
   | [ |- Inject _ _ ⊨c(_) _] => apply Inject_RealisesIn; [ smpl_dupfree | ]
   | [ |- projT1 (Inject _ _) ↓ _] => apply Inject_Terminates; [ smpl_dupfree | ]
   end.

@@ -147,12 +147,12 @@ Section move_to_symbol.
               )
            ).
 
-  Lemma MoveToSymbol_WRealise :
-    MoveToSymbol ⊫ MoveToSymbol_Rel.
+  Lemma MoveToSymbol_Realise :
+    MoveToSymbol ⊨ MoveToSymbol_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     {
-      unfold MoveToSymbol. eapply While_WRealise. eapply RealiseIn_WRealise. eapply M1_RealiseIn.
+      unfold MoveToSymbol. eapply While_Realise. eapply RealiseIn_Realise. eapply M1_RealiseIn.
     }
     {
 
@@ -281,11 +281,11 @@ Section move_to_symbol.
               )
            ).
 
-  Lemma MoveToSymbol_L_WRealise :
-    MoveToSymbol_L ⊫ MoveToSymbol_L_Rel.
+  Lemma MoveToSymbol_L_Realise :
+    MoveToSymbol_L ⊨ MoveToSymbol_L_Rel.
   Proof.
-    eapply WRealise_monotone.
-    - eapply Mirror_WRealise. eapply MoveToSymbol_WRealise.
+    eapply Realise_monotone.
+    - eapply Mirror_Realise. eapply MoveToSymbol_Realise.
     - intros tin (y&tout) H. hnf in *. destruct_tapes; cbn in *. destruct H as (H1&H2); hnf in *.
       symmetry in H1. apply MoveToSymbol_mirror in H1 as ->. TMCrush simpl_tape in *; TMSolve 6.
   Qed.
@@ -324,8 +324,8 @@ End move_to_symbol.
 
 Ltac smpl_TM_MoveToSymbol :=
   match goal with
-  | [ |- MoveToSymbol   _ ⊫ _ ] => eapply MoveToSymbol_WRealise
-  | [ |- MoveToSymbol_L _ ⊫ _ ] => eapply MoveToSymbol_L_WRealise
+  | [ |- MoveToSymbol   _ ⊨ _ ] => eapply MoveToSymbol_Realise
+  | [ |- MoveToSymbol_L _ ⊨ _ ] => eapply MoveToSymbol_L_Realise
   | [ |- projT1 (MoveToSymbol   _) ↓ _ ] => eapply MoveToSymbol_terminates
   | [ |- projT1 (MoveToSymbol_L _) ↓ _ ] => eapply MoveToSymbol_L_terminates
   end.

@@ -109,8 +109,8 @@ Section While.
     star (⋃_f R |_ (true, f)) ∘ R |_fst=false.
 
 
-  Lemma While_WRealise R :
-    pM ⊫ R -> WHILE ⊫ While_Rel R.
+  Lemma While_Realise R :
+    pM ⊨ R -> WHILE ⊨ While_Rel R.
   Proof.
     unfold While_Rel.
     intros HR t1 i1 oenc2 eq. unfold initc in eq.
@@ -147,7 +147,7 @@ Section While.
     Variable (T T' : Rel (tapes sig n) nat).
 
     Lemma While_TerminatesIn :
-      pM ⊫ R ->
+      pM ⊨ R ->
       projT1 pM ↓ T ->
       (forall (tin : tapes sig n) (i : nat),
           T' tin i ->
@@ -177,7 +177,7 @@ Section While.
     Qed.
 
     Lemma While_terminatesIn :
-      pM ⊫ R ->
+      pM ⊨ R ->
       projT1 pM ↓(T) ->
       functionalOn T' R -> 
       (forall (x : tapes sig n) (i:nat),

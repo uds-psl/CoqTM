@@ -432,9 +432,9 @@ Section Move.
   Definition Reset_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
     Mk_R_p (ignoreParam (fun tin tout => forall x:X, tin ≃ x -> isRight tout)).
 
-  Lemma MoveRight_WRealise : MoveRight ⊫ MoveRight_Rel.
+  Lemma MoveRight_Realise : MoveRight ⊨ MoveRight_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     { unfold MoveRight. repeat TM_Correct. }
     {
       intros tin ((), tout) H. intros x HEncX.
@@ -446,9 +446,9 @@ Section Move.
     }
   Qed.
 
-  Lemma MoveLeft_WRealise : MoveLeft ⊫ MoveLeft_Rel.
+  Lemma MoveLeft_Realise : MoveLeft ⊨ MoveLeft_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     { unfold MoveLeft. repeat TM_Correct. }
     {
       intros tin ((), tout) H. intros x HEncX.
@@ -460,10 +460,10 @@ Section Move.
     }
   Qed.
 
-  Lemma Reset_WRealise : Reset ⊫ Reset_Rel.
+  Lemma Reset_Realise : Reset ⊨ Reset_Rel.
   Proof.
-    eapply WRealise_monotone.
-    { unfold Reset. eapply MoveRight_WRealise. }
+    eapply Realise_monotone.
+    { unfold Reset. eapply MoveRight_Realise. }
     {
       intros tin ((), tout) H. intros x HEncX.
       TMSimp. eapply tape_contains_rev_isRight; eauto.
@@ -516,10 +516,10 @@ Section CopyValue.
       ).
 
 
-  Lemma CopyValue_WRealise : CopyValue ⊫ CopyValue_Rel.
+  Lemma CopyValue_Realise : CopyValue ⊨ CopyValue_Rel.
   Proof.
-    eapply WRealise_monotone.
-    { unfold CopyValue. repeat TM_Correct. eapply MoveRight_WRealise with (X := X). }
+    eapply Realise_monotone.
+    { unfold CopyValue. repeat TM_Correct. eapply MoveRight_Realise with (X := X). }
     {
       intros tin ((), tout) H.
       intros x HEncX HRight.
@@ -536,7 +536,7 @@ Section CopyValue.
   Proof.
     eapply TerminatesIn_monotone.
     { unfold CopyValue. repeat TM_Correct.
-      - eapply MoveRight_WRealise.
+      - eapply MoveRight_Realise.
       - eapply MoveRight_Terminates. }
     {
       intros tin k (x&HEncX&Hk).
@@ -577,9 +577,9 @@ Arguments RestoreValue_Rel_size { sig X } (codX) x y /.
 (*
 Ltac smpl_TM_CopyMoveCode :=
   match goal with
-  | [ |- MoveToSymbol_Code    _ ⊫ _ ] => eapply MoveToSymbol_Code_WRealise
-  | [ |- MoveToSymbol_Code_L  _ ⊫ _ ] => eapply MoveToSymbol_Code_L_WRealise
-  | [ |- CopySymbols_Code     _ ⊫ _ ] => eapply CopySymbols_Code_WRealise
+  | [ |- MoveToSymbol_Code    _ ⊨ _ ] => eapply MoveToSymbol_Code_Realise
+  | [ |- MoveToSymbol_Code_L  _ ⊨ _ ] => eapply MoveToSymbol_Code_L_Realise
+  | [ |- CopySymbols_Code     _ ⊨ _ ] => eapply CopySymbols_Code_Realise
   end.
 
 Smpl Add smpl_TM_CopyMoveCode : TM_Correct.

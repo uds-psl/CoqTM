@@ -190,12 +190,12 @@ End Test.
   Definition CopySymbols_Rel : Rel (tapes sig 2) (unit * tapes sig 2) :=
     ignoreParam (fun tin tout => ((tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = CopySymbols_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]))).
 
-  Lemma CopySymbols_WRealise :
-    CopySymbols ⊫ CopySymbols_Rel.
+  Lemma CopySymbols_Realise :
+    CopySymbols ⊨ CopySymbols_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     {
-      unfold CopySymbols. eapply While_WRealise. eapply RealiseIn_WRealise. eapply M1_RealiseIn.
+      unfold CopySymbols. eapply While_Realise. eapply RealiseIn_Realise. eapply M1_RealiseIn.
     }
     {
       hnf. intros tin (y1&tout) H. hnf in *. destruct H as (t1&H&H2). hnf in *.
@@ -348,10 +348,10 @@ End Test.
   Definition CopySymbols_L_Rel : Rel (tapes sig 2) (unit * tapes sig 2) :=
     ignoreParam (fun tin tout => ((tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = CopySymbols_L_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]))).
 
-  Lemma CopySymbols_L_WRealise : CopySymbols_L ⊫ CopySymbols_L_Rel.
+  Lemma CopySymbols_L_Realise : CopySymbols_L ⊨ CopySymbols_L_Rel.
   Proof.
-    eapply WRealise_monotone.
-    { eapply Mirror_WRealise. eapply CopySymbols_WRealise. }
+    eapply Realise_monotone.
+    { eapply Mirror_Realise. eapply CopySymbols_Realise. }
     { intros tin ((), tout) H. cbn in *.
       symmetry in H; symmetry. simpl_tape in H.
       apply CopySymbols_mirror; eauto.
@@ -395,9 +395,9 @@ End CopySymbols.
 
 Ltac smpl_TM_CopySymbols :=
   match goal with
-  | [ |- CopySymbols  _ _ ⊫ _ ] => eapply CopySymbols_WRealise
+  | [ |- CopySymbols  _ _ ⊨ _ ] => eapply CopySymbols_Realise
   | [ |- projT1 (CopySymbols _ _) ↓ _ ] => eapply CopySymbols_terminates
-  | [ |- CopySymbols_L  _ _ ⊫ _ ] => eapply CopySymbols_L_WRealise
+  | [ |- CopySymbols_L  _ _ ⊨ _ ] => eapply CopySymbols_L_Realise
   | [ |- projT1 (CopySymbols_L _ _) ↓ _ ] => eapply CopySymbols_L_terminates
   end.
 

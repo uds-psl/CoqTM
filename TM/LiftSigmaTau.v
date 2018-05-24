@@ -178,9 +178,9 @@ Section LiftSigmaTau.
   Qed.
 
 
-  Lemma Lift_WRealise (R : Rel (tapes sig n) (F * tapes sig n)) :
-    pMSig ⊫ R ->
-    Lift ⊫ lift_sigma_tau_Rel Retr_g def R.
+  Lemma Lift_Realise (R : Rel (tapes sig n) (F * tapes sig n)) :
+    pMSig ⊨ R ->
+    Lift ⊨ lift_sigma_tau_Rel Retr_g def R.
   Proof.
     intros H. intros t i outc Hloop. unfold lift_sigma_tau_Rel. hnf in H.
     specialize (H (surjectTapes Retr_g def t) i (mk_mconfig (cstate outc) (surjectTapes Retr_g def (ctapes outc)))).
@@ -233,7 +233,7 @@ Section LiftSigmaTau.
     Lift ⊨c(k) lift_sigma_tau_Rel Retr_g def R.
   Proof.
     intros [H1 H2] % Realise_total. eapply Realise_total. split; cbn in *.
-    - now eapply Lift_WRealise.
+    - now eapply Lift_Realise.
     - eapply Lift_TerminatesIn in H2. auto.
   Qed.
 
@@ -243,7 +243,7 @@ Arguments Lift : simpl never.
 
 Ltac smpl_TM_LiftSigma :=
   match goal with
-  | [ |- Lift _ _ _ ⊫ _] => eapply Lift_WRealise; swap 1 2
+  | [ |- Lift _ _ _ ⊨ _] => eapply Lift_Realise; swap 1 2
   | [ |- Lift _ _ _ ⊨c(_) _] => eapply Lift_RealiseIn; swap 1 2
   | [ |- projT1 (Lift _ _ _) ↓ _] => eapply Lift_TerminatesIn; swap 1 2
   end.

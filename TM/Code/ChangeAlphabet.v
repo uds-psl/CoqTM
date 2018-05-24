@@ -232,12 +232,12 @@ Section Computes_Change_Alphabet.
 
 
   Lemma ChangeAlphabet_Computes :
-    pM ⊫ Computes_Rel func ->
-    ChangeAlphabet pM _ ⊫ Computes_Rel func.
+    pM ⊨ Computes_Rel func ->
+    ChangeAlphabet pM _ ⊨ Computes_Rel func.
   Proof.
-    intros H. eapply WRealise_monotone.
+    intros H. eapply Realise_monotone.
     {
-      unfold ChangeAlphabet. eapply Lift_WRealise; eauto.
+      unfold ChangeAlphabet. eapply Lift_Realise; eauto.
     }
     {
       hnf. intros tin (yout&tout) HComp.
@@ -294,7 +294,7 @@ Section Computes_Change_Alphabet.
 End Computes_Change_Alphabet.
 
 (*
-Arguments ChangeAlphabet_Computes_WRealise
+Arguments ChangeAlphabet_Computes_Realise
           {sig} {tau} (default) {f} {g} retr
           {X} {Y} {cX} {cY} func {F}
           {n_tapes} {i1} {i2} {pM} /.
@@ -304,7 +304,7 @@ Arguments ChangeAlphabet_Computes_RealiseIn
           {X} {Y} {cX} {cY} func {F}
           {n_tapes} {i1} {i2} {pM} /.
 
-Arguments ChangeAlphabet_Computes_WRealise_p
+Arguments ChangeAlphabet_Computes_Realise_p
           {sig} {tau} (default) {f} {g} retr
           {X} {Y} {cX} {cY} func {F} param
           {n_tapes} {i1} {i2} {pM} /.
@@ -335,26 +335,26 @@ Section Computes2_Change_Alphabet.
 
   Definition GoodCode2 := (forall (x: X) (y : Y), ~ default el encode (sigma := sig) (func x y)) \/ (forall t' : tau, exists s', g t' = Some s').
 
-  Lemma ChangeAlphabet_Computes2_WRealise :
-    pM ⊫ Computes2_Rel i1 i2 i3 cX cY cZ func ->
+  Lemma ChangeAlphabet_Computes2_Realise :
+    pM ⊨ Computes2_Rel i1 i2 i3 cX cY cZ func ->
     GoodCode2 ->
-    ChangeAlphabet default retr pM ⊫ Computes2_Rel i1 i2 i3 _ _ _ func.
+    ChangeAlphabet default retr pM ⊨ Computes2_Rel i1 i2 i3 _ _ _ func.
   Proof.
-    intros H HDef. eapply WRealise_monotone.
-    - unfold ChangeAlphabet. eapply Lift_WRealise. apply tight_retract_strong. eapply retr'. eassumption.
+    intros H HDef. eapply Realise_monotone.
+    - unfold ChangeAlphabet. eapply Lift_Realise. apply tight_retract_strong. eapply retr'. eassumption.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x y. specialize (HComp x). intros HEnc1 HEnc2.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
       apply encodeTranslate_tau1 with (def := default) in HEnc1. apply encodeTranslate_tau1 with (def := default) in HEnc2.
       specialize (HComp y HEnc1 HEnc2). eapply encodeTranslate_tau2; eauto. destruct HDef; auto.
   Qed.
 
-  Lemma ChangeAlphabet_Computes2_WRealise_p :
-    pM ⊫ Computes2_Rel_p i1 i2 i3 cX cY cZ func param ->
+  Lemma ChangeAlphabet_Computes2_Realise_p :
+    pM ⊨ Computes2_Rel_p i1 i2 i3 cX cY cZ func param ->
     GoodCode2 ->
-    ChangeAlphabet default retr pM ⊫ Computes2_Rel_p i1 i2 i3 _ _ _ func param.
+    ChangeAlphabet default retr pM ⊨ Computes2_Rel_p i1 i2 i3 _ _ _ func param.
   Proof.
-    intros H HDef. eapply WRealise_monotone.
-    - unfold ChangeAlphabet. eapply Lift_WRealise. apply tight_retract_strong. eapply retr'. eassumption.
+    intros H HDef. eapply Realise_monotone.
+    - unfold ChangeAlphabet. eapply Lift_Realise. apply tight_retract_strong. eapply retr'. eassumption.
     - hnf. intros tin (yout&tout) HComp. hnf in *. intros x y. specialize (HComp x). intros HEnc1 HEnc2.
       unfold surjectTapes, mapTapes in *. erewrite !Vector.nth_map in HComp; eauto.
       apply encodeTranslate_tau1 with (def := default) in HEnc1. apply encodeTranslate_tau1 with (def := default) in HEnc2.
@@ -392,7 +392,7 @@ Section Computes2_Change_Alphabet.
 End Computes2_Change_Alphabet.
 
 
-Arguments ChangeAlphabet_Computes2_WRealise
+Arguments ChangeAlphabet_Computes2_Realise
           {sig} {tau} (default) {f} {g} retr
           {X} {Y} {Z} {cX} {cY} {cZ} func {F}
           {n_tapes} {i1} {i2} {i3} {pM} /.
@@ -402,7 +402,7 @@ Arguments ChangeAlphabet_Computes2_RealiseIn
           {X} {Y} {Z} {cX} {cY} {cZ} func {F}
           {n_tapes} {i1} {i2} {i3} {pM} /.
 
-Arguments ChangeAlphabet_Computes2_WRealise_p
+Arguments ChangeAlphabet_Computes2_Realise_p
           {sig} {tau} (default) {f} {g} retr
           {X} {Y} {Z} {cX} {cY} {cZ} func {F} param
           {n_tapes} {i1} {i2} {i3} {pM} /.

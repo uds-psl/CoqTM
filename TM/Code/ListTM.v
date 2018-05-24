@@ -92,17 +92,17 @@ Section Nth.
   .
 
 
-  Lemma Nth_Step_WRealise : Nth_Step ⊫ Nth_Step_Rel.
+  Lemma Nth_Step_Realise : Nth_Step ⊨ Nth_Step_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     { unfold Nth_Step. repeat TM_Correct.
-      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_WRealise. eapply MatchNat_Sem.
-      - eapply MatchList_WRealise with (X := X).
-      - eapply Reset_WRealise with (X := X).
-      - eapply RealiseIn_WRealise. apply Constr_None_Sem with (X := X).
-      - eapply MatchList_WRealise with (X := X).
-      - eapply RealiseIn_WRealise. apply Constr_Some_Sem with (X := X).
-      - eapply RealiseIn_WRealise. apply Constr_None_Sem with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_Realise. eapply MatchNat_Sem.
+      - eapply MatchList_Realise with (X := X).
+      - eapply Reset_Realise with (X := X).
+      - eapply RealiseIn_Realise. apply Constr_None_Sem with (X := X).
+      - eapply MatchList_Realise with (X := X).
+      - eapply RealiseIn_Realise. apply Constr_Some_Sem with (X := X).
+      - eapply RealiseIn_Realise. apply Constr_None_Sem with (X := X).
     }
     {
       intros tin ((yout, ()), tout) H.
@@ -188,10 +188,10 @@ Section Nth.
   Definition Nth_Loop := WHILE Nth_Step.
 
 
-  Lemma Nth_Loop_WRealise : Nth_Loop ⊫ Nth_Loop_Rel.
+  Lemma Nth_Loop_Realise : Nth_Loop ⊨ Nth_Loop_Rel.
   Proof.
-    eapply WRealise_monotone.
-    { unfold Nth_Loop. repeat TM_Correct. eapply Nth_Step_WRealise. }
+    eapply Realise_monotone.
+    { unfold Nth_Loop. repeat TM_Correct. eapply Nth_Step_Realise. }
     {
       apply WhileInduction; intros; intros l n HEncL HEncN HRight.
       - TMSimp. specialize (HLastStep _ _ HEncL HEncN HRight).
@@ -213,15 +213,15 @@ Section Nth.
   .
 
 
-  Lemma Nth_Computes : Nth ⊫ Computes2_Rel (@nth_error _).
+  Lemma Nth_Computes : Nth ⊨ Computes2_Rel (@nth_error _).
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     { unfold Nth. repeat TM_Correct.
-      - apply CopyValue_WRealise with (X := list X).
-      - apply CopyValue_WRealise with (X := nat).
-      - apply Nth_Loop_WRealise.
-      - apply Reset_WRealise with (X := list X).
-      - apply Reset_WRealise with (X := nat).
+      - apply CopyValue_Realise with (X := list X).
+      - apply CopyValue_Realise with (X := nat).
+      - apply Nth_Loop_Realise.
+      - apply Reset_Realise with (X := list X).
+      - apply Reset_Realise with (X := nat).
     }
     {
       intros tin ((), tout) H. cbn. intros l n HEncL HEncN HOut HInt.

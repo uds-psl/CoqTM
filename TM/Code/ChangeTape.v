@@ -278,12 +278,12 @@ Compute Vector.map (@fin_to_nat _) (indexes1 ltac:(getFin 1 10) ltac:(getFin 1 1
   Definition ChangeAlphabet1 := Inject pM indexes1.
 
   Lemma ChangeAlphabet1_Computes (f : X -> Y) :
-    pM ⊫ Computes_Rel i1 i2 enc_X enc_Y f ->
-    ChangeAlphabet1 ⊫ Computes_Rel j1 j2 enc_X enc_Y f.
+    pM ⊨ Computes_Rel i1 i2 enc_X enc_Y f ->
+    ChangeAlphabet1 ⊨ Computes_Rel j1 j2 enc_X enc_Y f.
   Proof.
-    intros H. eapply WRealise_monotone.
+    intros H. eapply Realise_monotone.
     {
-      eapply Inject_WRealise; eauto. eapply indexes1_dupfree.
+      eapply Inject_Realise; eauto. eapply indexes1_dupfree.
     }
     {
       hnf. intros tin (yout&tout) (H1&_). hnf in H1. hnf. intros x Hx. specialize (H1 x).

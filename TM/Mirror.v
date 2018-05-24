@@ -124,8 +124,8 @@ Section MirrorTM.
   Qed.
     
   
-  Lemma Mirror_WRealise (R : Rel _ (F * _)) :
-    pM ⊫ R -> Mirror ⊫ Mirror_R R.
+  Lemma Mirror_Realise (R : Rel _ (F * _)) :
+    pM ⊨ R -> Mirror ⊨ Mirror_R R.
   Proof.
     intros H. intros t i outc H2. specialize (H (mirror_tapes t) i (mlift outc)).
     assert (loopM i (initc (projT1 pM) (mirror_tapes t)) = Some (mlift outc)) as L.
@@ -155,7 +155,7 @@ Section MirrorTM.
   Proof.
     intros H.
     eapply Realise_total. split.
-    - eapply Mirror_WRealise. now eapply Realise_total.
+    - eapply Mirror_Realise. now eapply Realise_total.
     - eapply TerminatesIn_monotone.
       + eapply Mirror_Terminates. now eapply Realise_total.
       + firstorder.
@@ -170,7 +170,7 @@ Arguments Mirror_R { n sig F } R x y /.
 
 Ltac smpl_TM_Mirror :=
   match goal with
-  | [ |- Mirror _ ⊫ _ ] => eapply Mirror_WRealise
+  | [ |- Mirror _ ⊨ _ ] => eapply Mirror_Realise
   | [ |- Mirror _ ⊨c(_) _ ] => eapply Mirror_RealiseIn
   | [ |- projT1 (Mirror _) ↓ _ ] => eapply Mirror_Terminates
   end.

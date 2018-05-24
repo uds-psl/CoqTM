@@ -221,12 +221,12 @@ Smpl Add (match goal with
                | [ |- RealiseIn (existT _ (projT1 _) _) _ _] =>
                  eapply RealiseIn_changeP; [ eapply Nop_total | intros s; repeat destruct s; firstorder]
 
-               | [ |- WRealise (existT _ ?x _) _ ] => unfold x
-               | [ |- WRealise (existT _ (?x _) _) _ ] => unfold x
-               | [ |- WRealise (existT _ (?x _ _) _) _ ] => unfold x
-               | [ |- WRealise (existT _ (While _ _) _) _ ] => eapply While_sem
-               | [ |- WRealise (existT _ (projT1 (If _ _ _ _)) _) _ ] => eapply If_sem
-               | [ |- WRealise (existT _ (Match _ _) _) _ ] => eapply Match_sem
+               | [ |- Realise (existT _ ?x _) _ ] => unfold x
+               | [ |- Realise (existT _ (?x _) _) _ ] => unfold x
+               | [ |- Realise (existT _ (?x _ _) _) _ ] => unfold x
+               | [ |- Realise (existT _ (While _ _) _) _ ] => eapply While_sem
+               | [ |- Realise (existT _ (projT1 (If _ _ _ _)) _) _ ] => eapply If_sem
+               | [ |- Realise (existT _ (Match _ _) _) _ ] => eapply Match_sem
 
                | [ |- terminatesIn (While _ _) _] =>  eapply While_terminatesIn
                | [ |- terminatesIn ?x _] => unfold x
@@ -240,8 +240,8 @@ Smpl Add 101 (match goal with
               | [ |- RealiseIn _ _ _ ] => now eauto
               | [ |- RealiseIn _ _ _ ] => eapply RealiseIn_monotone
 
-              | [ |- WRealise _ _ ] => eapply Realise_total; now TMstep
-              | [ |- WRealise _ _ ] => eapply WRealise_monotone
+              | [ |- Realise _ _ ] => eapply Realise_total; now TMstep
+              | [ |- Realise _ _ ] => eapply Realise_monotone
 
               | [ |- terminatesIn _ _] => eapply Realise_total
               end) : TMstep.
@@ -268,7 +268,7 @@ Smpl Create shelve_all.
 Ltac shelve_all := smpl shelve_all; undo_whatever.
 
 Smpl Add (match goal with
-  | [ |- context[WRealise] ] => do_whatever
+  | [ |- context[Realise] ] => do_whatever
   | [ |- context[RealiseIn]] => do_whatever
   | [ |- context[subrel]] => do_whatever
   | [ |- context[liftT]] => do_whatever
@@ -467,7 +467,7 @@ Section move_to_end.
                               (((fun t t' => current t = None) ∩ (@IdR _)) ∪ (fun t t' => (forall c ls rs, t = midtape ls c rs -> t' = mk_tape (sig := sig) (rev rs ++ c :: ls) None [])))).
     
   Lemma move_to_end_r_sem :
-    move_to_end R ⊫(fun _ => tt) ⇑[is_a_tape] R_move_to_end_r.
+    move_to_end R ⊨(fun _ => tt) ⇑[is_a_tape] R_move_to_end_r.
   Proof.
     Existing Instance move_sem.
     TMcorrect.
@@ -584,7 +584,7 @@ Section move_to_symbol.
                                   (t' = to_symbol_r t))).
     
   Lemma move_to_symbol_r_sem :
-    move_to_symbol R ⊫ R_move_to_symbol_r.
+    move_to_symbol R ⊨ R_move_to_symbol_r.
   Proof.
     Existing Instance M1_sem.
     TMcorrect.
@@ -715,7 +715,7 @@ Section compare_tapes.
          end) ∪ (fun t t' => (current (get_at tape_0 t) = None \/ current (get_at tape_1 t) = None) /\ t = t').
   
   Lemma Compare_tapes_sem :
-    Compare_tapes ⊫(fun _ => tt) ⇑⇑[i_is_a_tape; j_is_a_tape] ignoreParam (Compare_tapes_R).
+    Compare_tapes ⊨(fun _ => tt) ⇑⇑[i_is_a_tape; j_is_a_tape] ignoreParam (Compare_tapes_R).
   Proof.
     Hint Resolve Compare_tapes_body_sem.
     repeat TMstep; try TMrel.
@@ -896,7 +896,7 @@ Section compare_tapes_until.
   (fun (t t' : tapes sig _) => (get_at tape_0 t', get_at tape_1 t') = compare_until (get_at tape_0 t) (get_at tape_1 t)).
   
   Lemma Compare_tapes_until_sem :
-    Compare_tapes_until ⊫(fun _ => tt) ⇑⇑[i_is_a_tape; j_is_a_tape] ignoreParam (Compare_tapes_until_R).
+    Compare_tapes_until ⊨(fun _ => tt) ⇑⇑[i_is_a_tape; j_is_a_tape] ignoreParam (Compare_tapes_until_R).
   Proof.
     Hint Resolve Compare_tapes_until_body_sem.
     TMcorrect.
@@ -1041,7 +1041,7 @@ Section copy_tape.
          ∪ (fun t t' => (exists c ls rs, get_at tape_0 t = midtape ls c rs /\ get_at tape_0 t' = mk_tape (sig := sig) (rev rs ++ c :: ls) None []))).                                                              
 
   Lemma Copy_tapes_sem :
-    Copy_tapes ⊫(fun _ => tt) ⇑⇑[i_is_a_tape; j_is_a_tape] ignoreParam (Copy_tapes_R).
+    Copy_tapes ⊨(fun _ => tt) ⇑⇑[i_is_a_tape; j_is_a_tape] ignoreParam (Copy_tapes_R).
   Proof.
     Existing Instance Copy_tapes_body_sem.
     TMcorrect.
@@ -1192,7 +1192,7 @@ Section copy_tape_until.
          ∪ (fun t t' => (exists c ls rs, get_at tape_0 t = midtape ls c rs /\ get_at tape_0 t' = to_symbol_r until (get_at tape_0 t)))).
 
   Lemma Copy_tapes_until_sem :
-    Copy_tapes_until ⊫(fun _ => tt) ⇑⇑[i_is_a_tape; j_is_a_tape] ignoreParam (Copy_tapes_until_R).
+    Copy_tapes_until ⊨(fun _ => tt) ⇑⇑[i_is_a_tape; j_is_a_tape] ignoreParam (Copy_tapes_until_R).
   Proof.
     Existing Instance Copy_tapes_until_body_sem.
     TMcorrect.

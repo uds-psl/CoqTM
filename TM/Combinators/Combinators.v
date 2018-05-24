@@ -14,9 +14,9 @@ Section Return.
 
   Definition Return := (projT1 pM; fun _ => p).
 
-  Lemma Return_WRealise R :
-    pM ⊫ R ->
-    Return ⊫ (⋃_f (R |_ f)) ||_ p.
+  Lemma Return_Realise R :
+    pM ⊨ R ->
+    Return ⊨ (⋃_f (R |_ f)) ||_ p.
   Proof. intros. intros tin k outc HLoop. hnf. split; hnf; eauto. exists (projT2 pM (cstate outc)). hnf. eauto. Qed.
 
   Lemma Return_RealiseIn R k :
@@ -96,14 +96,14 @@ Ltac smpl_match_RealiseIn :=
   end.
 
 
-Ltac smpl_match_WRealise :=
+Ltac smpl_match_Realise :=
   match goal with
-  | [ |- MATCH ?M1 ?M2 ⊫ ?R] =>
+  | [ |- MATCH ?M1 ?M2 ⊨ ?R] =>
     is_evar R;
     let tM2 := type of M2 in
     match tM2 with
     | ?F -> _ =>
-      eapply (Match_WRealise
+      eapply (Match_Realise
                 (F := FinType(EqType F))
                 (R2 := ltac:(now (intros ?e; destruct_shelve e))));
       [
@@ -134,18 +134,18 @@ Ltac smpl_match_Terminates :=
 
 Ltac smpl_TM_Combinators :=
   match goal with
-  | [ |- MATCH _ _ ⊫ _] => smpl_match_WRealise
+  | [ |- MATCH _ _ ⊨ _] => smpl_match_Realise
   | [ |- MATCH _ _ ⊨c(_) _] => smpl_match_RealiseIn
   | [ |- projT1 (MATCH _ _) ↓ _] => smpl_match_Terminates
-  | [ |- If _ _ _ ⊫ _] => eapply If_WRealise
+  | [ |- If _ _ _ ⊨ _] => eapply If_Realise
   | [ |- If _ _ _ ⊨c(_) _] => eapply If_RealiseIn
   | [ |- projT1 (If _ _ _) ↓ _] => eapply If_TerminatesIn
-  | [ |- Seq _ _ ⊫ _] => eapply Seq_WRealise
+  | [ |- Seq _ _ ⊨ _] => eapply Seq_Realise
   | [ |- Seq _ _ ⊨c(_) _] => eapply Seq_RealiseIn
   | [ |- projT1 (Seq _ _) ↓ _] => eapply Seq_TerminatesIn
-  | [ |- WHILE _ ⊫ _] => eapply While_WRealise
+  | [ |- WHILE _ ⊨ _] => eapply While_Realise
   | [ |- projT1 (WHILE _) ↓ _] => eapply While_TerminatesIn
-  | [ |- Return _ _ ⊫ _] => eapply Return_WRealise
+  | [ |- Return _ _ ⊨ _] => eapply Return_Realise
   | [ |- Return _ _ ⊨c(_) _] => eapply Return_RealiseIn
   | [ |- projT1 (Return _ _) ↓ _] => eapply Return_Terminates
   end.

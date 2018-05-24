@@ -184,11 +184,11 @@ Section Fix_Sig.
 
       Variable pM : { M : mTM (sig^+) (S (S n)) & states M -> F }.
 
-      Lemma Computes_Ext_WRealise :
-        pM ⊫ Computes_Rel f' ->
-        pM ⊫ Computes_Rel f.
+      Lemma Computes_Ext_Realise :
+        pM ⊨ Computes_Rel f' ->
+        pM ⊨ Computes_Rel f.
       Proof.
-        intros H. eapply WRealise_monotone.
+        intros H. eapply Realise_monotone.
         - eapply H.
         - eapply Computes_ext.
       Qed.
@@ -275,11 +275,11 @@ Section Fix_Sig.
 
       Variable pM : { M : mTM (sig^+) (S (S (S n))) & states M -> F }.
 
-      Lemma Computes2_Ext_WRealise :
-        pM ⊫ Computes2_Rel f' ->
-        pM ⊫ Computes2_Rel f.
+      Lemma Computes2_Ext_Realise :
+        pM ⊨ Computes2_Rel f' ->
+        pM ⊨ Computes2_Rel f.
       Proof.
-        intros H. eapply WRealise_monotone.
+        intros H. eapply Realise_monotone.
         - eapply H.
         - eapply Computes2_ext.
       Qed.

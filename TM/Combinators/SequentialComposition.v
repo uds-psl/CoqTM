@@ -14,19 +14,19 @@ Section Composition.
   
   Definition Seq := MATCH pM1 (fun _ => pM2).
 
-  Lemma Seq_WRealise (R1 : Rel _ (_ * _)) (R2 : Rel _ (F2 * _)) :
-    pM1 ⊫ R1 ->
-    pM2 ⊫ R2 ->
-    Seq ⊫ ⋃_y ((R1 |_ y) ∘ R2).
+  Lemma Seq_Realise (R1 : Rel _ (_ * _)) (R2 : Rel _ (F2 * _)) :
+    pM1 ⊨ R1 ->
+    pM2 ⊨ R2 ->
+    Seq ⊨ ⋃_y ((R1 |_ y) ∘ R2).
   Proof.
     intros.
-    eapply WRealise_monotone.
-    eapply (Match_WRealise (R1 := R1) (R2 := (fun _ => R2))); eauto.
+    eapply Realise_monotone.
+    eapply (Match_Realise (R1 := R1) (R2 := (fun _ => R2))); eauto.
     firstorder.
   Qed.
 
   Lemma Seq_TerminatesIn (R1 : Rel (tapes sig n) (F * tapes sig n)) (T1 T2 : Rel (tapes sig n) nat) :
-    pM1 ⊫ R1 ->
+    pM1 ⊨ R1 ->
     projT1 pM1 ↓ T1 ->
     projT1 pM2 ↓ T2 ->
     projT1 Seq ↓ (fun tin i => exists i1 i2, i1 + S i2 <= i /\ T1 tin i1 /\
@@ -41,7 +41,7 @@ Section Composition.
 
   Lemma Seq_terminatesIn (R1 : Rel _ (F * _)) T1 T2:
     functionalOn T1 R1 ->
-    pM1 ⊫ R1 ->
+    pM1 ⊨ R1 ->
     projT1 pM1 ↓(T1) ->
     projT1 pM2 ↓(T2) ->
     projT1 Seq ↓(fun (x : tapes sig n) (i : nat) =>

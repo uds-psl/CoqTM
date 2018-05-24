@@ -94,17 +94,17 @@ Section Projection.
       ).
 
   
-  Lemma M1_WRealise : M1 ⊫ R1.
+  Lemma M1_Realise : M1 ⊨ R1.
   Proof.
     subst M1 R1.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     {
-      do 1 try eapply Seq_WRealise.
-      all: try (eapply Inject_WRealise; [vector_dupfree| ]).
-      2: eapply Seq_WRealise.
-      all: try (eapply Realise_WRealise, RealiseIn_Realise;
+      do 1 try eapply Seq_Realise.
+      all: try (eapply Inject_Realise; [vector_dupfree| ]).
+      2: eapply Seq_Realise.
+      all: try (eapply Realise_Realise, RealiseIn_Realise;
                 first [ eapply Move_Sem | eapply WriteMove_Sem | eapply Write_Sem ]).
-      - eapply CopySymbols_WRealise.
+      - eapply CopySymbols_Realise.
     }
     {
       hnf. intros tin ((),tout) H. cbn in *. intros (inputX, inputY). TMSimp.
@@ -140,17 +140,17 @@ Section Projection.
             tout[@Fin.FS Fin.F1] ≂ fst xy
       ).
 
-  Lemma Proj_WRealise : Proj ⊫ Proj_Rel.
+  Lemma Proj_Realise : Proj ⊨ Proj_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     {
-      unfold Proj. do 2 try eapply Seq_WRealise.
-      all: try (eapply Inject_WRealise; [vector_dupfree| ]).
-      3: repeat eapply Seq_WRealise.
-      all: try (eapply Realise_WRealise, RealiseIn_Realise;
+      unfold Proj. do 2 try eapply Seq_Realise.
+      all: try (eapply Inject_Realise; [vector_dupfree| ]).
+      3: repeat eapply Seq_Realise.
+      all: try (eapply Realise_Realise, RealiseIn_Realise;
                 first [ eapply Move_Sem | eapply WriteMove_Sem | eapply Write_Sem ]).
-      - eapply M1_WRealise.
-      - eapply MoveToSymbol_L_WRealise.
+      - eapply M1_Realise.
+      - eapply MoveToSymbol_L_Realise.
     }
     {
       hnf. intros tin ((), tout) H. intros (inputX, inputY).
@@ -239,7 +239,7 @@ Section Projection.
     unfold Proj. eapply TerminatesIn_monotone.
     {
       repeat TM_Correct.
-      - apply M1_WRealise.
+      - apply M1_Realise.
       - apply M1_Terminates.
     }
     {

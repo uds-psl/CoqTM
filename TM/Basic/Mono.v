@@ -267,22 +267,22 @@ Arguments mono_Nop_R { sig F } ( p ) x y / : rename.
 
 Ltac smpl_TM_Mono :=
   match goal with
-  | [ |- TEST_CHAR _ ⊫ _] => eapply RealiseIn_WRealise; eapply test_chr_Sem
+  | [ |- TEST_CHAR _ ⊨ _] => eapply RealiseIn_Realise; eapply test_chr_Sem
   | [ |- TEST_CHAR _ ⊨c(_) _] => eapply test_chr_Sem
   | [ |- projT1 (TEST_CHAR _) ↓ _] => eapply RealiseIn_terminatesIn; eapply test_chr_Sem
-  | [ |- Write _ _ ⊫ _] => eapply RealiseIn_WRealise; eapply Write_Sem
+  | [ |- Write _ _ ⊨ _] => eapply RealiseIn_Realise; eapply Write_Sem
   | [ |- Write _ _ ⊨c(_) _] => eapply Write_Sem
   | [ |- projT1 (Write _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Write_Sem
-  | [ |- Move _ _ _ ⊫ _] => eapply RealiseIn_WRealise; eapply Move_Sem
+  | [ |- Move _ _ _ ⊨ _] => eapply RealiseIn_Realise; eapply Move_Sem
   | [ |- Move _ _ _ ⊨c(_) _] => eapply Move_Sem
   | [ |- projT1 (Move _ _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Move_Sem
-  | [ |- WriteMove _ _ ⊫ _] => eapply RealiseIn_WRealise; eapply WriteMove_Sem
+  | [ |- WriteMove _ _ ⊨ _] => eapply RealiseIn_Realise; eapply WriteMove_Sem
   | [ |- WriteMove _ _ ⊨c(_) _] => eapply WriteMove_Sem
   | [ |- projT1 (WriteMove _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply WriteMove_Sem
-  | [ |- Read_char _ ⊫ _] => eapply RealiseIn_WRealise; eapply read_char_sem
+  | [ |- Read_char _ ⊨ _] => eapply RealiseIn_Realise; eapply read_char_sem
   | [ |- Read_char _ ⊨c(_) _] => eapply read_char_sem
   | [ |- projT1 (Read_char _) ↓ _] => eapply RealiseIn_terminatesIn; eapply read_char_sem
-  | [ |- mono_Nop _ _ ⊫ _] => eapply RealiseIn_WRealise; eapply mono_Nop_Sem
+  | [ |- mono_Nop _ _ ⊨ _] => eapply RealiseIn_Realise; eapply mono_Nop_Sem
   | [ |- mono_Nop _ _ ⊨c(_) _] => eapply mono_Nop_Sem
   | [ |- projT1 (mono_Nop _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply mono_Nop_Sem
   end.

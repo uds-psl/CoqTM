@@ -221,14 +221,14 @@ Section Match.
 
   Definition MATCH := (Match; Match_p).
 
-  Lemma Match_WRealise (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) :
-    pM1 ⊫ R1 ->
-    (forall f : F, pMf f ⊫ R2 f) -> MATCH ⊫ (⋃_f (R1 |_ f) ∘ R2 f).
+  Lemma Match_Realise (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) :
+    pM1 ⊨ R1 ->
+    (forall f : F, pMf f ⊨ R2 f) -> MATCH ⊨ (⋃_f (R1 |_ f) ∘ R2 f).
   Proof.
     intros HR1 HR2 t1 i1 oenc2 eq.
     hnf.
     apply Match_split in eq as (?&?&?&?&Eq1&Eq2&->&->).
-    unfold WRealise in HR1.
+    unfold Realise in HR1.
     eapply HR1 in Eq1.
     eapply HR2 in Eq2.
     eexists _, _. split. eapply Eq1. eapply Eq2.
@@ -251,7 +251,7 @@ Section Match.
   Qed.
 
   Lemma Match_TerminatesIn (R1 : Rel _ (F * _)) T1 T2 :
-    pM1 ⊫ R1 -> M1 ↓ T1 -> (forall f : F, Mf f ↓(T2 f)) ->
+    pM1 ⊨ R1 -> M1 ↓ T1 -> (forall f : F, Mf f ↓(T2 f)) ->
     Match ↓ (fun tin i => exists i1 i2, i1 + S i2 <= i /\ T1 tin i1 /\ forall tout yout, R1 tin (yout, tout) -> T2 yout tout i2).
   Proof.
     intros Real1 Term1 Term2.
@@ -265,7 +265,7 @@ Section Match.
 
   Lemma Match_TerminatesIn' (R1 : Rel _ (F * _)) T1 T :
     functionalOn T1 R1 ->
-    pM1 ⊫ R1 ->
+    pM1 ⊨ R1 ->
     M1 ↓(T1) ->
     (forall f : F, Mf f ↓(T f)) ->
     Match ↓(⋃_f (fun (x : tapes sig n) (i : nat) => exists (j k : nat) (y : tapes sig n),

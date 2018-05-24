@@ -78,9 +78,9 @@ Section MatchList.
   Qed.
 
 
-  Lemma Skip_cons_WRealise : Skip_cons ⊫ Skip_cons_Rel.
+  Lemma Skip_cons_Realise : Skip_cons ⊨ Skip_cons_Rel.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     { unfold Skip_cons. repeat TM_Correct. }
     {
       intros tin ((), tout) H. intros ls rs x l HTin. TMSimp. clear_trivial_eqs. clear H3 HTin H1 H2.
@@ -105,10 +105,10 @@ Section MatchList.
             tout[@Fin1] ≃ x).
             
 
-  Lemma M1_WRealise : M1 ⊫ M1_Rel.
+  Lemma M1_Realise : M1 ⊨ M1_Rel.
   Proof.
-    eapply WRealise_monotone.
-    { unfold M1. repeat TM_Correct. eapply Skip_cons_WRealise. }
+    eapply Realise_monotone.
+    { unfold M1. repeat TM_Correct. eapply Skip_cons_Realise. }
     {
       intros tin ((), tout) H. intros ls rs x l HRight HTin0. TMSimp; clear_trivial_eqs.
       rename H3 into HCopy.
@@ -147,10 +147,10 @@ Section MatchList.
         end.
 
 
-  Lemma MatchList_WRealise : MatchList ⊫ MatchList_Rel.
+  Lemma MatchList_Realise : MatchList ⊨ MatchList_Rel.
   Proof.
-    eapply WRealise_monotone.
-    { unfold MatchList. repeat TM_Correct. eapply M1_WRealise. eapply Skip_cons_WRealise. }
+    eapply Realise_monotone.
+    { unfold MatchList. repeat TM_Correct. eapply M1_Realise. eapply Skip_cons_Realise. }
     {
       intros tin (yout, tout) H. intros l HEncL HRight.
       TMSimp; clear_trivial_eqs.
@@ -211,7 +211,7 @@ Section MatchList.
                  23 + 12 * length (encode x : list sigX) <= k).
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold M1. repeat TM_Correct. eapply Skip_cons_WRealise. eapply Skip_cons_Terminates. }
+    { unfold M1. repeat TM_Correct. eapply Skip_cons_Realise. eapply Skip_cons_Terminates. }
     {
       intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
       exists (6 + 4 * length (encode x)), (16 + 8 * length (encode x)). repeat split; try omega. eauto 6.
@@ -251,9 +251,9 @@ Section MatchList.
   Proof.
     eapply TerminatesIn_monotone.
     { unfold MatchList. repeat TM_Correct.
-      - eapply M1_WRealise.
+      - eapply M1_Realise.
       - eapply M1_Terminates.
-      - eapply Skip_cons_WRealise.
+      - eapply Skip_cons_Realise.
       - eapply Skip_cons_Terminates.
     }
     {
@@ -332,10 +332,10 @@ Section MatchList.
       ).
 
   
-  Lemma Constr_cons_WRealise : Constr_cons ⊫ Constr_cons_Rel.
+  Lemma Constr_cons_Realise : Constr_cons ⊨ Constr_cons_Rel.
   Proof.
-    eapply WRealise_monotone.
-    { unfold Constr_cons. repeat TM_Correct. apply MoveRight_WRealise with (X := X). }
+    eapply Realise_monotone.
+    { unfold Constr_cons. repeat TM_Correct. apply MoveRight_Realise with (X := X). }
     {
       intros tin ((), tout) H. intros l y HEncL HEncY.
       TMSimp; clear_trivial_eqs.
@@ -362,8 +362,8 @@ Section MatchList.
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Constr_cons. repeat TM_Correct.
-      - apply MoveRight_WRealise with (X := X).
-      - apply MoveRight_WRealise with (X := X).
+      - apply MoveRight_Realise with (X := X).
+      - apply MoveRight_Realise with (X := X).
       - apply MoveRight_Terminates with (X := X).
     }
     {

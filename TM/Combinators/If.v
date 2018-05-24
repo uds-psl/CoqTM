@@ -14,21 +14,21 @@ Section If.
 
   Definition If := MATCH pM1 (fun b => if b then pM2 else pM3).
 
-  Lemma If_WRealise (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) :
-    pM1 ⊫ R1 ->
-    pM2 ⊫ R2 ->
-    pM3 ⊫ R3 ->
-    If ⊫ (R1 |_true) ∘ R2 ∪ (R1 |_false) ∘ R3.
+  Lemma If_Realise (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) :
+    pM1 ⊨ R1 ->
+    pM2 ⊨ R2 ->
+    pM3 ⊨ R3 ->
+    If ⊨ (R1 |_true) ∘ R2 ∪ (R1 |_false) ∘ R3.
   Proof.
     intros.
-    eapply WRealise_monotone.
-    - eapply (Match_WRealise (R1 := R1) (R2 := (fun b => if b then R2 else R3))); eauto.
+    eapply Realise_monotone.
+    - eapply (Match_Realise (R1 := R1) (R2 := (fun b => if b then R2 else R3))); eauto.
       now intros [].
     - hnf. intros H2 (f& t). intros ([ | ]& (y & H3&H3')). left. hnf. eauto. right. hnf. eauto.
   Qed.
 
   Lemma If_TerminatesIn (R1 : Rel (tapes sig n) (bool * tapes sig n)) (T1 T2 T3 : Rel (tapes sig n) nat) :
-    pM1 ⊫ R1 ->
+    pM1 ⊨ R1 ->
     projT1 pM1 ↓ T1 ->
     projT1 pM2 ↓ T2 ->
     projT1 pM3 ↓ T3 ->
@@ -48,7 +48,7 @@ Section If.
   
   Lemma If_terminatesIn (R1 : Rel _ (bool * _)) T1 T2 T3 :
     functionalOn T1 R1 ->
-    pM1 ⊫ R1 ->
+    pM1 ⊨ R1 ->
     projT1 pM1 ↓ T1 ->
     projT1 pM2 ↓ T2 ->
     projT1 pM3 ↓ T3 ->

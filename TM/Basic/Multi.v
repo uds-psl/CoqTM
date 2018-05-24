@@ -135,13 +135,13 @@ Arguments ReadChar_multi_R { sig n } ( k ) x y /.
 
 Ltac smpl_TM_Multi :=
   match goal with
-  | [ |- MovePar _ _ _ _ ⊫ _ ] => eapply RealiseIn_WRealise; eapply MovePar_Sem
+  | [ |- MovePar _ _ _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply MovePar_Sem
   | [ |- MovePar _ _ _ _ ⊨c(_) _ ] => eapply MovePar_Sem
   | [ |- projT1 (MovePar _ _ _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply MovePar_Sem
-  | [ |- Copy_char _ ⊫ _ ] => eapply RealiseIn_WRealise; eapply Copy_char_Sem
+  | [ |- Copy_char _ ⊨ _ ] => eapply RealiseIn_Realise; eapply Copy_char_Sem
   | [ |- Copy_char _ ⊨c(_) _ ] => eapply Copy_char_Sem
   | [ |- projT1 (Copy_char _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply Copy_char_Sem
-  | [ |- ReadChar_multi _ _ ⊫ _ ] => eapply RealiseIn_WRealise; eapply ReadChar_multi_Sem
+  | [ |- ReadChar_multi _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply ReadChar_multi_Sem
   | [ |- ReadChar_multi _ _ ⊨c(_) _ ] => eapply ReadChar_multi_Sem
   | [ |- projT1 (ReadChar_multi _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply ReadChar_multi_Sem
   end.

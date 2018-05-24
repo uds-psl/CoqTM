@@ -258,8 +258,8 @@ Section MapSum.
   Variable M1 : { M : mTM sig_M1^+ (S (S n)) & states M -> unit }.
   Variable M2 : { M : mTM sig_M2^+ (S (S n)) & states M -> unit }.
 
-  Hypothesis M1_Computes : M1 ⊫ Computes_Rel f.
-  Hypothesis M2_Computes : M2 ⊫ Computes_Rel g.
+  Hypothesis M1_Computes : M1 ⊨ Computes_Rel f.
+  Hypothesis M2_Computes : M2 ⊨ Computes_Rel g.
 
   Definition map_sum : X + Y -> Z :=
     fun s => match s with
@@ -282,15 +282,15 @@ Section MapSum.
         Inject (ChangeAlphabet (Constr_inr sigX sigY) _) [|Fin0|]).
 
 
-  Lemma MapSum_Computes : MapSum ⊫ Computes_Rel map_sum.
+  Lemma MapSum_Computes : MapSum ⊨ Computes_Rel map_sum.
   Proof.
-    eapply WRealise_monotone.
+    eapply Realise_monotone.
     { unfold MapSum. repeat TM_Correct.
-      - unfold ChangeAlphabet. eapply RealiseIn_WRealise. TM_Correct. apply MatchSum_Sem with (X := X) (Y := Y).
+      - unfold ChangeAlphabet. eapply RealiseIn_Realise. TM_Correct. apply MatchSum_Sem with (X := X) (Y := Y).
       - eapply ChangeAlphabet_Computes with (X := X) (Y := Z). apply M1_Computes.
-      - unfold ChangeAlphabet. eapply RealiseIn_WRealise. TM_Correct. apply Constr_inl_Sem.
+      - unfold ChangeAlphabet. eapply RealiseIn_Realise. TM_Correct. apply Constr_inl_Sem.
       - eapply ChangeAlphabet_Computes with (X := Y) (Y := Z). apply M2_Computes.
-      - unfold ChangeAlphabet. eapply RealiseIn_WRealise. TM_Correct. apply Constr_inr_Sem.
+      - unfold ChangeAlphabet. eapply RealiseIn_Realise. TM_Correct. apply Constr_inr_Sem.
     }
     {
       intros tin ((), tout) H.

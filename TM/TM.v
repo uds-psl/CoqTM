@@ -662,13 +662,13 @@ Section Semantics.
 
   (** A (partitioned) machine [M] realises a (parametrised) relation [R], if: for every tape vectors [t], if [M] with [t] terminates in a configuration [c], then [R (t), (projT2 M (cstate c), ctapes c)], which means that the pair of the input tape vectors, the partition where the machine terminated, and the output tape, must be in the relation [R]. *)
   
-  Definition WRealise n F (pM : pTM n F) (R : pRel n F) :=
+  Definition Realise n F (pM : pTM n F) (R : pRel n F) :=
     forall t i outc, loopM i (initc (projT1 pM) t) = Some outc -> R t (projT2 pM (cstate outc), ctapes outc).
 
-  Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 30, format "M  '⊫'  R").
+  Notation "M '⊨' R" := (Realise M R) (no associativity, at level 30, format "M  '⊨'  R").
 
-  Lemma WRealise_monotone n (F : finType) (pM : pTM F n) R1 R2 :
-    pM ⊫ R1 -> R1 <<=2 R2 -> pM ⊫ R2.
+  Lemma Realise_monotone n (F : finType) (pM : pTM F n) R1 R2 :
+    pM ⊨ R1 -> R1 <<=2 R2 -> pM ⊨ R2.
   Proof. firstorder. Qed.
 
 
@@ -731,7 +731,7 @@ Section Semantics.
   Qed.
   
   Fact Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
-    pM ⊫ R /\ projT1 pM ↓ (fun _ i => i >= k) <-> pM ⊨c(k) R.
+    pM ⊨ R /\ projT1 pM ↓ (fun _ i => i >= k) <-> pM ⊨c(k) R.
   Proof.
     split.
     - intros (HR & Ht) t. edestruct (Ht t k). cbn; omega. eauto.
@@ -747,8 +747,8 @@ Section Semantics.
         exists x. eapply loop_ge; eauto.
   Qed.
 
-  Fact RealiseIn_WRealise n (F : finType) (pM : pTM F n) R k :
-    pM ⊨c(k) R -> pM ⊫ R.
+  Fact RealiseIn_Realise n (F : finType) (pM : pTM F n) R k :
+    pM ⊨c(k) R -> pM ⊨ R.
   Proof. now intros (?&?) % Realise_total. Qed.
 
   Fact RealiseIn_terminatesIn n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
@@ -758,8 +758,8 @@ Section Semantics.
     exists outc. eapply loop_ge; eauto.
   Qed.
   
-  Fact WRealise_strengthen n (F : finType) (pM : pTM F n) R1 R2 :
-    WRealise pM R2 -> WRealise pM R1 -> WRealise pM (R1 ∩ R2).
+  Fact Realise_strengthen n (F : finType) (pM : pTM F n) R1 R2 :
+    Realise pM R2 -> Realise pM R1 -> Realise pM (R1 ∩ R2).
   Proof.
     intros HwR HR t. firstorder.
   Qed.
@@ -777,8 +777,8 @@ Section Semantics.
         exists outc k, loopM (M := projT1 pM) k (initc (projT1 pM) t1) = Some outc /\
                   ctapes outc = t2 /\ projT2 pM (cstate outc) = y.
 
-    Lemma WRealise_R_mTM :
-      pM ⊫ R_canonical.
+    Lemma Realise_R_mTM :
+      pM ⊨ R_canonical.
     Proof. hnf. firstorder eauto. Qed.
 
     Lemma R_canonical_functional : functional R_canonical.
@@ -811,7 +811,7 @@ End Semantics.
 Arguments TerminatesIn {_} {_} _.
 
 Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
-Notation "M '⊫' R" := (WRealise M R) (no associativity, at level 60, format "M  '⊫'  R").
+Notation "M '⊨' R" := (Realise M R) (no associativity, at level 60, format "M  '⊨'  R").
 Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
 Notation "M '↓' t" := (TerminatesIn M t) (no associativity, at level 60, format "M  '↓'  t").
 

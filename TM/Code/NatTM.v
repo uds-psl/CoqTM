@@ -148,10 +148,10 @@ Definition Add_Loop_Rel : Rel (tapes (bool^+) 2) (unit * tapes (bool^+) 2) :=
           tout[@Fin1] ≃ 0
     ).
 
-Lemma Add_Loop_WRealise : Add_Loop ⊫ Add_Loop_Rel.
+Lemma Add_Loop_Realise : Add_Loop ⊨ Add_Loop_Rel.
 Proof.
-  eapply WRealise_monotone.
-  { unfold Add_Loop. repeat TM_Correct. eapply RealiseIn_WRealise. apply Add_Step_Sem. }
+  eapply Realise_monotone.
+  { unfold Add_Loop. repeat TM_Correct. eapply RealiseIn_Realise. apply Add_Step_Sem. }
   {
     apply WhileInduction; intros; intros a b HEncA HEncB; cbn in *.
     - specialize (HLastStep _ _ HEncA HEncB). destruct b; TMSimp; inv_pair. auto.
@@ -182,14 +182,14 @@ Definition Add_Main_Rel : Rel (tapes (bool^+) 4) (unit * tapes (bool^+) 4) :=
     ).
 
 
-Lemma Add_Main_WRealise : Add_Main ⊫ Add_Main_Rel.
+Lemma Add_Main_Realise : Add_Main ⊨ Add_Main_Rel.
 Proof.
-  eapply WRealise_monotone.
+  eapply Realise_monotone.
   {
     unfold Add_Main. repeat TM_Correct.
-    - apply CopyValue_WRealise with (X := nat).
-    - apply CopyValue_WRealise with (X := nat).
-    - apply Add_Loop_WRealise.
+    - apply CopyValue_Realise with (X := nat).
+    - apply CopyValue_Realise with (X := nat).
+    - apply Add_Loop_Realise.
   }
   {
     intros tin ((), tout) H. cbn. intros m n HEncM HEncN HOut HInt.
@@ -202,13 +202,13 @@ Proof.
 Qed.
 
 
-Lemma Add_Computes : Add ⊫ Computes2_Rel plus.
+Lemma Add_Computes : Add ⊨ Computes2_Rel plus.
 Proof.
-  eapply WRealise_monotone.
+  eapply Realise_monotone.
   {
     unfold Add. repeat TM_Correct.
-    - apply Add_Main_WRealise.
-    - apply Reset_WRealise with (X := nat). (* Don't forget the type here! *)
+    - apply Add_Main_Realise.
+    - apply Reset_Realise with (X := nat). (* Don't forget the type here! *)
   }
   {
     intros tin ((), tout) H. intros m n HEncM HEncN HOut HInt. TMSimp.
@@ -237,7 +237,7 @@ Lemma Add_Loop_Terminates :
               Add_Loop_steps b <= i).
 Proof.
   unfold Add_Loop, Add_Loop_steps. repeat TM_Correct.
-  { eapply RealiseIn_WRealise. apply Add_Step_Sem. }
+  { eapply RealiseIn_Realise. apply Add_Step_Sem. }
   { eapply RealiseIn_terminatesIn. apply Add_Step_Sem. }
   {
     intros tin i (a&b&HEncA&HEncB&Hi).
@@ -267,9 +267,9 @@ Proof.
   unfold Add_Main, Add_Main_steps. eapply TerminatesIn_monotone.
   {
     repeat TM_Correct.
-    - apply CopyValue'_WRealise with (X := nat).
+    - apply CopyValue'_Realise with (X := nat).
     - apply CopyValue'_Terminates with (X := nat).
-    - apply CopyValue'_WRealise with (X := nat).
+    - apply CopyValue'_Realise with (X := nat).
     - apply CopyValue'_Terminates with (X := nat).
     - apply Add_Loop_Terminates.
   }
@@ -302,7 +302,7 @@ Proof.
   unfold Add, Add_steps. eapply TerminatesIn_monotone.
   {
     repeat TM_Correct.
-    - apply Add_Main_WRealise.
+    - apply Add_Main_Realise.
     - apply Add_Main_Terminates.
     - apply MoveToLeft_Terminates.
   }
@@ -430,16 +430,16 @@ Definition Mult_Step_Rel : Rel (tapes (bool^+) 5) ((bool * unit) * tapes (bool^+
         yout = (true, tt) (* contine *)
       end.
 
-Lemma Mult_Step_WRealise : Mult_Step ⊫ Mult_Step_Rel.
+Lemma Mult_Step_Realise : Mult_Step ⊨ Mult_Step_Rel.
 Proof.
-  eapply WRealise_monotone.
+  eapply Realise_monotone.
   {
     unfold Mult_Step. repeat TM_Correct.
-    - eapply RealiseIn_WRealise. apply MatchNat_Sem.
+    - eapply RealiseIn_Realise. apply MatchNat_Sem.
     - apply Add_Computes.
-    - apply Reset_WRealise with (X := nat).
-    - apply CopyValue_WRealise with (X := nat).
-    - apply Reset_WRealise with (X := nat).
+    - apply Reset_Realise with (X := nat).
+    - apply CopyValue_Realise with (X := nat).
+    - apply Reset_Realise with (X := nat).
   }
   {
     intros tin (yout, tout) H. intros c m' n HEncM' HEncN HEncC HInt3 HInt4. TMSimp.
@@ -476,12 +476,12 @@ Definition Mult_Loop_Rel : Rel (tapes (bool^+) 5) (unit * tapes (bool^+) 5) :=
     ).
 
 
-Lemma Mult_Loop_WRealise :
-  Mult_Loop ⊫ Mult_Loop_Rel.
+Lemma Mult_Loop_Realise :
+  Mult_Loop ⊨ Mult_Loop_Rel.
 Proof.
-  eapply WRealise_monotone.
+  eapply Realise_monotone.
   {
-    unfold Mult_Loop. repeat TM_Correct. eapply Mult_Step_WRealise.
+    unfold Mult_Loop. repeat TM_Correct. eapply Mult_Step_Realise.
   }
   {
     eapply WhileInduction; intros; intros c m' n HEncM' HEncN HEncC HInt3 HInt4; TMSimp.
@@ -534,15 +534,15 @@ Definition Mult_Main_Rel : Rel (tapes (bool^+) 6) (unit * tapes (bool^+) 6) :=
           tout[@Fin5] ≃ 0
     ).
 
-Lemma Mult_Main_WRealise :
-  Mult_Main ⊫ Mult_Main_Rel.
+Lemma Mult_Main_Realise :
+  Mult_Main ⊨ Mult_Main_Rel.
 Proof.
-  eapply WRealise_monotone.
+  eapply Realise_monotone.
   {
     unfold Mult_Main. repeat TM_Correct.
-    - apply CopyValue_WRealise with (X := nat).
-    - eapply RealiseIn_WRealise. apply Constr_O_Sem.
-    - apply Mult_Loop_WRealise.
+    - apply CopyValue_Realise with (X := nat).
+    - eapply RealiseIn_Realise. apply Constr_O_Sem.
+    - apply Mult_Loop_Realise.
   }
   {
     intros tin ((), tout) H. intros m n HEncM HEncN Hout HInt3 HInt4 HInt5.
@@ -557,13 +557,13 @@ Qed.
 
 
 Lemma Mult_Computes :
-  Mult ⊫ Computes2_Rel mult.
+  Mult ⊨ Computes2_Rel mult.
 Proof.
-  eapply WRealise_monotone.
+  eapply Realise_monotone.
   {
     unfold Mult. repeat TM_Correct.
-    - eapply Mult_Main_WRealise.
-    - eapply Reset_WRealise with (X := nat).
+    - eapply Mult_Main_Realise.
+    - eapply Reset_Realise with (X := nat).
   }
   {
     intros tin ((), tout) H. cbn. intros m n HEncM HEncN HOut HInt. TMSimp.
@@ -605,11 +605,11 @@ Proof.
   eapply TerminatesIn_monotone.
   {
     unfold Mult_Step. repeat TM_Correct.
-    - eapply RealiseIn_WRealise. apply MatchNat_Sem.
+    - eapply RealiseIn_Realise. apply MatchNat_Sem.
     - eapply RealiseIn_terminatesIn. apply MatchNat_Sem.
     - apply Add_Computes.
     - apply Add_Terminates.
-    - apply CopyValue'_WRealise with (X := nat).
+    - apply CopyValue'_Realise with (X := nat).
     - apply CopyValue'_Terminates with (X := nat).
     - apply MoveToLeft_Terminates with (X := nat).
   }
