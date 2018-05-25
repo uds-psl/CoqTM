@@ -267,9 +267,9 @@ Proof.
   {
     repeat TM_Correct.
     - apply CopyValue_Realise with (X := nat).
-    - apply CopyValue_Terminats with (X := nat).
+    - apply CopyValue_Terminates with (X := nat).
     - apply CopyValue_Realise with (X := nat).
-    - apply CopyValue_Terminats with (X := nat).
+    - apply CopyValue_Terminates with (X := nat).
     - apply Add_Loop_Terminates.
   }
   {
@@ -301,7 +301,7 @@ Proof.
     repeat TM_Correct.
     - apply Add_Main_Realise.
     - apply Add_Main_Terminates.
-    - apply MoveRight_Terminates with (X := nat).
+    - apply Reset_Terminates with (X := nat).
   }
   {
     intros tin k (m&n&HEncM&HEncN&HOut&HInt&Hk).
@@ -600,10 +600,10 @@ Proof.
     - apply Add_Computes.
     - apply Add_Terminates.
     - apply Reset_Realise with (X := nat).
-    - apply MoveRight_Terminates with (X := nat).
+    - apply Reset_Terminates with (X := nat).
     - apply CopyValue_Realise with (X := nat).
-    - apply CopyValue_Terminats with (X := nat).
-    - apply MoveRight_Terminates with (X := nat).
+    - apply CopyValue_Terminates with (X := nat).
+    - apply Reset_Terminates with (X := nat).
   }
   {
     intros tin k. intros (m'&n&c&HEncM'&HEncN&HEncC&HInt3&HInt4&Hk).
@@ -697,7 +697,7 @@ Proof.
   eapply TerminatesIn_monotone.
   { unfold Mult_Main. repeat TM_Correct.
     - apply CopyValue_Realise with (X := nat).
-    - apply CopyValue_Terminats with (X := nat).
+    - apply CopyValue_Terminates with (X := nat).
     - eapply RealiseIn_Realise. apply Constr_O_Sem.
     - eapply RealiseIn_terminatesIn. apply Constr_O_Sem.
     - apply Mult_Loop_Terminates.
@@ -725,7 +725,7 @@ Proof.
   { unfold Mult. repeat TM_Correct.
     - apply Mult_Main_Realise.
     - apply Mult_Main_Terminates.
-    - apply MoveRight_Terminates with (X := nat).
+    - apply Reset_Terminates with (X := nat).
   }
   {
     intros tin k (m&n&HEncM&HEncN&HOut&HInt&Hk). cbn in *. unfold Mult_steps in Hk.

@@ -494,6 +494,8 @@ Section Move.
     }
   Qed.
 
+  Definition Reset_Terminates := MoveRight_Terminates.
+
 End Move.
 
 
@@ -531,7 +533,7 @@ Section CopyValue.
     }
   Qed.
 
-  Lemma CopyValue_Terminats :
+  Lemma CopyValue_Terminates :
     projT1 CopyValue ↓ (fun tin k => exists x:X, tin[@Fin0] ≃ x /\ 25 + 12 * (length (encode x : list sig)) <= k).
   Proof.
     eapply TerminatesIn_monotone.
