@@ -409,9 +409,9 @@ Section Nth.
     eapply TerminatesIn_monotone.
     { unfold Nth. repeat TM_Correct.
       - apply CopyValue_Realise with (X := list X).
-      - apply CopyValue_Terminats with (X := list X).
+      - apply CopyValue_Terminates with (X := list X).
       - apply CopyValue_Realise with (X := nat).
-      - apply CopyValue_Terminats with (X := nat).
+      - apply CopyValue_Terminates with (X := nat).
       - apply Nth_Loop_Realise.
       - apply Nth_Loop_Terminates.
       - apply Reset_Realise with (X := list X).
