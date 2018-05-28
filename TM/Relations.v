@@ -81,21 +81,6 @@ Definition surjective X Z (R : Rel X Z) :=
 Definition functional X Z (R : Rel X Z) :=
   forall x z1 z2, R x z1 -> R x z2 -> z1 = z2.
 
-Definition functionalOn X Y Z (T : Rel X Y) (R : Rel X Z) :=
-  forall x i, T x i -> forall z1 z2, R x z1 -> R x z2 -> z1 = z2.
-
-Lemma functional_functionalOn X Y Z (T : Rel X Y) (R : Rel X Z) :
-  functional R -> functionalOn T R.
-Proof. firstorder. Qed.
-
-Lemma functionalOn_functional X Y Z (T : Rel X Y) (R : Rel X Z) :
-  functionalOn T R -> surjective T -> functional R.
-Proof. firstorder. Qed.
-
-Lemma functionalOn_intersect X Y Z (T : Rel X Y) (R1 R2 : Rel X Z) :
-  (functionalOn T R1 \/ functionalOn T R2) -> functionalOn T (R1 ∩ R2).
-Proof. firstorder. Qed.
-  
 
 Definition ignoreFirst X P1 P2 Z (R : Rel X (P2 * Z)) : Rel X ((P1*P2)*Z) := fun x '((p1, p2), z) => R x (p2, z).
 Arguments ignoreFirst { X P1 P2 Z } ( R ) x y /.

@@ -731,7 +731,7 @@ Section Semantics.
   Qed.
   
   Fact Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
-    pM ⊨ R /\ projT1 pM ↓ (fun _ i => i >= k) <-> pM ⊨c(k) R.
+    pM ⊨ R /\ projT1 pM ↓ (fun _ i => k <= i) <-> pM ⊨c(k) R.
   Proof.
     split.
     - intros (HR & Ht) t. edestruct (Ht t k). cbn; omega. eauto.

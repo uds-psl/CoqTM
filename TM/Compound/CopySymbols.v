@@ -71,16 +71,12 @@ End Test.
   Definition M1_Rel : Rel (tapes sig 2) (bool * unit * tapes sig 2) :=
     (fun tin '(yout, tout) =>
        (tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = M1_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]) /\
-       (
-         (yout = (false, tt) /\ exists s, current tin[@Fin.F1] = Some s /\ f s = true ) \/
-         (yout = (true,  tt) /\ exists s, current tin[@Fin.F1] = Some s /\ f s = false) \/
-         (yout = (false, tt) /\ current tin[@Fin.F1] = None)
-       )
+       match tin[@Fin0] with
+       | midtape _ m _ => yout = (negb (f m), tt)
+       | _ => yout = (false, tt)
+       end
     ).
 
-  Lemma M1_Rel_functional : functional M1_Rel.
-  Proof. hnf. unfold M1_Rel, M1_Fun. TMCrush destruct_tapes; TMSolve 1. Qed.
-  
   Lemma M1_RealiseIn :
     M1 ⊨c(7) M1_Rel.
   Proof.
@@ -134,61 +130,16 @@ End Test.
     destruct rs; cbn. omega. omega.
   Qed.
 
-  (* (* Test *)
-End CopySymbols.
-Section Test.
-  Let f := fun x => Dec (x = L) : bool.
-  Compute CopySymbols_Fun f (midtape [L; N; R] N [R; N; L; N], niltape _).
-  Compute it (M1_Fun f) 4 (midtape [L; N; R] N [R; N; L; N], niltape _).
-End Test.
-   *)
 
-  (*
-  Lemma M1_Fun_M2_None t :
-    current t = None ->
-    MoveToSymbol_Fun t = M1_Fun t.
-  Proof.
-    intros H1. destruct t; cbn in *; inv H1; rewrite MoveToSymbol_Fun_equation; auto.
-  Qed.
-
-  Lemma M1_None t :
-    current t = None ->
-    M1_Fun t = t.
-  Proof.
-    intros H1. unfold M1_Fun. destruct t; cbn in *; inv H1; auto.
-  Qed.
-
-  Lemma M1_true t x :
-    current t = Some x ->
-    f x = true ->
-    M1_Fun t = t.
-  Proof.
-    intros H1 H2. unfold M1_Fun. destruct t; cbn in *; inv H1. rewrite H2. auto.
-  Qed.
-  
-  Lemma M1_Fun_M2_true t x :
-    current t = Some x ->
-    f x = true ->
-    MoveToSymbol_Fun t = M1_Fun t.
-  Proof.
-    intros H1 H2. destruct t; cbn in *; inv H1. rewrite MoveToSymbol_Fun_equation, H2. auto.
-  Qed.
-
-  Lemma MoveToSymbol_M1_false t x :
-    current t = Some x ->
-    f x = false ->
-    MoveToSymbol_Fun (M1_Fun t) = MoveToSymbol_Fun t.
-  Proof.
-    intros H1 H2. functional induction MoveToSymbol_Fun t; cbn.
-    - rewrite e0. rewrite MoveToSymbol_Fun_equation. rewrite e0. reflexivity.
-    - rewrite e0. destruct rs; auto.
-    - destruct _x; rewrite MoveToSymbol_Fun_equation; cbn; auto.
-  Qed.
-
-   *)
-  
   Definition CopySymbols_Rel : Rel (tapes sig 2) (unit * tapes sig 2) :=
     ignoreParam (fun tin tout => ((tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = CopySymbols_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]))).
+
+  Lemma CopySymbols_skip ls m rs t2 :
+    f m = false ->
+    CopySymbols_Fun (midtape ls m rs, t2) = CopySymbols_Fun (tape_move_right (midtape ls m rs),
+                                                             tape_move_mono t2 (Some (g m), R)).
+  Proof. intros H. now rewrite CopySymbols_Fun_equation, H. Qed.
+    
 
   Lemma CopySymbols_Realise :
     CopySymbols ⊨ CopySymbols_Rel.
@@ -198,27 +149,12 @@ End Test.
       unfold CopySymbols. eapply While_Realise. eapply RealiseIn_Realise. eapply M1_RealiseIn.
     }
     {
-      hnf. intros tin (y1&tout) H. hnf in *. destruct H as (t1&H&H2). hnf in *.
-      induction H as [x | x y z IH1 _ IH2].
-      {
-        TMCrush destruct_tapes; TMSolve 6.
-        all: cbn in *; rewrite CopySymbols_Fun_equation in *; auto. inv H0. cbn. now rewrite E.
-      }
-      {
-        TMSimp destruct_tapes. destruct h3; cbn in *; TMSimp repeat inv_pair.
-        - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
-        - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
-        - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; congruence.
-        - destruct H2 as [ [H2 (s&H2')] | [ [H2 (s&H2'&H2'')] | [ H2 ] ] ]; try congruence.
-          clear H2. inv H2'. rewrite H2'' in *. spec_assert IH2; [now auto| ]. clear H0.
-          destruct h; cbn in *.
-          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H2''. cbn. auto.
-          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H2''. cbn. auto.
-          + inv H. inv H1. rewrite CopySymbols_Fun_equation. rewrite H2''. cbn. auto.
-          + destruct (f e) eqn:E; cbn in *.
-            * inv H. destruct l0; cbn in *; inv H1; auto; rewrite CopySymbols_Fun_equation; cbn; rewrite H2''; cbn; auto.
-            * inv H. destruct l0; cbn in *; inv H1; auto; rewrite CopySymbols_Fun_equation; cbn; rewrite H2''; cbn; auto.
-      }
+      apply WhileInduction; intros; TMSimp.
+      - destruct tin[@Fin0]; TMSimp; rewrite CopySymbols_Fun_equation; auto.
+        + destruct (f e); cbn in *; auto. inv H0.
+      - destruct tin[@Fin0] eqn:E; TMSimp; auto.
+        assert (f e = false) as E2 by now destruct (f e); cbn in *; auto. rewrite E2 in *. clear H0.
+        now rewrite CopySymbols_skip.
     }
   Qed.
 
@@ -235,25 +171,20 @@ End Test.
   Qed.
 
 
-  Lemma CopySymbols_terminates :
+  Lemma CopySymbols_Terminates :
     projT1 CopySymbols ↓ (fun tin k => CopySymbols_TermTime (tin[@Fin.F1]) <= k).
   Proof.
-    eapply While_terminatesIn.
+    eapply While_TerminatesIn.
     1-2: eapply Realise_total; eapply M1_RealiseIn.
     {
-      eapply functional_functionalOn. apply M1_Rel_functional.
-    }
-    {
-      intros tin k Hk. destruct_tapes. cbn.
-      destruct h eqn:E; cbn in *; rewrite CopySymbols_TermTime_equation in *.
-      - exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6. congruence. omega.
-      - exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6. congruence. omega.
-      - exists [|h;h0|], false. cbn. do 2 eexists; repeat split; eauto 6. congruence. omega.
-      - destruct (f e) eqn:E2; cbn.
-        + exists [|h; tape_write h0 (Some (g e))|], false. cbn.
-          do 2 eexists; repeat split; eauto 7; try congruence. omega.
-        + exists [|tape_move_right h; tape_move_mono h0 (Some (g e), R)|], true. cbn.
-          destruct l0; rewrite E; cbn in *; do 2 eexists; repeat split; eauto 7.
+      intros tin k Hk. destruct tin[@Fin0] eqn:E; rewrite CopySymbols_TermTime_equation in *; cbn in *; try rewrite E.
+      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+      - destruct (f e) eqn:E2.
+        + eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+        + eexists. split. eauto. intros b () tmid (H1&H2); inv H1; inv H2; TMSimp.
+          exists (CopySymbols_TermTime (tape_move_right' l e l0)). repeat split; auto.
     }
   Qed.
   
@@ -380,11 +311,11 @@ End Test.
     - destruct t; cbn; auto.
   Qed.
 
-  Lemma CopySymbols_L_terminates :
+  Lemma CopySymbols_L_Terminates :
     projT1 CopySymbols_L ↓ (fun tin k => CopySymbols_L_TermTime (tin[@Fin.F1]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
-    - eapply Mirror_Terminates. eapply CopySymbols_terminates.
+    - eapply Mirror_Terminates. eapply CopySymbols_Terminates.
     - cbn. intros tin k Hk. destruct_tapes; cbn. rewrite <- Hk. unfold mirror_tapes.
       rewrite CopySymbols_TermTime_mirror. cbn. auto.
   Qed.
@@ -396,9 +327,9 @@ End CopySymbols.
 Ltac smpl_TM_CopySymbols :=
   match goal with
   | [ |- CopySymbols  _ _ ⊨ _ ] => eapply CopySymbols_Realise
-  | [ |- projT1 (CopySymbols _ _) ↓ _ ] => eapply CopySymbols_terminates
+  | [ |- projT1 (CopySymbols _ _) ↓ _ ] => eapply CopySymbols_Terminates
   | [ |- CopySymbols_L  _ _ ⊨ _ ] => eapply CopySymbols_L_Realise
-  | [ |- projT1 (CopySymbols_L _ _) ↓ _ ] => eapply CopySymbols_L_terminates
+  | [ |- projT1 (CopySymbols_L _ _) ↓ _ ] => eapply CopySymbols_L_Terminates
   end.
 
 Smpl Add smpl_TM_CopySymbols : TM_Correct.

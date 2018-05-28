@@ -38,17 +38,11 @@ Section move_to_symbol.
   Definition M1_Rel : Rel (tapes sig 1) (bool * unit * tapes sig 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
               tout = M1_Fun tin /\
-              (
-                (yout = (false, tt) /\ exists s, current tin = Some s /\ f s = true ) \/
-                (yout = (true,  tt) /\ exists s, current tin = Some s /\ f s = false) \/
-                (yout = (false, tt) /\ current tin = None)
-              )
+              match tin with
+              | midtape _ m _ => yout = (negb (f m), tt)
+              | _ => yout = (false, tt)
+              end
            ).  
-
-  Lemma M1_Rel_functional : functional M1_Rel.
-  Proof.
-    unfold M1_Rel. repeat intro. TMCrush destruct_tapes; TMSolve 1.
-  Qed.
 
   Lemma M1_RealiseIn :
     M1 ⊨c(3) M1_Rel.
@@ -141,6 +135,12 @@ Section move_to_symbol.
   Definition MoveToSymbol_Rel : Rel (tapes sig 1) (unit * tapes sig 1) :=
     Mk_R_p (ignoreParam (fun tin tout => tout = MoveToSymbol_Fun tin)).
 
+
+  Lemma MoveToSymbol_skip ls m rs :
+    f m = false ->
+    MoveToSymbol_Fun (midtape ls m rs) = MoveToSymbol_Fun (tape_move_right (midtape ls m rs)).
+  Proof. intros. now rewrite MoveToSymbol_Fun_equation, H. Qed.
+  
   Lemma MoveToSymbol_Realise :
     MoveToSymbol ⊨ MoveToSymbol_Rel.
   Proof.
@@ -149,20 +149,14 @@ Section move_to_symbol.
       unfold MoveToSymbol. eapply While_Realise. eapply RealiseIn_Realise. eapply M1_RealiseIn.
     }
     {
-
-      hnf. intros tin (y1&tout) H. hnf in *. destruct H as (t1&H&H2). hnf in *.
-      induction H as [x | x y z IH1 _ IH2].
-      {
-        TMCrush idtac; TMSolve 6.
-        all: repeat progress ( unfold M1_Fun, M1_Rel, MoveToSymbol_Rel, Mk_R_p in * ).
-        all: try rewrite MoveToSymbol_Fun_equation; auto.
-        all: TMCrush idtac; TMSolve 6.
-      }
-      {
-        TMSimp. TMCrush; TMSolve 6.
-        - eapply MoveToSymbol_M1_false; eauto.
-        - eapply MoveToSymbol_M1_false; eauto.
-      }
+      eapply WhileInduction; intros; hnf in *.
+      - destruct HLastStep as (H1&H2); TMSimp.
+        destruct tin[@Fin0]; cbn in *; inv H2; rewrite MoveToSymbol_Fun_equation; auto.
+        destruct (f e); cbn in *; auto.
+      - destruct HStar as (H1&H2); TMSimp.
+        destruct tin[@Fin0]; cbn in *; inv H2.
+        assert (f e = false) as E. destruct (f e); cbn in *; auto. rewrite E in *.
+        now rewrite MoveToSymbol_skip.
     }
   Qed.
 
@@ -194,25 +188,22 @@ Section move_to_symbol.
   Qed.
 
 
-  (* Idee: Lösung des Problems kanonische Relation ranklatschen, damit die relation funktional wird. *)
-  Lemma MoveToSymbol_terminates :
+  Local Arguments plus : simpl never. Local Arguments mult : simpl never.
+
+  Lemma MoveToSymbol_Terminates :
     projT1 MoveToSymbol ↓ (fun tin k => MoveToSymbol_TermTime (tin[@Fin.F1]) <= k).
   Proof.
-    eapply While_terminatesIn.
+    eapply While_TerminatesIn.
     1-2: eapply Realise_total; eapply M1_RealiseIn.
     {
-      eapply functional_functionalOn. apply M1_Rel_functional.
-    }
-    {
-      intros tin k Hk. destruct_tapes. cbn in *.
-      destruct h eqn:E; rewrite MoveToSymbol_TermTime_equation in *; cbn in *.
-      - exists [|h|], false. do 2 eexists. cbn. split; eauto.
-      - exists [|h|], false. do 2 eexists. cbn. split; eauto.
-      - exists [|h|], false. do 2 eexists. cbn. split; eauto.
-      - destruct (f e) eqn:E2; cbn.
-        + exists [|h|], false. cbn. do 2 eexists; split; eauto 6.
-        + exists [|tape_move_right h|], true. cbn.
-          destruct l0; rewrite E; cbn in *; do 2 eexists; split; eauto 7.
+      intros tin k Hk. destruct tin[@Fin0] eqn:E; rewrite MoveToSymbol_TermTime_equation in *; cbn in *; try rewrite E.
+      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+      - destruct (f e) eqn:E2.
+        + eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+        + eexists. split. eauto. intros b () tmid (H1&H2); inv H2; TMSimp.
+          exists (MoveToSymbol_TermTime (tape_move_right' l e l0)). repeat split; auto.
     }
   Qed.
   
@@ -299,11 +290,11 @@ Section move_to_symbol.
     - destruct t; cbn; auto.
   Qed.
 
-  Lemma MoveToSymbol_L_terminates :
+  Lemma MoveToSymbol_L_Terminates :
     projT1 MoveToSymbol_L ↓ (fun tin k => MoveToSymbol_L_TermTime (tin[@Fin.F1]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
-    - eapply Mirror_Terminates. eapply MoveToSymbol_terminates.
+    - eapply Mirror_Terminates. eapply MoveToSymbol_Terminates.
     - cbn. intros tin k Hk. destruct_tapes; cbn. rewrite <- Hk. unfold mirror_tapes. rewrite MoveToSymbol_TermTime_mirror. cbn. auto.
   Qed.
 
@@ -313,8 +304,8 @@ Ltac smpl_TM_MoveToSymbol :=
   match goal with
   | [ |- MoveToSymbol   _ ⊨ _ ] => eapply MoveToSymbol_Realise
   | [ |- MoveToSymbol_L _ ⊨ _ ] => eapply MoveToSymbol_L_Realise
-  | [ |- projT1 (MoveToSymbol   _) ↓ _ ] => eapply MoveToSymbol_terminates
-  | [ |- projT1 (MoveToSymbol_L _) ↓ _ ] => eapply MoveToSymbol_L_terminates
+  | [ |- projT1 (MoveToSymbol   _) ↓ _ ] => eapply MoveToSymbol_Terminates
+  | [ |- projT1 (MoveToSymbol_L _) ↓ _ ] => eapply MoveToSymbol_L_Terminates
   end.
 
 Smpl Add smpl_TM_MoveToSymbol : TM_Correct.

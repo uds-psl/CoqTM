@@ -1,5 +1,5 @@
 %
-% Copyright (c) 2017  Maximilian Wuttke
+% Copyright (c) 2017-2018  Maximilian Wuttke
 %
 
 % BUGS
@@ -10,27 +10,29 @@
 
 \begin{document}
 
-\title{A formalisation of multi-tape \\ Turing machines in Coq}
+\title{A Formalisation Of Multi-Tape \\ Turing Machines In Coq}
 \author{Maximilian Wuttke}
 \date{Saarland University\\\today}
 \maketitle
 
 \begin{abstract}
-  \noindent
+  Developing and verifying Turing machines can be a tedious task because they are very low level.  Turing machines can be completely unstructured:
+  from any state of the execution, it could continue at any other state.  Furthermore Turing machines are not compositional: Having two Turing
+  machines $A$ and $B$ it is not trivial to generate a new machine $A \mseq B$ that executes a copy of $B$ after the execution of a copy of $A$.
+  Control flow operations, like if then else and while have to be constructed and verified first.  However, it is also not clear how to combine
+  machines with different alphabets and numbers of tapes.
+
+  We carried over the basic definition of multi-tape Turing machines from the Matita devolepment of Asperti et al.  Our aproach for defining the
+  semantics of machine is similiar to the aproach choosen by Asperti et al.  We define specifications for Turing machines in terms of relations over
+  tape vectors.  Relations have the benefit of being compositional.  For example, the correctness statement of our $\MS{While}$ operator can be
+  expressed using the relational Kleene star operator.  Our new aproach makes it superfluent to reason about internal states of machines.  We also
+  show how to reason about runtime and space usage.
+
+  The first contribution of this thesis is a framework devoleped in Coq, for programming and verifying multi-tape Turing machines.  Secondly, we use
+  this framework to implement and verify an interpreter for the weak call-by-value $\lambda$-calculus.
 \end{abstract}
-Developing and verifying Turing machines can be a tedious task because they are very low level.  Turing machines can be completely unstructured: from
-any state execution could continue at any other state.  Furthermore Turing machines are not compositional:  Having two Turing machines $A$ and $B$ it
-is not trivial to generate a new machine $C$ that executes a copy of $B$ after the execution of a copy of $A$.  Control flow operations, like
-composition, if then else and while are not available and have to be constructed and verified first to build more complex machines from simple
-machines.  Also it is not clear how to combine machines with different alphabets and numbers of tapes.
 
-We follow Asperti et al. and define specifications for Turing machines using relations over tape vectors.  Relations have the benefit of being
-compositional.  For our Coq development we also carry over their definitions of multi-tape Turing machines from Matita.  We developed a library of
-verification methods and proof automation tactics.  Using this library we implement and verify the control flow operators \emph{Sequential
-Composition}, \emph{If Then Else}, \emph{While}, \emph{Match}.
 
-Our goal is to use these techniques to build a Turing machine that simulates a variant of the $\lambda$-calculus or to build and verify a universal
-Turing machine.
 
 \section{Notations}
 In this memo, I use bold font to denote the constants: $\true$, $\false$, and $\unit$.  Types are written in sans-serif font and capitalized: $\Type$,
@@ -61,48 +63,48 @@ Vectors and lists are $0$-indexed.  We write numbers $n < k$ when we mean values
   Tuples of the type $\Option(\Sigma) \times \Move$ are called \emph{actions}.  They are refered to with the symbol $\MS{Act}$, if $\Sigma$ is clear.
 \end{definition}
 
-We make no distinction between input and output tapes.  Note that the transition function has to yield a successor state even on halting states.  It
-is usually convenient to make halting states loop in the transition function, because the execution stopped anyway.  Also note that while we
-parameterized Definition \ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, but we abstract from the states, as states are
-considered an ``internal'' property of Turing machines.  Since $\gamma$ is a function, our machines behave deterministically.
+At this moment, we make no distinction between input and output tapes.  Note that the transition function has to yield a successor state even on
+halting states.  Also note that while we parameterized Definition \ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, but we
+abstract the states.  Our machines behave deterministically, since $\gamma$ is a function.  We write $\MS{TM}_\Sigma^n$ for the type of $n$-tape
+Turing machines over the alphabet $\Sigma$.
 
-For most machines $M$ we give at least a partitioning function $p \from Q_M \to F$, were $F$ is a finite type.
-For machines together with partition functions, we often write $(M, p)$.
+Later, when we want to verify complex machines, we do not want to reason about internal states.  We rather want to reason about partition of states,
+e.g. positive or negative states.  In general, if $F$ is a finite type, then
+$\MS{TM}_\Sigma^n(F) := \left\{ M:\MS{TM}_\Sigma^n ~\&~ Q_M \to F \right\}$ is the sigma type of a machine and a partitioning function from the states
+to $F$.  For a machine $M$ together with a partition function $p$, we write $(M; p)$.
 
-Now we want to define the semantics of multi-tape Turing machines.
-
-A \emph{tape} essentially consists of a (possbly empty) string and a pointer on this string.  The pointer can be either on any position of the string
-or outside of the string.  We split the tape content at the pointer position into the current symbol, the list of symbols to the left (in reversed
-order) and to the right.  If a tape is not empty, the pointer could be to the right or left of the (non-empty) tape content, or pointing at a symbol
-$m$.  In the following definition, tapes are defined formally.
+We also use the definition of \emph{tapes} from the Matita development of Asperti et~al.  Unlike in most mathematical representations, our tapes are
+finite.  However, arbitrary much memory can be allocated on the tape.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol
+on which the (read/write) head of tape is.  Both lists of symbols $ls$ and $rs$ are in the order of the ``distance'' to the head.  However, there are
+three cases where there is no current symbol: the tape can be completely empty, or the head can be to the left (or right) outermost of the tape.
+Formally, tapes are defined inductively:
 
 \begin{definition}[Tape]
   \label{def:tape}
-  Let $\Sigma$ be a finite alphabet.  A tape consists of a string and a position of a pointer, that can be either on the string or left or right off
-  the string.  Formally, a $\Sigma$-tape can be either
-  \begin{itemize}
-    \item the empty tape $\niltape$.
-    \item $\leftof{r}{R}$ where the pointer is outside on the left side of the non-empty string $r \cons R$.
-    \item $\midtape{L}{m}{R}$, the non-empty tape where the pointer points on $m$ and is between $L$ and $R$.
-    \item $\rightof{L}{l}$, the non-empty tape where the pointer is on the right outmost position after the string $L \app [l]$.
-  \end{itemize}
-
-
-  In the Coq-implementation, tapes are defined inductively:
-  \begin{alignat*}{2}
-    \emph{Tape}:\Type := \quad & \MS{niltape} \\
-                       | \quad & \MS{leftof}  ~ (r:\Sigma) ~ (R:\List(\Sigma)) \\
-                       | \quad & \MS{midtape} ~ (L:\List(\Sigma)) ~ (m:\Sigma) ~ (R:\List(\Sigma)) \\
-                       | \quad & \MS{rightof} ~ (l:\Sigma) ~ (L:\List(\Sigma)).
-  \end{alignat*}
-  Note, however, that the lists called $L$ are in reversed order.  For example $\MS{midtape}~(\rev(L))~m~R$ corresponds to the tape
-  $\midtape{L}{m}{R}$.
+  Let $\Sigma$ be a finite alphabet.  Then $\Tape_\Sigma$ is defined as the inductive type:
+  \begin{align*}
+    & \Tape_\Sigma : \Type := \\
+    & \quad | \quad \MS{niltape} \\
+    & \quad | \quad \MS{leftof}  ~ (r:\Sigma) ~ (rs:\List(\Sigma)) \\
+    & \quad | \quad \MS{midtape} ~ (ls:\List(\Sigma)) ~ (m:\Sigma) ~ (rs:\List(\Sigma)) \\
+    & \quad | \quad \MS{rightof} ~ (l:\Sigma) ~ (ls:\List(\Sigma)).
+  \end{align*}
 \end{definition}
+
+
+We introduce a more informal notation of tapes, where the symbols are represented from left to right.  The position of the head is marked by the
+arrow:
+\begin{align*}
+  \niltape &:= \MS{niltape} ;\\
+  \leftof{r}{rs} &:= \MS{leftof}~r~rs ;\\
+  \midtape{ls}{m}{rs} &:= \MS{midtape}~(\rev~rs)~m~rs ;\\
+  \rightof{ls}{l} &:= \MS{rightof}~(\rev~ls)~l
+\end{align*}
 
 Now we can define the \emph{configuration} of a multi-tape Turing machine.  It is captured by the current state and the vector of the $n$ tapes:
 \begin{definition}[Configuration]
   \label{def:config}
-  A \emph{configuration} of an $n$-tape Turing machine $T$ over the alphabet $\Sigma$ is a record $\MS{Conf} := \{\MS{state}:Q_M, \MS{tapes}:\Tape(\Sigma)^n\}$.
+  A \emph{configuration} of an $n$-tape Turing machine $T$ over the alphabet $\Sigma$ is a record $\MS{Conf} := \{\MS{state}:Q_M; \MS{tapes}:\Tape_\Sigma^n\}$.
 \end{definition}
 
 Now we define tape movement and how to write symbols on tapes.  Note that because in the implementation the list of the left side of the pointer is
@@ -1355,5 +1357,6 @@ $andb$ from tape $1$ to tape $0$ and leaves the value of tape $1$ unchanged.
 %%% Local Variables:
 %%% mode: latex
 %%% TeX-master: t
+%%% fill-column: 150
 %%% End:
 % vim: ts=2 sts=2 sw=2 expandtab textwidth=150

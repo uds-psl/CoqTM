@@ -46,27 +46,6 @@ Section If.
   Qed.
 
   
-  Lemma If_terminatesIn (R1 : Rel _ (bool * _)) T1 T2 T3 :
-    functionalOn T1 R1 ->
-    pM1 ⊨ R1 ->
-    projT1 pM1 ↓ T1 ->
-    projT1 pM2 ↓ T2 ->
-    projT1 pM3 ↓ T3 ->
-    projT1 If ↓ (fun (t : tapes sig n) (i : nat) =>
-                   exists (i1 i2 : nat) (b : bool) (y : tapes sig n),
-                     i > i1 + i2 /\
-                     (R1 t (b, y) /\ b = true /\ T1 t i1 /\ T2 y i2 \/
-                      R1 t (b, y) /\ b = false /\ T1 t i1 /\ T3 y i2)).
-  Proof.
-    intros. eapply TerminatesIn_monotone.
-    - eapply (Match_TerminatesIn' (R1 := R1) (T := fun b => if b then T2 else T3) ); eauto.
-      now destruct f.
-    - intros t i (i1 & i2 & b & y & Hi & [(? & ? & ? & ?) | (? & ? & ? & ?)]); cbv -[plus];
-        repeat eexists; eauto;
-          destruct b; eauto.
-  Qed.
-
-
   Lemma If_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) k1 k2 k3:
     pM1 ⊨c(k1) R1 ->
     pM2 ⊨c(k2) R2 ->

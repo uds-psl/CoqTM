@@ -176,33 +176,6 @@ Section While.
         eapply While_false_merge; eauto.
     Qed.
 
-    Lemma While_terminatesIn :
-      pM ⊨ R ->
-      projT1 pM ↓(T) ->
-      functionalOn T' R -> 
-      (forall (x : tapes sig n) (i:nat),
-          T' x i -> exists (x':tapes _ _) (b:bool) (y:F) i1,
-            R x (b,y,x') /\ T x i1 /\ if b then exists i2, T' x' i2 /\ i1+1+i2<=i else i1 <= i)->
-      While ↓(T').
-    Proof.
-      intros HR Term_M Func Hyp.
-      intros t i. revert t. apply complete_induction with (x:=i); clear i; intros i IH t T't.
-      destruct (Hyp _ _ T't) as (t'& b&y&i1&Rx&Tx&H).
-      destruct b.
-      - destruct H as (i2&T't'&Leq).
-        apply IH in T't' as (oenc & Eq);[ |omega].
-        exists oenc.
-        apply Term_M in Tx as (oenc1 & Eq1).
-        apply (loop_ge (k1:=i1 + (1 + i2)));[omega| ].
-        specialize (HR _ _ _ Eq1). specialize (Func _ _ T't _ _ HR Rx). inv Func.
-        eapply (While_true_merge Eq1); eauto.
-      - apply Term_M in Tx as [oenc Eq].
-        exists oenc.
-        eapply While_false_merge. eapply loop_ge;[ |exact Eq]. omega.
-        specialize (HR _ _ _ Eq).
-        specialize (Func _ _ T't _ _ HR Rx). inv Func. eauto.
-    Qed.
-
   End While_terminatesIn.
 
 End While.

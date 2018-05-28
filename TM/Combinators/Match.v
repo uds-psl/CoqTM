@@ -263,23 +263,6 @@ Section Match.
     exists (lift_confR outc2). eapply loop_ge with (k1:=i1+(1+i2)). omega. eapply Match_merge; eauto.
   Qed.
 
-  Lemma Match_TerminatesIn' (R1 : Rel _ (F * _)) T1 T :
-    functionalOn T1 R1 ->
-    pM1 ⊨ R1 ->
-    M1 ↓(T1) ->
-    (forall f : F, Mf f ↓(T f)) ->
-    Match ↓(⋃_f (fun (x : tapes sig n) (i : nat) => exists (j k : nat) (y : tapes sig n),
-                     R1 x (f, y) /\ T1 x j /\ T f y k /\ j + k < i)).
-  Proof.
-    intros Func Real1 Term1 Term2 t i (f & j & k & y & ? & Term_t1 & Term_T & ?).
-    specialize (Term1 _ _ Term_t1) as [t'' ?].
-    specialize (Term2 f _ _ Term_T) as [outc ?].
-    pose proof Func _ _ Term_t1 _ _ H (Real1 _ _ _ H1) as Heq. Search f. Search y. inv Heq.
-    exists (lift_confR outc).
-    unfold loopM. eapply loop_ge with (k1:=j+(1+k)). omega.
-    now apply Match_merge.
-  Qed.
-
 End Match.
 (* Arguments MATCH {n} {sig} {F} pM1 {_} pMf : clear implicits. *)
 

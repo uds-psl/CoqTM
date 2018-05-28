@@ -39,20 +39,6 @@ Section Composition.
   Qed.
 
 
-  Lemma Seq_terminatesIn (R1 : Rel _ (F * _)) T1 T2:
-    functionalOn T1 R1 ->
-    pM1 ⊨ R1 ->
-    projT1 pM1 ↓(T1) ->
-    projT1 pM2 ↓(T2) ->
-    projT1 Seq ↓(fun (x : tapes sig n) (i : nat) =>
-            exists (j k : nat) (y : tapes sig n) (f : F),
-              R1 x (f, y) /\ T1 x j /\ T2 y k /\ j + k < i).
-  Proof.
-    intros.
-    eapply TerminatesIn_monotone. eapply (Match_TerminatesIn' (R1 := R1) (T := fun _ => T2) ); eauto.
-    intros ? ? (? & ? & ? & ? & ? & ? & ? & ?). eexists _, _, _, _. eauto.
-  Qed.
-
   Lemma Seq_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) k1 k2:
     pM1 ⊨c(k1) R1 ->
     pM2 ⊨c(k2) R2 ->
