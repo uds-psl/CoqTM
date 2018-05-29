@@ -394,17 +394,7 @@ Section Nth.
     12 * length (Encode_list cX l) +
     12 * length (Encode_nat n).
 
-  Definition Nth_T : tRel tau^+ 5 :=
-    fun tin k =>
-      exists (l : list X) (n : nat),
-        tin[@Fin0] ≃ l /\
-        tin[@Fin1] ≃ n /\
-        isRight tin[@Fin2] /\
-        isRight tin[@Fin3] /\
-        isRight tin[@Fin4] /\
-        Nth_steps l n <= k.
-
-  Lemma Nth_Terminates : projT1 Nth ↓ Nth_T.
+  Lemma Nth_Terminates : projT1 Nth ↓ Computes2_T Nth_steps.
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Nth. repeat TM_Correct.
@@ -419,7 +409,8 @@ Section Nth.
       - apply MoveRight_Terminates with (X := nat).
     }
     {
-      intros tin k (l&n&HEncL&HEncN&HRight2&HRight3&HRight4&Hk). unfold Nth_steps in Hk.
+      intros tin k (l&n&HEncL&HEncN&HRight2&HInt&Hk). unfold Nth_steps in Hk.
+      specialize (HInt Fin0) as HRight3. specialize (HInt Fin1) as HRight4. clear HInt.
       exists (25 + 12 * length (Encode_list cX (l))).
       exists (44 + Nth_Loop_steps l n +
          4 * length (Encode_list cX (skipn (S n) l)) + 4 * length (Encode_nat (n - (S (length l)))) +
