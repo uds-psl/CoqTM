@@ -10,6 +10,11 @@ Local Arguments skipn { A } !n !l.
 
 (** * Implementation of [nth_error] *)
 
+Lemma tape_left_move_left' (sig:finType) ls (m: sig) rs :
+  left (tape_move_left' ls m rs) = tl ls.
+Proof. now destruct ls; cbn. Qed.
+
+
 Section Nth.
 
   Variable (sigX : finType) (X : Type) (cX : codable sigX X).
@@ -459,3 +464,128 @@ Section Nth.
   Qed.
 
 End Nth.
+
+
+
+Require Import TM.Basic.Mono TM.Code.Copy.
+
+
+
+(* TODO: ~> base *)
+Lemma pair_eq (A B : Type) (a1 a2 : A) (b1 b2 : B) :
+  (a1, b1) = (a2, b2) ->
+  a1 = a2 /\ b1 = b2.
+Proof. intros H. now inv H. Qed.
+
+
+
+(** I don't use the [Computes2] Relation here, because I don't want to copy the full first list here. I simply copy memory instead of using constructors/deconstructors, which could be tedious here. *)
+Section Append.
+
+  Variable (sigX : finType) (X : Type) (cX : codable sigX X).
+  Hypothesis (defX: inhabitedC sigX).
+
+  Let tau := FinType (EqType (bool + sigX)).
+
+  Definition App_Rel : Rel (tapes tau^+ 2) (unit * tapes tau^+ 2) :=
+    ignoreParam (fun tin tout =>
+                   forall (xs ys : list X),
+                     tin[@Fin0] ≃ xs ->
+                     tin[@Fin1] ≃ ys ->
+                     tout[@Fin0] ≃ xs ++ ys /\
+                     tout[@Fin1] ≃ ys).
+
+  Let stop : tau^+ -> bool :=
+    fun x => match x with
+          | inl (STOP) => true (* halt at the stop symbol *)
+          | _ => false
+          end.
+
+  Definition App : { M : mTM tau^+ 2 & states M -> unit } :=
+    Inject (MoveRight _;; Move L tt) [|Fin0|];;
+    Inject (Move R tt) [|Fin1|];;
+    Inject (CopySymbols stop id) [|Fin1;Fin0|];;
+    Inject (MoveLeft _) [|Fin0|];;
+    Inject (MoveLeft _) [|Fin1|].
+
+
+
+  (*
+  Compute encode [1;2;3].
+  Compute encode ([1;2;3] ++ [4;5;6]).
+  Compute removelast (encode [1;2;3]) ++ encode [4;5;6].
+*)
+  
+  Lemma encode_list_app (xs ys : list X) :
+    encode_list cX (xs ++ ys) = removelast (encode_list cX xs) ++ encode_list cX ys.
+  Proof.
+    revert ys. induction xs; intros; cbn in *; f_equal.
+    rewrite IHxs. rewrite app_assoc, app_comm_cons; f_equal.
+    destruct (map (retract_inr_f bool (fun a0 : sigX => a0)) (cX a)) eqn:E; cbn.
+    - destruct xs; cbn; auto.
+    - f_equal. destruct (cX a) eqn:E2; cbn in E. congruence.
+      rewrite removelast_app.
+      + destruct (l ++ encode_list cX xs) eqn:E3; cbn; auto.
+        apply app_eq_nil in E3 as (E3&E3'). destruct xs; inv E3'.
+      + destruct xs; cbn; congruence.
+  Qed.
+
+  Lemma tl_map (A B: Type) (f: A -> B) (xs : list A) :
+    tl (map f xs) = map f (tl xs).
+  Proof. now destruct xs; cbn. Qed.
+
+  Lemma tl_app (A: Type) (xs ys : list A) :
+    xs <> nil ->
+    tl (xs ++ ys) = tl xs ++ ys.
+  Proof. destruct xs; cbn; congruence. Qed.
+
+  Lemma tl_rev (A: Type) (xs : list A) :
+    tl (rev xs) = rev (removelast xs).
+  Proof.
+    induction xs; cbn; auto.
+    destruct xs; cbn in *; auto.
+    rewrite tl_app; cbn in *.
+    - now rewrite IHxs.
+    - intros (H1&H2) % app_eq_nil; inv H2.
+  Qed.
+
+  Lemma encode_list_neq_nil (xs : list X) :
+    encode_list cX xs <> nil.
+  Proof. destruct xs; cbn; congruence. Qed.
+
+  (* Todo: clean up here a bit *)
+
+
+  Lemma App_Realise : App ⊨ App_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold App. repeat TM_Correct.
+      - apply MoveRight_Realise with (X := list X).
+      - apply MoveLeft_Realise with (X := list X).
+      - apply MoveLeft_Realise with (X := list X).
+    }
+    {
+      intros tin ((), tout) H. intros xs ys HEncXS HEncYS. subst tau. TMSimp; clear_trivial_eqs.
+      destruct HEncYS as (ls1&HEncYS).
+      specialize H with (1 := HEncXS). destruct H as (ls2&H). TMSimp.
+      erewrite CopySymbols_correct_moveright in H1; cbn; auto; swap 1 2.
+      { rewrite List.map_map. intros ? (?&<-&?) % in_map_iff. cbn. reflexivity. }
+      apply pair_eq in H1 as (H1&H1'); TMSimp.
+      specialize (H3 (xs++ys)); spec_assert H3.
+      { repeat econstructor. cbn. rewrite !map_id, <- !map_rev. cbv [id].
+        f_equal; swap 1 2.
+        + simpl_tape. rewrite map_length. destruct ys; cbn. reflexivity. apply skipn_nil.
+        + rewrite encode_list_app. rewrite rev_app_distr, map_app, <- app_assoc. f_equal.
+          rewrite tape_left_move_left'.
+          rewrite tl_app, tl_map; cbn. 
+          - f_equal. f_equal. generalize (encode_list cX xs); intros. apply tl_rev.
+          - intros [] % map_eq_nil % rev_eq_nil % encode_list_neq_nil.
+      }
+      
+      specialize (H4 ys). spec_assert H4.
+      { repeat econstructor. cbn. now rewrite <- !map_rev, !List.map_map. }
+      auto.
+    }
+  Qed.
+
+End Append.
