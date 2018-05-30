@@ -55,3 +55,7 @@ TM/Compound/TMTac.v
 TM/Compound/Peek.v
 TM/Compound/MoveToSymbol.v
 TM/Compound/CopySymbols.v
+
+
+# Abstract Machine simulator
+TM/LM/TokTM.v

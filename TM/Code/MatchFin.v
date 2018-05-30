@@ -42,3 +42,7 @@ Section MatchFin.
   (** There is no need for a constructor, just use [WriteValue] *)
 
 End MatchFin.
+
+
+Arguments MatchFin : simpl never.
+Arguments MatchFin sig {_}. (* Default element is infered automatically *)
