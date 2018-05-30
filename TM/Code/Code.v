@@ -36,12 +36,18 @@ Instance Encode_bool : codable (FinType(EqType(bool))) bool:=
     encode x := [x]
   |}.
 
+Instance Encode_Fin n : codable (FinType(EqType(Fin.t n))) (Fin.t n):=
+  {|
+    encode i := [i]
+  |}.
   
 
 Compute encode true.
 (* This works thanks to the coercion above *)
 Compute Encode_bool true.
 Compute encode tt.
+Check encode Fin0.
+Compute encode Fin0 : list (Fin.t 10).
 
 
 (** We restrict mapping of encodings to injective/retractable mappings. *)
