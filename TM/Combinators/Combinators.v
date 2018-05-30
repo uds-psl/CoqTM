@@ -2,8 +2,42 @@
 Require Export Match If SequentialComposition While.
 
 
-(* Simple operator to fix the parameter *)
+(** Simple operator to change the partition *)
+Section ChangePartition.
+  Variable (sig : finType) (n : nat).
+  Variable F F' : finType.
+  Variable pM : { M : mTM sig n & states M -> F }.
+  Variable p : F -> F'.
 
+  Definition ChangePartition : { M : mTM sig n & states M -> F' } :=
+    (projT1 pM; fun q => p (projT2 pM q)).
+
+  Lemma ChangePartition_Realise R :
+    pM ⊨ R ->
+    ChangePartition ⊨ ⋃_y (R |_ y) ||_(p y).
+  Proof.
+    intros HRel.
+    intros tin k outc HLoop.
+    hnf in HRel. specialize HRel with (1 := HLoop).
+    hnf. exists (projT2 pM (cstate outc)). hnf. cbn. auto.
+  Qed.
+
+  Lemma ChangePartition_RealiseIn R k :
+    pM ⊨c(k) R ->
+    ChangePartition ⊨c(k) ⋃_y (R |_ y) ||_(p y).
+  Proof. firstorder. Qed.
+
+  Lemma ChangePartition_Terminates T :
+    projT1 pM ↓ T ->
+    projT1 ChangePartition ↓ T.
+  Proof. firstorder. Qed.
+
+End ChangePartition.
+
+Arguments ChangePartition : simpl never.
+
+
+(** Special case of the above operator, where we just fix a partitioparametern *)
 Section Return.
 
   Variable (sig : finType) (n : nat).
@@ -12,7 +46,7 @@ Section Return.
   Variable F' : finType.
   Variable p : F'.
 
-  Definition Return := (projT1 pM; fun _ => p).
+  Definition Return := ChangePartition pM (fun _ => p).
 
   Lemma Return_Realise R :
     pM ⊨ R ->
@@ -145,6 +179,9 @@ Ltac smpl_TM_Combinators :=
   | [ |- projT1 (Seq _ _) ↓ _] => eapply Seq_TerminatesIn
   | [ |- WHILE _ ⊨ _] => eapply While_Realise
   | [ |- projT1 (WHILE _) ↓ _] => eapply While_TerminatesIn
+  | [ |- ChangePartition _ _ ⊨ _] => eapply ChangePartition_Realise
+  | [ |- ChangePartition _ _ ⊨c(_) _] => eapply ChangePartition_RealiseIn
+  | [ |- projT1 (ChangePartition _ _) ↓ _] => eapply ChangePartition_Terminates
   | [ |- Return _ _ ⊨ _] => eapply Return_Realise
   | [ |- Return _ _ ⊨c(_) _] => eapply Return_RealiseIn
   | [ |- projT1 (Return _ _) ↓ _] => eapply Return_Terminates
