@@ -7,6 +7,7 @@ CoqMakefile.conf
 \#*#
 *~
 Makefile.coq
+.lia.cache
 
 // TeX files
 *.fls
@@ -21,6 +22,7 @@ Makefile.coq
 *.ilg
 *.vrg
 *.pyg
+/tex/auto
 
 // Vim files
 *.sw*
