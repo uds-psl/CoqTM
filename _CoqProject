@@ -37,9 +37,7 @@ TM/Code/MatchNat.v
 TM/Code/MatchSum.v
 TM/Code/MatchList.v
 TM/Code/MatchFin.v
-
-# Defect files
-# TM/Code/MatchProd.v
+TM/Code/MatchPair.v
 
 TM/Code/NatTM.v
 TM/Code/ListTM.v
