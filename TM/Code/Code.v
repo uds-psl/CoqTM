@@ -87,20 +87,19 @@ End Encode_sum.
 Eval cbn in encode (inl true).
 
 
-(** If [X] and [Y] are both encodable over [sig], we could also encode [X*Y] over [unit+sig]. *)
+(** If [X] is encodable over [sigX] and [Y] over [sigY]. *)
 Section Encode_pair.
-  Context (sig: finType) `{cX : codable sig X} `{cY : codable sig Y}.
+  Variable (sig tau: finType) (X Y: Type) (cX : codable sig X) (cY : codable tau Y).
 
-  Global Instance Encode_pair : codable (FinType (EqType (unit+sig))) (X*Y) :=
+  Global Instance Encode_pair : codable (FinType (EqType (sig+tau))) (X*Y) :=
     {|
-      encode '(x,y) := encode x ++ inl tt :: encode y;
+      encode '(x,y) := encode x ++ encode y;
     |}.
 
 End Encode_pair.
 
-
 Section Encode_option.
-  Context (sig: finType) `{cX : codable sig X}.
+  Variable (sig: finType) (X: Type) (cX : codable sig X).
 
   Global Instance Encode_option : codable (FinType(EqType(bool+sig))) (option X) :=
     {|
@@ -159,10 +158,10 @@ Compute encode (tt, tt).
 Compute encode (inl 42).
 Compute encode (inr 42).
 
-Compute Encode_pair (1, 2).
+Compute Encode_pair Encode_nat Encode_nat (1, 2).
+Compute encode (1,2).
 
 Compute encode [4;5].
 Compute encode (Some 4) ++ encode (Some 5) ++ encode None.
 
-Compute Encode_pair ([tt;tt;tt], true).
 Compute encode ([tt;tt;tt], tt).
