@@ -566,6 +566,7 @@ Hint Rewrite mapTape_local : tape.
 
 
 
+(** Lemmas about [tape_move_left'] and [tape_move_right'] *)
 Section MatchTapes.
   Variable sig : finType.
 
@@ -577,6 +578,14 @@ Section MatchTapes.
     left (tape_move_right' ls x rs) = x :: ls.
   Proof. destruct rs; cbn; reflexivity. Qed.
 
+  Lemma tape_right_move_right' ls (x : sig) rs :
+    left (tape_move_left' ls x rs) = tl ls.
+  Proof. now destruct ls; cbn. Qed.
+
+  Lemma tape_left_move_left' ls (x : sig) rs :
+    right (tape_move_right' ls x rs) = tl rs.
+  Proof. now destruct rs; cbn. Qed.
+  
   Lemma tape_local_move_right' rs (x : sig) ls :
     tape_local (tape_move_right' rs x ls) = ls.
   Proof. destruct ls; cbn; reflexivity. Qed.
@@ -585,10 +594,13 @@ Section MatchTapes.
     tape_local_l (tape_move_left' rs x ls) = rs.
   Proof. destruct rs; cbn; reflexivity. Qed.
 
+  
 End MatchTapes.
 
 Hint Rewrite tape_right_move_left' : tape.
 Hint Rewrite tape_left_move_right' : tape.
+Hint Rewrite tape_right_move_right' : tape.
+Hint Rewrite tape_left_move_left' : tape.
 Hint Rewrite tape_local_move_right' : tape.
 Hint Rewrite tape_local_l_move_left' : tape.
 

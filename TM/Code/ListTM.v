@@ -10,11 +10,6 @@ Local Arguments skipn { A } !n !l.
 
 (** * Implementation of [nth_error] *)
 
-Lemma tape_left_move_left' (sig:finType) ls (m: sig) rs :
-  left (tape_move_left' ls m rs) = tl ls.
-Proof. now destruct ls; cbn. Qed.
-
-
 Section Nth.
 
   Variable (sigX : finType) (X : Type) (cX : codable sigX X).
@@ -530,24 +525,6 @@ Section Append.
       + destruct xs; cbn; congruence.
   Qed.
 
-  Lemma tl_map (A B: Type) (f: A -> B) (xs : list A) :
-    tl (map f xs) = map f (tl xs).
-  Proof. now destruct xs; cbn. Qed.
-
-  Lemma tl_app (A: Type) (xs ys : list A) :
-    xs <> nil ->
-    tl (xs ++ ys) = tl xs ++ ys.
-  Proof. destruct xs; cbn; congruence. Qed.
-
-  Lemma tl_rev (A: Type) (xs : list A) :
-    tl (rev xs) = rev (removelast xs).
-  Proof.
-    induction xs; cbn; auto.
-    destruct xs; cbn in *; auto.
-    rewrite tl_app; cbn in *.
-    - now rewrite IHxs.
-    - intros (H1&H2) % app_eq_nil; inv H2.
-  Qed.
 
   Lemma encode_list_neq_nil (xs : list X) :
     encode_list cX xs <> nil.
@@ -576,8 +553,7 @@ Section Append.
         f_equal; swap 1 2.
         + simpl_tape. rewrite map_length. destruct ys; cbn. reflexivity. apply skipn_nil.
         + rewrite encode_list_app. rewrite rev_app_distr, map_app, <- app_assoc. f_equal.
-          rewrite tape_left_move_left'.
-          rewrite tl_app, tl_map; cbn. 
+          simpl_tape. rewrite tl_app, tl_map; cbn. 
           - f_equal. f_equal. generalize (encode_list cX xs); intros. apply tl_rev.
           - intros [] % map_eq_nil % rev_eq_nil % encode_list_neq_nil.
       }
