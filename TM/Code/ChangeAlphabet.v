@@ -171,6 +171,10 @@ Section MapCode.
         rewrite L3 in L5. apply in_map_iff in L5 as (?&?&?). congruence.
   Qed.
 
+  Corollary contains_translate_tau (x : X) (t : tape (tau^+)) :
+    surjectTape t ≃ x <-> t ≃ x.
+  Proof. auto using contains_translate_tau1, contains_translate_tau2. Qed.
+
   Corollary contains_translate_eq (t1 t2 : tape (tau^+)) (x : X) :
     surjectTape t1 = surjectTape t2 ->
     t1 ≃ x -> t2 ≃ x.
