@@ -3,12 +3,7 @@ Require Import TM.Code.MatchNat TM.Code.MatchSum TM.Code.MatchFin TM.Code.WriteV
 Require Import TM.Code.ChangeAlphabet TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Basic.Mono.
 
-
-Inductive Tok := varT (n :nat) | appT | lamT | retT.
-Notation Pro := (list Tok) (only parsing).
-
-
-Definition sigTok := (FinType (EqType (bool + (bool + Fin.t 3)))).
+Require Import TM.LM.Definitions.
 
 Coercion Tok_to_sum (t : Tok) : (nat + Fin.t 3) :=
   match t with
@@ -18,6 +13,7 @@ Coercion Tok_to_sum (t : Tok) : (nat + Fin.t 3) :=
   | retT => inr Fin2
   end.
 
+Definition sigTok := (FinType (EqType (bool + (bool + Fin.t 3)))).
 
 Instance Encode_Tok : codable sigTok Tok :=
   {|
