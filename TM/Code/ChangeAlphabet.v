@@ -173,7 +173,7 @@ Section MapCode.
 
   Corollary contains_translate_tau (x : X) (t : tape (tau^+)) :
     surjectTape t ≃ x <-> t ≃ x.
-  Proof. auto using contains_translate_tau1, contains_translate_tau2. Qed.
+  Proof. split; auto using contains_translate_tau1, contains_translate_tau2. Qed.
 
   Corollary contains_translate_eq (t1 t2 : tape (tau^+)) (x : X) :
     surjectTape t1 = surjectTape t2 ->
