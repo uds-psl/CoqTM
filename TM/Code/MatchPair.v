@@ -135,4 +135,37 @@ Section MatchSum.
   Qed.
 
 
+
+  (** [Snd] simply discard the first element *)
+
+  Definition Snd_Rel : Rel (tapes sigPair^+ 1) (unit * tapes sigPair^+ 1) :=
+    ignoreParam (fun tin tout => forall p : X*Y, tin[@Fin0] ≃ p -> tout[@Fin0] ≃ snd p).
+
+  Definition Snd : { M : mTM sigPair^+ 1 & states M -> unit } :=
+    MoveToSymbol stopAfterFirst;;
+    Move L tt;;
+    Write (inl START) tt.
+
+
+  Lemma Snd_Realise : Snd ⊨ Snd_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Snd. repeat TM_Correct. }
+    {
+      intros tin ((), tout) H. intros (x,y) HEncXY.
+      destruct HEncXY as (ls&HEncXY).
+      TMSimp; clear_trivial_eqs.
+      destruct (cY y) eqn:EY.
+      - rewrite app_nil_r.
+        rewrite MoveToSymbol_correct_midtape; cbn; auto.
+        + cbn. simpl_tape. repeat econstructor. cbn. rewrite EY. cbn. f_equal.
+        + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
+      - cbn. rewrite map_app, <- app_assoc; cbn.
+        rewrite MoveToSymbol_correct_midtape; cbn; auto.
+        + simpl_tape. repeat econstructor. f_equal. cbn. now rewrite EY.
+        + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
+    }
+  Qed.
+
+
 End MatchSum.
