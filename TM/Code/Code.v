@@ -132,18 +132,18 @@ Section Encode_sum.
   | sigSum_inr
   .
 
-  Global Instance Retr_sigSum_X : Retract sigX sigSum := ltac:(build_simple_retract).
-  Global Instance Retr_sigSum_Y : Retract sigY sigSum := ltac:(build_simple_retract).
+  Global Instance Retract_sigSum_X : Retract sigX sigSum := ltac:(build_simple_retract).
+  Global Instance Retract_sigSum_Y : Retract sigY sigSum := ltac:(build_simple_retract).
   Global Instance sigSum_dec : eq_dec sigSum := ltac:(build_eq_dec).
   Global Instance sigSum_fin : finTypeC (EqType sigSum).
   Proof.
     split with (enum := sigSum_inl :: sigSum_inr :: map sigSum_X enum ++ map sigSum_Y enum). intros [x|y| | ]; cbn; f_equal.
     - rewrite <- !countSplit.
-      erewrite countMap_injective. 2: eapply (retract_f_injective) with (I := Retr_sigSum_X).
+      erewrite countMap_injective. 2: eapply (retract_f_injective) with (I := Retract_sigSum_X).
       rewrite enum_ok.
       rewrite countMap_zero. omega. congruence.
     - rewrite <- !countSplit.
-      erewrite countMap_injective. 2: eapply (retract_f_injective) with (I := Retr_sigSum_Y).
+      erewrite countMap_injective. 2: eapply (retract_f_injective) with (I := Retract_sigSum_Y).
       rewrite enum_ok.
       rewrite countMap_zero. omega. congruence.
     - rewrite <- !countSplit. rewrite !countMap_zero. omega. all: congruence.
@@ -186,13 +186,13 @@ Section Encode_option.
   | sigOption_Some
   .
 
-  Global Instance Retr_sigOption_X : Retract sigX sigOption := ltac:(build_simple_retract).
+  Global Instance Retract_sigOption_X : Retract sigX sigOption := ltac:(build_simple_retract).
   Global Instance sigOption_dec : eq_dec sigOption := ltac:(build_eq_dec).
   Global Instance sigOption_fin : finTypeC (EqType sigOption).
   Proof.
     split with (enum := sigOption_Some :: sigOption_None :: map sigOption_X enum).
     intros [x| | ]; cbn; f_equal.
-    - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retr_sigOption_X).
+    - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigOption_X).
       now apply enum_ok.
     - rewrite countMap_zero. omega. congruence.
     - rewrite countMap_zero. omega. congruence.
@@ -225,13 +225,13 @@ Section Encode_list.
   | sigList_nil
   | sigList_cons
   .
-  Global Instance Retr_sigList_X : Retract sigX sigList := ltac:(build_simple_retract).
+  Global Instance Retract_sigList_X : Retract sigX sigList := ltac:(build_simple_retract).
   Global Instance sigList_dec : eq_dec sigList := ltac:(build_eq_dec).
   Global Instance sigList_fin : finTypeC (EqType sigList).
   Proof.
     split with (enum := sigList_nil :: sigList_cons :: map sigList_X enum).
     intros [x| | ]; cbn; f_equal.
-    - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retr_sigList_X).
+    - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigList_X).
       now apply enum_ok.
     - rewrite countMap_zero. omega. congruence.
     - rewrite countMap_zero. omega. congruence.
