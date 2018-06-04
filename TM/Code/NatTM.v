@@ -86,7 +86,7 @@ Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := WHILE Add_Step.
  * INT t3: b
  *)
 (* Everything, but not reset *)
-Definition Add_Main : { M : mTM (bool^+) 4 & states M -> unit } :=
+Definition Add_Main : { M : mTM sigNat^+ 4 & states M -> unit } :=
   Inject (CopyValue _) [|Fin1; Fin2|];; (* copy n to a *)
   Inject (CopyValue _) [|Fin0; Fin3|];; (* copy m to b *)
   Inject Add_Loop [|Fin2; Fin3|]. (* Main loop *)
@@ -104,7 +104,7 @@ Definition Add :=
 
 (** ** Correctness of [Add] *)
 
-Definition Add_Step_Rel : Rel (tapes (bool^+) 2) ((bool * unit) * tapes (bool^+) 2) :=
+Definition Add_Step_Rel : Rel (tapes sigNat^+ 2) ((bool * unit) * tapes sigNat^+ 2) :=
   fun tin '(yout, tout) =>
     forall a b,
       tin [@Fin0] ≃ a ->
@@ -138,7 +138,7 @@ Proof.
 Qed.
 
 
-Definition Add_Loop_Rel : Rel (tapes (bool^+) 2) (unit * tapes (bool^+) 2) :=
+Definition Add_Loop_Rel : Rel (tapes sigNat^+ 2) (unit * tapes sigNat^+ 2) :=
   ignoreParam (
       fun tin tout =>
         forall a b,
@@ -167,7 +167,7 @@ Qed.
 
 
 (* Everything, but reset *)
-Definition Add_Main_Rel : Rel (tapes (bool^+) 4) (unit * tapes (bool^+) 4) :=
+Definition Add_Main_Rel : Rel (tapes sigNat^+ 4) (unit * tapes sigNat^+ 4) :=
   ignoreParam (
       fun tin tout =>
         forall m n,
@@ -395,7 +395,7 @@ Definition Mult : { M : mTM _ 6 & states M -> unit } :=
 
 (** ** Correctness of [Mult] *)
 
-Definition Mult_Step_Rel : Rel (tapes (bool^+) 5) ((bool * unit) * tapes (bool^+) 5) :=
+Definition Mult_Step_Rel : Rel (tapes sigNat^+ 5) ((bool * unit) * tapes sigNat^+ 5) :=
   fun tin '(yout, tout) =>
     forall c m' n,
       tin[@Fin0] ≃ m' ->
@@ -449,7 +449,7 @@ Proof.
   }
 Qed.
 
-Definition Mult_Loop_Rel : Rel (tapes (bool^+) 5) (unit * tapes (bool^+) 5) :=
+Definition Mult_Loop_Rel : Rel (tapes sigNat^+ 5) (unit * tapes sigNat^+ 5) :=
   ignoreParam (
       fun tin tout =>
         forall c m' n,
@@ -506,7 +506,7 @@ Qed.
  * reset m'
  *)
 
-Definition Mult_Main_Rel : Rel (tapes (bool^+) 6) (unit * tapes (bool^+) 6) :=
+Definition Mult_Main_Rel : Rel (tapes sigNat^+ 6) (unit * tapes sigNat^+ 6) :=
   ignoreParam (
       fun tin tout =>
         forall m n,
