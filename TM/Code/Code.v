@@ -264,10 +264,10 @@ Section Encode_nat.
   | sigNat_O
   | sigNat_S.
 
-  Instance sigNat_eq : eq_dec sigNat.
+  Global Instance sigNat_eq : eq_dec sigNat.
   Proof. unfold dec. decide equality. Defined.
 
-  Instance sigNat_fin : finTypeC (EqType sigNat).
+  Global Instance sigNat_fin : finTypeC (EqType sigNat).
   Proof. split with (enum := [sigNat_O; sigNat_S]). intros [ | ]; cbn; reflexivity. Qed.
 
   Global Instance Encode_nat : codable (FinType(EqType sigNat)) nat :=

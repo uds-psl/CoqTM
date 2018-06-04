@@ -18,33 +18,34 @@ Section MatchList.
   Variable (sigX : finType).
   Hypothesis (codX : codable sigX X).
 
-  Definition stop (s: (bool+sigX)^+) :=
+  Definition stop (s: (sigList sigX)^+) :=
     match s with
-    | inr (inl _) => true
+    | inr (sigList_cons) => true
+    | inr (sigList_nil) => true
     | inl _ => true
     | _ => false
     end.
   
 
-  Definition Skip_cons : { M : mTM (bool + sigX)^+ 1 & states M -> unit } :=
+  Definition Skip_cons : { M : mTM (sigList sigX)^+ 1 & states M -> unit } :=
     Move R tt;;
-    Return (MoveToSymbol stop) tt.
+    Return (MoveToSymbol stop id) tt.
 
 
-  Definition M1 : { M : mTM (bool + sigX)^+ 2 & states M -> unit } :=
+  Definition M1 : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
     Inject Skip_cons [|Fin0|];;
     Inject (Write (inl STOP) tt) [|Fin1|];;
     MovePar L L tt;;
     CopySymbols_L stop id;;
     Inject (Write (inl START) tt) [|Fin1|].
 
-  Definition MatchList : { M : mTM (bool + sigX)^+ 2 & states M -> bool } :=
+  Definition MatchList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
     Inject (Move R tt) [|Fin0|];;
     MATCH (Inject (Read_char) [|Fin0|])
           (fun s => match s with
-                 | Some (inr (inl false)) => (* nil *)
+                 | Some (inr sigList_nil) => (* nil *)
                    Inject (Move L false) [|Fin0|]
-                 | Some (inr (inl true)) => (* cons *)
+                 | Some (inr sigList_cons) => (* cons *)
                    M1;; 
                    Inject Skip_cons [|Fin0|];;
                    Inject (Move L tt;; Write (inl START) true) [|Fin0|]
@@ -54,25 +55,25 @@ Section MatchList.
 
   (** ** Corectness *)
 
-  Definition Skip_cons_Rel : Rel (tapes (bool+sigX)^+ 1) (unit * tapes (bool+sigX)^+ 1) :=
+  Definition Skip_cons_Rel : Rel (tapes (sigList sigX)^+ 1) (unit * tapes (sigList sigX)^+ 1) :=
     Mk_R_p (
         ignoreParam (
             fun tin tout =>
               forall ls rs (x : X) (l : list X),
-                tin = midtape (inl START :: ls) (inr (inl true))
+                tin = midtape (inl START :: ls) (inr sigList_cons)
                               (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) ->
                 match l with
                 | nil =>
-                  tout = midtape (rev (map inr (encode x)) ++ inr (inl true) :: inl START :: ls)
-                                 (inr (inl false)) (inl STOP :: rs)
+                  tout = midtape (rev (map inr (encode x)) ++ inr sigList_cons :: inl START :: ls)
+                                 (inr sigList_nil) (inl STOP :: rs)
                 | x'::l' =>
-                  tout = midtape (rev (map inr (encode x)) ++ inr (inl true) :: inl START :: ls)
-                                 (inr (inl true)) (map inr (encode x') ++ map inr (encode l') ++ inl STOP :: rs)
+                  tout = midtape (rev (map inr (encode x)) ++ inr sigList_cons :: inl START :: ls)
+                                 (inr sigList_cons) (map inr (encode x') ++ map inr (encode l') ++ inl STOP :: rs)
                 end)).
 
   
   Lemma stop_lemma x :
-    forall x0 : boundary + (bool + sigX), x0 el map inr (map inr (encode x)) -> stop x0 = false.
+    forall s : (sigList sigX)^+, s el map inr (map sigList_X (encode x)) -> stop s = false.
   Proof.
     rewrite List.map_map. intros ? (?&<-&?) % in_map_iff. cbn. reflexivity.
   Qed.
@@ -86,20 +87,21 @@ Section MatchList.
       intros tin ((), tout) H. intros ls rs x l HTin. TMSimp. clear_trivial_eqs. clear HTin H1 H2.
       destruct l as [ | x' l']; cbn.
       - rewrite MoveToSymbol_correct_moveright; cbn; auto.
+        + now rewrite map_id.
         + apply stop_lemma.
       - rewrite MoveToSymbol_correct_moveright; cbn; auto.
-        + rewrite map_app, <- app_assoc. reflexivity.
+        + rewrite map_id, map_app, <- app_assoc. reflexivity.
         + apply stop_lemma.
     }
   Qed.
   
 
-  Definition M1_Rel : Rel (tapes (bool+sigX)^+ 2) (unit * tapes (bool+sigX)^+ 2) :=
+  Definition M1_Rel : Rel (tapes (sigList sigX)^+ 2) (unit * tapes (sigList sigX)^+ 2) :=
     ignoreParam (
         fun tin tout =>
           forall ls rs (x : X) (l : list X),
             isRight tin[@Fin1] ->
-            tin[@Fin0] = midtape (inl START :: ls) (inr (inl true))
+            tin[@Fin0] = midtape (inl START :: ls) (inr sigList_cons)
                                  (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) ->
             tout[@Fin0] = tin[@Fin0] /\
             tout[@Fin1] ≃ x).
@@ -130,7 +132,7 @@ Section MatchList.
   Qed.
 
 
-  Definition MatchList_Rel : Rel (tapes (bool+sigX)^+ 2) (bool * tapes (bool+sigX)^+ 2) :=
+  Definition MatchList_Rel : Rel (tapes (sigList sigX)^+ 2) (bool * tapes (sigList sigX)^+ 2) :=
     fun tin '(yout, tout) =>
       forall (l : list X),
         tin[@Fin0] ≃ l ->
@@ -185,7 +187,7 @@ Section MatchList.
     projT1 (Skip_cons) ↓
            (fun tin k =>
               exists ls rs (x : X) (l : list X),
-                tin[@Fin0] = midtape (inl START :: ls) (inr (inl true))
+                tin[@Fin0] = midtape (inl START :: ls) (inr sigList_cons)
                                      (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) /\
                  6 + 4 * length (encode x : list sigX) <= k).
   Proof.
@@ -206,7 +208,7 @@ Section MatchList.
     projT1 M1 ↓
            (fun tin k =>
               exists ls rs (x : X) (l : list X),
-                tin[@Fin0] = midtape (inl START :: ls) (inr (inl true))
+                tin[@Fin0] = midtape (inl START :: ls) (inr sigList_cons)
                                      (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) /\
                  23 + 12 * length (encode x : list sigX) <= k).
   Proof.
@@ -292,11 +294,11 @@ Section MatchList.
 
   (** *** [nil] *)
   
-  Definition Constr_nil : { M : mTM (bool + sigX)^+ 1 & states M -> unit } :=
-    WriteMove (inl STOP) L tt;; WriteMove (inr (inl false)) L tt;; Write (inl START) tt.
+  Definition Constr_nil : { M : mTM (sigList sigX)^+ 1 & states M -> unit } :=
+    WriteMove (inl STOP) L tt;; WriteMove (inr sigList_nil) L tt;; Write (inl START) tt.
 
 
-  Definition Constr_nil_Rel : Rel (tapes (bool+sigX)^+ 1) (unit * tapes (bool+sigX)^+ 1) :=
+  Definition Constr_nil_Rel : Rel (tapes (sigList sigX)^+ 1) (unit * tapes (sigList sigX)^+ 1) :=
     Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ nil)).
 
 
@@ -316,12 +318,12 @@ Section MatchList.
 
   
 
-  Definition Constr_cons : { M : mTM (bool + sigX)^+ 2 & states M -> unit } :=
+  Definition Constr_cons : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
     Inject (MoveRight _;; Move L tt) [|Fin1|];;
     Inject (CopySymbols_L stop id) [|Fin1;Fin0|];;
-    Inject (WriteMove (inr (inl true)) L tt;; Write (inl START) tt) [|Fin0|].
+    Inject (WriteMove (inr sigList_cons) L tt;; Write (inl START) tt) [|Fin0|].
 
-  Definition Constr_cons_Rel : Rel (tapes (bool+sigX)^+ 2) (unit * tapes (bool+sigX)^+ 2) :=
+  Definition Constr_cons_Rel : Rel (tapes (sigList sigX)^+ 2) (unit * tapes (sigList sigX)^+ 2) :=
     ignoreParam (
         fun tin tout =>
           forall l y,

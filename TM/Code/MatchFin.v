@@ -30,7 +30,7 @@ Section MatchFin.
   Proof.
     eapply RealiseIn_monotone.
     { unfold MatchFin. repeat TM_Correct. }
-    { Unshelve. 4,6:reflexivity. all:omega. }
+    { Unshelve. 4,8:reflexivity. all:omega. }
     {
       intros tin (yout, tout) H. intros x HEncX.
       destruct HEncX as (ls&HEncX); TMSimp.
