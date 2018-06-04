@@ -82,14 +82,17 @@ Section MapCode.
   
 
   (* Translation Functions *)
-  Definition injectTape : tape (sig^+) -> tape (tau^+) := mapTape f'.
-  Definition surjectTape : tape (tau^+) -> tape (sig^+) := surjectTape g' (inl UNKNOWN).
+  Notation injectTape := (mapTape f').
+  Notation surjectTape := (surjectTape g' (inl UNKNOWN)).
+
+  Check injectTape : tape (sig^+) -> tape (tau^+) .
+  Check surjectTape : tape (tau^+) -> tape (sig^+).
 
   (* The other direction does not hold *)
   Lemma surjectTape_injectTape t :
     surjectTape (injectTape t) = t.
   Proof.
-    unfold injectTape, surjectTape. unfold LiftSigmaTau.surjectTape. unfold surject. simpl_tape.
+    unfold LiftSigmaTau.surjectTape. unfold surject. simpl_tape.
     erewrite mapTape_ext. apply mapTape_id. intros a. retract_adjoint. reflexivity.
   Qed.
 

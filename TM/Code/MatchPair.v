@@ -21,6 +21,8 @@ Section MatchSum.
 
   Definition sigPair := (FinType(EqType(sigX+sigY))).
 
+  Check _ : codable sigPair (X*Y).
+
 
   Definition stopAfterFirst : sigPair^+ -> bool :=
     fun x => match x with
@@ -49,9 +51,9 @@ Section MatchSum.
 
   Definition MatchPair : { M : mTM sigPair^+ 2 & states M -> unit } :=
     Inject (WriteMove (inl STOP) L tt) [|Fin1|];;
-    Inject (MoveToSymbol stopAfterFirst;; Move L tt) [|Fin0|];;
+    Inject (MoveToSymbol stopAfterFirst id;; Move L tt) [|Fin0|];;
     CopySymbols_L stopAtStart id;;
-    Inject (MoveToSymbol stopAfterFirst;; Move L tt;; Write (inl START) tt) [|Fin0|].
+    Inject (MoveToSymbol stopAfterFirst id;; Move L tt;; Write (inl START) tt) [|Fin0|].
 
 
 
@@ -74,8 +76,8 @@ Section MatchSum.
           * repeat econstructor. f_equal.
             rewrite MoveToSymbol_correct_midtape; cbn; auto.
             -- simpl_tape. now rewrite EY.
-            -- rewrite rev_involutive, List.map_map. now intros ? (?&<-&?) % in_map_iff.
-            -- cbn. rewrite map_id, rev_involutive, !List.map_map.
+            -- rewrite map_id, rev_involutive, List.map_map. now intros ? (?&<-&?) % in_map_iff.
+            -- cbn. rewrite !map_id, rev_involutive, !List.map_map.
                f_equal. f_equal. setoid_rewrite isRight_right at 2; auto. now simpl_tape.
         + rewrite List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
         + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
@@ -85,8 +87,8 @@ Section MatchSum.
           * repeat econstructor. f_equal.
             rewrite MoveToSymbol_correct_midtape; cbn; auto.
             -- simpl_tape. now rewrite EY.
-            -- rewrite rev_involutive, List.map_map. now intros ? (?&<-&?) % in_map_iff.
-            -- cbn. rewrite map_id, rev_involutive, !List.map_map.
+            -- rewrite map_id, rev_involutive, List.map_map. now intros ? (?&<-&?) % in_map_iff.
+            -- cbn. rewrite !map_id, rev_involutive, !List.map_map.
                f_equal. f_equal. setoid_rewrite isRight_right at 2; auto. now simpl_tape.
         + rewrite List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
         + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
@@ -111,7 +113,7 @@ Section MatchSum.
 
 
   Definition Constr_pair : { M : mTM sigPair^+ 2 & states M -> unit } :=
-    Inject (MoveToSymbol stopAfterFirst;; Move L tt) [|Fin0|];;
+    Inject (MoveToSymbol stopAfterFirst id;; Move L tt) [|Fin0|];;
     CopySymbols_L stopAtStart id.
 
 
@@ -127,8 +129,8 @@ Section MatchSum.
       - rewrite CopySymbols_L_correct_moveleft in HCopy; cbn in *; auto.
         + apply pair_eq in HCopy as (HCopy1&HCopy2). TMSimp.
           split.
-          * repeat econstructor. cbn. f_equal. now rewrite rev_involutive.
-          * repeat econstructor. cbn. f_equal. simpl_tape. now rewrite map_id, rev_involutive, !List.map_app, <- app_assoc.
+          * repeat econstructor. cbn. f_equal. now rewrite map_id, rev_involutive.
+          * repeat econstructor. cbn. f_equal. simpl_tape. now rewrite !map_id, rev_involutive, !List.map_app, <- app_assoc.
         + rewrite List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
       - rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
     }
@@ -142,7 +144,7 @@ Section MatchSum.
     ignoreParam (fun tin tout => forall p : X*Y, tin[@Fin0] ≃ p -> tout[@Fin0] ≃ snd p).
 
   Definition Snd : { M : mTM sigPair^+ 1 & states M -> unit } :=
-    MoveToSymbol stopAfterFirst;;
+    MoveToSymbol stopAfterFirst id;;
     Move L tt;;
     Write (inl START) tt.
 

@@ -15,11 +15,20 @@ Section Nth.
   Variable (sigX : finType) (X : Type) (cX : codable sigX X).
   Hypothesis (defX: inhabitedC sigX).
 
-  Let tau := FinType (EqType (bool + sigX)).
 
-  Check _ : codable tau nat.
-  Check _ : codable tau X.
+  (** We encode a [list X], an [nat], and an [option x] on the tape, hence our alphabet is: *)
+  Definition tau := FinType (EqType (sigList sigX + sigNat + sigOption sigX)).
+
   Check _ : codable tau (list X).
+  Check _ : codable tau nat.
+  Check _ : codable tau (option X).
+
+  (* There are two ways to encode a value [X] on [tau]: first as an element in the list: *)
+  Definition retr_X1 : Retract sigX tau := (Retract_inl _ _).
+  Check Encode_map cX retr_X1 : codable tau X.
+  (* ... and via the encoding of [sigOption]: *)
+  Definition retr_X2 : Retract sigX tau := (Retract_inr _ _).
+  Check Encode_map cX retr_X2 : codable tau X.
 
 
   Print nth_error.
@@ -83,31 +92,32 @@ Section Nth.
 
   Definition Nth_Step : { M : mTM tau^+ 3 & states M -> bool*unit } :=
     If (Inject (ChangeAlphabet MatchNat _) [|Fin1|])
-       (If (Inject (MatchList sigX) [|Fin0; Fin2|])
-           (Return (Inject (Reset _) [|Fin2|]) (true, tt))
-           (Return (Inject (Constr_None _) [|Fin2|]) (false, tt)))
-       (If (Inject (MatchList sigX) [|Fin0; Fin2|])
-           (Return (Inject (Constr_Some _) [|Fin2|]) (false, tt))
-           (Return (Inject (Constr_None _) [|Fin2|]) (false, tt)))
+       (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
+           (Return (Inject (ChangeAlphabet (Reset sigX) retr_X1) [|Fin2|]) (true, tt))
+           (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (false, tt)))
+       (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
+           (Return (Inject (Translate sigX retr_X1 retr_X2;;
+                            ChangeAlphabet (Constr_Some sigX) _) [|Fin2|]) (false, tt))
+           (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (false, tt)))
   .
-
 
   Lemma Nth_Step_Realise : Nth_Step ⊨ Nth_Step_Rel.
   Proof.
     eapply Realise_monotone.
     { unfold Nth_Step. repeat TM_Correct.
       - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_Realise. eapply MatchNat_Sem.
-      - eapply MatchList_Realise with (X := X).
-      - eapply Reset_Realise with (X := X).
-      - eapply RealiseIn_Realise. apply Constr_None_Sem with (X := X).
-      - eapply MatchList_Realise with (X := X).
-      - eapply RealiseIn_Realise. apply Constr_Some_Sem with (X := X).
-      - eapply RealiseIn_Realise. apply Constr_None_Sem with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct. eapply MatchList_Realise with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct. eapply Reset_Realise with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct. eapply MatchList_Realise with (X := X).
+      - apply Translate_Realise with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_Realise. apply Constr_Some_Sem with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := X).
     }
     {
       intros tin ((yout, ()), tout) H.
       intros l n HEncL HEncN HRight.
-      subst tau. destruct H; TMSimp.
+      destruct H; TMSimp.
       { (* First "Then" case *)
         specialize (H n). spec_assert H by now eapply contains_translate_tau1.
         destruct n as [ | n']; destruct H as (H&H'); inv H'.
@@ -115,28 +125,31 @@ Section Nth.
 
         destruct H0; TMSimp; inv_pair.
         { (* Second "Then" case *)
-          specialize (H0 l). spec_assert H0.
-          { unfold tape_contains. unfold tape_contains in HEncL. eapply tape_contains_ext with (1 := HEncL).
-            cbn. now rewrite map_id. }
-          specialize (H0 HRight).
-
+          specialize (H0 l). spec_assert H0 by now apply contains_translate_tau. spec_assert H0 by now apply surjectTape_isRight.
           destruct l as [ | x l']; destruct H0 as (H0&H0'&H0''); inv H0''.
           (* We know that l = x :: l' *)
+          specialize (H2 x). spec_assert H2.
+          { apply contains_translate_tau2 in H0'. unfold tape_contains in *.
+            apply contains_translate_tau1.
+            apply (tape_contains_ext H0').
+            cbn. rewrite !List.map_map. apply map_ext. cbv. auto.
+          }
           repeat split; eauto.
-          - eapply tape_contains_ext with (1 := H0). cbn. now rewrite map_id.
+          - now apply contains_translate_tau in H0.
           - now eapply contains_translate_tau2 in H.
+          - now eapply surjectTape_isRight' in H2.
         }
         { (* Second "Else" case *)
-          specialize (H0 l). spec_assert H0.
-          { unfold tape_contains. unfold tape_contains in HEncL. eapply tape_contains_ext with (1 := HEncL).
-            cbn. now rewrite map_id. }
-          specialize (H0 HRight).
+          specialize (H0 l). spec_assert H0 by now apply contains_translate_tau. spec_assert H0 by now apply surjectTape_isRight.
 
-          destruct l as [ | x l']; destruct H0 as (H0&H0'&H0''); inv H0''.
+          destruct l as [ | x l']; destruct H0 as (H0 & H0'&H0''); inv H0''.
+          spec_assert H2 by eapply surjectTape_isRight; now eapply surjectTape_isRight' in H0'.
           TMSimp; clear_trivial_eqs.
           (* We know that l = nil *)
           repeat split; eauto.
-          - now eapply contains_translate_tau2 in H.
+          - now apply contains_translate_tau.
+          - now apply contains_translate_tau.
+          - now apply contains_translate_tau.
         }
       }
       { (* The first "Else" case *)
@@ -146,27 +159,36 @@ Section Nth.
 
         destruct H0; TMSimp; inv_pair.
         { (* Second "Then" case *)
-          specialize (H0 l). spec_assert H0.
-          { unfold tape_contains. unfold tape_contains in HEncL. eapply tape_contains_ext with (1 := HEncL).
-            cbn. now rewrite map_id. }
-          specialize (H0 HRight).
+          specialize (H0 l). spec_assert H0 by now apply contains_translate_tau. spec_assert H0 by now apply surjectTape_isRight.
 
           destruct l as [ | x l']; destruct H0 as (H0&H0'&H0''); inv H0''.
+          apply contains_translate_tau2 in H0'.
           (* We know that l = x :: l' *)
+          specialize (H2 x). spec_assert H2.
+          { apply (tape_contains_ext H0').
+            cbn. rewrite !List.map_map. apply map_ext. cbv. auto.
+          }
+          simpl_tape in H3; cbn in *.
+          specialize (H3 x). spec_assert H3 as H3 % contains_translate_tau2.
+          { apply contains_translate_tau1. apply (tape_contains_ext H2).
+            cbn. rewrite !List.map_map. apply map_ext. cbv. auto.
+          }
           repeat split; eauto.
-          - eapply tape_contains_ext with (1 := H0). cbn. now rewrite map_id.
-          - now eapply contains_translate_tau2 in H.
+          - now apply contains_translate_tau.
+          - now apply contains_translate_tau.
+          - apply (tape_contains_ext H3). cbn. now rewrite !List.map_map.
         }
         { (* Second "Else" case *)
-          specialize (H0 l). spec_assert H0.
-          { unfold tape_contains. unfold tape_contains in HEncL. eapply tape_contains_ext with (1 := HEncL).
-            cbn. now rewrite map_id. }
-          specialize (H0 HRight).
+          specialize (H0 l). spec_assert H0 by now apply contains_translate_tau. spec_assert H0 by now apply surjectTape_isRight.
 
-          destruct l as [ | x l']; destruct H0 as (H0&H0'&H0''); inv H0''.
+          destruct l as [ | x l']; destruct H0 as (H0 & H0'&H0''); inv H0''.
+          spec_assert H2 by eapply surjectTape_isRight; now eapply surjectTape_isRight' in H0'.
+          TMSimp; clear_trivial_eqs.
           (* We know that l = nil *)
           repeat split; eauto.
-          - now eapply contains_translate_tau2 in H.
+          - now apply contains_translate_tau.
+          - now apply contains_translate_tau.
+          - now apply contains_translate_tau.
         }
       }
     }
@@ -239,7 +261,8 @@ Section Nth.
 
 
   (** ** Runtime *)
-
+  (*
+(* XXX: This is the old runtime without [Translate], over the alphabet [bool+sigX] *)
 
   Arguments plus : simpl never. Arguments mult : simpl never.
 
@@ -458,6 +481,8 @@ Section Nth.
     }
   Qed.
 
+*)
+
 End Nth.
 
 
@@ -473,6 +498,8 @@ Lemma pair_eq (A B : Type) (a1 a2 : A) (b1 b2 : B) :
 Proof. intros H. now inv H. Qed.
 
 
+(* TODO: This is probably broken; is this cheat ok here? *)
+(* I think we have to copy the first list to the left of the second list, to avoid writing over the right boundary *)
 
 (** I don't use the [Computes2] Relation here, because I don't want to copy the full first list here. I simply copy memory instead of using constructors/deconstructors, which could be tedious here. *)
 Section Append.
@@ -480,7 +507,7 @@ Section Append.
   Variable (sigX : finType) (X : Type) (cX : codable sigX X).
   Hypothesis (defX: inhabitedC sigX).
 
-  Let tau := FinType (EqType (bool + sigX)).
+  Let tau := FinType (EqType (sigList sigX)).
 
   Definition App_Rel : Rel (tapes tau^+ 2) (unit * tapes tau^+ 2) :=
     ignoreParam (fun tin tout =>
@@ -516,7 +543,7 @@ Section Append.
   Proof.
     revert ys. induction xs; intros; cbn in *; f_equal.
     rewrite IHxs. rewrite app_assoc, app_comm_cons; f_equal.
-    destruct (map (retract_inr_f bool (fun a0 : sigX => a0)) (cX a)) eqn:E; cbn.
+    destruct (map (fun x : sigX => sigList_X x) (cX a)) eqn:E; cbn.
     - destruct xs; cbn; auto.
     - f_equal. destruct (cX a) eqn:E2; cbn in E. congruence.
       rewrite removelast_app.
@@ -563,5 +590,6 @@ Section Append.
       auto.
     }
   Qed.
+
 
 End Append.
