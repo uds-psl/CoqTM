@@ -14,7 +14,7 @@ Section MatchSum.
   Variable (sigX sigY : finType).
   Hypothesis (codX : codable sigX X) (codY : codable sigY Y).
 
-  Definition MatchSum_Rel : Rel (tapes ((bool + (sigX+sigY))^+) 1) (bool * tapes ((bool + (sigX+sigY))^+) 1) :=
+  Definition MatchSum_Rel : Rel (tapes (sigSum sigX sigY)^+ 1) (bool * tapes ((sigSum sigX sigY)^+) 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
               forall s : X + Y, tin ≃ s ->
                            match s with
@@ -22,13 +22,38 @@ Section MatchSum.
                            | inr y => tout ≃ y /\ yout = false
                            end).
 
+  (*
+Ltac destruct_shelve e :=
+  cbn in e;
+  idtac "Input:";
+  print_type e;
+  idtac "Output:";
+  print_goal_cbn; 
+  match goal with
+  | [ |- Rel _ _] =>
+    elim e; repeat
+              (let x := fresh "x" in
+               clear e; (* The variable should not occure in the environment of the shelved goals *)
+               first [ intros x;
+                       match goal with (* make sure that we don't intros from the relation we want to generate *)
+                       | [ |- Rel _ _ ] =>
+                         destruct_shelve x
+                       end
+                     | shelve (* If there was no parameter for this constructor, shelve *)
+                     ]
+              )
+  end
+.
+   *)
 
-  Definition MatchSum : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> bool } :=
+
+
+  Definition MatchSum : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> bool } :=
     Move R tt;; (* skip the [START] symbol *)
     MATCH (Read_char) (* read the "constructor" symbol *)
           (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding partition *)
-                 | Some (inr (inl true))  => Write (inl START) true  (* inl *)
-                 | Some (inr (inl false)) => Write (inl START) false (* inr *)
+                 | Some (inr sigSum_inl) => Write (inl START) true  (* inl *)
+                 | Some (inr sigSum_inr) => Write (inl START) false (* inr *)
                  | _ => mono_Nop true (* invalid input *)
                  end).
 
@@ -36,7 +61,7 @@ Section MatchSum.
   Proof.
     eapply RealiseIn_monotone.
     { unfold MatchSum. repeat TM_Correct. }
-    { Unshelve. 4,6: constructor. all: cbn. all: omega. }
+    { Unshelve. 4,10,11: constructor. all: cbn. all: omega. }
     {
       intros tin (yout&tout) H.
       intros s HEncS. destruct HEncS as (ls&HEncS). TMSimp; clear_trivial_eqs. clear HEncS tin.
@@ -50,17 +75,17 @@ Section MatchSum.
   Section SumConstr.
 
 
-    Definition Constr_inl_Rel : Rel (tapes (bool + (sigX+sigY))^+ 1) (unit * tapes (bool + (sigX+sigY))^+ 1) :=
+    Definition Constr_inl_Rel : Rel (tapes (sigSum sigX sigY)^+ 1) (unit * tapes (sigSum sigX sigY)^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => forall x:X, tin ≃ x -> tout ≃ inl x)).
 
-    Definition Constr_inr_Rel : Rel (tapes (bool + (sigX+sigY))^+ 1) (unit * tapes (bool + (sigX+sigY))^+ 1) :=
+    Definition Constr_inr_Rel : Rel (tapes (sigSum sigX sigY)^+ 1) (unit * tapes (sigSum sigX sigY)^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => forall y:Y, tin ≃ y -> tout ≃ inr y)).
 
-    Definition Constr_inl : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> unit } :=
-      WriteMove (inr (inl true)) L tt;; Write (inl START) tt.
+    Definition Constr_inl : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> unit } :=
+      WriteMove (inr sigSum_inl) L tt;; Write (inl START) tt.
 
-    Definition Constr_inr : { M : mTM (bool + (sigX+sigY))^+ 1 & states M -> unit } :=
-      WriteMove (inr (inl false)) L tt;; Write (inl START) tt.
+    Definition Constr_inr : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> unit } :=
+      WriteMove (inr sigSum_inr) L tt;; Write (inl START) tt.
 
 
     Lemma Constr_inl_Sem : Constr_inl ⊨c(3) Constr_inl_Rel.
@@ -106,8 +131,8 @@ Section MatchOption.
   Compute encode (None : option nat).
   Compute encode (Some 42).
 
-  Let sig := FinType (EqType (bool + (sigX + Empty_set))).
-  Let tau := FinType (EqType (bool + sigX)).
+  Let sig := FinType (EqType (sigSum sigX (FinType(EqType Empty_set)))).
+  Let tau := FinType (EqType (sigOption sigX)).
 
   Check _ : codable sig X.
   Check _ : codable sig^+ X.
@@ -125,8 +150,31 @@ Section MatchOption.
                 | None => isRight tout /\ yout = false
                 end).
 
+  Local Instance Retract_sigOption_sigSum :
+    Retract (sigSum sigX (FinType (EqType Empty_set))) (sigOption sigX) :=
+    {|
+      Retr_f x := match x : (sigSum sigX (FinType (EqType Empty_set))) with
+                  | sigSum_X a => sigOption_X a
+                  | sigSum_Y b => match b with end
+                  | sigSum_inl => sigOption_Some
+                  | sigSum_inr => sigOption_None
+                  end;
+      Retr_g y := match y with
+                  | sigOption_X a => Some (sigSum_X a)
+                  | sigOption_Some => Some (sigSum_inl)
+                  | sigOption_None => Some (sigSum_inr)
+                  end;
+      |}.
+  Proof.
+    abstract now intros x y; split;
+      [ now destruct y; intros H; inv H
+      | intros ->; now destruct x as [ a | [] | | ]
+      ].
+  Defined.
+
+
   Definition MatchOption : { M : mTM tau^+ 1 & states M -> bool } :=
-    If (ChangeAlphabet (MatchSum (sigX) (FinType (EqType Empty_set))) (Retract_sum _ _))
+    If (ChangeAlphabet (MatchSum (sigX) (FinType (EqType Empty_set))) _)
        (Nop true)
        (Move R false).
 
@@ -181,7 +229,6 @@ Section MatchOption.
         autounfold with tape in H. cbn in H. rewrite nth_map2' in H. cbn in H.
         unfold tape_contains in H.
         apply contains_translate_tau2 in H; unfold tape_contains in H.
-        rewrite H1.
         destruct H as (ls&->). cbn. repeat econstructor.
       }
     }
@@ -196,7 +243,7 @@ Section MatchOption.
                     tout ≃ Some x)).
 
   Definition Constr_Some : { M : mTM tau^+ 1 & states M -> unit } :=
-    ChangeAlphabet (Constr_inl sigX (FinType (EqType Empty_set))) (Retract_sum _ _).
+    ChangeAlphabet (Constr_inl sigX (FinType (EqType Empty_set))) _.
 
   Lemma Constr_Some_Sem : Constr_Some ⊨c(3) Constr_Some_Rel.
   Proof.
@@ -224,7 +271,7 @@ Section MatchOption.
                     tout ≃ None)).
 
   Definition Constr_None : { M : mTM tau^+ 1 & states M -> unit } :=
-    WriteMove (inl STOP) L tt;; WriteMove (inr (inl false)) L tt;; Write (inl START) tt.
+    WriteMove (inl STOP) L tt;; WriteMove (inr sigOption_None) L tt;; Write (inl START) tt.
 
   Lemma Constr_None_Sem : Constr_None ⊨c(5) Constr_None_Rel.
   Proof.
@@ -233,7 +280,9 @@ Section MatchOption.
     { cbn. reflexivity. }
     {
       intros tin ((), tout) H.
-      intros HRight. TMSimp; clear_trivial_eqs.
+      intros HRight.
+      subst sig tau.
+      TMSimp; clear_trivial_eqs.
       repeat econstructor. cbn. f_equal. simpl_tape. cbn. f_equal. f_equal. now apply isRight_right.
     }
   Qed.
@@ -247,10 +296,10 @@ Section MapSum.
   Variable (sigX sigY sigZ : finType) (defX : sigX) (defY : sigY) (defZ : sigZ).
   Variable (X Y Z : Type) (codX : codable sigX X) (codY : codable sigY Y) (codZ : codable sigZ Z).
 
-  Let sig_match := FinType(EqType (bool+(sigX+sigY))).
+  Let sig_match := FinType(EqType (sigSum sigX sigY)).
   Let sig_M1 := FinType(EqType (sigX+sigZ)).
   Let sig_M2 := FinType(EqType (sigY+sigZ)).
-  Let tau := FinType(EqType ((bool + (sigX + sigY)) + sigZ)).
+  Let tau := FinType(EqType (sigSum sigX sigY + sigZ)).
 
   Variable f : X -> Z.
   Variable g : Y -> Z.

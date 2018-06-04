@@ -9,7 +9,7 @@ Require Import TM.Compound.TMTac.
 (* Basic pattern matching *)
 Section MatchNat.
 
-  Definition MatchNat_Rel : Rel (tapes (bool^+) 1) (bool * tapes (bool^+) 1) :=
+  Definition MatchNat_Rel : Rel (tapes sigNat^+ 1) (bool * tapes sigNat^+ 1) :=
     Mk_R_p
       (fun tin '(yout, tout) =>
          forall (n : nat),
@@ -21,12 +21,12 @@ Section MatchNat.
              tout ≃ n' /\ yout = true
            end).
 
-  Definition MatchNat : { M : mTM (bool^+) 1 & states M -> bool } :=
+  Definition MatchNat : { M : mTM sigNat^+ 1 & states M -> bool } :=
     Move R tt;;
     MATCH (Read_char)
           (fun o => match o with
-                 | Some (inr true)  => Write (inl START) true (* S *)
-                 | Some (inr false) => Move L false (* O *)
+                 | Some (inr sigNat_S)  => Write (inl START) true (* S *)
+                 | Some (inr sigNat_O) => Move L false (* O *)
                  | _ => mono_Nop true (* invalid input *)
                  end).
 
@@ -34,7 +34,7 @@ Section MatchNat.
   Proof.
     eapply RealiseIn_monotone.
     { unfold MatchNat. repeat TM_Correct. }
-    { Unshelve. 4,6: reflexivity. all: omega. }
+    { Unshelve. 4,8: reflexivity. all: omega. }
     {
       intros tin (yout&tout) H. intros n HEncN. TMSimp.
       destruct HEncN as (r1&HEncN). TMSimp.
@@ -48,11 +48,11 @@ Section MatchNat.
   (** ** Constructors *)
   Section NatConstructor.
 
-    Definition S_Rel : Rel (tapes (bool^+) 1) (unit * tapes (bool^+) 1) :=
+    Definition S_Rel : Rel (tapes sigNat^+ 1) (unit * tapes sigNat^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => forall n : nat, tin ≃ n -> tout ≃ S n)).
 
-    Definition Constr_S : { M : mTM (bool^+) 1 & states M -> unit } :=
-      WriteMove (inr true) L tt;; Write (inl START) tt.
+    Definition Constr_S : { M : mTM sigNat^+ 1 & states M -> unit } :=
+      WriteMove (inr sigNat_S) L tt;; Write (inl START) tt.
 
 
     (*
@@ -78,14 +78,14 @@ Section MatchNat.
     Qed.
 
 
-    Definition O_Rel : Rel (tapes (bool^+) 1) (unit * tapes (bool^+) 1) :=
+    Definition O_Rel : Rel (tapes sigNat^+ 1) (unit * tapes sigNat^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ O)).
 
 
-    Definition Constr_O : { M : mTM (bool^+) 1 & states M -> unit } :=
-        WriteMove (inl STOP) L tt;;
-        WriteMove (inr false) L tt;;
-        Write (inl START) tt.
+    Definition Constr_O : { M : mTM sigNat^+ 1 & states M -> unit } :=
+      WriteMove (inl STOP) L tt;;
+      WriteMove (inr sigNat_O) L tt;;
+      Write (inl START) tt.
 
     Lemma Constr_O_Sem : Constr_O ⊨c(5) O_Rel.
     Proof.

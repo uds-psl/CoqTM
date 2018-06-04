@@ -10,7 +10,14 @@ Require Import Recdef.
 Section move_to_symbol.
   
   Variable sig : finType.
+
+  (** Halt function *)
   Variable f : sig -> bool.
+
+  (** Rewrite function *)
+  Variable g : sig -> sig.
+
+  
 
   (*
    * One Step:
@@ -24,14 +31,14 @@ Section move_to_symbol.
              match b with
              | Some x => if f x
                         then mono_Nop (false, tt) (* found the symbol, break *)
-                        else Move R (true, tt) (* wrong symbol, move right and continue *)
+                        else WriteMove (g x) R (true, tt) (* wrong symbol, move right and continue *)
              | _ => mono_Nop (false, tt) (* there is no such symbol, break *)
              end).
 
   Definition M1_Fun : tape sig -> tape sig :=
     fun t1 =>
       match t1 with
-      | midtape ls x rs => if (f x) then t1 else tape_move_right t1
+      | midtape ls x rs => if (f x) then t1 else tape_move_mono t1 (Some (g x), R)
       | _ => t1
       end.
 
@@ -54,7 +61,7 @@ Section move_to_symbol.
       intros [ | ]; cbn.
       - destruct (f e). 
         + instantiate (1 := 1). eapply mono_Nop_Sem.
-        + eapply Move_Sem.
+        + eapply WriteMove_Sem.
       - eapply mono_Nop_Sem.
     }
     {
@@ -83,7 +90,7 @@ Section move_to_symbol.
   (* Function of M2 *)
   Function MoveToSymbol_Fun (t : tape sig) { measure rlength t } : tape sig :=
     match t with
-    | midtape ls m rs => if f m then t else MoveToSymbol_Fun (tape_move_right t)
+    | midtape ls m rs => if f m then t else MoveToSymbol_Fun (tape_move_mono t (Some (g m), R))
     | _ => t
     end.
   Proof.
@@ -138,8 +145,8 @@ Section move_to_symbol.
 
   Lemma MoveToSymbol_skip ls m rs :
     f m = false ->
-    MoveToSymbol_Fun (midtape ls m rs) = MoveToSymbol_Fun (tape_move_right (midtape ls m rs)).
-  Proof. intros. now rewrite MoveToSymbol_Fun_equation, H. Qed.
+    MoveToSymbol_Fun (midtape ls m rs) = MoveToSymbol_Fun (tape_move_mono (midtape ls m rs) (Some (g m), R)).
+  Proof. intros. cbn. now rewrite MoveToSymbol_Fun_equation, H. Qed.
   
   Lemma MoveToSymbol_Realise :
     MoveToSymbol ⊨ MoveToSymbol_Rel.
@@ -161,13 +168,6 @@ Section move_to_symbol.
   Qed.
 
 
-  Lemma MoveToSymbol_Fun_tapesToList t : tapeToList (MoveToSymbol_Fun t) = tapeToList t .
-  Proof.
-    functional induction MoveToSymbol_Fun t; auto; simpl_tape in *; cbn in *; congruence.
-  Qed.
-  Hint Rewrite MoveToSymbol_Fun_tapesToList : tape.
-
-
   Lemma MoveToSymbol_Fun_niltape t : MoveToSymbol_Fun t = niltape _ -> t = niltape _.
   Proof.
     intros H. remember (niltape sig) as N. functional induction MoveToSymbol_Fun t; subst; try congruence.
@@ -180,7 +180,7 @@ Section move_to_symbol.
 
   Function MoveToSymbol_TermTime (t : tape sig) { measure rlength t } : nat :=
     match t with
-    | midtape ls m rs => if f m then 4 else 4 + (MoveToSymbol_TermTime (tape_move_right t))
+    | midtape ls m rs => if f m then 4 else 4 + (MoveToSymbol_TermTime (tape_move_mono t (Some (g m), R)))
     | _ => 4
     end.
   Proof.
@@ -203,7 +203,7 @@ Section move_to_symbol.
       - destruct (f e) eqn:E2.
         + eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
         + eexists. split. eauto. intros b () tmid (H1&H2); inv H2; TMSimp.
-          exists (MoveToSymbol_TermTime (tape_move_right' l e l0)). repeat split; auto.
+          exists (MoveToSymbol_TermTime (tape_move_mono (midtape l e l0) (Some (g e), R))). cbn. repeat split; auto.
     }
   Qed.
   
@@ -225,7 +225,7 @@ Section move_to_symbol.
 
   Function MoveToSymbol_L_Fun (t : tape sig) { measure llength t } : tape sig :=
     match t with
-    | midtape ls m rs => if f m then t else MoveToSymbol_L_Fun (tape_move_left t)
+    | midtape ls m rs => if f m then t else MoveToSymbol_L_Fun (tape_move_mono t (Some (g m), L))
     | _ => t
     end.
   Proof.
@@ -272,7 +272,7 @@ Section move_to_symbol.
 
   Function MoveToSymbol_L_TermTime (t : tape sig) { measure llength t } : nat :=
     match t with
-    | midtape ls m rs => if f m then 4 else 4 + (MoveToSymbol_L_TermTime (tape_move_left t))
+    | midtape ls m rs => if f m then 4 else 4 + (MoveToSymbol_L_TermTime (tape_move_mono t (Some (g m), L)))
     | _ => 4
     end.
   Proof.
@@ -286,7 +286,7 @@ Section move_to_symbol.
       simpl_tape in *; cbn in *;
         rewrite MoveToSymbol_TermTime_equation.
     - now rewrite e0.
-    - now rewrite e0, IHn.
+    - rewrite e0, IHn. cbn. now simpl_tape.
     - destruct t; cbn; auto.
   Qed.
 
@@ -302,10 +302,10 @@ End move_to_symbol.
 
 Ltac smpl_TM_MoveToSymbol :=
   match goal with
-  | [ |- MoveToSymbol   _ ⊨ _ ] => eapply MoveToSymbol_Realise
-  | [ |- MoveToSymbol_L _ ⊨ _ ] => eapply MoveToSymbol_L_Realise
-  | [ |- projT1 (MoveToSymbol   _) ↓ _ ] => eapply MoveToSymbol_Terminates
-  | [ |- projT1 (MoveToSymbol_L _) ↓ _ ] => eapply MoveToSymbol_L_Terminates
+  | [ |- MoveToSymbol   _ _ ⊨ _ ] => eapply MoveToSymbol_Realise
+  | [ |- MoveToSymbol_L _ _ ⊨ _ ] => eapply MoveToSymbol_L_Realise
+  | [ |- projT1 (MoveToSymbol   _ _) ↓ _ ] => eapply MoveToSymbol_Terminates
+  | [ |- projT1 (MoveToSymbol_L _ _) ↓ _ ] => eapply MoveToSymbol_L_Terminates
   end.
 
 Smpl Add smpl_TM_MoveToSymbol : TM_Correct.

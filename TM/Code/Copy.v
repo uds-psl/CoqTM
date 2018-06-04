@@ -130,7 +130,7 @@ Section Copy.
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local t = str1 ++ x :: str2 ->
-    MoveToSymbol_Fun stop t = midtape (rev str1 ++ left t) x str2.
+    MoveToSymbol_Fun stop f t = midtape (rev (map f str1) ++ left t) x str2.
   Proof.
     intros H H0. destruct t as [ | r rs | l ls | ls m rs]; cbn in *.
     1,3: rewrite MoveToSymbol_Fun_equation; cbn; destruct str1; cbn in *; try congruence.
@@ -152,8 +152,8 @@ Section Copy.
     stop m = false ->
     (forall x, List.In x rs -> stop x = false) ->
     stop x = true ->
-    MoveToSymbol_Fun stop (midtape ls m (rs ++ x :: rs')) =
-    midtape (rev rs ++ m :: ls) x rs'.
+    MoveToSymbol_Fun stop f (midtape ls m (rs ++ x :: rs')) =
+    midtape (rev (map f rs) ++ (f m) :: ls) x rs'.
   Proof.
     intros HStopM HStopRs HStopX.
     unshelve epose proof (@MoveToSymbol_correct (midtape ls m (rs ++ x :: rs')) (m::rs) rs' x _ HStopX eq_refl) as L.
@@ -164,8 +164,8 @@ Section Copy.
   Corollary MoveToSymbol_correct_moveright ls m rs x rs' :
     (forall x, List.In x rs -> stop x = false) ->
     stop x = true ->
-    MoveToSymbol_Fun stop (tape_move_right' ls m (rs ++ x :: rs')) =
-    midtape (rev rs ++ m :: ls) x rs'.
+    MoveToSymbol_Fun stop f (tape_move_right' ls m (rs ++ x :: rs')) =
+    midtape (rev (map f rs) ++ m :: ls) x rs'.
   Proof.
     intros HStopR HStopX.
     destruct rs as [ | s s'] eqn:E; cbn.
@@ -177,11 +177,11 @@ Section Copy.
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local_l t = str1 ++ x :: str2 ->
-    MoveToSymbol_L_Fun stop t = midtape str2 x (rev str1 ++ right t).
+    MoveToSymbol_L_Fun stop f t = midtape str2 x (rev (map f str1) ++ right t).
   Proof.
     intros. pose proof (@MoveToSymbol_correct (mirror_tape t) str1 str2 x) as L.
     simpl_tape in L. repeat spec_assert L by auto.
-    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop t))) in L; simpl_tape in *; eauto.
+    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun stop f t))) in L; simpl_tape in *; eauto.
     now apply mirror_tape_inv_midtape in L.
   Qed.
 
@@ -189,8 +189,8 @@ Section Copy.
     stop m = false ->
     (forall x, List.In x ls -> stop x = false) ->
     stop x = true ->
-    MoveToSymbol_L_Fun stop (midtape (ls ++ x :: ls') m rs) =
-    midtape ls' x (rev ls ++ m :: rs).
+    MoveToSymbol_L_Fun stop f (midtape (ls ++ x :: ls') m rs) =
+    midtape ls' x (rev (map f ls) ++ (f m) :: rs).
   Proof.
     intros HStopM HStopRs HStopX.
     unshelve epose proof (@MoveToSymbol_L_correct (midtape (ls ++ x :: ls') m rs) (m::ls) ls' x _ HStopX eq_refl) as L.
@@ -201,50 +201,14 @@ Section Copy.
   Corollary MoveToSymbol_L_correct_moveleft ls x ls' m rs :
     (forall x, List.In x ls -> stop x = false) ->
     stop x = true ->
-    MoveToSymbol_L_Fun stop (tape_move_left' (ls ++ x :: ls') m rs) =
-    midtape ls' x (rev ls ++ m :: rs).
+    MoveToSymbol_L_Fun stop f (tape_move_left' (ls ++ x :: ls') m rs) =
+    midtape ls' x (rev (map f ls) ++ m :: rs).
   Proof.
     intros HStopL HStopX.
     destruct ls as [ | s s'] eqn:E; cbn.
     - rewrite MoveToSymbol_L_Fun_equation, HStopX. reflexivity.
     - rewrite MoveToSymbol_L_correct_midtape; auto. rewrite <- !app_assoc. reflexivity.
   Qed.
-
-  Lemma MoveToSymbol_correct_toRight' (t : tape sig) x str :
-    tape_local t = x :: str ->
-    right (tape_move_left (MoveToSymbol_Fun (fun _ => false) t)) = nil /\
-    tape_local_l (tape_move_left (MoveToSymbol_Fun (fun _ => false) t)) = rev (tapeToList t).
-  Proof.
-    revert x str.
-    functional induction (MoveToSymbol_Fun (fun (_ : sig) => false) t); intros; try congruence.
-    - cbn in *. inv H. simpl_tape in *.
-      destruct str; cbn.
-      + rewrite MoveToSymbol_Fun_equation; cbn. simpl_list. cbn. auto.
-      + specialize (IHt0 _ _ ltac:(eauto)).
-      destruct IHt0 as (IH1&IH2). cbn in *. rewrite IH1, IH2. split; auto.
-      destruct str; cbn; simpl_list; cbn; simpl_list; auto.
-    - destruct t eqn:E; cbn in *; auto; congruence.
-  Qed.
-
-  Lemma MoveToSymbol_correct_toRight ls (x : sig) rs :
-    right (tape_move_left (MoveToSymbol_Fun (fun _ => false) (midtape ls x rs))) = nil /\
-    tape_local_l (tape_move_left (MoveToSymbol_Fun (fun _ => false) (midtape ls x rs))) = rev rs ++ x :: ls.
-  Proof.
-    pose proof @MoveToSymbol_correct_toRight' (midtape ls x rs) _ _ ltac:(cbn; eauto) as (L1&L2).
-    rewrite L1, L2. cbn. simpl_list. cbn. simpl_list. cbn. auto.
-  Qed.
-
-  Corollary MoveToSymbol_L_correct_toLeft ls (x : sig) rs :
-    left (tape_move_right (MoveToSymbol_L_Fun (fun _ => false) (midtape ls x rs))) = nil /\
-    tape_local (tape_move_right (MoveToSymbol_L_Fun (fun _ => false) (midtape ls x rs))) = rev ls ++ x :: rs.
-  Proof.
-    intros. pose proof (@MoveToSymbol_correct_toRight rs x ls) as L.
-    simpl_tape in L. repeat spec_assert L by auto.
-    erewrite (MoveToSymbol_mirror' (t' := mirror_tape (MoveToSymbol_L_Fun _ _))) in L; simpl_tape in *; eauto.
-    cbn in L. rewrite <- !mirror_tape_move_right in L. rewrite mirror_tape_right in L. rewrite tape_local_mirror in L.
-    auto.
-  Qed.
-
 
 
   (** Termination times *)
@@ -254,7 +218,7 @@ Section Copy.
   Lemma MoveToSymbol_TermTime_local t r1 sym r2 :
     tape_local t = r1 ++ sym :: r2 ->
     stop sym = true ->
-    MoveToSymbol_TermTime stop t <= 4 + 4 * length r1.
+    MoveToSymbol_TermTime stop f t <= 4 + 4 * length r1.
   Proof.
     revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
     - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_TermTime_equation. rewrite HStop. cbn. omega.
@@ -267,7 +231,7 @@ Section Copy.
 
   Corollary MoveToSymbol_TermTime_midtape ls x m rs rs' :
     stop x = true ->
-    MoveToSymbol_TermTime stop (midtape ls m (rs ++ x :: rs')) <= 8 + 4 * length rs.
+    MoveToSymbol_TermTime stop f (midtape ls m (rs ++ x :: rs')) <= 8 + 4 * length rs.
   Proof.
     intros.
     rewrite MoveToSymbol_TermTime_local with (r1 := m::rs) (sym := x) (r2 := rs'); auto.
@@ -276,7 +240,7 @@ Section Copy.
 
   Corollary MoveToSymbol_TermTime_moveright ls m rs x rs' :
     stop x = true ->
-    MoveToSymbol_TermTime stop (tape_move_right' ls m (rs ++ x :: rs')) <= 4 + 4 * length rs.
+    MoveToSymbol_TermTime stop f (tape_move_right' ls m (rs ++ x :: rs')) <= 4 + 4 * length rs.
   Proof.
     intros HStop. destruct rs as [ | s s'] eqn:E; cbn.
     - rewrite MoveToSymbol_TermTime_equation, HStop; cbn. omega.
@@ -287,7 +251,7 @@ Section Copy.
   Lemma MoveToSymbol_L_TermTime_local t r1 sym r2 :
     tape_local_l t = r1 ++ sym :: r2 ->
     stop sym = true ->
-    MoveToSymbol_L_TermTime stop t <= 4 + 4 * length r1.
+    MoveToSymbol_L_TermTime stop f t <= 4 + 4 * length r1.
   Proof.
     revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
     - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_L_TermTime_equation. rewrite HStop. cbn. omega.
@@ -300,7 +264,7 @@ Section Copy.
 
   Corollary MoveToSymbol_L_TermTime_midtape ls ls' x m rs :
     stop x = true ->
-    MoveToSymbol_L_TermTime stop (midtape (ls ++ x :: ls') m rs) <= 8 + 4 * length ls.
+    MoveToSymbol_L_TermTime stop f (midtape (ls ++ x :: ls') m rs) <= 8 + 4 * length ls.
   Proof.
     intros.
     rewrite MoveToSymbol_L_TermTime_local with (r1 := m::ls) (sym := x) (r2 := ls'); auto.
@@ -309,33 +273,12 @@ Section Copy.
 
   Corollary MoveToSymbol_L_TermTime_moveleft ls ls' x m rs :
     stop x = true ->
-    MoveToSymbol_L_TermTime stop (tape_move_left' (ls ++ x :: ls') m rs) <= 4 + 4 * length ls.
+    MoveToSymbol_L_TermTime stop f (tape_move_left' (ls ++ x :: ls') m rs) <= 4 + 4 * length ls.
   Proof.
     intros HStop. destruct ls as [ | s s'] eqn:E; cbn.
     - rewrite MoveToSymbol_L_TermTime_equation, HStop; cbn. omega.
     - rewrite MoveToSymbol_L_TermTime_midtape; auto. omega.
   Qed.
-
-  Lemma MoveToSymbol_TermTime_dontstop t :
-    MoveToSymbol_TermTime (fun x : sig => false) t <= 4 + 4 * (|tape_local t|).
-  Proof.
-    functional induction (MoveToSymbol_TermTime (fun _ => false) t); try congruence.
-    - cbn -[plus mult]. destruct rs.
-      + cbn -[plus mult] in *. omega.
-      + cbn -[plus mult] in *. omega.
-    - omega.
-  Qed.
-
-  Lemma MoveToSymbol_L_TermTime_dontstop t :
-    MoveToSymbol_L_TermTime (fun x : sig => false) t <= 4 + 4 * (|tape_local_l t|).
-  Proof.
-    functional induction (MoveToSymbol_L_TermTime (fun _ => false) t); try congruence.
-    - cbn -[plus mult]. destruct ls.
-      + cbn -[plus mult] in *. omega.
-      + cbn -[plus mult] in *. omega.
-    - omega.
-  Qed.
-
 
 
   Lemma CopySymbols_TermTime_local t r1 sym r2 :
@@ -421,8 +364,8 @@ Section Move.
   Proof. cbn. intros (?&<-&?) % in_map_iff. reflexivity. Qed.
 
 
-  Definition MoveRight := Return (MoveToSymbol isStop) tt.
-  Definition MoveLeft := Return (MoveToSymbol_L isStart) tt.
+  Definition MoveRight := Return (MoveToSymbol isStop id) tt.
+  Definition MoveLeft := Return (MoveToSymbol_L isStart id) tt.
   Definition Reset := MoveRight.
 
   Definition MoveRight_Rel : Rel (tapes (sig^+) 1) (unit * tapes (sig^+) 1) :=
@@ -441,7 +384,7 @@ Section Move.
       TMSimp; clear_trivial_eqs. clear H0.
       destruct HEncX as (r1&->).
       erewrite MoveToSymbol_correct_midtape; eauto.
-      - repeat econstructor. now rewrite map_rev.
+      - repeat econstructor. now rewrite map_id, map_rev.
       - apply stop_not_in.
     }
   Qed.
@@ -455,7 +398,7 @@ Section Move.
       TMSimp; clear_trivial_eqs. clear H0.
       destruct HEncX as (r1&->).
       erewrite MoveToSymbol_L_correct_midtape; eauto.
-      - repeat econstructor. now rewrite <- map_rev, rev_involutive.
+      - repeat econstructor. now rewrite map_id, <- map_rev, rev_involutive.
       - intros ? (?&<-&?) % in_map_iff. reflexivity.
     }
   Qed.
@@ -553,6 +496,75 @@ Section CopyValue.
   Qed.
 
 End CopyValue.
+
+
+
+Section Translate.
+
+  Variable (tau sig : finType).
+  Variable (X: Type) (cX : codable sig X).
+  Variable (retr1 : Retract sig tau) (retr2 : Retract sig tau).
+
+  Definition translate : tau^+ -> tau^+ :=
+    fun t => match t with
+          | inl _ => t
+          | inr x => match Retr_g (Retract := retr1) x with
+                    | Some y => inr (Retr_f (Retract := retr2) y)
+                    | None => inl UNKNOWN
+                    end
+          end.
+
+  Definition Translate' := MoveToSymbol (@isStop tau) translate.
+
+  Definition Translate'_Rel : Rel (tapes (tau^+) 1) (unit * tapes (tau^+) 1) :=
+    ignoreParam (
+        fun tin tout =>
+          forall x : X,
+            tin[@Fin0] ≃(Encode_map cX retr1) x ->
+            tout[@Fin0] ≂(Encode_map cX retr2) x
+      ).
+
+  Lemma Translate'_Realise : Translate' ⊨ Translate'_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Translate'. repeat TM_Correct. }
+    {
+      intros tin ((), tout) H. intros x HEncX.
+      destruct HEncX as (ls&HEncX). TMSimp.
+      rewrite MoveToSymbol_correct_midtape; cbn; auto.
+      - repeat econstructor. cbn. f_equal. f_equal. rewrite map_rev, !List.map_map. f_equal.
+        apply map_ext. cbn. intros. now retract_adjoint.
+      - rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
+    }
+  Qed.
+
+
+  Definition Translate := Translate';; MoveLeft _.
+
+  Definition Translate_Rel : Rel (tapes (tau^+) 1) (unit * tapes (tau^+) 1) :=
+    ignoreParam (
+        fun tin tout =>
+          forall x : X,
+            tin[@Fin0] ≃(Encode_map cX retr1) x ->
+            tout[@Fin0] ≃(Encode_map cX retr2) x
+      ).
+
+  Lemma Translate_Realise : Translate ⊨ Translate_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Translate. repeat TM_Correct.
+      - apply Translate'_Realise.
+      - apply MoveLeft_Realise with (cX := Encode_map cX retr2).
+    }
+    {
+      intros tin ((), tout) H. intros x HEncX.
+      TMSimp. apply H0. apply H. apply HEncX.
+    }
+  Qed.
+
+End Translate.
+
+Arguments Translate {tau} (sig) (retr1 retr2).
 
 
 (*
