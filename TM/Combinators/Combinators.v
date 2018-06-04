@@ -74,39 +74,39 @@ Arguments Return : simpl never.
 
 (** Helper tactics for match *)
 
-(* Database for additional one-parameter tactics that destruct the given arguments and shelves the
- * sub-goals *)
-Smpl Create smpl_destruct_shelve.
 
+(** This tactic destructs a variable recursivle and shelves each goal where it couldn't destruct the variable further. The purpose of this tactic is to pre-instantiate functions to relations with holes of the form [Param -> Rel _ _]. We need this for the [Match] Machine.
+The implementation of this tactic is quiete uggly but works for parameters with up to 9 constructor arguments. This tactic may generates a lot of warnings, which can be ignored. *)
 Ltac destruct_shelve e :=
   cbn in e;
   idtac "Input:";
   print_type e;
   idtac "Output:";
   print_goal_cbn; 
-  match type of e with
-  | bool => destruct e; shelve; idtac "tam"
-  | move => destruct e; shelve
-  | (_ + _) % type =>
-    idtac "I am sum!";
-    (* ALWAYS use fresh, ****NEVER EVER**** do something like destruct e as [?X | ?Y] !!!!!!! *)
-    let X := fresh "X" in
-    let Y := fresh "Y" in
-    destruct e as [X | Y]; [destruct_shelve X | destruct_shelve Y]
-  | @option _ =>
-    idtac "I am optional!";
-    let X := fresh "X" in
-    let Y := fresh "Y" in
-    destruct e as [X | ]; [print_type X; destruct_shelve X | shelve]
-  | _ * _ =>
-    let X := fresh "X" in
-    let Y := fresh "Y" in
-    destruct e as (X, Y); destruct_shelve X; destruct_shelve Y
-  | _ => smpl smpl_destruct_shelve e
-  | _ => idtac "Could not destruct any more"; shelve
-  end.
+  let x1 := fresh "x" in
+  let x2 := fresh "x" in
+  let x3 := fresh "x" in
+  let x4 := fresh "x" in
+  let x5 := fresh "x" in
+  let x6 := fresh "x" in
+  let x7 := fresh "x" in
+  let x8 := fresh "x" in
+  let x9 := fresh "x" in
+  first [ destruct e as [x1|x2|x3|x4|x5|x6|x7|x8|x9]; idtac e "has 9 constructors"; [ try destruct_shelve x1 | try destruct_shelve x2 | try destruct_shelve x3 | try destruct_shelve x4 | try destruct_shelve x5 | try destruct_shelve x6 | try destruct_shelve x7 | try destruct_shelve x8 | try destruct_shelve x9]; shelve
+        | destruct e as [x1|x2|x3|x4|x5|x6|x7|x8]; idtac e "has 8 constructors"; [ try destruct_shelve x1 | try destruct_shelve x2 | try destruct_shelve x3 | try destruct_shelve x4 | try destruct_shelve x5 | try destruct_shelve x6 | try destruct_shelve x7 | try destruct_shelve x8]; shelve
+        | destruct e as [x1|x2|x3|x4|x5|x6|x7]; idtac e "has 7 constructors"; [ try destruct_shelve x1 | try destruct_shelve x2 | try destruct_shelve x3 | try destruct_shelve x4 | try destruct_shelve x5 | try destruct_shelve x6 | try destruct_shelve x7]; shelve
+        | destruct e as [x1|x2|x3|x4|x5|x6]; idtac e "has 6 constructors"; [ try destruct_shelve x1 | try destruct_shelve x2 | try destruct_shelve x3 | try destruct_shelve x4 | try destruct_shelve x5 | try destruct_shelve x6]; shelve
+        | destruct e as [x1|x2|x3|x4|x5]; idtac e "has 5 constructors"; [ try destruct_shelve x1 | try destruct_shelve x2 | try destruct_shelve x3 | try destruct_shelve x4 | try destruct_shelve x5]; shelve
+        | destruct e as [x1|x2|x3|x4]; idtac e "has 4 constructors"; [ try destruct_shelve x1 | try destruct_shelve x2 | try destruct_shelve x3 | try destruct_shelve x4]; shelve
+        | destruct e as [x1|x2|x3]; idtac e "has 3 constructors"; [ try destruct_shelve x1 | try destruct_shelve x2 | try destruct_shelve x3]; shelve
+        | destruct e as [x1|x2]; idtac e "has 2 constructors"; [ try destruct_shelve x1 | try destruct_shelve x2]; shelve
+        | destruct e as [x1]; idtac e "has 1 constructors"; [ try destruct_shelve x1 ]; shelve
+        | destruct e as []; idtac e "has 0 constructors"; shelve
+        ]
+.
+  
 
-Eval simpl in ltac:(intros ?e; destruct_shelve e) : (option (bool + (bool + (nat + nat)))) -> nat.
+Eval simpl in ltac:(intros ?e; destruct_shelve e) : (option (bool + (bool + (bool + bool)))) -> Rel _ _.
 
 
 Ltac smpl_match_case_solve_RealiseIn :=
@@ -117,31 +117,33 @@ Ltac smpl_match_RealiseIn :=
   | [ |- MATCH ?M1 ?M2 ⊨c(?k1) ?R] =>
     is_evar R;
     let tM2 := type of M2 in
+    let x := fresh "x" in
     match tM2 with
     | ?F -> _ =>
       eapply (Match_RealiseIn
                 (F := FinType(EqType F))
-                (R2 := ltac:(now (intros ?e; destruct_shelve e))));
+                (R2 := ltac:(now (print_goal; intros x; destruct_shelve x))));
       [
         smpl_match_case_solve_RealiseIn
-      | intros ?e; repeat destruct _; smpl_match_case_solve_RealiseIn
+      | intros x; repeat destruct _; smpl_match_case_solve_RealiseIn
       ]
     end
-  end.
-
+  end
+.
 
 Ltac smpl_match_Realise :=
   match goal with
   | [ |- MATCH ?M1 ?M2 ⊨ ?R] =>
     is_evar R;
     let tM2 := type of M2 in
+    let x := fresh "x" in
     match tM2 with
     | ?F -> _ =>
       eapply (Match_Realise
                 (F := FinType(EqType F))
-                (R2 := ltac:(now (intros ?e; destruct_shelve e))));
+                (R2 := ltac:(now (intros x; destruct_shelve x))));
       [
-      | intros ?e; repeat destruct _
+      | intros x; repeat destruct _
       ]
     end
   end.
@@ -152,14 +154,15 @@ Ltac smpl_match_Terminates :=
   | [ |- projT1 (MATCH ?M1 ?M2) ↓ ?R] =>
     is_evar R;
     let tM2 := type of M2 in
+    let x := fresh "x" in
     match tM2 with
     | ?F -> _ =>
       eapply (Match_TerminatesIn
                 (F := FinType(EqType F))
-                (T2 := ltac:(now (intros ?e; destruct_shelve e))));
+                (T2 := ltac:(now (intros x; destruct_shelve x))));
       [ (* show weak realisation of the machine over which is matched *)
       | (* Show termination of the machine over which is matched *)
-      | intros ?e; repeat destruct _ (* Show termination of each case-machine *)
+      | intros x; repeat destruct _ (* Show termination of each case-machine *)
       ]
     end
   end.
