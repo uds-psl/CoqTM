@@ -236,9 +236,7 @@ End Test.
         destruct (left t2); cbn.
         * apply mirror_tape_inv_rightof' in H2. subst. reflexivity.
         * apply mirror_tape_inv_midtape' in H2. subst. reflexivity.
-      + eapply IHp; clear IHp. rewrite <- H; clear H.
-        f_equal. f_equal.
-        destruct (left t2); cbn; auto.
+      + eapply IHp; clear IHp. now rewrite <- H; clear H.
     - destruct t' as (t1',t2'). destruct t1; cbn in *; inv H; auto.
       1: apply mirror_tape_inv_niltape' in H1.
       2: apply mirror_tape_inv_rightof' in H1.
