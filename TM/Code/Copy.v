@@ -498,6 +498,75 @@ Section CopyValue.
 End CopyValue.
 
 
+
+Section Translate.
+
+  Variable (tau sig : finType).
+  Variable (X: Type) (cX : codable sig X).
+  Variable (retr1 : Retract sig tau) (retr2 : Retract sig tau).
+
+  Definition translate : tau^+ -> tau^+ :=
+    fun t => match t with
+          | inl _ => t
+          | inr x => match Retr_g (Retract := retr1) x with
+                    | Some y => inr (Retr_f (Retract := retr2) y)
+                    | None => inl UNKNOWN
+                    end
+          end.
+
+  Definition Translate' := MoveToSymbol (@isStop tau) translate.
+
+  Definition Translate'_Rel : Rel (tapes (tau^+) 1) (unit * tapes (tau^+) 1) :=
+    ignoreParam (
+        fun tin tout =>
+          forall x : X,
+            tin[@Fin0] ≃(Encode_map cX retr1) x ->
+            tout[@Fin0] ≂(Encode_map cX retr2) x
+      ).
+
+  Lemma Translate'_Realise : Translate' ⊨ Translate'_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Translate'. repeat TM_Correct. }
+    {
+      intros tin ((), tout) H. intros x HEncX.
+      destruct HEncX as (ls&HEncX). TMSimp.
+      rewrite MoveToSymbol_correct_midtape; cbn; auto.
+      - repeat econstructor. cbn. f_equal. f_equal. rewrite map_rev, !List.map_map. f_equal.
+        apply map_ext. cbn. intros. now retract_adjoint.
+      - rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
+    }
+  Qed.
+
+
+  Definition Translate := Translate';; MoveLeft _.
+
+  Definition Translate_Rel : Rel (tapes (tau^+) 1) (unit * tapes (tau^+) 1) :=
+    ignoreParam (
+        fun tin tout =>
+          forall x : X,
+            tin[@Fin0] ≃(Encode_map cX retr1) x ->
+            tout[@Fin0] ≃(Encode_map cX retr2) x
+      ).
+
+  Lemma Translate_Realise : Translate ⊨ Translate_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Translate. repeat TM_Correct.
+      - apply Translate'_Realise.
+      - apply MoveLeft_Realise with (cX := Encode_map cX retr2).
+    }
+    {
+      intros tin ((), tout) H. intros x HEncX.
+      TMSimp. apply H0. apply H. apply HEncX.
+    }
+  Qed.
+
+End Translate.
+
+Arguments Translate {tau} (sig) (retr1 retr2).
+
+
 (*
 
 (* TODO: Arguments *)
