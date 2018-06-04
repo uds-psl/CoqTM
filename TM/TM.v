@@ -594,7 +594,15 @@ Section MatchTapes.
     tape_local_l (tape_move_left' rs x ls) = rs.
   Proof. destruct rs; cbn; reflexivity. Qed.
 
-  
+
+  Lemma mirror_tape_move_left' rs (x : sig) ls :
+    mirror_tape (tape_move_left' rs x ls) = tape_move_right' ls x rs.
+  Proof. now destruct rs; cbn. Qed.
+
+  Lemma mirror_tape_move_right' rs (x : sig) ls :
+    mirror_tape (tape_move_right' rs x ls) = tape_move_left' ls x rs.
+  Proof. now destruct ls; cbn. Qed.
+
 End MatchTapes.
 
 Hint Rewrite tape_right_move_left' : tape.
@@ -603,6 +611,8 @@ Hint Rewrite tape_right_move_right' : tape.
 Hint Rewrite tape_left_move_left' : tape.
 Hint Rewrite tape_local_move_right' : tape.
 Hint Rewrite tape_local_l_move_left' : tape.
+Hint Rewrite mirror_tape_move_left' : tape.
+Hint Rewrite mirror_tape_move_right' : tape.
 
 
 
