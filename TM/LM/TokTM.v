@@ -13,15 +13,20 @@ Coercion Tok_to_sum (t : Tok) : (nat + Fin.t 3) :=
   | retT => inr Fin2
   end.
 
-Definition sigTok := (FinType (EqType (bool + (bool + Fin.t 3)))).
+
+Definition sigTok := FinType (EqType (sigSum (FinType (EqType (sigNat))) (FinType(EqType (Fin.t 3))))).
+Arguments sigTok : simpl never.
 
 Instance Encode_Tok : codable sigTok Tok :=
   {|
     encode x := encode (Tok_to_sum x)
   |}.
 
-(** This makes sure that the numbers are encoded with the "inner" [bool], so we don't have to annotate the encoding in [MatchTok_Rel] explicitely. *)
-Instance Encode_Tok_nat : codable sigTok nat := (Encode_map Encode_nat (Retract_inr _ _)).
+
+
+Check _ : codable sigTok nat.
+Check _ : codable sigTok (Fin.t 3).
+
 
 
 Definition MatchTok : { M : mTM sigTok^+ 1 & states M -> Fin.t 4 } :=
