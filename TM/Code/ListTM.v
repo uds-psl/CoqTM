@@ -17,18 +17,18 @@ Section Nth.
 
 
   (** We encode a [list X], an [nat], and an [option x] on the tape, hence our alphabet is: *)
-  Definition tau := FinType (EqType (sigList sigX + sigNat + sigOption sigX)).
+  Local Definition tauNth := FinType (EqType (sigList sigX + sigNat + sigOption sigX)).
 
-  Check _ : codable tau (list X).
-  Check _ : codable tau nat.
-  Check _ : codable tau (option X).
+  Check _ : codable tauNth (list X).
+  Check _ : codable tauNth nat.
+  Check _ : codable tauNth (option X).
 
   (* There are two ways to encode a value [X] on [tau]: first as an element in the list: *)
-  Definition retr_X1 : Retract sigX tau := (Retract_inl _ _).
-  Check Encode_map cX retr_X1 : codable tau X.
+  Definition retr_X1 : Retract sigX tauNth := (Retract_inl _ _).
+  Check Encode_map cX retr_X1 : codable tauNth X.
   (* ... and via the encoding of [sigOption]: *)
-  Definition retr_X2 : Retract sigX tau := (Retract_inr _ _).
-  Check Encode_map cX retr_X2 : codable tau X.
+  Definition retr_X2 : Retract sigX tauNth := (Retract_inr _ _).
+  Check Encode_map cX retr_X2 : codable tauNth X.
 
 
   Print nth_error.
@@ -60,7 +60,7 @@ Section Nth.
    * t2: x (output)
    *)
 
-  Definition Nth_Step_Rel : Rel (tapes tau^+ 3) ((bool*unit) * tapes tau^+ 3) :=
+  Definition Nth_Step_Rel : Rel (tapes tauNth^+ 3) ((bool*unit) * tapes tauNth^+ 3) :=
     fun tin '(yout, tout) =>
       forall (l : list X) (n : nat),
         tin[@Fin0] ≃ l ->
@@ -90,7 +90,7 @@ Section Nth.
         end.
 
 
-  Definition Nth_Step : { M : mTM tau^+ 3 & states M -> bool*unit } :=
+  Definition Nth_Step : { M : mTM tauNth^+ 3 & states M -> bool*unit } :=
     If (Inject (ChangeAlphabet MatchNat _) [|Fin1|])
        (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
            (Return (Inject (ChangeAlphabet (Reset sigX) retr_X1) [|Fin2|]) (true, tt))
@@ -119,7 +119,7 @@ Section Nth.
       intros l n HEncL HEncN HRight.
       destruct H; TMSimp.
       { (* First "Then" case *)
-        specialize (H n). spec_assert H by now eapply contains_translate_tau1.
+        specialize (H n). spec_assert H by now eapply contains_translate_tau.
         destruct n as [ | n']; destruct H as (H&H'); inv H'.
         (* We know that n = S n' *)
 
@@ -195,7 +195,7 @@ Section Nth.
   Qed.
 
 
-  Definition Nth_Loop_Rel : Rel (tapes tau^+ 3) (unit * tapes tau^+ 3) :=
+  Definition Nth_Loop_Rel : Rel (tapes tauNth^+ 3) (unit * tapes tauNth^+ 3) :=
     ignoreParam
       (fun tin tout =>
          forall l (n : nat),
@@ -226,7 +226,7 @@ Section Nth.
   Qed.
 
 
-  Definition Nth : { M : mTM tau^+ 5 & states M -> unit } :=
+  Definition Nth : { M : mTM tauNth^+ 5 & states M -> unit } :=
     Inject (CopyValue _) [|Fin0; Fin3|];; (* Save l (on t0) to t3 and n (on t1) to t4 *)
     Inject (CopyValue _) [|Fin1; Fin4|];;
     Inject (Nth_Loop) [|Fin3; Fin4; Fin2|];; (* Execute the loop with the copy of n and l *)
@@ -507,7 +507,7 @@ Section Append.
   Variable (sigX : finType) (X : Type) (cX : codable sigX X).
   Hypothesis (defX: inhabitedC sigX).
 
-  Let tau := FinType (EqType (sigList sigX)).
+  Notation tau := (FinType (EqType (sigList sigX))) (only parsing).
 
   Definition App_Rel : Rel (tapes tau^+ 2) (unit * tapes tau^+ 2) :=
     ignoreParam (fun tin tout =>
@@ -569,11 +569,11 @@ Section Append.
       - apply MoveLeft_Realise with (X := list X).
     }
     {
-      intros tin ((), tout) H. intros xs ys HEncXS HEncYS. subst tau. TMSimp; clear_trivial_eqs.
+      intros tin ((), tout) H. intros xs ys HEncXS HEncYS. TMSimp; clear_trivial_eqs.
       destruct HEncYS as (ls1&HEncYS).
       specialize H with (1 := HEncXS). destruct H as (ls2&H). TMSimp.
       erewrite CopySymbols_correct_moveright in H1; cbn; auto; swap 1 2.
-      { rewrite List.map_map. intros ? (?&<-&?) % in_map_iff. cbn. reflexivity. }
+      { intros ? (?&<-&?) % in_map_iff. cbn. reflexivity. }
       apply pair_eq in H1 as (H1&H1'); TMSimp.
       specialize (H3 (xs++ys)); spec_assert H3.
       { repeat econstructor. cbn. rewrite !map_id, <- !map_rev. cbv [id].
@@ -586,7 +586,7 @@ Section Append.
       }
       
       specialize (H4 ys). spec_assert H4.
-      { repeat econstructor. cbn. now rewrite <- !map_rev, !List.map_map. }
+      { repeat econstructor. cbn. now rewrite <- !map_rev. }
       auto.
     }
   Qed.
