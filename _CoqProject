@@ -59,3 +59,4 @@ TM/Compound/CopySymbols.v
 TM/LM/Definitions.v
 TM/LM/TokTM.v
 TM/LM/HeapTM.v
+TM/LM/LookupTM.v
