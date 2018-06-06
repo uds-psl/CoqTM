@@ -60,56 +60,56 @@ Ltac destruct_unit :=
          end.
 
 
-(* Simplifies the goal without making any decissions *)
+(** TMSimp destructs conjunctive assumptions and rewrites assumptions like [t'[@i] = t[@j]] automatically. *)
+
+Ltac TMSimp1 T :=
+  try destruct_param_tape_pair; destruct_unit;
+  simpl_not_in;
+  cbn in *;
+  subst;
+  unfold finType_CS in *;
+  try T;
+  match goal with
+  | [ H : _ ::: _ = [||]  |- _ ] => inv H
+  | [ H : [||] = _ ::: _ |- _ ] => inv H
+  | [ H : _ ::: _ = _ ::: _ |- _ ] => apply VectorSpec.cons_inj in H
+
+  | [ H : _ ::  _ = []  |- _ ] => inv H
+  | [ H : [] = _ :: _ |- _ ] => inv H
+  | [ H : _ ::  _ = _ :: _ |- _ ] => inv H
+
+
+  | [ H : Some _ = Some _ |- _ ] => inv H
+  | [ H : None   = Some _ |- _ ] => inv H
+  | [ H : Some _ = None   |- _ ] => inv H
+
+  | [ H : _ /\ _ |- _] => destruct H
+  | [ H : ex ?P |- _] =>
+    match type of P with
+    | tapes _ _ -> Prop =>
+      let tmid := fresh "tmid" in
+      destruct H as (tmid&H)
+    | _ => (* probably some parameter *)
+      let ymid := fresh "ymid" in
+      destruct H as (ymid&H)
+    end
+  | [ x : _ * _    |- _ ] => destruct x
+  | _ => idtac
+  end.
+
+Ltac TMSimp2 :=
+  match goal with
+  | [ H: ?X = _ |- _ ] => rewrite H in *; lock H
+  end.
+
 Tactic Notation "TMSimp" tactic(T) :=
-  repeat progress
-         (
-           try destruct_param_tape_pair; destruct_unit;
-           simpl_not_in;
-           try match goal with
-               | [ H : FinType _ |- _] => cbn in H
-               end;
-           cbn in *;
-           intros;
-           subst;
-           unfold finType_CS in *;
-           try T;
-           match goal with
-           | [ H : _ ::: _ = [||]  |- _ ] => inv H
-           | [ H : [||] = _ ::: _ |- _ ] => inv H
-           | [ H : _ ::: _ = _ ::: _ |- _ ] => apply VectorSpec.cons_inj in H
-
-           | [ H : _ ::  _ = []  |- _ ] => inv H
-           | [ H : [] = _ :: _ |- _ ] => inv H
-           | [ H : _ ::  _ = _ :: _ |- _ ] => inv H
-
-
-           | [ H : Some _ = Some _ |- _ ] => inv H
-           | [ H : None   = Some _ |- _ ] => inv H
-           | [ H : Some _ = None   |- _ ] => inv H
-
-           | [ H : _ /\ _ |- _] => destruct H
-           | [ H : ex ?P |- _] =>
-             match type of P with
-             | tapes _ _ -> Prop =>
-               let tmid := fresh "tmid" in
-               destruct H as (tmid&H)
-             | _ => (* probably some parameter *)
-               let ymid := fresh "ymid" in
-               destruct H as (ymid&H)
-             end
-           | [ x : _ * _    |- _ ] => destruct x
-
-           | [ H1: ?X = _, H2: context [ ?X ] |- _ ] => rewrite H1 in H2
-           | [ H1: ?X = _    |- context [ ?X ]     ] => rewrite H1
-
-           | _ => idtac
-           end
-         ).
-
+  repeat progress (repeat progress TMSimp1 T; repeat TMSimp2; unlock all).
 
 Tactic Notation "TMSimp" := TMSimp idtac.
 
+
+
+(** DO NOT USE THE FOLLOWING (deprecated) TACTICS, except in [TM.Compound]! *)
 
 Tactic Notation "TMBranche" :=
   (

@@ -34,7 +34,7 @@ Section MovePar.
       omega.
     }
     {
-      hnf in *. intros tin (yout&tout). destruct_tapes. cbn -[Vector.nth] in *.
+      hnf in *. intros tin (yout&tout) H. destruct_tapes. cbn -[Vector.nth] in *.
       TMSimp; clear_trivial_eqs. auto.
     }
   Qed.
@@ -123,8 +123,7 @@ Section ReadChar.
       intros tin (yout, tout) H.
       hnf. TMSimp; clear_trivial_eqs. split; auto.
       eapply VectorSpec.eq_nth_iff; intros p ? <-.
-      decide (p = k) as [->|HnEq].
-      - apply H.
+      decide (p = k) as [->|HnEq]; TMSimp; auto.
       - symmetry. apply H0. vector_not_in.
     }
   Qed.

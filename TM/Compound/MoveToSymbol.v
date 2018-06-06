@@ -68,7 +68,7 @@ Section move_to_symbol.
       (cbn; omega).
     }
     {
-      unfold M1_Rel, M1_Fun. intros tin (yout, tout).
+      unfold M1_Rel, M1_Fun. intros tin (yout, tout) H.
       TMCrush idtac; TMSolve 6.
     }
   Qed.

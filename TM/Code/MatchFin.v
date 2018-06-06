@@ -33,8 +33,8 @@ Section MatchFin.
     { Unshelve. 4,8:reflexivity. all:omega. }
     {
       intros tin (yout, tout) H. intros x HEncX.
-      destruct HEncX as (ls&HEncX); TMSimp.
-      repeat econstructor.
+      destruct HEncX as (ls&HEncX).
+      TMSimp. repeat econstructor.
     }
   Qed.
 

@@ -155,20 +155,19 @@ Section MatchList.
     { unfold MatchList. repeat TM_Correct. eapply M1_Realise. eapply Skip_cons_Realise. }
     {
       intros tin (yout, tout) H. intros l HEncL HRight.
-      TMSimp; clear_trivial_eqs.
-      destruct HEncL as (ls&HEncL). destruct HRight as (ls'&rs'&HRight). TMSimp.
-      rewrite <- H0 in *.
+      destruct HEncL as (ls&HEncL). destruct HRight as (ls'&rs'&HRight). TMSimp; clear_trivial_eqs.
       destruct l as [ | x l'] in *; cbn in *; TMSimp; clear_trivial_eqs.
       { (* nil *)
-        rewrite <- H0. split; auto.
+        split; auto.
         - repeat econstructor; cbn; simpl_tape.
         - repeat econstructor.
       }
       { (* cons *)
         rewrite map_app, <- app_assoc in H0. symmetry in H0.
-        specialize (H _ _ _ _ ltac:(now repeat econstructor) H0).
         TMSimp.
-        specialize H2 with (1 := eq_refl).
+        rewrite map_app, <- app_assoc in H.
+        specialize H with (1 := ltac:(now repeat econstructor) : isRight _) (2 := eq_refl).
+        TMSimp. symmetry in H0. specialize H2 with (1 := H0).
         destruct l' as [ | x' l'']; TMSimp.
         - repeat split; auto. repeat econstructor. f_equal. simpl_tape. cbn. reflexivity.
         - repeat split; auto. repeat econstructor. f_equal. simpl_tape. cbn. now rewrite map_app, <- app_assoc.

@@ -49,7 +49,7 @@ Section Peek.
     unfold Peek_Steps. eapply RealiseIn_monotone.
     - unfold Peek. repeat TM_Correct.
     - Unshelve. 6,9: constructor 1. all: cbn. all: try omega. 4-7: constructor. cbn. constructor.
-    - intros tin (yout,tout) H. TMCrush; TMSolve 1.
+    - intros tin (yout,tout) H. now TMCrush; TMSolve 1.
       (*
       Undo.
       TMSimp. destruct (current _) eqn:E1.
