@@ -65,14 +65,14 @@ End Encode_map.
 
 
 (** Builds simple retract functions like [sigSum -> option sigX] in the form
-[fun x => match x with constructor_name y => Some y | _ => None] *)
+[fun x => match x with constructor_name y => Retr_g y | _ => None] *)
 
 Ltac build_simple_retract_g :=
   match goal with
   | [ |- ?Y -> option ?X ] =>
     idtac "Retract function" X Y;
     let x := fresh "x" in
-    intros x; destruct x; intros; try solve [now left]; right
+    intros x; destruct x; intros; try solve [now apply Retr_g ]; right
   end.
 
 
@@ -82,14 +82,14 @@ Ltac build_simple_retract :=
     idtac "Retract from" X "to" Y;
     let x := fresh "x" in
     let y := fresh "y" in
-    let f := (eval simpl in (ltac:(intros x; now constructor) : X -> Y)) in
+    let f := (eval simpl in (ltac:(intros x; constructor; now apply Retr_f) : X -> Y)) in
     idtac "f:" f;
     let g := (eval simpl in (ltac:(build_simple_retract_g) : Y -> option X)) in
     idtac "g:" g;
     apply Build_Retract with (Retr_f := f) (Retr_g := g);
-    hnf; intros x y; split;
-    [ destruct y; congruence
-    | now intros ->
+    abstract now hnf; intros x y; split;
+    [ destruct y; try congruence; now intros -> % retract_g_inv
+    | now intros ->; now retract_adjoint
     ]
   end
 .
@@ -106,7 +106,7 @@ Lemma countMap_injective (X Y : eqType) (x : X) (A : list X) (f : X -> Y) :
 Proof.
   intros HInj. revert x. induction A as [ | a A IH]; intros; cbn in *; auto.
   decide (f x = f a) as [ -> % HInj | He].
-  - have (a=a).
+  - decide (a = a) as [_ | Ha]; auto. congruence.
   - decide (x = a) as [-> | Hx]; auto. congruence.
 Qed.
 
@@ -125,33 +125,37 @@ Section Encode_sum.
   Variable (sigX sigY : finType).
   Hypothesis (cX : codable sigX X) (cY : codable sigY Y).
 
-  Inductive sigSum : Type :=
+  Inductive sigSum (sigX sigY : finType) : Type :=
   | sigSum_X (s : sigX)
   | sigSum_Y (s : sigY)
   | sigSum_inl
   | sigSum_inr
   .
 
-  Global Instance Retract_sigSum_X : Retract sigX sigSum := ltac:(build_simple_retract).
-  Global Instance Retract_sigSum_Y : Retract sigY sigSum := ltac:(build_simple_retract).
-  Global Instance sigSum_dec : eq_dec sigSum := ltac:(build_eq_dec).
-  Global Instance sigSum_fin : finTypeC (EqType sigSum).
+  Arguments sigSum_inl {sigX sigY}. Arguments sigSum_inr {sigX sigY}. Arguments sigSum_X {sigX sigY}. Arguments sigSum_Y {sigX sigY}.
+
+  Global Instance Retract_sigSum_X (sigX sigY tau : finType) (f : Retract sigX tau) : Retract sigX (sigSum tau sigY).
+  Proof. build_simple_retract. Defined.
+  Global Instance Retract_sigSum_Y (sigX sigY tau : finType) (f : Retract sigY tau) : Retract sigY (sigSum sigX tau).
+  Proof. build_simple_retract. Defined.
+  Global Instance sigSum_dec : eq_dec (sigSum sigX sigY) := ltac:(build_eq_dec).
+  Global Instance sigSum_fin : finTypeC (EqType (sigSum sigX sigY)).
   Proof.
     split with (enum := sigSum_inl :: sigSum_inr :: map sigSum_X enum ++ map sigSum_Y enum). intros [x|y| | ]; cbn; f_equal.
     - rewrite <- !countSplit.
-      erewrite countMap_injective. 2: eapply (retract_f_injective) with (I := Retract_sigSum_X).
-      rewrite enum_ok.
-      rewrite countMap_zero. omega. congruence.
+      erewrite countMap_injective.
+      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + eapply (retract_f_injective) with (I := Retract_sigSum_X sigY (Retract_id _)).
     - rewrite <- !countSplit.
-      erewrite countMap_injective. 2: eapply (retract_f_injective) with (I := Retract_sigSum_Y).
-      rewrite enum_ok.
-      rewrite countMap_zero. omega. congruence.
+      erewrite countMap_injective.
+      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + eapply (retract_f_injective) with (I := Retract_sigSum_Y sigX (Retract_id _)).
     - rewrite <- !countSplit. rewrite !countMap_zero. omega. all: congruence.
     - rewrite <- !countSplit. rewrite !countMap_zero. omega. all: congruence.
   Qed.
 
   
-  Global Instance Encode_sum : codable (FinType(EqType(sigSum))) (X+Y) :=
+  Global Instance Encode_sum : codable (FinType(EqType(sigSum sigX sigY))) (X+Y) :=
     {|
       encode s := match s with
                   | inl x => sigSum_inl :: encode x
@@ -168,38 +172,80 @@ Compute Encode_sum Encode_bool Encode_unit (inl true).
 
 (** If [X] is encodable over [sigX] and [Y] over [sigY]. *)
 Section Encode_pair.
-  Variable (sig tau: finType) (X Y: Type) (cX : codable sig X) (cY : codable tau Y).
+  Variable (sigX sigY: finType) (X Y: Type) (cX : codable sigX X) (cY : codable sigY Y).
 
-  Global Instance Encode_pair : codable (FinType (EqType (sig+tau))) (X*Y) :=
+  Inductive sigPair (sigX sigY : finType) : Type :=
+  | sigPair_X (s : sigX)
+  | sigPair_Y (s : sigY)
+  .
+
+  Arguments sigPair_X {sigX sigY}. Arguments sigPair_Y {sigX sigY}.
+
+  Global Instance Retract_sigPair_X (sigX sigY tau : finType) (f : Retract sigX tau) : Retract sigX (sigPair tau sigY).
+  Proof. build_simple_retract. Defined.
+  Global Instance Retract_sigPair_Y (sigX sigY tau : finType) (f : Retract sigY tau) : Retract sigY (sigPair sigX tau).
+  Proof. build_simple_retract. Defined.
+  Global Instance sigPair_dec : eq_dec (sigPair sigX sigY) := ltac:(build_eq_dec).
+  Global Instance sigPair_fin : finTypeC (EqType (sigPair sigX sigY)).
+  Proof.
+    split with (enum := map sigPair_X enum ++ map sigPair_Y enum). intros [x|y]; cbn; f_equal.
+    - rewrite <- !countSplit.
+      erewrite countMap_injective.
+      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + eapply (retract_f_injective) with (I := Retract_sigPair_X sigY (Retract_id _)).
+    - rewrite <- !countSplit.
+      erewrite countMap_injective.
+      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + eapply (retract_f_injective) with (I := Retract_sigPair_Y sigX (Retract_id _)).
+  Qed.
+
+  
+  Global Instance Encode_pair : codable (FinType (EqType (sigPair sigX sigY))) (X*Y) :=
     {|
       encode '(x,y) := encode x ++ encode y;
     |}.
 
 End Encode_pair.
 
+Arguments sigPair_X {sigX sigY}. Arguments sigPair_Y {sigX sigY}.
+
+
+Compute Encode_pair Encode_bool (Encode_sum Encode_unit Encode_bool) (true, inl tt).
+
+Check _ : codable (FinType (EqType (sigPair (FinType (EqType bool))
+                                            (FinType (EqType (sigSum (FinType (EqType Empty_set)) (FinType (EqType bool))))))))
+                  unit.
+
+
+
+
 Section Encode_option.
   Variable (sigX: finType) (X: Type) (cX : codable sigX X).
 
-  Inductive sigOption : Type :=
+  Inductive sigOption (sigX: finType) : Type :=
   | sigOption_X (s : sigX)
   | sigOption_None
   | sigOption_Some
   .
 
-  Global Instance Retract_sigOption_X : Retract sigX sigOption := ltac:(build_simple_retract).
-  Global Instance sigOption_dec : eq_dec sigOption := ltac:(build_eq_dec).
-  Global Instance sigOption_fin : finTypeC (EqType sigOption).
+  Arguments sigOption_Some {sigX}. Arguments sigOption_None {sigX}. Arguments sigOption_X {sigX}.
+
+  Global Instance Retract_sigOption_X (sig tau : finType) (retr : Retract sig tau) : Retract sig (sigOption tau).
+  Proof. build_simple_retract. Defined.
+
+  Global Instance sigOption_dec : eq_dec (sigOption sigX) := ltac:(build_eq_dec).
+  Global Instance sigOption_fin : finTypeC (EqType (sigOption sigX)).
   Proof.
     split with (enum := sigOption_Some :: sigOption_None :: map sigOption_X enum).
     intros [x| | ]; cbn; f_equal.
-    - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigOption_X).
+    - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigOption_X (Retract_id _)).
       now apply enum_ok.
     - rewrite countMap_zero. omega. congruence.
     - rewrite countMap_zero. omega. congruence.
   Qed.
 
 
-  Global Instance Encode_option : codable (FinType(EqType sigOption)) (option X) :=
+  Global Instance Encode_option : codable (FinType(EqType (sigOption sigX))) (option X) :=
     {|
       encode o := match o with
                   | None => [sigOption_None]
@@ -220,31 +266,35 @@ Section Encode_list.
   Variable sigX: finType.
   Variable (X : Type) (cX : codable sigX X).
 
-  Inductive sigList : Type :=
+  Inductive sigList (sigX : finType) : Type :=
   | sigList_X (s : sigX)
   | sigList_nil
   | sigList_cons
   .
-  Global Instance Retract_sigList_X : Retract sigX sigList := ltac:(build_simple_retract).
-  Global Instance sigList_dec : eq_dec sigList := ltac:(build_eq_dec).
-  Global Instance sigList_fin : finTypeC (EqType sigList).
+
+  Arguments sigList_nil {sigX}. Arguments sigList_cons {sigX}. Arguments sigList_X {sigX}.
+
+  Global Instance Retract_sigList_X (sig tau : finType) (retr : Retract sig tau) : Retract sig (sigList tau).
+  Proof. build_simple_retract. Defined.
+  Global Instance sigList_dec : eq_dec (sigList sigX) := ltac:(build_eq_dec).
+  Global Instance sigList_fin : finTypeC (EqType (sigList sigX)).
   Proof.
     split with (enum := sigList_nil :: sigList_cons :: map sigList_X enum).
     intros [x| | ]; cbn; f_equal.
-    - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigList_X).
+    - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigList_X (Retract_id _)).
       now apply enum_ok.
     - rewrite countMap_zero. omega. congruence.
     - rewrite countMap_zero. omega. congruence.
   Qed.
 
 
-  Fixpoint encode_list (xs : list X) : list sigList :=
+  Fixpoint encode_list (xs : list X) : list (sigList sigX) :=
     match xs with
     | nil => [sigList_nil]
     | x :: xs' => sigList_cons :: encode x ++ encode_list xs'
     end.
 
-  Global Instance Encode_list : codable (FinType(EqType sigList)) (list X) :=
+  Global Instance Encode_list : codable (FinType(EqType (sigList sigX))) (list X) :=
     {|
       encode := encode_list;
     |}.
@@ -254,6 +304,7 @@ End Encode_list.
 Arguments sigList_nil {sigX}. Arguments sigList_cons {sigX}. Arguments sigList_X {sigX}.
 
 Compute Encode_list Encode_bool (nil).
+(* This cannot reduce to [sigList_cons :: sigList_X true :: Encode_list _] *)
 Eval cbn in Encode_list Encode_bool (true :: _).
 Compute Encode_list Encode_bool (true :: false :: nil).
 
