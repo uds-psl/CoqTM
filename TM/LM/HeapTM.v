@@ -33,7 +33,7 @@ Instance Encode_HEnt' : codable sigHEnt' (HClos*HAd) := _.
 
 Definition sigHEnt := FinType (EqType (sigOption sigHEnt')).
 Arguments sigHEnt : simpl never.
-Instance Encode_Entr : codable sigHEnt HEnt := _.
+Instance Encode_HEnt : codable sigHEnt HEnt := _.
 
 Definition sigHeap := FinType (EqType (sigList sigHEnt)).
 Arguments sigHeap : simpl never.
@@ -72,7 +72,8 @@ t4-t5: internal tapes for [Nth]
 t6: internal tape for storing the result of [Nth] in the case [n=0].
 t7: saves [a]
 
-The alphabet for [Lookup] can hold a Heap, an address, and an option of an entry, as well as an option of a closure.
+We neeed the alphabets [sigHeap], [sigNat], and [sigOption sigHEnt] for [Nth].
+The output of the machine is encoded with [sigOption sigHClos].
 *)
 
 
@@ -91,36 +92,43 @@ Check _ : Retract sigNat sigLookup.
 
 
 
-(** There are two ways to encode [nat] on [sigLookup]: First as a variable on [sigHeap], or directly using the provided [sigNat]. We neeed the alphabets [sigHeap], [sigNat], and [sigOption sigHEnt], which are in paranthesises in [sigLookup], for [Nth]. For simplicity, we assume that [a] and [n] are encoded directly in the latter way using [sigNat]. *)
+(** There are fou ways to encode [nat] on [sigLookup]:
+- as a variable on [sigHeap].
+- directly on the [sigNat], i.e. as parameter for [Nth]
+- on the alphabet [sigOption sigHEnt], i.e. as an address inside the optional output of [Nth]
+- on the alphabet [sigOption sigHClos], i.e. as the address of the optional output closure
+
+We assume, that [n] is encoded in the first way, i.e. as variable. However, for simplicity, [a] should be encoded as a parameter for [Nth]. *)
 
 Definition retr_nat_heap : Retract sigNat sigHeap := Retract_sigList_X _.
-Definition retr1_nat : Retract sigNat sigLookup := Retract_inl (sigOption sigHClos) (Retract_inl (sigOption sigHEnt) (Retract_inl sigNat retr_nat_heap)).
-Definition retr2_nat : Retract sigNat sigLookup := Retract_inl (sigOption sigHClos) (Retract_inl (sigOption sigHEnt) (Retract_inr sigHeap (Retract_id sigNat))).
-
-Check _ : codable sigLookup (option HClos).
-Check _ : codable sigLookup (option HEnt).
-Check _ : codable sigLookup HEnt.
+Definition retr_nat_lookup_var : Retract sigNat sigLookup := Retract_inl (sigOption sigHClos) (Retract_inl (sigOption sigHEnt) (Retract_inl sigNat retr_nat_heap)).
+Definition retr_nat_lookup_nth : Retract sigNat sigLookup := Retract_inl (sigOption sigHClos) (Retract_inl (sigOption sigHEnt) (Retract_inr sigHeap (Retract_id sigNat))).
+Definition retr_nat_optEnt : Retract sigNat (sigOption sigHEnt) := Retract_sigOption_X _.
+Definition retr_nat_lookup_optEnt : Retract sigNat sigLookup := Retract_inl (sigOption sigHClos) (Retract_inr _ retr_nat_optEnt).
+Definition retr_nat_optClos : Retract sigNat (sigOption sigHClos) := Retract_sigOption_X _.
+Definition retr_nat_lookup_out : Retract sigNat sigLookup := Retract_inr _ retr_nat_optClos.
 
 (*
 Lookup_Step:
 
 if n = S n' {
   buff = Nth H a
-  if buff = Some (g, b) {
-    (out, buff) = buff
-    out = Some out
-    return
-  } else {
+  if buff = Some (Some (g, b)) {
+    buff = snd buff
+    Translate buff from [retr_nat_lookup_optEnt] to [ret_nat_lookup_nth].
+    Reset a; a <- buff
     Reset buff (* [MatchOption] currently resets the tape if the input was [None]. This could be considered a bug of [MatchOption], but it actually makes things more convenient. *)
+    continue
+  } else {
+    Reset buff
     return
   }
 } else if n = O {
   buff = Nth H a
-  if buff = Some (g, b) {
-    buff = snd buff
-    Reset a; a <- buff
-    Reset buff
-    continue
+  if buff = Some (Some (g, b)) {
+    (out, buff) = buff
+    out = Some out
+    return
   } else {
     Reset buff
     return
@@ -135,22 +143,21 @@ t4-t5: internal tapes for [Nth]
 t6: internal tape for storing the result of [Nth]
 *)
 
-
 Definition Lookup_Step : { M : mTM sigLookup^+ 7 & states M -> bool*unit } :=
-  If (Inject (ChangeAlphabet MatchNat retr2_nat) [|Fin2|])
+  If (Inject (ChangeAlphabet MatchNat retr_nat_lookup_var) [|Fin2|])
      (* [n = S n'] *)
      (Inject (ChangeAlphabet (Nth sigHEnt) _) [|Fin0; Fin1; Fin6; Fin4; Fin5|];;
       If (Inject (ChangeAlphabet (MatchOption sigHEnt) _) [|Fin6|])
          (If (Inject (ChangeAlphabet (MatchOption sigHEnt') _) [|Fin6|])
              (Return
                 (Inject (ChangeAlphabet (Snd sigHClos sigHAd) _) [|Fin6|];;
-                 Inject (ChangeAlphabet (Reset sigHAd) _) [|Fin1|];;
-                 Inject (ChangeAlphabet (CopyValue sigHAd) (retr2_nat)) [|Fin6; Fin1|];;
-                 Inject (ChangeAlphabet (Reset sigHAd) _) [|Fin6|])
+                 Inject (Translate retr_nat_lookup_optEnt retr_nat_lookup_nth) [|Fin6|];;
+                 Inject (ChangeAlphabet (Reset sigHAd) retr_nat_lookup_nth) [|Fin1|];;
+                 Inject (ChangeAlphabet (CopyValue sigHAd) retr_nat_lookup_nth) [|Fin6; Fin1|];;
+                 Inject (ChangeAlphabet (Reset sigHAd) retr_nat_lookup_nth) [|Fin6|])
                 (true, tt))
              (Return (Inject (ChangeAlphabet (Constr_None sigHClos) _) [|Fin3|]) (false, tt)))
-         (Return (Inject (ChangeAlphabet (Constr_None sigHClos) _) [|Fin3|]) (false, tt))
-     )
+         (Return (Inject (ChangeAlphabet (Constr_None sigHClos) _) [|Fin3|]) (false, tt)))
      (* [n = O] *)
      (Return
         (Inject (ChangeAlphabet (Nth sigHEnt) _) [|Fin0; Fin1; Fin6; Fin4; Fin5|];;
@@ -169,15 +176,15 @@ Definition Lookup_Step_Rel : Rel (tapes sigLookup^+ 7) (bool*unit * tapes sigLoo
   fun tin '(yout, tout) =>
     forall (H: Heap) (a n: nat),
       tin[@Fin0] ≃ H ->
-      tin[@Fin1] ≃(Encode_map Encode_nat retr2_nat) a ->
-      tin[@Fin2] ≃(Encode_map Encode_nat retr2_nat) n ->
+      tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) a ->
+      tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) n ->
       isRight tin[@Fin3] -> isRight tin[@Fin4] -> isRight tin[@Fin5] -> isRight tin[@Fin6] ->
       tout[@Fin0] ≃(Encode_map _ (Retract_inl _ _)) H /\
       match n with
       | O =>
-        tout[@Fin1] ≃(Encode_map _ (Retract_inl _ _)) a /\
-        tout[@Fin2] ≃(Encode_map _ (Retract_inl _ _)) 0 /\
-        tout[@Fin3] ≃(Encode_map _ (Retract_inr _ _)) (* !!! *)
+        tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) a /\
+        tout[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) 0 /\
+        tout[@Fin3] ≃
             match nth_error H a with
             | Some (Some (g, b)) => Some g
             | _ => None
@@ -186,15 +193,15 @@ Definition Lookup_Step_Rel : Rel (tapes sigLookup^+ 7) (bool*unit * tapes sigLoo
       | S n' =>
         match nth_error H a with
         | Some (Some (g, b)) =>
-          tout[@Fin1] ≃(Encode_map _ (Retract_inl _ _)) b /\
+          tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) b /\
           isRight tout[@Fin3] /\
           yout = (true, tt)
         | _ =>
-          tout[@Fin1] ≃(Encode_map _ (Retract_inl _ _)) a /\
-          tout[@Fin3] ≃(Encode_map _ (Retract_inr _ _)) @None HClos /\ (* !!! *)
+          tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) a /\
+          tout[@Fin3] ≃ @None HClos /\
           yout = (false, tt)
         end /\
-        tout[@Fin2] ≃(Encode_map _ (Retract_inl _ _)) n'
+        tout[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) n'
       end /\
       isRight tout[@Fin4] /\ isRight tout[@Fin5] /\ isRight tout[@Fin6]
 .
@@ -208,26 +215,27 @@ Ltac clear_tape_eqs :=
 Lemma Lookup_Step_Realise : Lookup_Step ⊨ Lookup_Step_Rel.
 Proof.
   eapply Realise_monotone.
-  { unfold Lookup_Step. repeat TM_Correct. all: unfold ChangeAlphabet; apply Lift_Realise.
+  { unfold Lookup_Step. repeat TM_Correct.
     (* branche [n = S n' ] *)
-    - eapply RealiseIn_Realise. apply MatchNat_Sem.
-    - apply Nth_Computes with (X := HEnt).
-    - eapply RealiseIn_Realise. apply MatchOption_Sem with (X := HEnt).
-    - eapply RealiseIn_Realise. apply MatchOption_Sem with (X := (HClos * HAd) % type).
-    - apply Snd_Realise with (X := HClos) (Y := HAd).
-    - apply Reset_Realise with (X := nat).
-    - apply CopyValue_Realise with (X := nat).
-    - apply Reset_Realise with (X := nat).
-    - eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
-    - eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchNat_Sem.
+    - apply (ChangeAlphabet_Computes2 (Nth_Computes (cX := Encode_HEnt))).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchOption_Sem with (X := HEnt).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchOption_Sem with (X := (HClos * HAd) % type).
+    - apply Lift_Realise. apply Snd_Realise with (X := HClos) (Y := HAd).
+    - apply Translate_Realise with (X := nat).
+    - apply Lift_Realise. apply Reset_Realise with (X := nat).
+    - apply Lift_Realise. apply CopyValue_Realise with (X := nat).
+    - apply Lift_Realise. apply Reset_Realise with (X := nat).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
     (* branche [n = O] *)
-    - apply Nth_Computes with (X := HEnt).
-    - eapply RealiseIn_Realise. apply MatchOption_Sem with (X := HEnt).
-    - eapply RealiseIn_Realise. apply MatchOption_Sem with (X := (HClos * HAd) % type).
-    - apply MatchPair_Realise with (X := HClos) (Y := HAd).
-    - eapply RealiseIn_Realise. apply Constr_Some_Sem with (X := HClos).
-    - eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
-    - eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
+    - apply (ChangeAlphabet_Computes2 (Nth_Computes (cX := Encode_HEnt))).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchOption_Sem with (X := HEnt).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchOption_Sem with (X := (HClos * HAd) % type).
+    - apply Lift_Realise. apply MatchPair_Realise with (X := HClos) (Y := HAd).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_Some_Sem with (X := HClos).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
   }
   {
     intros tin ((yout&()), tout) H.
@@ -241,12 +249,11 @@ Proof.
       destruct n; cbn in *; destruct H as (H&H'); inv H'.
       rename H0 into HCompNth.
       specialize (HCompNth heap a). spec_assert HCompNth.
-      { apply contains_translate_tau1. apply (tape_contains_ext HEncH). cbn. now rewrite List.map_map. }
+      { apply (tape_contains_ext HEncH). cbn. now rewrite List.map_map. }
       spec_assert HCompNth.
-      { apply contains_translate_tau1. apply (tape_contains_ext HEncA). cbn. now rewrite List.map_map. }
-      spec_assert HCompNth by now apply surjectTape_isRight.
-      spec_assert HCompNth by intros i; destruct_fin i; cbn; now apply surjectTape_isRight.
-      destruct HCompNth as (HCompNth % contains_translate_tau2 & HCompNth2 % contains_translate_tau2 & HCompNth3 % contains_translate_tau2 & HCompNth4); cbn in *.
+      { apply (tape_contains_ext HEncA). cbn. now rewrite List.map_map. }
+      spec_assert HCompNth by auto. spec_assert HCompNth by intros i; destruct_fin i; cbn; auto.
+      destruct HCompNth as (HCompNth & HCompNth2 & HCompNth3 & HCompNth4); cbn in *.
       specialize (HCompNth4 Fin1) as HCompNth5; specialize (HCompNth4 Fin0).
       
       destruct H1; TMSimp; clear_trivial_eqs (*; clear_tape_eqs *).
@@ -258,45 +265,67 @@ Proof.
 
         destruct H1; TMSimp; clear_trivial_eqs (*; clear_tape_eqs *).
         { (* Then branche of second [MatchOption] *)
-          rename H0 into HMatchOpt2; rename H2 into HMatchPair; rename H3 into HReset1; rename H4 into HCopy; rename H5 into HReset2.
+          rename H0 into HMatchOpt2; rename H2 into HMatchPair; rename H3 into HTranslate; rename H4 into HReset1; rename H5 into HCopy; rename H6 into HReset2.
           specialize (HMatchOpt2 hEnt); spec_assert HMatchOpt2.
           { apply contains_translate_tau1. apply (tape_contains_ext HMatchOpt1). cbn. now rewrite !List.map_map. }
           destruct hEnt as [ (g, b) | ]; cbn in *; destruct HMatchOpt2 as (HMatchOpt2,HMatchOpt2'); inv HMatchOpt2'; apply contains_translate_tau2 in HMatchOpt2.
 
           specialize (HMatchPair (g, b)); spec_assert HMatchPair as HMatchPair % contains_translate_tau2; cbn in *.
           { apply contains_translate_tau1. apply (tape_contains_ext (HMatchOpt2)). cbn. now rewrite List.map_map. }
+
+          specialize (HTranslate b). spec_assert HTranslate.
+          { apply (tape_contains_ext HMatchPair). cbn. now rewrite List.map_map. }
+
           specialize (HReset1 a). spec_assert HReset1.
-          { apply contains_translate_tau1.
-            Search a.
-            Search tmid1[@Fin1].
-            Search tin[@Fin1].
-            Search tmid[@Fin1].
-            try apply (tape_contains_ext HEncA).
-            admit.
-          }
-          specialize (HCopy b). spec_assert HCopy.
-          { apply contains_translate_tau1. apply (tape_contains_ext HMatchPair). cbn. rewrite List.map_map. apply map_ext.
-            cbn. 
-            compute.
-            cbv. 
-          
+          { apply contains_translate_tau1. apply (tape_contains_ext HCompNth2). cbn. now rewrite List.map_map. }
 
-          
+          specialize (HCopy b). spec_assert HCopy by now apply contains_translate_tau1.
+          spec_assert HCopy as (HCopy % contains_translate_tau2 & HCopy' % contains_translate_tau2) by assumption.
 
+          specialize (HReset2 b). spec_assert HReset2 by now apply contains_translate_tau1.
+
+          repeat split; auto.
+          - apply (tape_contains_ext HCompNth). cbn. now rewrite List.map_map.
+          - now apply contains_translate_tau2 in H.
+          - now apply surjectTape_isRight' in HReset2.
+        }
+
+        { (* Else branche of second [MatchOption] *)
+          rename H0 into HMatchOpt2.
+          specialize (HMatchOpt2 hEnt); spec_assert HMatchOpt2.
+          { apply contains_translate_tau1. apply (tape_contains_ext HMatchOpt1). cbn. now rewrite !List.map_map. }
+          destruct hEnt as [ (g, b) | ]; cbn in *; destruct HMatchOpt2 as (HMatchOpt2,HMatchOpt2'); inv HMatchOpt2'.
+
+          apply contains_translate_tau2 in H.
+          spec_assert H2 as H2 % contains_translate_tau2 by now apply surjectTape_isRight.
+          apply surjectTape_isRight' in HMatchOpt2.
+
+          repeat split; auto.
+          - apply (tape_contains_ext HCompNth). cbn. now rewrite List.map_map.
+          - apply (tape_contains_ext HCompNth2). cbn. now rewrite List.map_map.
+        }
+
+      }
+      { (* Else branche of first [MatchOption] *)
+        rename H0 into HMatchOpt1.
+        specialize (HMatchOpt1 (nth_error heap a)). spec_assert HMatchOpt1.
+        { apply contains_translate_tau1. apply (tape_contains_ext HCompNth3). cbn. rewrite !List.map_map. apply map_ext. auto. }
+        destruct (nth_error heap a) as [ hEnt | ] eqn:ENth; cbn in *; destruct HMatchOpt1 as (HMatchOpt1&HMatchOpt1'); inv HMatchOpt1'.
+
+        apply contains_translate_tau2 in H.
+        spec_assert H2 as H2 % contains_translate_tau2 by now apply surjectTape_isRight.
+        apply surjectTape_isRight' in HMatchOpt1.
+
+        repeat split; auto.
+        - apply (tape_contains_ext HCompNth). cbn. now rewrite List.map_map.
+        - apply (tape_contains_ext HCompNth2). cbn. now rewrite List.map_map.
+      }
     }
-    { (* The Else branche of [MatchNat]: [n = 0] *)
-      specialize (H n). spec_assert H.
-      { apply contains_translate_tau1. apply (tape_contains_ext HEncN).
-        cbn. rewrite !List.map_map, !map_app. f_equal; cbn; auto.
-        apply map_ext. cbv.
-        cbv [Retr_g] in H; cbn in H.
-        unfold tape_contains in H.
-      
-      
 
-      specialize (H n (contains_translate_tau1 HEncN)).
-      
-      
+    { (* The Else branche of [MatchNat]: [n = 0] *)
+      (* TODO *)
+      admit.
+    }
   }
 Qed.
 
