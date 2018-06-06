@@ -19,14 +19,11 @@ Section MatchSum.
 
   Variable (sigX sigY: finType) (X Y: Type) (cX: codable sigX X) (cY: codable sigY Y).
 
-  Definition sigPair := (FinType(EqType(sigX+sigY))).
-
-  Check _ : codable sigPair (X*Y).
-
+  Notation sigPair := (sigPair sigX sigY).
 
   Definition stopAfterFirst : sigPair^+ -> bool :=
     fun x => match x with
-          | inr (inr y) => true
+          | inr (sigPair_Y y) => true
           | inl STOP => true
           | _ => false
           end.
