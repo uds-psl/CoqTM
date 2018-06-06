@@ -96,7 +96,7 @@ Section Nth.
            (Return (Inject (ChangeAlphabet (Reset sigX) retr_X1) [|Fin2|]) (true, tt))
            (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (false, tt)))
        (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
-           (Return (Inject (Translate sigX retr_X1 retr_X2;;
+           (Return (Inject (Translate retr_X1 retr_X2;;
                             ChangeAlphabet (Constr_Some sigX) _) [|Fin2|]) (false, tt))
            (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (false, tt)))
   .

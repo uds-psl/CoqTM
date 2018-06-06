@@ -564,8 +564,6 @@ Section Translate.
 
 End Translate.
 
-Arguments Translate {tau} (sig) (retr1 retr2).
-
 
 (*
 
