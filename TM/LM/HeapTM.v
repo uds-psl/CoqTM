@@ -108,6 +108,9 @@ Definition retr_nat_lookup_optEnt : Retract sigNat sigLookup := Retract_inl (sig
 Definition retr_nat_optClos : Retract sigNat (sigOption sigHClos) := Retract_sigOption_X _.
 Definition retr_nat_lookup_out : Retract sigNat sigLookup := Retract_inr _ retr_nat_optClos.
 
+Definition retr_clos_lookup_optEnt  : Retract sigHClos sigLookup := Retract_inl (sigOption sigHClos) (Retract_inr _ _).
+Definition retr_clos_lookup_optClos : Retract sigHClos sigLookup := Retract_inr _ _.
+
 (*
 Lookup_Step:
 
@@ -164,7 +167,9 @@ Definition Lookup_Step : { M : mTM sigLookup^+ 7 & states M -> bool*unit } :=
          If (Inject (ChangeAlphabet (MatchOption sigHEnt) _) [|Fin6|])
             (If (Inject (ChangeAlphabet (MatchOption sigHEnt') _) [|Fin6|])
                 (Inject (ChangeAlphabet (MatchPair sigHClos sigHAd) _) [|Fin6; Fin3|];;
-                 Inject (ChangeAlphabet (Constr_Some sigHClos) _) [|Fin3|])
+                 Inject (Translate retr_clos_lookup_optEnt retr_clos_lookup_optClos) [|Fin3|];;
+                 Inject (ChangeAlphabet (Constr_Some sigHClos) _) [|Fin3|];;
+                 Inject (ChangeAlphabet (Reset sigHAd) retr_nat_lookup_optEnt) [|Fin6|])
                 (Inject (ChangeAlphabet (Constr_None sigHClos) _) [|Fin3|]))
             (Inject (ChangeAlphabet (Constr_None sigHClos) _) [|Fin3|]))
         (false, tt))
@@ -233,7 +238,9 @@ Proof.
     - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchOption_Sem with (X := HEnt).
     - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchOption_Sem with (X := (HClos * HAd) % type).
     - apply Lift_Realise. apply MatchPair_Realise with (X := HClos) (Y := HAd).
+    - apply Translate_Realise with (X := HClos).
     - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_Some_Sem with (X := HClos).
+    - apply Lift_Realise. apply Reset_Realise with (X := nat).
     - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
     - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := HClos).
   }
@@ -323,8 +330,77 @@ Proof.
     }
 
     { (* The Else branche of [MatchNat]: [n = 0] *)
-      (* TODO *)
-      admit.
+      unfold tape_contains in *. rename H into HMatchNat; rename H1 into HCompNth; rename H2 into HIf2.
+      specialize (HMatchNat n). spec_assert HMatchNat by now apply contains_translate_tau1.
+      destruct n as [ | n']; cbn in *; destruct HMatchNat as [HMatchNat HMatchNat']; inv HMatchNat'; apply contains_translate_tau2 in HMatchNat.
+      specialize (HCompNth heap a). spec_assert HCompNth by eapply (tape_contains_ext HEncH); cbn; now rewrite List.map_map.
+      spec_assert HCompNth by apply (tape_contains_ext HEncA); cbn; now rewrite List.map_map.
+      spec_assert HCompNth as (HCompNth1&HCompNth2&HCompNth3&HCompNth4) by auto.
+      { intros i; destruct_fin i; cbn; auto. }
+      specialize (HCompNth4 Fin1) as HCompNth5; specialize (HCompNth4 Fin0); cbn in *.
+
+      destruct HIf2; TMSimp; clear_trivial_eqs.
+      { (* The Then branche of first [MatchOption] *)
+        rename H into HMatchOpt1; rename H1 into HIf3.
+        specialize (HMatchOpt1 (nth_error heap a)). spec_assert HMatchOpt1.
+        { apply contains_translate_tau1. eapply (tape_contains_ext HCompNth3). cbn. now rewrite !List.map_map. }
+
+        destruct (nth_error heap a) as [ ent | ] eqn:ENth; cbn in *; destruct HMatchOpt1 as [HMatchOpt1 HMatchOpt1']; inv HMatchOpt1'; apply contains_translate_tau2 in HMatchOpt1.
+
+        destruct HIf3; TMSimp; clear_trivial_eqs.
+        { (* The Then branche of the second [MatchOption] *)
+          rename H into HMatchOpt2; rename H1 into HMatchPair; rename H2 into HTranslate; rename H3 into HSome; rename H4 into HReset.
+
+          specialize (HMatchOpt2 ent); spec_assert HMatchOpt2.
+          { apply contains_translate_tau1. apply (tape_contains_ext HMatchOpt1). cbn. now rewrite !List.map_map. }
+          destruct ent as [ (g,b) | ]; cbn in *; destruct HMatchOpt2 as [ HMatchOpt2 HMatchOpt2']; inv HMatchOpt2'; apply contains_translate_tau2 in HMatchOpt2.
+
+          specialize (HMatchPair (g, b)). spec_assert HMatchPair.
+          { apply contains_translate_tau1. apply (tape_contains_ext HMatchOpt2). cbn. now rewrite !List.map_map. }
+          spec_assert HMatchPair as (HMatchPair1 % contains_translate_tau2 & HMatchPair2 % contains_translate_tau2) by now apply surjectTape_isRight.
+
+          cbn in *. specialize (HTranslate g). spec_assert HTranslate.
+          { unfold tape_contains in *. apply (tape_contains_ext HMatchPair2). cbn. now rewrite !List.map_map. }
+
+          specialize (HSome g); spec_assert HSome as HSome % contains_translate_tau2.
+          { apply contains_translate_tau1. apply (tape_contains_ext HTranslate). cbn. now rewrite !List.map_map. }
+
+          specialize (HReset b); spec_assert HReset as HReset % surjectTape_isRight'.
+          { apply contains_translate_tau1. apply (tape_contains_ext HMatchPair1). cbn. now rewrite !List.map_map. }
+
+          repeat split; auto.
+          - apply (tape_contains_ext HCompNth1). cbn. now rewrite !List.map_map.
+          - apply (tape_contains_ext HCompNth2). cbn. now rewrite !List.map_map.
+          - apply (tape_contains_ext HSome). cbn. now rewrite !List.map_map.
+        }
+        { (* Else branche of second [MatchOption] *)
+          rename H into HMatchOpt2.
+          specialize (HMatchOpt2 ent); spec_assert HMatchOpt2.
+          { apply contains_translate_tau1. apply (tape_contains_ext HMatchOpt1). cbn. now rewrite !List.map_map. }
+          destruct ent as [ (g, b) | ]; cbn in *; destruct HMatchOpt2 as (HMatchOpt2,HMatchOpt2'); inv HMatchOpt2'.
+
+          spec_assert H1 as H1 % contains_translate_tau2 by now apply surjectTape_isRight.
+          apply surjectTape_isRight' in HMatchOpt2.
+
+          repeat split; auto.
+          - apply (tape_contains_ext HCompNth1). cbn. now rewrite List.map_map.
+          - apply (tape_contains_ext HCompNth2). cbn. now rewrite List.map_map.
+        }
+
+      }
+      { (* Else branche of first [MatchOption] *)
+        rename H into HMatchOpt1.
+        specialize (HMatchOpt1 (nth_error heap a)). spec_assert HMatchOpt1.
+        { apply contains_translate_tau1. apply (tape_contains_ext HCompNth3). cbn. rewrite !List.map_map. apply map_ext. auto. }
+        destruct (nth_error heap a) as [ hEnt | ] eqn:ENth; cbn in *; destruct HMatchOpt1 as (HMatchOpt1&HMatchOpt1'); inv HMatchOpt1'.
+
+        spec_assert H1 as H1 % contains_translate_tau2 by now apply surjectTape_isRight.
+        apply surjectTape_isRight' in HMatchOpt1.
+
+        repeat split; auto.
+        - apply (tape_contains_ext HCompNth1). cbn. now rewrite List.map_map.
+        - apply (tape_contains_ext HCompNth2). cbn. now rewrite List.map_map.
+      }
     }
   }
 Qed.
@@ -376,6 +452,7 @@ Definition Lookup_Loop_Rel : Rel (tapes sigLookup^+ 7) (unit * tapes sigLookup^+
           isRight tout[@Fin6] (* internal tape to save the result of [Nth] *)
     ).
 
+(*
 
 
 Lemma Lookup_Loop_Realise : Lookup_Loop ⊨ Lookup_Loop_Rel.
@@ -429,3 +506,5 @@ Definition Lookup_Rel : Rel (tapes sigLookup^+ 8) (unit * tapes sigLookup^+ 8) :
           isRight tout[@Fin6] /\ (* internal tape to save the result of [Nth] *)
           isRight tout[@Fin7] (* internal tape to save [a] *)
     ).
+
+*)
