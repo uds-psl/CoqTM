@@ -7,6 +7,14 @@ Require Import TM.LM.Definitions.
 
 Inductive ATok : Type := retAT | lamAT | appAT.
 
+Coercion ATok2Tok (a : ATok) : Tok :=
+  match a with
+  | retAT => retT
+  | lamAT => lamT
+  | appAT => appT
+  end.
+
+
 Instance ATok_dec : eq_dec ATok.
 Proof. intros x y; hnf. decide equality. Defined.
 
