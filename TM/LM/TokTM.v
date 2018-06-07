@@ -5,20 +5,20 @@ Require Import TM.Basic.Mono.
 
 Require Import TM.LM.Definitions.
 
-Inductive AToken : Type := retAT | lamAT | appAT.
+Inductive ATok : Type := retAT | lamAT | appAT.
 
-Instance AToken_dec : eq_dec AToken.
+Instance ATok_dec : eq_dec ATok.
 Proof. intros x y; hnf. decide equality. Defined.
 
-Instance AToken_fin : finTypeC (EqType AToken).
+Instance ATok_fin : finTypeC (EqType ATok).
 Proof. split with (enum := [retAT; lamAT; appAT]). intros [ | | ]; cbn; reflexivity. Defined.
 
-Instance AToken_inhab : inhabitedC AToken := ltac:(repeat constructor).
+Instance ATok_inhab : inhabitedC ATok := ltac:(repeat constructor).
 
-Instance Encode_AToken : codable (FinType(EqType AToken)) AToken := Encode_Fin (FinType(EqType(AToken))).
+Instance Encode_ATok : codable (FinType(EqType ATok)) ATok := Encode_Fin (FinType(EqType(ATok))).
 
 
-Coercion Tok_to_sum (t : Tok) : (nat + AToken) :=
+Coercion Tok_to_sum (t : Tok) : (nat + ATok) :=
   match t with
   | varT x => inl x
   | appT => inr appAT
@@ -39,7 +39,7 @@ Coercion Tok_to_sum (t : Tok) : (nat + Fin.t 3) :=
 (*
 Definition sigTok := FinType (EqType (sigSum (FinType (EqType (sigNat))) (FinType(EqType(Fin.t 3))))).
 *)
-Definition sigTok := FinType (EqType (sigSum (FinType (EqType (sigNat))) (FinType(EqType(AToken))))).
+Definition sigTok := FinType (EqType (sigSum (FinType (EqType (sigNat))) (FinType(EqType(ATok))))).
 Arguments sigTok : simpl never.
 
 Instance Encode_Tok : codable sigTok Tok :=
@@ -49,14 +49,14 @@ Instance Encode_Tok : codable sigTok Tok :=
 
 
 
-Definition MatchTok : { M : mTM sigTok^+ 1 & states M -> option AToken } :=
+Definition MatchTok : { M : mTM sigTok^+ 1 & states M -> option ATok } :=
   If (MatchSum _ _)
      (mono_Nop None)
-     (MATCH (ChangeAlphabet (MatchFin (FinType(EqType(AToken)))) _)
-            (fun (i:AToken) => Move R tt;; Move R (Some i))).
+     (MATCH (ChangeAlphabet (MatchFin (FinType(EqType(ATok)))) _)
+            (fun (i:ATok) => Move R tt;; Move R (Some i))).
 
 
-Definition MatchTok_Rel : pRel sigTok^+ (FinType (EqType (option AToken))) 1 :=
+Definition MatchTok_Rel : pRel sigTok^+ (FinType (EqType (option ATok))) 1 :=
   fun tin '(yout, tout) =>
     forall t : Tok, tin[@Fin0] ≃ t ->
                match t with
@@ -72,7 +72,7 @@ Lemma MatchTok_Sem : MatchTok ⊨c(15) MatchTok_Rel.
 Proof.
   eapply RealiseIn_monotone.
   { unfold MatchTok. repeat TM_Correct.
-    - apply MatchSum_Sem with (X := nat) (Y := AToken).
+    - apply MatchSum_Sem with (X := nat) (Y := ATok).
     - apply Lift_RealiseIn. apply MatchFin_Sem.
   }
   { cbn. Unshelve. 4,5,7: reflexivity. cbv. all: omega. }
