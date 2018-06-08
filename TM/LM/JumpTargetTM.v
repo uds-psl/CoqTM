@@ -272,50 +272,114 @@ Qed.
 
 
 
-Fixpoint jumpTarget_accus (k:nat) (Q:Pro) (P:Pro) : (nat*(Pro*Pro)) :=
+Fixpoint jumpTarget_k (k:nat) (Q:Pro) (P:Pro) : nat :=
   match P with
   | retT :: P' => match k with
-                 | 0 => (0, (Q, P'))
-                 | S k' => jumpTarget_accus k' (Q++[retT]) P'
+                 | 0 => 0
+                 | S k' => jumpTarget_k k' (Q++[retT]) P'
                  end
-  | lamT :: P' => jumpTarget_accus (S k) (Q++[lamT]) P'
-  | t :: P'    => jumpTarget_accus k (Q++[t]) P' (* either [varT n] or [appT] *)
-  | []         => (k, (Q, nil))
+  | lamT :: P' => jumpTarget_k (S k) (Q++[lamT]) P'
+  | t :: P'    => jumpTarget_k k (Q++[t]) P' (* either [varT n] or [appT] *)
+  | []         => k
   end.
 
-Lemma jumpTarget_accus_correct k Q P Q' P' :
-  jumpTarget k Q P = Some (Q', P') -> snd (jumpTarget_accus k Q P) = (Q', P').
-Proof.
-  revert k Q. induction P as [ | t P IH]; intros; cbn in *.
-  - inv H.
-  - destruct t; cbn; try now rewrite IH.
-    destruct k; cbn; auto. now inv H.
-Qed.
+
+(** We can ignore the parameter, because we can just assume that [jumpTarget] is [Some]. All the heap machine programs we will consider never get stuck, so [jumpTarget] will allways succeed. *)
+
+Definition JumpTarget_Loop := WHILE (ChangePartition JumpToTarget_Step (fun '(b, _) => (b, tt))).
 
 
-
-Definition JumpToTarget_Loop := WHILE JumpToTarget_Step.
-
-
-Definition JumpTarget_Loop_Rel : pRel sigPro^+ (FinType(EqType bool)) 6 :=
+Definition JumpTarget_Loop_Rel : pRel sigPro^+ (FinType(EqType unit)) 6 :=
   fun tin '(yout, tout) =>
-    forall (P Q : Pro) (k : nat),
+    forall (P Q : Pro) (k : nat) (P' Q' : Pro),
+      jumpTarget k Q P = Some (Q', P') ->
       tin[@Fin0] ≃ P ->
       tin[@Fin1] ≃ Q ->
       tin[@Fin2] ≃ k ->
       (forall i : Fin.t 3, isRight tin[@Fin.R 3 i]) ->
-      tout[@Fin0] ≃ snd (snd (jumpTarget_accus k Q P)) /\
-      tout[@Fin1] ≃ fst (snd (jumpTarget_accus k Q P)) /\
-      tout[@Fin2] ≃ fst (jumpTarget_accus k Q P) /\
-      match jumpTarget k Q P with
-      | Some (Q', P') =>
-        yout = true
-      | None =>
-        yout = false
-      end /\
+      tout[@Fin0] ≃ P' /\
+      tout[@Fin1] ≃ Q' /\
+      tout[@Fin2] ≃ jumpTarget_k k Q P /\
       (forall i : Fin.t 3, isRight tout[@Fin.R 3 i]).
 
 
-(* TODO: We are actually not interested in the cases, where [jumpTarget] yields [None]. *)
+Lemma JumpTarget_Loop_Realise : JumpTarget_Loop ⊨ JumpTarget_Loop_Rel.
+Proof.
+  eapply Realise_monotone.
+  { unfold JumpTarget_Loop. repeat TM_Correct.
+    - apply JumpToTarget_Step_Realise.
+  }
+  {
+    apply WhileInduction; intros; intros P Q k P' Q' HJump HEncP HEncQ HEncK HInt; TMSimp.
+    { inv H.
+      rename H0 into HLastStep. (* TODO Delete this after removing the parameter from [JumpToTarget_Step] completely *)
+      specialize HLastStep with (1 := HEncP) (2 := HEncQ) (3 := HEncK) (4 := HInt).
+      destruct P as [ | t P]; cbn in *; try now inv HJump.
+      destruct t as [ n | | | ]; cbn in *; try now inv HJump.
+      destruct k as [ | k']; destruct HLastStep as ((HLastStep1&HLastStep2&HLastStep3&HLastStep4)&HLastStep5); inv HLastStep4.
+      inv HJump. repeat split; auto.
+    }
+    { inv H.
+      rename H0 into HStar. (* TODO Delete this after removing the parameter from [JumpToTarget_Step] completely *)
+      specialize HStar with (1 := HEncP) (2 := HEncQ) (3 := HEncK) (4 := HInt).
+      destruct P as [ | t P]; cbn in *; try now inv HJump.
+      destruct t as [ n | | | ]; cbn in *; try now inv HJump.
+      - destruct HStar as ((HStar1&HStar2&HStar3&HStar4)&HStar5); inv HStar4.
+        specialize HLastStep with (1 := HJump) (2 := HStar1) (3 := HStar2) (4 := HStar3) (5 := HStar5) as (HLastStep1&HLastStep2&HLastStep3&HLastStep4).
+        repeat split; auto.
+      - destruct HStar as ((HStar1&HStar2&HStar3&HStar4)&HStar5); inv HStar4.
+        specialize HLastStep with (1 := HJump) (2 := HStar1) (3 := HStar2) (4 := HStar3) (5 := HStar5) as (HLastStep1&HLastStep2&HLastStep3&HLastStep4).
+        repeat split; auto.
+      - destruct HStar as ((HStar1&HStar2&HStar3&HStar4)&HStar5); inv HStar4.
+        specialize HLastStep with (1 := HJump) (2 := HStar1) (3 := HStar2) (4 := HStar3) (5 := HStar5) as (HLastStep1&HLastStep2&HLastStep3&HLastStep4).
+        repeat split; auto.
+      - destruct k as [ | k']; destruct HStar as ((HStar1&HStar2&HStar3&HStar4)&HStar5); inv HStar4.
+        specialize HLastStep with (1 := HJump) (2 := HStar1) (3 := HStar2) (4 := HStar3) (5 := HStar5) as (HLastStep1&HLastStep2&HLastStep3&HLastStep4).
+        repeat split; auto.
+    }
+  }
+Qed.
 
-(* TODO *)
+
+
+Definition JumpTarget :=
+  Inject (WriteValue _ nil) [|Fin1|];;
+  Inject (ChangeAlphabet (WriteValue _ 0) retr_nat_prog) [|Fin2|];;
+  JumpTarget_Loop;;
+  Inject (ChangeAlphabet (Reset sigHAd) retr_nat_prog) [|Fin2|].
+
+
+Definition JumpTarget_Rel : pRel sigPro^+ (FinType(EqType unit)) 6 :=
+  fun tin '(yout, tout) =>
+    forall (P : Pro) (k : nat) (P' Q' : Pro),
+      jumpTarget 0 nil P = Some (Q', P') ->
+      tin[@Fin0] ≃ P ->
+      isRight tin[@Fin1] ->
+      (forall i : Fin.t 4, isRight tin[@Fin.R 2 i]) ->
+      tout[@Fin0] ≃ P' /\
+      tout[@Fin1] ≃ Q' /\
+      (forall i : Fin.t 4, isRight tin[@Fin.R 2 i]).
+
+
+Lemma JumpTarget_Realise : JumpTarget ⊨ JumpTarget_Rel.
+Proof.
+  eapply Realise_monotone.
+  { unfold JumpTarget. repeat TM_Correct.
+    - eapply RealiseIn_Realise. apply WriteValue_Sem.
+    - apply Lift_Realise. eapply RealiseIn_Realise. apply WriteValue_Sem.
+    - apply JumpTarget_Loop_Realise.
+    - apply Lift_Realise. apply Reset_Realise with (X := nat).
+  }
+  {
+    intros tin ((), tout) H. cbn. intros P k P' Q' HJump HEncP HOut HInt.
+    TMSimp ( unfold sigPro, sigTok in * ).
+    spec_assert H by auto.
+    spec_assert H0 as H0 % contains_translate_tau2 by now apply surjectTape_isRight.
+    specialize H1 with (1 := HJump) (2 := HEncP) (3 := H) (4 := H0). spec_assert H1 as (H1&H1'&H1''&H1''').
+    { intros i; destruct_fin i; auto. now setoid_rewrite H2_4. now setoid_rewrite H2_3. now setoid_rewrite H2_2. }
+
+    specialize (H2 (jumpTarget_k 0 [] P)). spec_assert H2 as H2 % surjectTape_isRight' by now apply contains_translate_tau1.
+
+    repeat split; auto.
+  }
+Qed.
