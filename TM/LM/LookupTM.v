@@ -3,19 +3,16 @@ Require Import HeapTM.
 
 (** ** Lookup *)
 
-Fixpoint lookup (H:Heap) a n {struct n} : option (HClos) :=
-  match n with
-  | O =>
-    match nth_error H a with
-    | Some (Some (g, b)) => Some g
-    | _ => None
+Fixpoint lookup (H:Heap) (a:nat) (n:nat) : option HClos :=
+  match nth_error H a with
+  | Some (Some (g, b)) =>
+    match n with
+    | 0 => Some g
+    | S n' => lookup H b n'
     end
-  | S n' =>
-    match nth_error H a with
-    | Some (Some (g, b)) => lookup H b n'
-    | _ => None
-    end
+  | _ => None
   end.
+
 
 (*
 There is no need to save [n], however [a] and [H] must be saved.
@@ -33,11 +30,14 @@ t6: internal tape for storing the result of [Nth] in the case [n=0].
 t7: saves [a]
 
 We neeed the alphabets [sigHeap], [sigNat], and [sigOption sigHEnt] for [Nth].
-The output of the machine is encoded with [sigOption sigHClos].
+
+Instead of encoding the output of the machine with [sigOption sigHClos], our machine assumes will only be specified if the result of [lookup] is [Some].
+We can make this assumption because all heap machines we will consider never get stuck.
+
+However, we didn't make this assumption in the definition of [Nth], so the alphabet of [Lookup] must be [ListTM.tauNth sigHEnt = sigHeap + sigNat + sigHEnt].
 *)
 
-
-Definition sigLookup : finType := FinType (EqType ((sigHeap + sigNat + sigOption sigHEnt) + sigOption sigHClos)).
+Definition sigLookup : finType := FinType (EqType (sigHeap + sigNat + sigOption sigHEnt)).
 Arguments sigLookup : simpl never.
 
 Check Retract_sigList_X.
@@ -52,27 +52,26 @@ Check _ : Retract sigNat sigLookup.
 
 
 
-(** There are five ways to encode [nat] on [sigLookup]:
+(** There are four ways to encode [nat] on [sigLookup]:
 - as a variable on [sigHeap]
 - as an address in a closure
 - directly on the [sigNat], i.e. as parameter for [Nth]
-- on the alphabet [sigOption sigHEnt], i.e. as an address inside the optional output of [Nth]
 - on the alphabet [sigOption sigHClos], i.e. as the address of the optional output closure
 
 We assume, that [n] is encoded in the first way, i.e. as variable. However, for simplicity, [a] should be encoded as a parameter for [Nth]. *)
 
 Definition retr_nat_heap_entry : Retract sigNat sigHeap := Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_Y _ (Retract_id _))).
-Definition retr_nat_lookup_var : Retract sigNat sigLookup := Retract_inl (sigOption sigHClos) (Retract_inl (sigOption sigHEnt) (Retract_inl sigNat retr_nat_heap_entry)).
-Definition retr_nat_heap_clos : Retract sigNat sigHeap := Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_X _ _)).
-Definition retr_nat_lookup_clos : Retract sigNat sigLookup := Retract_inl _ (Retract_inl _ (Retract_inl _ retr_nat_heap_clos)).
-Definition retr_nat_lookup_nth : Retract sigNat sigLookup := Retract_inl (sigOption sigHClos) (Retract_inl (sigOption sigHEnt) (Retract_inr sigHeap (Retract_id sigNat))).
-Definition retr_nat_optEnt : Retract sigNat (sigOption sigHEnt) := Retract_sigOption_X _.
-Definition retr_nat_lookup_optEnt : Retract sigNat sigLookup := Retract_inl (sigOption sigHClos) (Retract_inr _ retr_nat_optEnt).
+Definition retr_nat_lookup_var : Retract sigNat sigLookup := Retract_inl (sigOption sigHEnt) (Retract_inl sigNat retr_nat_heap_entry).
+Definition retr_nat_heap_clos : Retract sigNat sigHeap := Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_X _ (Retract_sigPair_Y _ (Retract_id _)))).
+Definition retr_nat_lookup_clos : Retract sigNat sigLookup := Retract_inl _ (Retract_inl _ retr_nat_heap_clos).
+Definition retr_nat_lookup_nth : Retract sigNat sigLookup := Retract_inl (sigOption sigHEnt) (Retract_inr sigHeap (Retract_id sigNat)).
+(*
+Definition retr_nat_optEnt : Retract sigNat (sigOption sigHEnt) := Retract_sigOption_X (Retract_sigPair_.
+Definition retr_nat_lookup_optEnt : Retract sigNat sigLookup := Retract_inr _ retr_nat_optEnt.
 Definition retr_nat_optClos : Retract sigNat (sigOption sigHClos) := Retract_sigOption_X _.
-Definition retr_nat_lookup_optClos : Retract sigNat sigLookup := Retract_inr _ retr_nat_optClos.
+*)
 
-Definition retr_clos_lookup_optEnt  : Retract sigHClos sigLookup := Retract_inl (sigOption sigHClos) (Retract_inr _ _).
-Definition retr_clos_lookup_optClos : Retract sigHClos sigLookup := Retract_inr _ _.
+Definition retr_clos_lookup_optEnt : Retract sigHClos sigLookup := Retract_inr _ (Retract_sigOption_X (Retract_sigOption_X (Retract_sigPair_X _ (Retract_id _)))).
 
 (*
 Lookup_Step:
@@ -109,7 +108,9 @@ t4-t5: internal tapes for [Nth]
 t6: internal tape for storing the result of [Nth]
 *)
 
-Definition Lookup_Step : { M : mTM sigLookup^+ 7 & states M -> bool*unit } :=
+Definition Lookup_Step : { M : mTM sigLookup^+ 7 & states M -> bool*unit }.
+Admitted.
+  (*
   If (Inject (ChangeAlphabet MatchNat retr_nat_lookup_var) [|Fin2|])
      (* [n = S n'] *)
      (Inject (ChangeAlphabet (Nth sigHEnt) _) [|Fin0; Fin1; Fin6; Fin4; Fin5|];;
@@ -136,7 +137,7 @@ Definition Lookup_Step : { M : mTM sigLookup^+ 7 & states M -> bool*unit } :=
                 (Inject (ChangeAlphabet (Constr_None sigHClos) _) [|Fin3|]))
             (Inject (ChangeAlphabet (Constr_None sigHClos) _) [|Fin3|]))
         (false, tt))
-.
+*)
 
 
 
@@ -147,33 +148,27 @@ Definition Lookup_Step_Rel : Rel (tapes sigLookup^+ 7) (bool*unit * tapes sigLoo
       tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) a ->
       tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) n ->
       isRight tin[@Fin3] -> isRight tin[@Fin4] -> isRight tin[@Fin5] -> isRight tin[@Fin6] ->
-      tout[@Fin0] ≃(Encode_map _ (Retract_inl _ _)) H /\
-      match n with
-      | O =>
-        tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) a /\
-        tout[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) 0 /\
-        tout[@Fin3] ≃
-            match nth_error H a with
-            | Some (Some (g, b)) => Some g
-            | _ => None
-            end /\
-        yout = (false, tt)
-      | S n' =>
-        match nth_error H a with
-        | Some (Some (g, b)) =>
-          tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) b /\
+
+      tout[@Fin0] ≃ H /\
+      match nth_error H a with
+      | Some (Some (g, b)) =>
+        match n with
+        | O =>
+          tout[@Fin1] ≃ a /\
+          tout[@Fin2] ≃ 0 /\
+          tout[@Fin3] ≃ g /\
+          yout = (false, tt) (* return Some *)
+        | S n' =>
+          tout[@Fin1] ≃ b /\
+          tout[@Fin2] ≃ n' /\
           isRight tout[@Fin3] /\
-          yout = (true, tt)
-        | _ =>
-          tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) a /\
-          tout[@Fin3] ≃ @None HClos /\
-          yout = (false, tt)
-        end /\
-        tout[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) n'
+          yout = (true, tt) (* continue *)
+        end
+      | _ =>
+        True (* under-specified (None) *)
       end /\
       isRight tout[@Fin4] /\ isRight tout[@Fin5] /\ isRight tout[@Fin6]
 .
-
 
 Ltac clear_tape_eqs :=
   repeat match goal with
@@ -181,6 +176,7 @@ Ltac clear_tape_eqs :=
          end.
 
 Lemma Lookup_Step_Realise : Lookup_Step ⊨ Lookup_Step_Rel.
+(*
 Proof.
   eapply Realise_monotone.
   { unfold Lookup_Step. repeat TM_Correct.
@@ -367,6 +363,8 @@ Proof.
     }
   }
 Qed.
+ *)
+Admitted.
 
 
 
@@ -401,7 +399,8 @@ Fixpoint lookup_n (H:Heap) a n {struct n} : nat :=
 Definition Lookup_Loop_Rel : Rel (tapes sigLookup^+ 7) (unit * tapes sigLookup^+ 7) :=
   ignoreParam (
       fun tin tout =>
-        forall (H: Heap) (a n: nat),
+        forall (H: Heap) (a n: nat) g,
+          lookup H a n = Some g ->
           tin[@Fin0] ≃ H ->
           tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) a ->
           tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) n ->
@@ -409,13 +408,14 @@ Definition Lookup_Loop_Rel : Rel (tapes sigLookup^+ 7) (unit * tapes sigLookup^+
           tout[@Fin0] ≃ H /\ (* [H] is saved *)
           tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) lookup_a H a n /\ (* the [a] when [lookup] terminated *)
           tout[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) lookup_n H a n /\ (* the [n] when [lookup] terminated *)
-          tout[@Fin3] ≃ lookup H a n /\
+          tout[@Fin3] ≃ g /\
           isRight tout[@Fin4] /\ (* internal tape of [Nth] *)
           isRight tout[@Fin5] /\ (* internal tape of [Nth] *)
           isRight tout[@Fin6] (* internal tape to save the result of [Nth] *)
     ).
 
 Lemma Lookup_Loop_Realise : Lookup_Loop ⊨ Lookup_Loop_Rel.
+(*
 Proof.
   eapply Realise_monotone.
   { unfold Lookup_Loop. repeat TM_Correct.
@@ -445,6 +445,8 @@ Proof.
         * destruct HS2 as (?&?&HS2). inv HS2.
   }
 Qed.
+ *)
+Admitted.
 
 
 
@@ -466,7 +468,8 @@ Definition Lookup : { M : mTM sigLookup^+ 8 & states M -> unit } :=
 Definition Lookup_Rel : Rel (tapes sigLookup^+ 8) (unit * tapes sigLookup^+ 8) :=
   ignoreParam (
       fun tin tout =>
-        forall (H: Heap) (a n: nat),
+        forall (H: Heap) (a n: nat) g,
+          lookup H a n = Some g ->
           tin[@Fin0] ≃ H ->
           tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_clos) a ->
           tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) n ->
@@ -474,7 +477,7 @@ Definition Lookup_Rel : Rel (tapes sigLookup^+ 8) (unit * tapes sigLookup^+ 8) :
           tout[@Fin0] ≃ H /\ (* [H] is saved *)
           tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_clos) a /\ (* [a] is saved *)
           isRight tout[@Fin2] /\ (* [n] is discarded *)
-          tout[@Fin3] ≃ lookup H a n /\ (* output *)
+          tout[@Fin3] ≃ g /\ (* output *)
           isRight tout[@Fin4] /\ (* internal tape of [Nth] *)
           isRight tout[@Fin5] /\ (* internal tape of [Nth] *)
           isRight tout[@Fin6] /\ (* internal tape to save the result of [Nth] *)
@@ -495,12 +498,12 @@ Proof.
     - apply Lift_Realise. apply Reset_Realise with (X := nat).
   }
   {
-    intros tin ((), tout) H. cbn. intros heap a n HEncH HEncA HEncN HRight3 HRight4 HRight5 HRight6 HRight7. TMSimp.
+    intros tin ((), tout) H. cbn. intros heap a n g HLookup HEncH HEncA HEncN HRight3 HRight4 HRight5 HRight6 HRight7. TMSimp.
     rename H into HCopy1; rename H0 into HTranslate; rename H1 into HComp; rename H2 into HReset1; rename H3 into HReset2; rename H4 into HCopy2; rename H5 into HReset3.
     specialize (HCopy1 a) with (1 := contains_translate_tau1 HEncA) (2 := surjectTape_isRight _ HRight7) as
         (HCopy1%contains_translate_tau2&HCopy1'%contains_translate_tau2).
     specialize (HTranslate a HCopy1).
-    specialize HComp with (1 := HEncH) (2 := HTranslate) (3 := HEncN) (4 := HRight3) (5 := HRight4) (6 := HRight5) (7 := HRight6) as
+    specialize HComp with (1 := HLookup) (2 := HEncH) (3 := HTranslate) (4 := HEncN) (5 := HRight3) (6 := HRight4) (7 := HRight5) (8 := HRight6) as
         (HComp1&HComp2&HComp3&HComp4&HComp5&HComp6&HComp7).
     specialize HReset1 with (1 := contains_translate_tau1 HComp3) as HReset1 % surjectTape_isRight'.
     specialize HReset2 with (1 := contains_translate_tau1 HComp2) as HReset2 % surjectTape_isRight'.
