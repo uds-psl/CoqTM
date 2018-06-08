@@ -439,6 +439,55 @@ Section Move.
 
   Definition Reset_Terminates := MoveRight_Terminates.
 
+  
+  Definition ResetEmpty : pTM sig^+ (FinType(EqType unit)) 1 := Move R tt.
+
+  Definition ResetEmpty_Rel : pRel sig^+ (FinType(EqType unit)) 1 :=
+    ignoreParam (
+        fun tin tout =>
+          forall (x : X),
+            tin[@Fin0] ≃ x ->
+            cX x = nil ->
+            isRight tout[@Fin0]
+        ).
+
+  Lemma ResetEmpty_Sem : ResetEmpty ⊨c(1) ResetEmpty_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    { unfold ResetEmpty. repeat TM_Correct. }
+    { reflexivity. }
+    {
+      intros tin ((), tout) H. cbn. intros x HEncX HCod.
+      destruct HEncX as (ls&HEncX). TMSimp; clear_trivial_eqs.
+      destruct (cX x); cbn in *; inv HCod. cbn. repeat econstructor.
+    }
+  Qed.
+
+
+  Definition ResetEmpty1 : pTM sig^+ (FinType(EqType unit)) 1 := Move R tt;; Move R tt.
+
+  Definition ResetEmpty1_Rel : pRel sig^+ (FinType(EqType unit)) 1 :=
+    ignoreParam (
+        fun tin tout =>
+          forall (x : X),
+            tin[@Fin0] ≃ x ->
+            length (cX x) = 1 ->
+            isRight tout[@Fin0]
+        ).
+
+  Lemma ResetEmpty1_Sem : ResetEmpty1 ⊨c(3) ResetEmpty1_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    { unfold ResetEmpty1. repeat TM_Correct. }
+    { reflexivity. }
+    {
+      intros tin ((), tout) H. cbn. intros x HEncX HCod.
+      destruct HEncX as (ls&HEncX). TMSimp; clear_trivial_eqs.
+      destruct (cX x); cbn in *; inv HCod. destruct l; inv H0.
+      cbn. repeat econstructor.
+    }
+  Qed.
+
 End Move.
 
 

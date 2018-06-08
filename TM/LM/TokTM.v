@@ -1,4 +1,4 @@
-Require Import TM.Code.CodeTM.
+Require Import TM.Code.CodeTM TM.Code.Copy.
 Require Import TM.Code.MatchNat TM.Code.MatchSum TM.Code.MatchFin TM.Code.WriteValue.
 Require Import TM.Code.ChangeAlphabet TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Basic.Mono.
@@ -61,7 +61,7 @@ Definition MatchTok : { M : mTM sigTok^+ 1 & states M -> option ATok } :=
   If (MatchSum _ _)
      (mono_Nop None)
      (MATCH (ChangeAlphabet (MatchFin (FinType(EqType(ATok)))) _)
-            (fun (i:ATok) => Move R tt;; Move R (Some i))).
+            (fun (i:ATok) => Return (ResetEmpty1 _) (Some i))).
 
 
 Definition MatchTok_Rel : pRel sigTok^+ (FinType (EqType (option ATok))) 1 :=
@@ -82,6 +82,9 @@ Proof.
   { unfold MatchTok. repeat TM_Correct.
     - apply MatchSum_Sem with (X := nat) (Y := ATok).
     - apply Lift_RealiseIn. apply MatchFin_Sem.
+    - apply ResetEmpty1_Sem with (X := ATok).
+    - apply ResetEmpty1_Sem with (X := ATok).
+    - apply ResetEmpty1_Sem with (X := ATok).
   }
   { cbn. Unshelve. 4,5,7: reflexivity. cbv. all: omega. }
   {
@@ -98,8 +101,7 @@ Proof.
       unfold sigTok in *.
       destruct t; cbn in *; destruct HMatchSum as (HMatchSum&HMatchSum'); inv HMatchSum';
         specialize (HMatchFin _ (contains_translate_tau1 HMatchSum)) as (HMatchFin % contains_translate_tau2 & ->);
-        destruct HMatchFin as (ls&HMatchFin); TMSimp;
-          cbn; repeat econstructor; f_equal.
+        TMSimp; eauto.
     }
   }
 Qed.

@@ -1,4 +1,4 @@
-Require Import TM.Code.CodeTM.
+Require Import TM.Code.CodeTM TM.Code.Copy.
 Require Import TM.Basic.Mono TM.Basic.Nop TM.Basic.Multi.
 Require Import TM.Combinators.Combinators.
 Require Import TM.LiftMN TM.LiftSigmaTau.
@@ -176,7 +176,7 @@ Section MatchOption.
   Definition MatchOption : { M : mTM tau^+ 1 & states M -> bool } :=
     If (ChangeAlphabet (MatchSum (sigX) (FinType (EqType Empty_set))) _)
        (Nop true)
-       (Move R false).
+       (Return (ResetEmpty _) false).
 
   Definition opt_to_sum (o : option X) : X + unit :=
     match o with
@@ -191,6 +191,7 @@ Section MatchOption.
     eapply RealiseIn_monotone.
     { unfold MatchOption. repeat TM_Correct. unfold ChangeAlphabet. repeat TM_Correct.
       - eapply MatchSum_Sem with (X := X) (Y := unit).
+      - apply ResetEmpty_Sem with (X := unit).
     }
     { cbn. reflexivity. }
     {
@@ -229,7 +230,7 @@ Section MatchOption.
         autounfold with tape in H. cbn in H. rewrite nth_map2' in H. cbn in H.
         unfold tape_contains in H.
         apply contains_translate_tau2 in H; unfold tape_contains in H.
-        destruct H as (ls&->). cbn. repeat econstructor.
+        eapply H1; eauto.
       }
     }
   Qed.
