@@ -60,6 +60,7 @@ Ltac destruct_unit :=
          end.
 
 
+
 (** TMSimp destructs conjunctive assumptions and rewrites assumptions like [t'[@i] = t[@j]] automatically. *)
 
 Ltac TMSimp1 T :=

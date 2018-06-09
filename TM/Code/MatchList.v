@@ -179,7 +179,7 @@ Section MatchList.
   (** ** Termination *)
 
 
-  Arguments plus : simpl never. Arguments mult : simpl never.
+  Local Arguments plus : simpl never. Local Arguments mult : simpl never.
 
 
   Lemma Skip_cons_Terminates :

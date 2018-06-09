@@ -223,7 +223,8 @@ Qed.
 
 (** ** Termination of [Add] *)
 
-Local Arguments plus : simpl never. Local Arguments mult : simpl never.
+Local Arguments plus : simpl never.
+Local Arguments mult : simpl never.
 
 Definition Add_Loop_steps b := 11 + 12 * b.
 

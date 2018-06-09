@@ -5,7 +5,8 @@ Require Import TMTac.
 Require Coq.derive.Derive.
 
 (* Useful for runtime stuff *)
-Arguments plus : simpl never. Arguments mult : simpl never.
+Local Arguments plus : simpl never.
+Local Arguments mult : simpl never.
 
 
 (** The correctness and definition of [WriteString] is uncommon, because it is defined (and verified) by recursion (or induction) over the string *)
@@ -20,13 +21,13 @@ Section Write_String.
     | x :: xs => WriteMove x D tt ;; WriteString xs
     end.
 
-  Fixpoint WriteString_Fun (t : tape sig) (str : list sig) :=
+  Fixpoint WriteString_Fun (sig' : Type) (t : tape sig') (str : list sig') :=
     match str with
     | nil => t
     | s :: str' => WriteString_Fun (tape_move_mono t (Some s, D)) str'
     end.
   
-  Lemma Write_String_nil (t : tape sig) :
+  Lemma Write_String_nil (sig' : Type) (t : tape sig') :
     WriteString_Fun t nil = t.
   Proof. destruct t; cbn; auto. Qed.
 

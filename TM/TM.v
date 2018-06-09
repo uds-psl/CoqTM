@@ -10,7 +10,7 @@ Require Import Vector.
 
 Section Fix_Sigma.
 
-  Variable sig : finType.
+  Variable sig : Type.
 
   (** ** Definition of the tape *)
   
@@ -134,8 +134,8 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     tapeToList (tape_move t D) = tapeToList t.
   Proof.
     destruct t, D; cbn; auto.
-    - revert e l0. induction l; intros; cbn in *; simpl_list; auto.
-    - revert e l. induction l0; intros; cbn in *; simpl_list; auto.
+    - revert s l0. induction l; intros; cbn in *; simpl_list; auto.
+    - revert s l. induction l0; intros; cbn in *; simpl_list; auto.
   Qed.
 
   Lemma tapeToList_move_R (t : tape) :
@@ -167,6 +167,19 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     | None => t
     | Some s0 => midtape (left t) s0 (right t)
     end.
+
+  (** A single step of the machine *)
+  
+  Definition tape_move_mono (t : tape) (mv : option sig * move) :=
+    tape_move (tape_write t (fst mv)) (snd mv).
+
+  (** One step on each tape *)
+  
+  Definition tape_move_multi (n : nat) (ts : tapes n) (actions : Vector.t (option sig * move) n) :=
+    Vector.map2 tape_move_mono ts actions.
+
+  (** Currently read characters on all tapes *)
+  Definition current_chars (n : nat) (tapes : tapes n) := Vector.map current tapes.
 
 End Fix_Sigma.
 
@@ -204,6 +217,11 @@ Hint Rewrite tapeToList_move_L : tape.
 Hint Rewrite tape_move_right_left using eauto : tape.
 Hint Rewrite tape_move_left_right using eauto : tape.
 
+Arguments current_chars : simpl never.
+Hint Unfold current_chars : tape.
+
+
+
 Lemma nth_map' (A B : Type) (f : A -> B) (n : nat) (v : Vector.t A n) (k : Fin.t n) :
   (VectorDef.map f v)[@k] = f v[@k].
 Proof. erewrite VectorSpec.nth_map; eauto. Qed.
@@ -225,7 +243,7 @@ Arguments tapes (sig % type) (n % nat).
 
 
 Section MirrorTape.
-  Variable (n : nat) (sig : finType).
+  Variable (n : nat) (sig : Type).
 
   Definition mirror_tape (t : tape sig) : tape sig :=
     match t with
@@ -343,7 +361,7 @@ Hint Rewrite mirror_tapes_nth using eauto : tape.
 
 Section Tape_Local.
 
-  Variable sig : finType.
+  Variable sig : Type.
 
   Definition tape_local (t : tape sig) : list sig :=
     match t with
@@ -469,16 +487,16 @@ Hint Rewrite tape_right_move_left    using auto : tape.
 
 (* Apply a function to each symbol on the tape *)
 Section MapTape.
-  Variable sig tau : finType.
+  Variable sig tau : Type.
   Variable g : tau -> sig.
 
   Definition mapTape : tape tau -> tape sig.
   Proof.
     destruct 1 eqn:E1.
     - apply niltape.
-    - apply leftof.  apply (g e). apply (List.map g l).
-    - apply rightof. apply (g e). apply (List.map g l).
-    - apply midtape. apply (List.map g l). apply (g e). apply (List.map g l0).
+    - apply leftof.  apply (g t). apply (List.map g l).
+    - apply rightof. apply (g t). apply (List.map g l).
+    - apply midtape. apply (List.map g l). apply (g t). apply (List.map g l0).
   Defined.
 
   Definition mapTapes {n : nat} : Vector.t (tape tau) n -> Vector.t (tape sig) n := Vector.map mapTape.
@@ -554,22 +572,22 @@ Hint Rewrite mapTapes_nth       : tape.
 Hint Unfold mapTapes : tape.
 
 
-Lemma mapTape_mapTape (sig tau gamma : finType) (f : sig -> tau) (g : tau -> gamma) (t : tape sig) :
+Lemma mapTape_mapTape (sig tau gamma : Type) (f : sig -> tau) (g : tau -> gamma) (t : tape sig) :
   mapTape g (mapTape f t) = mapTape (fun x => g (f x)) t.
-Proof. destruct t; cbn; auto; simpl_tape; now rewrite !map_map. Qed.
+Proof. destruct t; cbn; auto; try simpl_tape; now rewrite !map_map. Qed.
 
-Lemma mapTape_ext (sig tau : finType) (f g : sig -> tau) (t : tape sig) :
+Lemma mapTape_ext (sig tau : Type) (f g : sig -> tau) (t : tape sig) :
   (forall a, f a = g a) -> mapTape f t = mapTape g t.
 Proof. intros H. destruct t; cbn; auto; simpl_tape; rewrite H; f_equal; eapply map_ext; eauto. Qed.
 
-Lemma mapTape_id (sig : finType) (t : tape sig) :
+Lemma mapTape_id (sig : Type) (t : tape sig) :
   mapTape (fun x => x) t = t.
 Proof. destruct t; cbn; auto; f_equal; apply map_id. Qed.
 Hint Rewrite mapTape_mapTape : tape.
 Hint Rewrite mapTape_id : tape.
 
 
-Lemma mapTape_local (sig tau : finType) (f : sig -> tau) t :
+Lemma mapTape_local (sig tau : Type) (f : sig -> tau) t :
   tape_local (mapTape f t) = List.map f (tape_local t).
 Proof. destruct t; cbn; reflexivity. Qed.
 Hint Rewrite mapTape_local : tape.
@@ -578,7 +596,7 @@ Hint Rewrite mapTape_local : tape.
 
 (** Lemmas about [tape_move_left'] and [tape_move_right'] *)
 Section MatchTapes.
-  Variable sig : finType.
+  Variable sig : Type.
 
   Lemma tape_right_move_left' ls (x : sig) rs :
     right (tape_move_left' ls x rs) = x :: rs.
@@ -644,18 +662,8 @@ Section Semantics.
     }.
 
   (** Partitioned Multi-Tape Turing Machines *)
-  Definition pTM (F: finType) (n:nat) := { M : mTM n & states M -> F }.
+  Definition pTM (F: Type) (n:nat) := { M : mTM n & states M -> F }.
   
-
-  (** A single step of the machine *)
-  
-  Definition tape_move_mono (t : tape sig) (mv : option sig * move) :=
-    tape_move (tape_write t (fst mv)) (snd mv).
-
-  (** One step on each tape *)
-  
-  Definition tape_move_multi (n : nat) (ts : tapes sig n) (actions : Vector.t (option sig * move) n) :=
-    Vector.map2 tape_move_mono ts actions.
 
   (** *** Configurations of TMs *)
   
@@ -665,9 +673,6 @@ Section Semantics.
         cstate : states;
         ctapes : tapes sig n
       }.
-
-  (** Currently read characters on all tapes *)
-  Definition current_chars (n : nat) (tapes : tapes sig n) := Vector.map (@current _) tapes.
 
 
   (** *** Machine execution *)
@@ -684,13 +689,12 @@ Section Semantics.
   Definition initc n (M : mTM n) tapes :=
     mk_mconfig (n := n) (@start n M) tapes.
 
-
   (** *** Realisation *)
 
   Notation "'(' a ';' b ')'" := (existT (fun x => states x -> _) a b).
 
   (** Parametrised relations *)
-  Definition pRel (F: finType) (n : nat) := Rel (tapes sig n) (F * tapes sig n).
+  Definition pRel (F: Type) (n : nat) := Rel (tapes sig n) (F * tapes sig n).
 
   (** A (partitioned) machine [M] realises a (parametrised) relation [R], if: for every tape vectors [t], if [M] with [t] terminates in a configuration [c], then [R (t), (projT2 M (cstate c), ctapes c)], which means that the pair of the input tape vectors, the partition where the machine terminated, and the output tape, must be in the relation [R]. *)
   
@@ -848,9 +852,6 @@ Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45
 Notation "M '↓' t" := (TerminatesIn M t) (no associativity, at level 60, format "M  '↓'  t").
 
 
-Arguments current_chars : simpl never.
-Hint Unfold current_chars : tape.
-
 
 (* Auxiliary function to actually execute a machine *)
 Definition execTM (sig : finType) (n : nat) (M : mTM sig n) (steps : nat) (tapes : tapes sig n) :=
@@ -870,9 +871,3 @@ Smpl Create TM_Correct.
 Ltac TM_Correct := smpl TM_Correct.
 
 Smpl Add progress eauto : TM_Correct.
-
-(*
-(* TODO: get rid of that *)
-Smpl Add rewrite <- sigT_eta : TM_Correct.
-*)
-

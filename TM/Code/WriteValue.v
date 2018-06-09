@@ -3,7 +3,7 @@ Require Import TM.Basic.WriteString.
 Require Import Basic.Mono.
 
 
-Lemma WriteString_L_right (sig : finType) (str : list sig) t :
+Lemma WriteString_L_right (sig : Type) (str : list sig) t :
   right (WriteString_Fun L t str) = rev str ++ right t.
 Proof.
   revert t. induction str; intros; cbn in *.
@@ -34,9 +34,7 @@ Section WriteValue.
       intros tin ((), tout) H. intros HRight.
       TMSimp; clear_trivial_eqs.
       repeat econstructor. f_equal. rewrite WriteString_L_right. cbn.
-      rewrite <- app_assoc.
-      rewrite rev_involutive.
-      rewrite isRight_right; auto.
+      rewrite <- app_assoc. rewrite rev_involutive. rewrite isRight_right; auto.
     }
   Qed.
 

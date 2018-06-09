@@ -101,6 +101,8 @@ Section Nth.
            (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (false, tt)))
   .
 
+  Hint Resolve contains_translate_tau1 contains_translate_tau2 : tape.
+
   Lemma Nth_Step_Realise : Nth_Step ⊨ Nth_Step_Rel.
   Proof.
     eapply Realise_monotone.
@@ -147,9 +149,9 @@ Section Nth.
           TMSimp; clear_trivial_eqs.
           (* We know that l = nil *)
           repeat split; eauto.
-          - now apply contains_translate_tau.
-          - now apply contains_translate_tau.
-          - now apply contains_translate_tau.
+          - eapply contains_translate_tau2; eauto.
+          - eapply contains_translate_tau2; eauto.
+          - eapply contains_translate_tau2; eauto.
         }
       }
       { (* The first "Else" case *)
@@ -174,9 +176,8 @@ Section Nth.
             cbn. rewrite !List.map_map. apply map_ext. cbv. auto.
           }
           repeat split; eauto.
-          - now apply contains_translate_tau.
-          - now apply contains_translate_tau.
-          - apply (tape_contains_ext H3). cbn. now rewrite !List.map_map.
+          - eapply contains_translate_tau2; eauto.
+          - eapply contains_translate_tau2; eauto.
         }
         { (* Second "Else" case *)
           specialize (H0 l). spec_assert H0 by now apply contains_translate_tau. spec_assert H0 by now apply surjectTape_isRight.
@@ -186,9 +187,9 @@ Section Nth.
           TMSimp; clear_trivial_eqs.
           (* We know that l = nil *)
           repeat split; eauto.
-          - now apply contains_translate_tau.
-          - now apply contains_translate_tau.
-          - now apply contains_translate_tau.
+          - eapply contains_translate_tau2; eauto.
+          - eapply contains_translate_tau2; eauto.
+          - eapply contains_translate_tau2; eauto.
         }
       }
     }
@@ -264,7 +265,8 @@ Section Nth.
   (*
 (* XXX: This is the old runtime without [Translate], over the alphabet [bool+sigX] *)
 
-  Arguments plus : simpl never. Arguments mult : simpl never.
+  Local Arguments plus : simpl never.
+  Local Arguments mult : simpl never.
 
   Definition Nth_Step_steps l n :=
     6 + (* [5] for [MatchNat], [1] for first [If] *)

@@ -6,7 +6,7 @@ Require Import Coq.Lists.List.
 
 Section Codable.
 
-  Context (sig: finType).
+  Variable (sig: Type).
   Variable (X: Type).
 
   Class codable :=
@@ -20,20 +20,23 @@ Section Codable.
 End Codable.
 Arguments encode { sig } { X } { _ }.
 
+Hint Extern 4 (codable (FinType(EqType ?sigX)) ?X) => cbn : typeclass_instances.
+
+
 Coercion encode : codable >-> Funclass.
 
 
-Instance Encode_unit : codable (FinType(EqType(Empty_set))) unit :=
+Instance Encode_unit : codable Empty_set unit :=
   {|
     encode x := nil
   |}.
 
-Instance Encode_bool : codable (FinType(EqType(bool))) bool:=
+Instance Encode_bool : codable bool bool:=
   {|
     encode x := [x]
   |}.
 
-Instance Encode_Fin n : codable (FinType(EqType(Fin.t n))) (Fin.t n):=
+Instance Encode_Fin n : codable (Fin.t n) (Fin.t n):=
   {|
     encode i := [i]
   |}.
@@ -50,7 +53,7 @@ Compute encode Fin0 : list (Fin.t 10).
 (** We restrict mapping of encodings to injective/retractable mappings. *)
 Section Encode_map.
   Variable (X : Type).
-  Variable (sig tau : finType).
+  Variable (sig tau : Type).
   Hypothesis (code_sig : codable sig X).
 
   Variable inj : Retract sig tau.
@@ -97,7 +100,8 @@ Ltac build_simple_retract :=
 Ltac build_eq_dec :=
   let x := fresh "x" in
   let y := fresh "y" in
-  intros x y; hnf; decide equality; apply eqType_dec.
+  intros x y; hnf; decide equality;
+  apply Dec; auto.
 
 
 Lemma countMap_injective (X Y : eqType) (x : X) (A : list X) (f : X -> Y) :
@@ -122,10 +126,7 @@ Qed.
 
 Section Encode_sum.
   Variable (X Y : Type).
-  Variable (sigX sigY : finType).
-  Hypothesis (cX : codable sigX X) (cY : codable sigY Y).
-
-  Inductive sigSum (sigX sigY : finType) : Type :=
+  Inductive sigSum (sigX sigY : Type) : Type :=
   | sigSum_X (s : sigX)
   | sigSum_Y (s : sigY)
   | sigSum_inl
@@ -134,12 +135,16 @@ Section Encode_sum.
 
   Arguments sigSum_inl {sigX sigY}. Arguments sigSum_inr {sigX sigY}. Arguments sigSum_X {sigX sigY}. Arguments sigSum_Y {sigX sigY}.
 
-  Global Instance Retract_sigSum_X (sigX sigY tau : finType) (f : Retract sigX tau) : Retract sigX (sigSum tau sigY).
+  Global Instance Retract_sigSum_X (sigX sigY tau : Type) (f : Retract sigX tau) : Retract sigX (sigSum tau sigY).
   Proof. build_simple_retract. Defined.
-  Global Instance Retract_sigSum_Y (sigX sigY tau : finType) (f : Retract sigY tau) : Retract sigY (sigSum sigX tau).
+  Global Instance Retract_sigSum_Y (sigX sigY tau : Type) (f : Retract sigY tau) : Retract sigY (sigSum sigX tau).
   Proof. build_simple_retract. Defined.
-  Global Instance sigSum_dec : eq_dec (sigSum sigX sigY) := ltac:(build_eq_dec).
-  Global Instance sigSum_fin : finTypeC (EqType (sigSum sigX sigY)).
+
+  
+  Global Instance sigSum_dec (sigX sigY : Type) (decX: eq_dec sigX) (decY: eq_dec sigY) :
+    eq_dec (sigSum sigX sigY) := ltac:(build_eq_dec).
+
+  Global Instance sigSum_fin (sigX sigY : finType) : finTypeC (EqType (sigSum sigX sigY)).
   Proof.
     split with (enum := sigSum_inl :: sigSum_inr :: map sigSum_X enum ++ map sigSum_Y enum). intros [x|y| | ]; cbn; f_equal.
     - rewrite <- !countSplit.
@@ -155,7 +160,10 @@ Section Encode_sum.
   Qed.
 
   
-  Global Instance Encode_sum : codable (FinType(EqType(sigSum sigX sigY))) (X+Y) :=
+  Variable (sigX sigY : Type).
+  Hypothesis (cX : codable sigX X) (cY : codable sigY Y).
+
+  Global Instance Encode_sum : codable (sigSum sigX sigY) (X+Y) :=
     {|
       encode s := match s with
                   | inl x => sigSum_inl :: encode x
@@ -166,27 +174,33 @@ Section Encode_sum.
 End Encode_sum.
 
 Arguments sigSum_inl {sigX sigY}. Arguments sigSum_inr {sigX sigY}. Arguments sigSum_X {sigX sigY}. Arguments sigSum_Y {sigX sigY}.
+Hint Extern 4 (finTypeC (EqType (sigSum _ _))) => eapply sigSum_fin : typeclass_instances.
+Check FinType (EqType (sigSum bool bool)).
 
 Compute Encode_sum Encode_bool Encode_unit (inl true).
 
 
+
 (** If [X] is encodable over [sigX] and [Y] over [sigY]. *)
 Section Encode_pair.
-  Variable (sigX sigY: finType) (X Y: Type) (cX : codable sigX X) (cY : codable sigY Y).
 
-  Inductive sigPair (sigX sigY : finType) : Type :=
+  Inductive sigPair (sigX sigY : Type) : Type :=
   | sigPair_X (s : sigX)
   | sigPair_Y (s : sigY)
   .
 
   Arguments sigPair_X {sigX sigY}. Arguments sigPair_Y {sigX sigY}.
 
-  Global Instance Retract_sigPair_X (sigX sigY tau : finType) (f : Retract sigX tau) : Retract sigX (sigPair tau sigY).
+  Global Instance Retract_sigPair_X (sigX sigY tau : Type) (f : Retract sigX tau) : Retract sigX (sigPair tau sigY).
   Proof. build_simple_retract. Defined.
-  Global Instance Retract_sigPair_Y (sigX sigY tau : finType) (f : Retract sigY tau) : Retract sigY (sigPair sigX tau).
+  Global Instance Retract_sigPair_Y (sigX sigY tau : Type) (f : Retract sigY tau) : Retract sigY (sigPair sigX tau).
   Proof. build_simple_retract. Defined.
-  Global Instance sigPair_dec : eq_dec (sigPair sigX sigY) := ltac:(build_eq_dec).
-  Global Instance sigPair_fin : finTypeC (EqType (sigPair sigX sigY)).
+
+
+  Global Instance sigPair_dec (sigX sigY : Type) (decX: eq_dec sigX) (decY: eq_dec sigY) :
+    eq_dec (sigPair sigX sigY) := ltac:(build_eq_dec).
+  
+  Global Instance sigPair_fin (sigX sigY : finType) : finTypeC (EqType (sigPair sigX sigY)).
   Proof.
     split with (enum := map sigPair_X enum ++ map sigPair_Y enum). intros [x|y]; cbn; f_equal.
     - rewrite <- !countSplit.
@@ -199,8 +213,9 @@ Section Encode_pair.
       + eapply (retract_f_injective) with (I := Retract_sigPair_Y sigX (Retract_id _)).
   Qed.
 
+  Variable (sigX sigY: Type) (X Y: Type) (cX : codable sigX X) (cY : codable sigY Y).
   
-  Global Instance Encode_pair : codable (FinType (EqType (sigPair sigX sigY))) (X*Y) :=
+  Global Instance Encode_pair : codable (sigPair sigX sigY) (X*Y) :=
     {|
       encode '(x,y) := encode x ++ encode y;
     |}.
@@ -209,20 +224,20 @@ End Encode_pair.
 
 Arguments sigPair_X {sigX sigY}. Arguments sigPair_Y {sigX sigY}.
 
+Hint Extern 4 (finTypeC (EqType (sigPair _ _))) => eapply sigPair_fin : typeclass_instances.
+Check FinType (EqType (sigPair bool bool)).
+
 
 Compute Encode_pair Encode_bool (Encode_sum Encode_unit Encode_bool) (true, inl tt).
 
-Check _ : codable (FinType (EqType (sigPair (FinType (EqType bool))
-                                            (FinType (EqType (sigSum (FinType (EqType Empty_set)) (FinType (EqType bool))))))))
-                  unit.
+Check _ : codable (sigPair bool (sigSum Empty_set bool)) unit.
 
 
 
 
 Section Encode_option.
-  Variable (sigX: finType) (X: Type) (cX : codable sigX X).
 
-  Inductive sigOption (sigX: finType) : Type :=
+  Inductive sigOption (sigX: Type) : Type :=
   | sigOption_X (s : sigX)
   | sigOption_None
   | sigOption_Some
@@ -230,11 +245,13 @@ Section Encode_option.
 
   Arguments sigOption_Some {sigX}. Arguments sigOption_None {sigX}. Arguments sigOption_X {sigX}.
 
-  Global Instance Retract_sigOption_X (sig tau : finType) (retr : Retract sig tau) : Retract sig (sigOption tau).
+  Global Instance Retract_sigOption_X (sig tau : Type) (retr : Retract sig tau) : Retract sig (sigOption tau).
   Proof. build_simple_retract. Defined.
 
-  Global Instance sigOption_dec : eq_dec (sigOption sigX) := ltac:(build_eq_dec).
-  Global Instance sigOption_fin : finTypeC (EqType (sigOption sigX)).
+  Global Instance sigOption_dec sigX (decX : eq_dec sigX) :
+    eq_dec (sigOption sigX) := ltac:(build_eq_dec).
+
+  Global Instance sigOption_fin (sigX : finType) : finTypeC (EqType (sigOption sigX)).
   Proof.
     split with (enum := sigOption_Some :: sigOption_None :: map sigOption_X enum).
     intros [x| | ]; cbn; f_equal.
@@ -245,7 +262,9 @@ Section Encode_option.
   Qed.
 
 
-  Global Instance Encode_option : codable (FinType(EqType (sigOption sigX))) (option X) :=
+  Variable (sigX: Type) (X: Type) (cX : codable sigX X).
+
+  Global Instance Encode_option : codable (sigOption sigX) (option X) :=
     {|
       encode o := match o with
                   | None => [sigOption_None]
@@ -257,16 +276,19 @@ End Encode_option.
 
 Arguments sigOption_Some {sigX}. Arguments sigOption_None {sigX}. Arguments sigOption_X {sigX}.
 
+
+Hint Extern 4 (finTypeC (EqType (sigOption _))) => eapply sigOption_fin : typeclass_instances.
+Check FinType (EqType (sigOption bool)).
+
+
 Compute Encode_option Encode_bool None.
 Compute Encode_option Encode_bool (Some false).
 
 
 
 Section Encode_list.
-  Variable sigX: finType.
-  Variable (X : Type) (cX : codable sigX X).
 
-  Inductive sigList (sigX : finType) : Type :=
+  Inductive sigList (sigX : Type) : Type :=
   | sigList_X (s : sigX)
   | sigList_nil
   | sigList_cons
@@ -274,10 +296,13 @@ Section Encode_list.
 
   Arguments sigList_nil {sigX}. Arguments sigList_cons {sigX}. Arguments sigList_X {sigX}.
 
-  Global Instance Retract_sigList_X (sig tau : finType) (retr : Retract sig tau) : Retract sig (sigList tau).
+  Global Instance Retract_sigList_X (sig tau : Type) (retr : Retract sig tau) : Retract sig (sigList tau).
   Proof. build_simple_retract. Defined.
-  Global Instance sigList_dec : eq_dec (sigList sigX) := ltac:(build_eq_dec).
-  Global Instance sigList_fin : finTypeC (EqType (sigList sigX)).
+
+  Global Instance sigList_dec sigX (decX : eq_dec sigX) :
+    eq_dec (sigList sigX) := ltac:(build_eq_dec).
+
+  Global Instance sigList_fin (sigX : finType) : finTypeC (EqType (sigList sigX)).
   Proof.
     split with (enum := sigList_nil :: sigList_cons :: map sigList_X enum).
     intros [x| | ]; cbn; f_equal.
@@ -288,13 +313,16 @@ Section Encode_list.
   Qed.
 
 
+  Variable sigX: Type.
+  Variable (X : Type) (cX : codable sigX X).
+
   Fixpoint encode_list (xs : list X) : list (sigList sigX) :=
     match xs with
     | nil => [sigList_nil]
     | x :: xs' => sigList_cons :: encode x ++ encode_list xs'
     end.
 
-  Global Instance Encode_list : codable (FinType(EqType (sigList sigX))) (list X) :=
+  Global Instance Encode_list : codable (sigList sigX) (list X) :=
     {|
       encode := encode_list;
     |}.
@@ -302,6 +330,10 @@ Section Encode_list.
 End Encode_list.
 
 Arguments sigList_nil {sigX}. Arguments sigList_cons {sigX}. Arguments sigList_X {sigX}.
+
+Hint Extern 4 (finTypeC (EqType (sigList _))) => eapply sigList_fin : typeclass_instances.
+Check FinType(EqType (sigList bool)).
+
 
 Compute Encode_list Encode_bool (nil).
 (* This cannot reduce to [sigList_cons :: sigList_X true :: Encode_list _] *)
@@ -321,12 +353,14 @@ Section Encode_nat.
   Global Instance sigNat_fin : finTypeC (EqType sigNat).
   Proof. split with (enum := [sigNat_O; sigNat_S]). intros [ | ]; cbn; reflexivity. Qed.
 
-  Global Instance Encode_nat : codable (FinType(EqType sigNat)) nat :=
+  Global Instance Encode_nat : codable sigNat nat :=
     {|
       encode n := repeat sigNat_S n ++ [sigNat_O];
     |}.
 
 End Encode_nat.
+
+Check FinType(EqType sigNat).
 
 
 

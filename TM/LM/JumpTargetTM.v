@@ -1,5 +1,6 @@
 Require Import HeapTM.
 Require Import MatchList.
+Require Import ListTM.
 
 
 Fixpoint jumpTarget (k:nat) (Q:Pro) (P:Pro) : option (Pro*Pro) :=
@@ -97,6 +98,9 @@ Proof.
   {
     intros tin ((), tout) H. intros Q Q' HENcQ HEncQ' HRight2.
     unfold sigPro, sigTok in *. TMSimp.
+
+    
+
     specialize (H _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(intros i; destruct_fin i)) as (HComp1&HComp2&HComp3&_).
     specialize (H0 _ ltac:(eauto)).
     specialize (H1 _ ltac:(eauto) ltac:(eauto)) as (H1&H1').
@@ -242,30 +246,30 @@ Proof.
         specialize H1 with (1 := HEncQ) (2 := H0). repeat spec_assert H1 by auto. destruct H1 as (H1&H1'&H1''&H''').
         repeat split; auto. intros i; destruct_fin i; TMSimp. all: auto.
       - (* t = appT *) TMSimp. specialize H0 with (1 := HEncQ). repeat spec_assert H0 by auto. destruct H0 as (H0&H0'&H0'').
-        split; auto. intros i; destruct_fin i; auto. now setoid_rewrite H1_6.
+        split; auto. intros i; destruct_fin i; auto; TMSimp; auto.
       - (* t = lamT *) TMSimp.
         specialize H0 with (1 := contains_translate_tau1 HEncK) as H0 % contains_translate_tau2.
         specialize H1 with (1 := HEncQ). repeat spec_assert H1 by auto. destruct H1 as (H1&H1'&H1'').
-        split; auto. intros i; destruct_fin i; auto. now setoid_rewrite H2_7.
+        split; auto. intros i; destruct_fin i; auto. TMSimp; auto.
       - (* t = retT *)
         cbn in *. destruct HCase as [HMatchNat | HMatchNat]; TMSimp.
         { (* Then of [MatchNat]: k = S k' *)
           specialize H with (1 := contains_translate_tau1 HEncK).
           destruct k as [ | k']; destruct H as [ HMatchNat HMatchNat']; inv HMatchNat'; apply contains_translate_tau2 in HMatchNat.
           specialize H1 with (1 := HEncQ). repeat spec_assert H1 by auto. destruct H1 as (H1&H1'&H1'').
-          repeat split; auto. intros i; destruct_fin i; auto. now setoid_rewrite H2_12.
+          repeat split; auto. intros i; destruct_fin i; auto. TMSimp; auto.
         }
         { (* Else case of [MatchNat]: k = O *)
           specialize H with (1 := contains_translate_tau1 HEncK).
           destruct k as [ | k']; destruct H as [ HMatchNat HMatchNat']; inv HMatchNat'; apply contains_translate_tau2 in HMatchNat.
-          repeat split; auto. intros i; destruct_fin i. now setoid_rewrite H1_8. now setoid_rewrite H1_7. now setoid_rewrite H1_6.
+          repeat split; auto. intros i; destruct_fin i; TMSimp; auto. 
         }
     }
     { (* Else of [MatchList] *)
       rename H into HMatchList.
       specialize HMatchList with (1 := HEncP) (2 := HInt _).
       destruct P as [ | t P']; destruct HMatchList as (HMatchList&HMatchList'&HMatchList''); inv HMatchList''.
-      repeat split; auto. intros i; destruct_fin i; auto. now setoid_rewrite H0_3. now setoid_rewrite H0_2.
+      repeat split; auto. intros i; destruct_fin i; auto; now TMSimp.
     }
   }
 Qed.
@@ -346,7 +350,7 @@ Definition JumpTarget :=
   Inject (WriteValue _ nil) [|Fin1|];;
   Inject (ChangeAlphabet (WriteValue _ 0) retr_nat_prog) [|Fin2|];;
   JumpTarget_Loop;;
-  Inject (ChangeAlphabet (Reset sigHAd) retr_nat_prog) [|Fin2|].
+  Inject (ChangeAlphabet (Reset sigHAd_fin) retr_nat_prog) [|Fin2|].
 
 
 Definition JumpTarget_Rel : pRel sigPro^+ (FinType(EqType unit)) 6 :=
@@ -376,8 +380,7 @@ Proof.
     spec_assert H by auto.
     spec_assert H0 as H0 % contains_translate_tau2 by now apply surjectTape_isRight.
     specialize H1 with (1 := HJump) (2 := HEncP) (3 := H) (4 := H0). spec_assert H1 as (H1&H1'&H1''&H1''').
-    { intros i; destruct_fin i; auto. now setoid_rewrite H2_4. now setoid_rewrite H2_3. now setoid_rewrite H2_2. }
-
+    { intros i; destruct_fin i; auto; now TMSimp. }
     specialize (H2 (jumpTarget_k 0 [] P)). spec_assert H2 as H2 % surjectTape_isRight' by now apply contains_translate_tau1.
 
     repeat split; auto.

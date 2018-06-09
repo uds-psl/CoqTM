@@ -2,7 +2,7 @@ Require Import TM.Prelim TM.Relations TM.TM.
 
 
 Section SujectTape.
-  Variable sig tau : finType.
+  Variable sig tau : Type.
   Variable g : tau -> option sig.
   Variable def : sig.
 
@@ -14,9 +14,10 @@ End SujectTape.
 
 Hint Unfold surjectTape : tape.
 
+
 Section lift_sigma_tau.
   Variable n : nat.
-  Variable sig tau : finType.
+  Variable sig tau : Type.
   Variable g : tau -> option sig.
   Variable def : Vector.t sig n.
   Variable F : Type.
@@ -41,7 +42,7 @@ Arguments lift_sigma_tau_T {n sig tau} (g def T) x y /.
 
 Section InjectTape.
 
-  Variable sig tau : finType.
+  Variable sig tau : Type.
   Variable f : sig -> tau.
 
   Definition injectTape := mapTape f.
@@ -49,7 +50,7 @@ Section InjectTape.
 End InjectTape.
 
 Section InjectSurject.
-  Variable sig tau : finType.
+  Variable sig tau : Type.
   Variable inj : Retract sig tau.
   Variable def : sig.
 
@@ -85,10 +86,10 @@ Section InjectSurject.
 End InjectSurject.
 
 Section TranslateAct.
-  Variable X Y : finType.
+  Variable X Y : Type.
   Definition map_act : (X -> Y) -> option X * move -> option Y * move := fun f => map_left (map_opt f).
-  Compute map_act.
 End TranslateAct.
+
 
 Section LiftSigmaTau.
   Variable sig tau : finType.
@@ -204,7 +205,7 @@ Section LiftSigmaTau.
       symmetry. apply surject_step.
     - eapply Vector.eq_nth_iff. intros ? ? <-.
       unfold current_chars, surjectTapes, mapTapes, surjectReadSymbols, surjectTape.
-      erewrite !Vector.nth_map; simpl_tape; eauto.
+      now repeat simpl_tape.
   Qed.
 
   Lemma propagate_loop (k : nat) iconf (oconf : mconfig sig (states (projT1 pMSig)) n) :

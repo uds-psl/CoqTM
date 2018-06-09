@@ -7,22 +7,22 @@ Require Export TM.Compound.TMTac.
 (* Tape proposition that says that the pointer is on (but not off) the right-most symbol *)
 Section IsRight.
 
-  Definition isRight (sig : finType) (t : tape sig) :=
+  Definition isRight (sig : Type) (t : tape sig) :=
     exists x rs, t = midtape rs x nil.
 
-   Definition isRight_size (sig : finType) (t : tape sig) (s : nat) :=
+   Definition isRight_size (sig : Type) (t : tape sig) (s : nat) :=
     exists x rs, t = midtape rs x nil /\ |rs| <= s.
 
 
-   Lemma isRight_size_isRight (sig : finType) (t : tape sig) (s : nat) :
+   Lemma isRight_size_isRight (sig : Type) (t : tape sig) (s : nat) :
      isRight_size t s -> isRight t.
    Proof. intros (x&rs&->&_). hnf. eauto. Qed.
 
-  Lemma isRight_size_monotone (sig : finType) (t : tape sig) (s1 s2 : nat) :
+  Lemma isRight_size_monotone (sig : Type) (t : tape sig) (s1 s2 : nat) :
     isRight_size t s1 -> s1 <= s2 -> isRight_size t s2.
   Proof. intros (x&rs&->&Hr) Hs. exists x, rs. split. eauto. omega. Qed.
 
-  Lemma mapTape_isRight (sig tau : finType) (t : tape sig) (f : sig -> tau) :
+  Lemma mapTape_isRight (sig tau : Type) (t : tape sig) (f : sig -> tau) :
     isRight (mapTape f t) <-> isRight t.
   Proof.
     split.
@@ -31,19 +31,19 @@ Section IsRight.
     - intros (r1&r2&->). hnf. cbn. eauto.
   Qed.
 
-  Lemma isRight_right (sig : finType) (t : tape sig) :
+  Lemma isRight_right (sig : Type) (t : tape sig) :
     isRight t -> right t = nil.
   Proof. now intros (x&rs&->). Qed.
 
-  Lemma isRight_size_left (sig : finType) (t : tape sig) (s1 : nat) :
+  Lemma isRight_size_left (sig : Type) (t : tape sig) (s1 : nat) :
     isRight_size t s1 -> right t = nil.
   Proof. eauto using isRight_right, isRight_size_isRight. Qed.
 
-  Lemma isRight_size_right (sig : finType) (t : tape sig) (s1 : nat) :
+  Lemma isRight_size_right (sig : Type) (t : tape sig) (s1 : nat) :
     isRight_size t s1 -> length (left t) <= s1.
   Proof. now intros (x&r1&->&H1). Qed.
 
-  Lemma isRight_isRight_size (sig : finType) (t : tape sig) :
+  Lemma isRight_isRight_size (sig : Type) (t : tape sig) :
     isRight t -> isRight_size t (| tape_local_l t|).
   Proof. intros (x&r2&->). cbn. hnf. eauto. Qed.
 
@@ -65,7 +65,6 @@ Instance boundary_fin : finTypeC (EqType boundary).
 Proof. split with (enum := [START; STOP; UNKNOWN]). cbn. intros []; cbn; reflexivity. Defined.
 
 
-Notation "sig '^+'" := (FinType(EqType(boundary + sig))) (at level 0) : type_scope.
 
 
 Generalizable Variable X Y Z sig tau.
@@ -73,7 +72,9 @@ Generalizable Variable X Y Z sig tau.
 
 Section Fix_Sig.
 
-  Variable (sig : finType).
+  Variable (sig : Type).
+
+  Notation "sig '^+'" := ((boundary + sig) % type) (at level 0) : type_scope.
 
 
   (** ** Value Containing *)
@@ -91,11 +92,11 @@ Section Fix_Sig.
 
     Context `{cX : codable sig X}.
 
-    Definition tape_contains' (t: tape (sig^+)) (x : X) :=
+    Definition tape_contains' (t: tape sig^+) (x : X) :=
       exists r1, t = midtape r1 (inl START) (map inr (encode x) ++ [inl STOP]).
     Definition tape_contains := tape_contains'.
 
-    Definition tape_contains_rev' (t: tape (sig^+)) (x : X) :=
+    Definition tape_contains_rev' (t: tape sig^+) (x : X) :=
       exists r1, t = midtape (map inr (rev (encode x)) ++ inl START :: r1) (inl STOP) nil.
     Definition tape_contains_rev := tape_contains_rev'.
 
@@ -143,7 +144,7 @@ Section Fix_Sig.
   Section Computes.
     Variable n : nat.
     Context `{cX: codable sig X} `{cY: codable sig Y}.
-    Variable F : finType.
+    Variable F : Type.
 
     (*
      * Tape [t0] is the input tapes, [t2] is the output tape.
@@ -182,27 +183,6 @@ Section Fix_Sig.
         intros tin (yout, tout) HRel. hnf. intros x EncX. specialize (HRel _ EncX). intuition congruence.
       Qed.
 
-      Variable pM : { M : mTM (sig^+) (S (S n)) & states M -> F }.
-
-      Lemma Computes_Ext_Realise :
-        pM ⊨ Computes_Rel f' ->
-        pM ⊨ Computes_Rel f.
-      Proof.
-        intros H. eapply Realise_monotone.
-        - eapply H.
-        - eapply Computes_ext.
-      Qed.
-
-      Lemma Computes_Ext_RealiseIn (k : nat) :
-        pM ⊨c(k) Computes_Rel f' ->
-        pM ⊨c(k) Computes_Rel f.
-      Proof.
-        intros H. eapply RealiseIn_monotone.
-        - eapply H.
-        - auto.
-        - eapply Computes_ext.
-      Qed.
-
 
       Variable (r1 r2 : X -> nat).
       Hypothesis mon : forall x, r2 x <= r1 x.
@@ -215,15 +195,6 @@ Section Fix_Sig.
         hnf. exists x. repeat split; eauto. rewrite <- H4. apply mon.
       Qed.
 
-      Lemma Computes_T_Monotone :
-        projT1 pM ↓ Computes_T r2 ->
-        projT1 pM ↓ Computes_T r1.
-      Proof.
-        intros H. eapply TerminatesIn_monotone.
-        - apply H.
-        - apply Computes_Monotone.
-      Qed.
-
     End Computes_Ext.
   End Computes.
 
@@ -233,7 +204,7 @@ Section Fix_Sig.
     Variable n : nat.
     (* WARNING: [Z] is overloaded in Coq with the type of integer numbers! *)
     Context `{cX: codable sig X} `{cY: codable sig Y} Z `{cZ: codable sig Z}.
-    Variable F : finType.
+    Variable F : Type.
 
     (*
      * Tapes [t0] and [t1] are input tapes, [t2] is the output tape.
@@ -273,31 +244,8 @@ Section Fix_Sig.
         intros tin (yout, tout) HRel. hnf. intros x EncX y EncY. specialize (HRel x EncX y EncY). intuition congruence.
       Qed.
 
-      Variable pM : { M : mTM (sig^+) (S (S (S n))) & states M -> F }.
-
-      Lemma Computes2_Ext_Realise :
-        pM ⊨ Computes2_Rel f' ->
-        pM ⊨ Computes2_Rel f.
-      Proof.
-        intros H. eapply Realise_monotone.
-        - eapply H.
-        - eapply Computes2_ext.
-      Qed.
-
-      Lemma Computes2_Ext_RealiseIn (l : nat) :
-        pM ⊨c(l) Computes2_Rel f' ->
-        pM ⊨c(l) Computes2_Rel f.
-      Proof.
-        intros H. eapply RealiseIn_monotone.
-        - eapply H.
-        - auto.
-        - eapply Computes2_ext.
-      Qed.
-
-
       Variable (r1 r2 : X -> Y -> nat).
       Hypothesis mon : forall x y, r2 x y <= r1 x y.
-
 
       Lemma Computes2_Monotone  :
         Computes2_T r1 <<=2 Computes2_T r2.
@@ -306,16 +254,6 @@ Section Fix_Sig.
         destruct H as (x&y&H1&H2&H3&H4&H5).
         hnf. exists x, y. repeat split; eauto. rewrite <- H5. apply mon.
       Qed.
-
-      Lemma Computes2_T_Monotone :
-        projT1 pM ↓ Computes2_T r2 ->
-        projT1 pM ↓ Computes2_T r1.
-      Proof.
-        intros H. eapply TerminatesIn_monotone.
-        - apply H.
-        - eapply Computes2_Monotone.
-      Qed.
-
 
     End Computes2_Ext.
   End Computes2.
@@ -343,6 +281,9 @@ Arguments Computes_T {sig n X cX} r x y/.
 
 Arguments Computes2_Rel {sig n X cX Y cY Z cZ F} f x y/.
 Arguments Computes2_T {sig n X cX Y cY} r x y/.
+
+
+Notation "sig '^+'" := (FinType (EqType (boundary + sig) % type)) (at level 0) : type_scope.
 
 
 

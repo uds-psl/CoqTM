@@ -456,13 +456,13 @@ At the end, [n] comes from a variable and [a] comes from a closure, so we also h
 *)
 
 Definition Lookup : { M : mTM sigLookup^+ 8 & states M -> unit } :=
-  Inject (ChangeAlphabet (CopyValue sigHAd) retr_nat_lookup_clos) [|Fin1; Fin7|];;
+  Inject (ChangeAlphabet (CopyValue sigHAd_fin) retr_nat_lookup_clos) [|Fin1; Fin7|];;
   Inject (Translate retr_nat_lookup_clos retr_nat_lookup_nth) [|Fin1|];;
   Inject (Lookup_Loop) [|Fin0;Fin1;Fin2;Fin3;Fin4;Fin5;Fin6|];;
-  Inject (ChangeAlphabet (Reset sigHAd) retr_nat_lookup_var) [|Fin2|];;
-  Inject (ChangeAlphabet (Reset sigHAd) retr_nat_lookup_nth) [|Fin1|];;
-  Inject (ChangeAlphabet (CopyValue sigHAd) retr_nat_lookup_clos) [|Fin7; Fin1|];;
-  Inject (ChangeAlphabet (Reset sigHAd) retr_nat_lookup_clos) [|Fin7|].
+  Inject (ChangeAlphabet (Reset sigHAd_fin) retr_nat_lookup_var) [|Fin2|];;
+  Inject (ChangeAlphabet (Reset sigHAd_fin) retr_nat_lookup_nth) [|Fin1|];;
+  Inject (ChangeAlphabet (CopyValue sigHAd_fin) retr_nat_lookup_clos) [|Fin7; Fin1|];;
+  Inject (ChangeAlphabet (Reset sigHAd_fin) retr_nat_lookup_clos) [|Fin7|].
 
   
 Definition Lookup_Rel : Rel (tapes sigLookup^+ 8) (unit * tapes sigLookup^+ 8) :=
@@ -498,7 +498,8 @@ Proof.
     - apply Lift_Realise. apply Reset_Realise with (X := nat).
   }
   {
-    intros tin ((), tout) H. cbn. intros heap a n g HLookup HEncH HEncA HEncN HRight3 HRight4 HRight5 HRight6 HRight7. TMSimp.
+    intros tin ((), tout) H. cbn. intros heap a n g HLookup HEncH HEncA HEncN HRight3 HRight4 HRight5 HRight6 HRight7.
+    TMSimp.
     rename H into HCopy1; rename H0 into HTranslate; rename H1 into HComp; rename H2 into HReset1; rename H3 into HReset2; rename H4 into HCopy2; rename H5 into HReset3.
     specialize (HCopy1 a) with (1 := contains_translate_tau1 HEncA) (2 := surjectTape_isRight _ HRight7) as
         (HCopy1%contains_translate_tau2&HCopy1'%contains_translate_tau2).
