@@ -250,12 +250,11 @@ Section Computes_ChangeAlphabet.
       specialize (HComp x HEncX).
       destruct HComp as (HComp1&HComp2&HComp3); cbn in *.
       { now eapply surjectTape_isRight. }
-      { intros. simpl_tape. cbn. rewrite Vector.const_nth. eapply surjectTape_isRight. eauto. }
+      { intros. simpl_tape. eapply surjectTape_isRight. eauto. }
       repeat split.
       + eapply contains_translate_tau2; eauto.
       + eapply contains_translate_tau2; eauto.
-      + intros i. specialize (HComp3 i).
-        erewrite VectorSpec.nth_map2 in HComp3; eauto. cbn in HComp3. rewrite VectorSpec.const_nth in HComp3.
+      + intros i. specialize (HComp3 i). simpl_tape in HComp3.
         now eapply surjectTape_isRight' in HComp3.
     }
   Qed.
@@ -293,13 +292,12 @@ Section Computes_ChangeAlphabet2.
       specialize (HComp x y HEncX HEncY).
       destruct HComp as (HComp1&HComp2&HComp3&HComp4); cbn in *.
       { now eapply surjectTape_isRight. }
-      { intros. simpl_tape. cbn. rewrite Vector.const_nth. eapply surjectTape_isRight. eauto. }
+      { intros. simpl_tape. cbn. eapply surjectTape_isRight. eauto. }
       repeat split.
       + eapply contains_translate_tau2; eauto.
       + eapply contains_translate_tau2; eauto.
       + eapply contains_translate_tau2; eauto.
-      + intros i. specialize (HComp4 i).
-        erewrite VectorSpec.nth_map2 in HComp4; eauto. cbn in HComp4. rewrite VectorSpec.const_nth in HComp4.
+      + intros i. specialize (HComp4 i). simpl_tape in HComp4.
         now eapply surjectTape_isRight' in HComp4.
     }
   Qed.

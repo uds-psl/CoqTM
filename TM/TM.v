@@ -177,13 +177,26 @@ Ltac destruct_tapes := unfold tapes in *; destruct_vector.
 Create HintDb tape.
 Create HintDb vector.
 
-Tactic Notation "simpl_tape" :=  autorewrite with tape vector.
-Tactic Notation "simpl_tape" "in" hyp_list(H) :=  autorewrite with tape vector in H.
-Tactic Notation "simpl_tape" "in" "*" := autorewrite with tape vector in *.
+Tactic Notation "simpl_tape" :=
+  repeat rewrite_strat (topdown (choice (hints tape) (hints vector))).
+Tactic Notation "simpl_tape" "in" ident(H) :=
+  repeat rewrite_strat (topdown (choice (hints tape) (hints vector))) in H.
+Tactic Notation "simpl_tape" "in" "*" :=
+  repeat multimatch goal with
+         | [ H : _ |- _ ] => simpl_tape in H
+         end;
+  simpl_tape.
 
-Tactic Notation "simpl_vector" :=  autorewrite with vector.
-Tactic Notation "simpl_vector" "in" hyp_list(H) :=  autorewrite with vector in H.
-Tactic Notation "simpl_vector" "in" "*" := autorewrite with vector in *.
+Tactic Notation "simpl_vector" :=
+  repeat rewrite_strat (topdown (hints vector)).
+Tactic Notation "simpl_vector" "in" ident(H) :=
+  repeat rewrite_strat (topdown (hints vector)) in H.
+Tactic Notation "simpl_vector" "in" "*" :=
+  repeat multimatch goal with
+         | [ H : _ |- _ ] => simpl_vector in H
+         end;
+  simpl_vector.
+
 
 Hint Rewrite tapeToList_move : tape.
 Hint Rewrite tapeToList_move_R : tape.
@@ -202,6 +215,7 @@ Proof. erewrite VectorSpec.nth_map2; eauto. Qed.
 Hint Rewrite @nth_map' : vector.
 Hint Rewrite @nth_map2' : vector.
 Hint Rewrite @nth_tabulate : vector.
+Hint Rewrite VectorSpec.const_nth : vector.
 
 
 
@@ -472,11 +486,7 @@ Section MapTape.
   (* Correctness of mapTape *)
 
   Lemma mapTape_current t :
-    current (mapTape t) =
-    match (current t) with
-    | Some m => Some (g m)
-    | None => None
-    end.
+    current (mapTape t) = map_opt g (current t).
   Proof. destruct t; cbn; reflexivity. Qed.
 
   Lemma mapTape_left t :

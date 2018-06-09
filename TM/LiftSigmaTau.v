@@ -204,7 +204,7 @@ Section LiftSigmaTau.
       symmetry. apply surject_step.
     - eapply Vector.eq_nth_iff. intros ? ? <-.
       unfold current_chars, surjectTapes, mapTapes, surjectReadSymbols, surjectTape.
-      erewrite !Vector.nth_map; simpl_tape; eauto. reflexivity.
+      erewrite !Vector.nth_map; simpl_tape; eauto.
   Qed.
 
   Lemma propagate_loop (k : nat) iconf (oconf : mconfig sig (states (projT1 pMSig)) n) :
