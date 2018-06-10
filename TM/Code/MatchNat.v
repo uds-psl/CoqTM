@@ -102,3 +102,19 @@ Section MatchNat.
   End NatConstructor.
 
 End MatchNat.
+
+
+Ltac smpl_TM_MatchNat :=
+  match goal with
+  | [ |- MatchNat ⊨ _ ] => eapply RealiseIn_Realise; apply MatchNat_Sem
+  | [ |- MatchNat ⊨c(_) _ ] => apply MatchNat_Sem
+  | [ |- projT1 (MatchNat) ↓ _ ] => eapply RealiseIn_terminatesIn; apply MatchNat_Sem
+  | [ |- Constr_O ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_O_Sem
+  | [ |- Constr_O ⊨c(_) _ ] => apply Constr_O_Sem
+  | [ |- projT1 (Constr_O) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Constr_O_Sem
+  | [ |- Constr_S ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_S_Sem
+  | [ |- Constr_S ⊨c(_) _ ] => apply Constr_S_Sem
+  | [ |- projT1 (Constr_S) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Constr_S_Sem
+  end.
+
+Smpl Add smpl_TM_MatchNat : TM_Correct.

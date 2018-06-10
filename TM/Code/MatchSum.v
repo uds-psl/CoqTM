@@ -110,6 +110,31 @@ Ltac destruct_shelve e :=
 
 End MatchSum.
 
+Arguments MatchSum : simpl never.
+Arguments Constr_inl : simpl never.
+Arguments Constr_inr : simpl never.
+
+Ltac smpl_TM_MatchSum :=
+  match goal with
+  | [ |- MatchSum _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchSum_Sem
+  | [ |- MatchSum _ _ ⊨c(_) _ ] => apply MatchSum_Sem
+  | [ |- projT1 (MatchSum _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply MatchSum_Sem
+  | [ |- Constr_inr _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_inr_Sem
+  | [ |- Constr_inr _ _ ⊨c(_) _ ] => apply Constr_inr_Sem
+  | [ |- projT1 (Constr_inr _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Constr_inr_Sem
+  | [ |- Constr_inl _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_inl_Sem
+  | [ |- Constr_inl _ _ ⊨c(_) _ ] => apply Constr_inl_Sem
+  | [ |- projT1 (Constr_inl _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Constr_inl_Sem
+  end.
+
+Smpl Add smpl_TM_MatchSum : TM_Correct.
+
+
+
+
+
+
+
 (** ** Reductions *)
 
 Require Import ChangeAlphabet LiftSigmaTau.
@@ -184,7 +209,6 @@ Section MatchOption.
   Proof.
     eapply RealiseIn_monotone.
     { unfold MatchOption. repeat TM_Correct. unfold ChangeAlphabet. repeat TM_Correct.
-      - eapply MatchSum_Sem with (X := X) (Y := unit).
       - apply ResetEmpty_Sem with (X := unit).
     }
     { cbn. reflexivity. }
@@ -243,7 +267,7 @@ Section MatchOption.
   Lemma Constr_Some_Sem : Constr_Some ⊨c(3) Constr_Some_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold Constr_Some. unfold ChangeAlphabet. repeat TM_Correct. apply Constr_inl_Sem. }
+    { unfold Constr_Some. unfold ChangeAlphabet. repeat TM_Correct. }
     { cbn. reflexivity. }
     {
       intros tin ((), tout) H.
@@ -284,6 +308,31 @@ Section MatchOption.
 
 End MatchOption.
 
+Arguments MatchOption : simpl never.
+Arguments Constr_None : simpl never.
+Arguments Constr_Some : simpl never.
+
+
+Ltac smpl_TM_MatchOption :=
+  match goal with
+  | [ |- MatchOption _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchOption_Sem
+  | [ |- MatchOption _ _ ⊨c(_) _ ] => apply MatchOption_Sem
+  | [ |- projT1 (MatchOption _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply MatchOption_Sem
+  | [ |- Constr_None _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_None_Sem
+  | [ |- Constr_None _ ⊨c(_) _ ] => apply Constr_None_Sem
+  | [ |- projT1 (Constr_None _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Constr_None_Sem
+  | [ |- Constr_Some _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_Some_Sem
+  | [ |- Constr_Some _ ⊨c(_) _ ] => apply Constr_Some_Sem
+  | [ |- projT1 (Constr_Some _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Constr_Some_Sem
+  end.
+
+Smpl Add smpl_TM_MatchOption : TM_Correct.
+
+
+
+
+(* TODO: This is not good. *)
+(* Don't extend the alphabets with sums, use retracts as Variables instead. *)
 
 Section MapSum.
 

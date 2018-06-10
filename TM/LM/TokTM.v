@@ -78,7 +78,6 @@ Lemma MatchTok_Sem : MatchTok ⊨c(15) MatchTok_Rel.
 Proof.
   eapply RealiseIn_monotone.
   { unfold MatchTok. repeat TM_Correct.
-    - apply MatchSum_Sem with (X := nat) (Y := ATok).
     - apply Lift_RealiseIn. apply MatchFin_Sem.
     - apply ResetEmpty1_Sem with (X := ATok).
     - apply ResetEmpty1_Sem with (X := ATok).
@@ -125,3 +124,12 @@ Proof.
   - reflexivity.
   - intros tin ((), tout) H. intros n HEncN. TMSimp. now apply tape_contains_ext with (1 := H n HEncN).
 Qed.
+
+
+Arguments MatchTok : simpl never.
+Arguments Constr_appT : simpl never.
+Arguments Constr_lamT : simpl never.
+Arguments Constr_retT : simpl never.
+Arguments Constr_varT : simpl never.
+
+(* TODO: TM_Correct *)

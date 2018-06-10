@@ -104,14 +104,14 @@ Section Nth.
   Proof.
     eapply Realise_monotone.
     { unfold Nth_Step. repeat TM_Correct.
-      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_Realise. eapply MatchNat_Sem.
-      - unfold ChangeAlphabet. repeat TM_Correct. eapply MatchList_Realise with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct.
+      - unfold ChangeAlphabet. repeat TM_Correct.
       - unfold ChangeAlphabet. repeat TM_Correct. eapply Reset_Realise with (X := X).
-      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := X).
-      - unfold ChangeAlphabet. repeat TM_Correct. eapply MatchList_Realise with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct.
+      - unfold ChangeAlphabet. repeat TM_Correct.
       - apply Translate_Realise with (X := X).
-      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_Realise. apply Constr_Some_Sem with (X := X).
-      - unfold ChangeAlphabet. repeat TM_Correct. eapply RealiseIn_Realise. apply Constr_None_Sem with (X := X).
+      - unfold ChangeAlphabet. repeat TM_Correct.
+      - unfold ChangeAlphabet. repeat TM_Correct.
     }
     {
       intros tin ((yout, ()), tout) H.
@@ -747,7 +747,6 @@ Section Lenght.
     eapply Realise_monotone.
     { unfold Length. repeat TM_Correct.
       - apply CopyValue_Realise with (X := list X).
-      - eapply RealiseIn_Realise. apply WriteValue_Sem.
       - apply Length_Loop_Realise.
       - eapply RealiseIn_Realise. apply ResetEmpty1_Sem with (X := list X).
     }

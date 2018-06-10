@@ -125,8 +125,6 @@ Proof.
   eapply RealiseIn_monotone.
   {
     unfold Add_Step. repeat TM_Correct.
-    - apply MatchNat_Sem.
-    - apply Constr_S_Sem.
   }
   { cbn. omega. }
   {
@@ -426,7 +424,6 @@ Proof.
   eapply Realise_monotone.
   {
     unfold Mult_Step. repeat TM_Correct.
-    - eapply RealiseIn_Realise. apply MatchNat_Sem.
     - apply Add_Computes.
     - apply Reset_Realise with (X := nat).
     - apply CopyValue_Realise with (X := nat).
@@ -532,7 +529,6 @@ Proof.
   {
     unfold Mult_Main. repeat TM_Correct.
     - apply CopyValue_Realise with (X := nat).
-    - eapply RealiseIn_Realise. apply Constr_O_Sem.
     - apply Mult_Loop_Realise.
   }
   {
@@ -596,8 +592,6 @@ Proof.
   eapply TerminatesIn_monotone.
   {
     unfold Mult_Step. repeat TM_Correct.
-    - eapply RealiseIn_Realise. apply MatchNat_Sem.
-    - eapply RealiseIn_terminatesIn. apply MatchNat_Sem.
     - apply Add_Computes.
     - apply Add_Terminates.
     - apply Reset_Realise with (X := nat).
@@ -699,8 +693,6 @@ Proof.
   { unfold Mult_Main. repeat TM_Correct.
     - apply CopyValue_Realise with (X := nat).
     - apply CopyValue_Terminates with (X := nat).
-    - eapply RealiseIn_Realise. apply Constr_O_Sem.
-    - eapply RealiseIn_terminatesIn. apply Constr_O_Sem.
     - apply Mult_Loop_Terminates.
   }
   {

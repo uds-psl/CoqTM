@@ -114,7 +114,6 @@ Lemma App_ATok_Realise t : App_ATok t ⊨ App_ATok_Rel t.
 Proof.
   eapply Realise_monotone.
   { unfold App_ATok. repeat TM_Correct.
-    - eapply RealiseIn_Realise. apply WriteValue_Sem.
     - apply App_Tokens_Realise.
   }
   {
@@ -132,8 +131,6 @@ Lemma App_Tok_Realise : App_Tok ⊨ App_Tok_Rel.
 Proof.
   eapply Realise_monotone.
   { unfold App_Tok. repeat TM_Correct.
-    - eapply RealiseIn_Realise. apply Constr_nil_Sem.
-    - apply Constr_cons_Realise.
     - apply App_Tokens_Realise.
     - apply Lift_Realise. apply Reset_Realise with (X := Tok).
   }
@@ -219,7 +216,6 @@ Lemma JumpToTarget_Step_Realise : JumpToTarget_Step ⊨ JumpToTarget_Step_Rel.
 Proof.
   eapply Realise_monotone.
   { unfold JumpToTarget_Step. repeat TM_Correct.
-    - apply MatchList_Realise.
     - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchTok_Sem.
     - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchNat_Sem.
     - apply App_ATok_Realise.
@@ -369,7 +365,6 @@ Lemma JumpTarget_Realise : JumpTarget ⊨ JumpTarget_Rel.
 Proof.
   eapply Realise_monotone.
   { unfold JumpTarget. repeat TM_Correct.
-    - eapply RealiseIn_Realise. apply WriteValue_Sem.
     - apply Lift_Realise. eapply RealiseIn_Realise. apply WriteValue_Sem.
     - apply JumpTarget_Loop_Realise.
     - apply Lift_Realise. apply Reset_Realise with (X := nat).
