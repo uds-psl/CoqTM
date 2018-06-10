@@ -2,6 +2,22 @@
 Require Export Match If SequentialComposition While.
 
 
+
+(** Identity operator *)
+Section Id.
+  (** The purpose of this operator is to deactivate [TM_Correct].
+For example, when using [ChangeAlphabet], but the machine realises a relation, you would like to apply [ChangeAlphabet_Computes] manually. *)
+  Variable (sig : finType) (n : nat).
+  Variable (F : finType).
+
+  Variable (pM : pTM sig F n).
+
+  Definition Id := pM.
+End Id.
+
+
+
+
 (** Simple operator to change the partition *)
 Section ChangePartition.
   Variable (sig : finType) (n : nat).
@@ -167,8 +183,9 @@ Ltac smpl_match_Terminates :=
     end
   end.
 
-(** Put stuff together *)
 
+
+(* There is no rule for [Id] on purpose. *)
 Ltac smpl_TM_Combinators :=
   match goal with
   | [ |- MATCH _ _ ⊨ _] => smpl_match_Realise

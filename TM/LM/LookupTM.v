@@ -37,41 +37,16 @@ We can make this assumption because all heap machines we will consider never get
 However, we didn't make this assumption in the definition of [Nth], so the alphabet of [Lookup] must be [ListTM.tauNth sigHEnt = sigHeap + sigNat + sigHEnt].
 *)
 
-Definition sigLookup : finType := FinType (EqType (sigHeap + sigNat + sigOption sigHEnt)).
-Arguments sigLookup : simpl never.
-
-Check Retract_sigList_X.
-
-Check _ : Retract sigNat sigLookup.
-
-
-Check _ : codable sigLookup Heap.
-
-
-Check _ : Retract sigNat sigLookup.
-
-
-
-(** There are four ways to encode [nat] on [sigLookup]:
-- as a variable on [sigHeap]
-- as an address in a closure
-- directly on the [sigNat], i.e. as parameter for [Nth]
-- on the alphabet [sigOption sigHClos], i.e. as the address of the optional output closure
-
-We assume, that [n] is encoded in the first way, i.e. as variable. However, for simplicity, [a] should be encoded as a parameter for [Nth]. *)
-
 Definition retr_nat_heap_entry : Retract sigNat sigHeap := Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_Y _ (Retract_id _))).
-Definition retr_nat_lookup_var : Retract sigNat sigLookup := Retract_inl (sigOption sigHEnt) (Retract_inl sigNat retr_nat_heap_entry).
 Definition retr_nat_heap_clos : Retract sigNat sigHeap := Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_X _ (Retract_sigPair_Y _ (Retract_id _)))).
-Definition retr_nat_lookup_clos : Retract sigNat sigLookup := Retract_inl _ (Retract_inl _ retr_nat_heap_clos).
-Definition retr_nat_lookup_nth : Retract sigNat sigLookup := Retract_inl (sigOption sigHEnt) (Retract_inr sigHeap (Retract_id sigNat)).
+Definition retr_nat_heap_var : Retract sigNat sigHeap := Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_X _ (Retract_sigPair_X _ _))).
+
+
 (*
 Definition retr_nat_optEnt : Retract sigNat (sigOption sigHEnt) := Retract_sigOption_X (Retract_sigPair_.
 Definition retr_nat_lookup_optEnt : Retract sigNat sigLookup := Retract_inr _ retr_nat_optEnt.
 Definition retr_nat_optClos : Retract sigNat (sigOption sigHClos) := Retract_sigOption_X _.
 *)
-
-Definition retr_clos_lookup_optEnt : Retract sigHClos sigLookup := Retract_inr _ (Retract_sigOption_X (Retract_sigOption_X (Retract_sigPair_X _ (Retract_id _)))).
 
 (*
 Lookup_Step:
@@ -108,7 +83,7 @@ t4-t5: internal tapes for [Nth]
 t6: internal tape for storing the result of [Nth]
 *)
 
-Definition Lookup_Step : { M : mTM sigLookup^+ 7 & states M -> bool*unit }.
+Definition Lookup_Step : { M : mTM sigHeap^+ 7 & states M -> bool*unit }.
 Admitted.
   (*
   If (Inject (ChangeAlphabet MatchNat retr_nat_lookup_var) [|Fin2|])
@@ -140,13 +115,12 @@ Admitted.
 *)
 
 
-
-Definition Lookup_Step_Rel : Rel (tapes sigLookup^+ 7) (bool*unit * tapes sigLookup^+ 7) :=
+Definition Lookup_Step_Rel : Rel (tapes sigHeap^+ 7) (bool*unit * tapes sigHeap^+ 7) :=
   fun tin '(yout, tout) =>
     forall (H: Heap) (a n: nat),
       tin[@Fin0] ≃ H ->
-      tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) a ->
-      tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) n ->
+      tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_heap_clos) a ->
+      tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_heap_var) n ->
       isRight tin[@Fin3] -> isRight tin[@Fin4] -> isRight tin[@Fin5] -> isRight tin[@Fin6] ->
 
       tout[@Fin0] ≃ H /\
@@ -396,18 +370,18 @@ Fixpoint lookup_n (H:Heap) a n {struct n} : nat :=
   end.
 
 
-Definition Lookup_Loop_Rel : Rel (tapes sigLookup^+ 7) (unit * tapes sigLookup^+ 7) :=
+Definition Lookup_Loop_Rel : Rel (tapes sigHeap^+ 7) (unit * tapes sigHeap^+ 7) :=
   ignoreParam (
       fun tin tout =>
         forall (H: Heap) (a n: nat) g,
           lookup H a n = Some g ->
           tin[@Fin0] ≃ H ->
-          tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) a ->
-          tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) n ->
+          tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_heap_clos) a ->
+          tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_heap_var) n ->
           isRight tin[@Fin3] -> isRight tin[@Fin4] -> isRight tin[@Fin5] -> isRight tin[@Fin6] ->
           tout[@Fin0] ≃ H /\ (* [H] is saved *)
-          tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_nth) lookup_a H a n /\ (* the [a] when [lookup] terminated *)
-          tout[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) lookup_n H a n /\ (* the [n] when [lookup] terminated *)
+          tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_heap_clos) lookup_a H a n /\ (* the [a] when [lookup] terminated *)
+          tout[@Fin2] ≃(Encode_map Encode_nat retr_nat_heap_var) lookup_n H a n /\ (* the [n] when [lookup] terminated *)
           tout[@Fin3] ≃ g /\
           isRight tout[@Fin4] /\ (* internal tape of [Nth] *)
           isRight tout[@Fin5] /\ (* internal tape of [Nth] *)
@@ -455,7 +429,8 @@ Admitted.
 At the end, [n] comes from a variable and [a] comes from a closure, so we also have to copy [a] from the closure alphabet to the [Nth] parameter alphabet.
 *)
 
-Definition Lookup : { M : mTM sigLookup^+ 8 & states M -> unit } :=
+Definition Lookup : { M : mTM sigHeap^+ 8 & states M -> unit }.
+  (*
   Inject (ChangeAlphabet (CopyValue sigHAd_fin) retr_nat_lookup_clos) [|Fin1; Fin7|];;
   Inject (Translate retr_nat_lookup_clos retr_nat_lookup_nth) [|Fin1|];;
   Inject (Lookup_Loop) [|Fin0;Fin1;Fin2;Fin3;Fin4;Fin5;Fin6|];;
@@ -463,19 +438,22 @@ Definition Lookup : { M : mTM sigLookup^+ 8 & states M -> unit } :=
   Inject (ChangeAlphabet (Reset sigHAd_fin) retr_nat_lookup_nth) [|Fin1|];;
   Inject (ChangeAlphabet (CopyValue sigHAd_fin) retr_nat_lookup_clos) [|Fin7; Fin1|];;
   Inject (ChangeAlphabet (Reset sigHAd_fin) retr_nat_lookup_clos) [|Fin7|].
+*)
+Admitted.
+
 
   
-Definition Lookup_Rel : Rel (tapes sigLookup^+ 8) (unit * tapes sigLookup^+ 8) :=
+Definition Lookup_Rel : Rel (tapes sigHeap^+ 8) (unit * tapes sigHeap^+ 8) :=
   ignoreParam (
       fun tin tout =>
         forall (H: Heap) (a n: nat) g,
           lookup H a n = Some g ->
           tin[@Fin0] ≃ H ->
-          tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_clos) a ->
-          tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_var) n ->
+          tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_heap_clos) a ->
+          tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_heap_var) n ->
           isRight tin[@Fin3] -> isRight tin[@Fin4] -> isRight tin[@Fin5] -> isRight tin[@Fin6] -> isRight tin[@Fin7] ->
           tout[@Fin0] ≃ H /\ (* [H] is saved *)
-          tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_clos) a /\ (* [a] is saved *)
+          tout[@Fin1] ≃(Encode_map Encode_nat retr_nat_heap_clos) a /\ (* [a] is saved *)
           isRight tout[@Fin2] /\ (* [n] is discarded *)
           tout[@Fin3] ≃ g /\ (* output *)
           isRight tout[@Fin4] /\ (* internal tape of [Nth] *)
@@ -486,6 +464,7 @@ Definition Lookup_Rel : Rel (tapes sigLookup^+ 8) (unit * tapes sigLookup^+ 8) :
 
 
 Lemma Lookup_Realise : Lookup ⊨ Lookup_Rel.
+(*
 Proof.
   eapply Realise_monotone.
   { unfold Lookup. repeat TM_Correct.
@@ -514,3 +493,5 @@ Proof.
     repeat split; auto.
   }
 Qed.
+*)
+Admitted.

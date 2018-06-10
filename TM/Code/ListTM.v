@@ -93,14 +93,8 @@ Section Nth.
   Proof.
     eapply Realise_monotone.
     { unfold Nth_Step. repeat TM_Correct.
-      - unfold ChangeAlphabet. repeat TM_Correct.
-      - unfold ChangeAlphabet. repeat TM_Correct.
-      - unfold ChangeAlphabet. repeat TM_Correct. eapply Reset_Realise with (cX := Encode_map cX retr_X_list).
-      - unfold ChangeAlphabet. repeat TM_Correct.
-      - unfold ChangeAlphabet. repeat TM_Correct.
+      - eapply Reset_Realise with (cX := Encode_map cX retr_X_list).
       - apply Translate_Realise with (X := X).
-      - unfold ChangeAlphabet. repeat TM_Correct.
-      - unfold ChangeAlphabet. repeat TM_Correct.
     }
     {
       intros tin ((yout, ()), tout) H.
@@ -635,9 +629,7 @@ Section Lenght.
   Proof.
     eapply Realise_monotone.
     { unfold Length_Step. repeat TM_Correct.
-      - apply Lift_Realise. apply MatchList_Realise.
       - apply Reset_Realise with (X := X).
-      - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_S_Sem.
     }
     {
       intros tin ((yout, ()), tout) H. cbn. intros xs n HEncXS HEncN HRight.

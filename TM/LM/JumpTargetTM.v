@@ -132,7 +132,7 @@ Proof.
   eapply Realise_monotone.
   { unfold App_Tok. repeat TM_Correct.
     - apply App_Tokens_Realise.
-    - apply Lift_Realise. apply Reset_Realise with (X := Tok).
+    - apply Reset_Realise with (X := Tok).
   }
   { intros tin ((), tout) H. cbn. intros Q t HEncQ HEncT HRight2 HRight3.
     unfold sigPro, sigTok in *. TMSimp.
@@ -216,13 +216,11 @@ Lemma JumpToTarget_Step_Realise : JumpToTarget_Step ⊨ JumpToTarget_Step_Rel.
 Proof.
   eapply Realise_monotone.
   { unfold JumpToTarget_Step. repeat TM_Correct.
-    - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchTok_Sem.
-    - apply Lift_Realise. eapply RealiseIn_Realise. apply MatchNat_Sem.
-    - apply App_ATok_Realise.
-    - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_S_Sem.
+    - eapply RealiseIn_Realise. apply MatchTok_Sem.
     - apply App_ATok_Realise.
     - apply App_ATok_Realise.
-    - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_varT_Sem.
+    - apply App_ATok_Realise.
+    - eapply RealiseIn_Realise. apply Constr_varT_Sem.
     - apply App_Tok_Realise.
   }
   {
@@ -365,9 +363,8 @@ Lemma JumpTarget_Realise : JumpTarget ⊨ JumpTarget_Rel.
 Proof.
   eapply Realise_monotone.
   { unfold JumpTarget. repeat TM_Correct.
-    - apply Lift_Realise. eapply RealiseIn_Realise. apply WriteValue_Sem.
     - apply JumpTarget_Loop_Realise.
-    - apply Lift_Realise. apply Reset_Realise with (X := nat).
+    - apply Reset_Realise with (X := nat).
   }
   {
     intros tin ((), tout) H. cbn. intros P k P' Q' HJump HEncP HOut HInt.

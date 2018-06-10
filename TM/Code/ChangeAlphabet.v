@@ -206,9 +206,8 @@ Arguments injectTape : simpl never.
 Arguments surjectTape : simpl never.
 
 
+(** Machine Notation *)
 
-
-(* TODO: Can this be changed to a notation? *)
 Section ChangeAlphabet.
   Variable (sig tau : finType).
   Variable (n : nat) (F : finType).
@@ -219,6 +218,7 @@ Section ChangeAlphabet.
     Lift pM (Retract_plus retr) (Vector.const (inl UNKNOWN) n).
 
 End ChangeAlphabet.
+
 
 
 (** This tactic removes [surjectTape] in hypothesises and in the goal *)
@@ -238,23 +238,29 @@ Ltac simpl_surject := repeat simpl_surject_step.
 Section Computes_ChangeAlphabet.
 
   Variable (sig tau : finType).
+  
+  Variable (n_tapes : nat).
+  Variable F : finType.
+
+  Variable (pM : {M : mTM (sig^+) (S (S n_tapes)) & states M -> F}).
+
   Variable retr : Retract sig tau.
+  (** Use this to say the [TM_Correct] tactic to apply [ChangeAlphabet_Computes] instead of only unfolding [ChangeAlphabet] and applying [Lift_Realise]. *)
+
 
   Variable X Y : Type.
   Variable (cX : codable sig X) (cY : codable sig Y).
   Variable (func : X -> Y).
 
-  Variable (n_tapes : nat).
-  Variable F : finType.
-  Variable (pM : {M : mTM (sig^+) (S (S n_tapes)) & states M -> F}).
+  
 
   Lemma ChangeAlphabet_Computes :
     pM ⊨ Computes_Rel func ->
-    ChangeAlphabet pM _ ⊨ Computes_Rel func.
+    ChangeAlphabet pM retr ⊨ Computes_Rel func.
   Proof.
     intros H. eapply Realise_monotone.
     {
-      unfold ChangeAlphabet. eapply Lift_Realise; eauto.
+      eapply Lift_Realise; eauto.
     }
     {
       hnf. intros tin (yout&tout) HComp.
@@ -273,22 +279,38 @@ Section Computes_ChangeAlphabet.
     }
   Qed.
 
+  Lemma ChangeAlphabet_Terminates T :
+    projT1 pM ↓ Computes_T T ->
+    projT1 (ChangeAlphabet pM retr) ↓ Computes_T T.
+  Proof.
+    intros H. eapply TerminatesIn_monotone.
+    { unfold ChangeAlphabet. TM_Correct. apply H. }
+    {
+      intros t k HComp. cbn in *. destruct HComp as (x&HEncX&HOut&HInt&Hk).
+      exists x. simpl_tape. repeat split; simpl_surject; auto.
+      now intros i; cbn; simpl_tape; simpl_surject.
+    }
+  Qed.
+
 End Computes_ChangeAlphabet.
 
 
 Section Computes_ChangeAlphabet2.
 
   Variable (sig tau : finType).
+
+  Variable (n_tapes : nat).
+  Variable F : finType. 
+  Variable (pM : {M : mTM (sig^+) (S (S (S n_tapes))) & states M -> F}).
+
   Variable retr : Retract sig tau.
+
 
   Variable X Y Z : Type.
   Variable (cX : codable sig X) (cY : codable sig Y) (cZ : codable sig Z).
   Variable (func : X -> Y -> Z).
 
-  Variable (n_tapes : nat).
-  Variable F : finType.
-  Variable (pM : {M : mTM (sig^+) (S (S (S n_tapes))) & states M -> F}).
-
+  
   Lemma ChangeAlphabet_Computes2 :
     pM ⊨ Computes2_Rel func ->
     ChangeAlphabet pM _ ⊨ Computes2_Rel func.
@@ -316,4 +338,31 @@ Section Computes_ChangeAlphabet2.
     }
   Qed.
 
+  Lemma ChangeAlphabet_Terminates2 T :
+    projT1 pM ↓ Computes2_T T ->
+    projT1 (ChangeAlphabet pM retr) ↓ Computes2_T T.
+  Proof.
+    intros H. eapply TerminatesIn_monotone.
+    { unfold ChangeAlphabet. TM_Correct. apply H. }
+    {
+      intros t k HComp. cbn in *. destruct HComp as (x&y&HEncX&HEncY&HOut&HInt&Hk).
+      exists x, y. simpl_tape. repeat split; simpl_surject; auto.
+      now intros i; cbn; simpl_tape; simpl_surject.
+    }
+  Qed.
+  
+
 End Computes_ChangeAlphabet2.
+
+
+
+(** If you want to use [ChangeAlphabet_Computes], just apply [Id] to the machine, to prevent [TM_Correct] unfolding [ChangeAlphabet] *)
+
+Ltac smpl_TM_ChangeAlphabet :=
+  match goal with
+  | [ |- ChangeAlphabet ?pM ?retr ⊨ _ ] => apply Lift_Realise
+  | [ |- ChangeAlphabet ?pM ?retr ↓ _ ] => apply Lift_TerminatesIn
+  end.
+
+
+Smpl Add smpl_TM_ChangeAlphabet : TM_Correct.

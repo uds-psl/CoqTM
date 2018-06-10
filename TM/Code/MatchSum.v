@@ -369,21 +369,18 @@ Section MapSum.
 
   Definition MapSum : { M : mTM tau^+ (S (S n)) & states M -> unit } :=
     If (Inject (ChangeAlphabet (MatchSum sigX sigY) _) [|Fin0|])
-       (ChangeAlphabet M1 _;;
-        Inject (ChangeAlphabet (Constr_inl sigX sigY) _) [|Fin0|])
-       (ChangeAlphabet M2 _;;
-        Inject (ChangeAlphabet (Constr_inr sigX sigY) _) [|Fin0|]).
+       (Id (ChangeAlphabet M1 _);;
+            Inject (ChangeAlphabet (Constr_inl sigX sigY) _) [|Fin0|])
+       (Id (ChangeAlphabet M2 _);;
+           Inject (ChangeAlphabet (Constr_inr sigX sigY) _) [|Fin0|]).
 
 
   Lemma MapSum_Computes : MapSum ⊨ Computes_Rel map_sum.
   Proof.
     eapply Realise_monotone.
     { unfold MapSum. repeat TM_Correct.
-      - unfold ChangeAlphabet. eapply RealiseIn_Realise. TM_Correct. apply MatchSum_Sem with (X := X) (Y := Y).
-      - eapply ChangeAlphabet_Computes with (X := X) (Y := Z). apply M1_Computes.
-      - unfold ChangeAlphabet. eapply RealiseIn_Realise. TM_Correct. apply Constr_inl_Sem.
-      - eapply ChangeAlphabet_Computes with (X := Y) (Y := Z). apply M2_Computes.
-      - unfold ChangeAlphabet. eapply RealiseIn_Realise. TM_Correct. apply Constr_inr_Sem.
+      - apply (ChangeAlphabet_Computes (M1_Computes)).
+      - apply (ChangeAlphabet_Computes (M2_Computes)).
     }
     {
       intros tin ((), tout) H.
