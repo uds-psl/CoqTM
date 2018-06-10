@@ -1,7 +1,6 @@
 Require Export TM.Prelim TM.TM TM.Code.Code.
 Require Export TM.LiftSigmaTau TM.LiftMN.
 Require Export TM.Combinators.Combinators.
-Require Export TM.Compound.TMTac.
 
 
 (* Tape proposition that says that the pointer is on (but not off) the right-most symbol *)

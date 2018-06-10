@@ -221,6 +221,20 @@ Section ChangeAlphabet.
 End ChangeAlphabet.
 
 
+(** This tactic removes [surjectTape] in hypothesises and in the goal *)
+Ltac simpl_surject_step :=
+  match goal with
+  | [ |- surjectTape _ _ ?t ≃ _ ] => apply contains_translate_tau1
+  | [ |- isRight (surjectTape _ _ ?t) ] => apply surjectTape_isRight
+  | [ H : surjectTape _ _ ?t ≃ _ |- _ ] => apply contains_translate_tau2 in H
+  | [ H : isRight (surjectTape _ _ ?t) |- _ ] => apply surjectTape_isRight' in H
+  end.
+
+Ltac simpl_surject := repeat simpl_surject_step.
+
+
+
+
 Section Computes_ChangeAlphabet.
 
   Variable (sig tau : finType).

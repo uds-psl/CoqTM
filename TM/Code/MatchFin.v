@@ -1,8 +1,6 @@
 (** * Matching and constructors for finite types *)
 
-Require Import CodeTM.
-Require Import TM.Basic.Mono.
-Require Import TM.Combinators.Combinators.
+Require Import ProgrammingTools.
 
 Section MatchFin.
 

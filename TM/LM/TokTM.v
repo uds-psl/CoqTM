@@ -1,7 +1,5 @@
-Require Import TM.Code.CodeTM TM.Code.Copy.
-Require Import TM.Code.MatchNat TM.Code.MatchSum TM.Code.MatchFin TM.Code.WriteValue.
-Require Import TM.Code.ChangeAlphabet TM.LiftMN TM.LiftSigmaTau.
-Require Import TM.Basic.Mono.
+Require Import ProgrammingTools.
+Require Import TM.Code.MatchNat TM.Code.MatchSum TM.Code.MatchFin.
 
 Require Import TM.LM.Definitions.
 

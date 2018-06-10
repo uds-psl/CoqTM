@@ -1,10 +1,5 @@
-Require Export TM.Code.CodeTM TM.Code.Copy.
+Require Export ProgrammingTools.
 Require Export TM.Code.MatchNat TM.Code.MatchSum TM.Code.MatchFin TM.Code.MatchPair TM.Code.WriteValue.
-Require Export TM.Code.ChangeAlphabet TM.LiftMN TM.LiftSigmaTau.
-Require Export TM.Basic.Mono.
-(*
-Require Export TM.Code.ListTM. (* [Nth] *)
-*)
 Require Export TM.LM.Definitions TM.LM.TokTM.
 
 

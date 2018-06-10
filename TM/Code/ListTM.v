@@ -1,8 +1,5 @@
-Require Import TM.Code.CodeTM Code.Copy.
+Require Import ProgrammingTools.
 Require Import MatchNat MatchList MatchSum. (* [TM.Code.MatchSum] contains [Constr_Some] and [Constr_None]. *)
-Require Import TM.LiftMN TM.LiftSigmaTau TM.Combinators.Combinators.
-Require Import ChangeAlphabet.
-Require Import TM.Compound.TMTac.
 
 
 Local Arguments skipn { A } !n !l.
@@ -630,5 +627,135 @@ Section Append.
       - intros i; destruct_fin i.
     }
   Qed.
-  
+
 End Append.
+
+
+
+
+Section Lenght.
+
+  (** Instead of defining [Length] on the alphabet [sigList sigX + sigNat], we can define Length on any alphabet [sig] and assume a retracts from [sigList sigX] to [tau] and from [sigNat] to [tau]. This makes the invocation of the machine more flexible for a client. *)
+
+  Variable sig sigX : finType.
+  Variable (X : Type) (cX : codable sigX X).
+  Variable (retr1 : Retract (sigList sigX) sig) (retr2 : Retract sigNat sig).
+
+
+  Definition Length_Step : pTM sig^+ (bool*unit) 3 :=
+    If (Inject (ChangeAlphabet (MatchList _) _) [|Fin0; Fin2|])
+       (Return (Inject (Reset _) [|Fin2|];;
+                Inject (ChangeAlphabet (Constr_S) _) [|Fin1|])
+               (true, tt))
+       (Nop (false, tt))
+  .
+
+  Definition Length_Step_Rel : pRel sig^+ (bool*unit) 3 :=
+    fun tin '(yout, tout) =>
+      forall (xs : list X) (n : nat),
+        tin[@Fin0] ≃ xs ->
+        tin[@Fin1] ≃ n ->
+        isRight tin[@Fin2] ->
+        match xs with
+        | nil =>
+          tout[@Fin0] ≃ nil /\
+          tout[@Fin1] ≃ n /\
+          isRight tout[@Fin2] /\
+          yout = (false, tt)
+        | _ :: xs' =>
+          tout[@Fin0] ≃ xs' /\
+          tout[@Fin1] ≃ S n /\
+          isRight tout[@Fin2] /\
+          yout = (true, tt)
+        end.
+
+
+  Lemma Length_Step_Realise : Length_Step ⊨ Length_Step_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Length_Step. repeat TM_Correct.
+      - apply Lift_Realise. apply MatchList_Realise.
+      - apply Reset_Realise with (X := X).
+      - apply Lift_Realise. eapply RealiseIn_Realise. apply Constr_S_Sem.
+    }
+    {
+      intros tin ((yout, ()), tout) H. cbn. intros xs n HEncXS HEncN HRight.
+      destruct H; TMSimp.
+      { (* Then *)
+        modpon H.
+        destruct xs as [ | x xs']; cbn in *; destruct H as (H&H'&H''); inv H''; simpl_surject.
+        modpon H1; modpon H2.
+        repeat split; auto.
+      }
+      { (* Then *)
+        modpon H.
+        destruct xs as [ | x xs']; cbn in *; destruct H as (H&H'&H''); inv H''; simpl_surject.
+        repeat split; auto.
+      }
+    }
+  Qed.
+
+
+  Definition Length_Loop := WHILE Length_Step.
+
+  Definition Length_Loop_Rel : pRel sig^+ unit 3 :=
+    ignoreParam (
+        fun tin tout =>
+          forall (xs : list X) (n : nat),
+            tin[@Fin0] ≃ xs ->
+            tin[@Fin1] ≃ n ->
+            isRight tin[@Fin2] ->
+            tout[@Fin0] ≃ nil /\
+            tout[@Fin1] ≃ n + length xs /\
+            isRight tout[@Fin2]
+      ).
+
+
+  Lemma Length_Loop_Realise : Length_Loop ⊨ Length_Loop_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Length_Loop. repeat TM_Correct.
+      - apply Length_Step_Realise.
+    }
+    {
+      apply WhileInduction; intros; intros xs n HEncXS HEncN HRight; TMSimp.
+      {
+        modpon HLastStep.
+        destruct xs as [ | x xs']; TMSimp; inv_pair.
+        cbn. rewrite Nat.add_0_r. repeat split; auto.
+      }
+      {
+        modpon HStar.
+        destruct xs as [ | x xs']; TMSimp; inv_pair.
+        modpon HLastStep.
+        rewrite Nat.add_succ_r.
+        repeat split; auto.
+      }
+    }
+  Qed.
+
+
+  Definition Length : pTM sig^+ unit 4 :=
+    Inject (CopyValue _) [|Fin0; Fin3|];;
+    Inject (WriteValue _ 0) [|Fin1|];;
+    Inject (Length_Loop) [|Fin3; Fin1; Fin2|];;
+    Inject (ResetEmpty1 _) [|Fin3|].
+
+
+  Lemma Length_Computes : Length ⊨ Computes_Rel (@length X).
+  Proof.
+    eapply Realise_monotone.
+    { unfold Length. repeat TM_Correct.
+      - apply CopyValue_Realise with (X := list X).
+      - eapply RealiseIn_Realise. apply WriteValue_Sem.
+      - apply Length_Loop_Realise.
+      - eapply RealiseIn_Realise. apply ResetEmpty1_Sem with (X := list X).
+    }
+    {
+      intros tin ((), tout) H. intros xs HEncXs Hout HInt2. specialize (HInt2 Fin1) as HInt3; specialize (HInt2 Fin0).
+      TMSimp. modpon H. modpon H0. modpon H1. modpon H2. modpon H3.
+      repeat split; auto. intros i; destruct_fin i; auto. now TMSimp.
+    }
+  Qed.
+
+End Lenght.

@@ -23,16 +23,14 @@ TM/LiftMN.v
 TM/LiftSigmaTau.v
 TM/Mirror.v
 
-# Encoding
+# Programming
 TM/Code/Code.v
 TM/Code/CodeTM.v
-
 TM/Code/WriteValue.v
-# TM/Code/FinTM.v
-# TM/Code/BoolTM.v
-
 TM/Code/ChangeAlphabet.v
 TM/Code/Copy.v
+TM/Code/ProgrammingTools.v
+
 TM/Code/MatchNat.v
 TM/Code/MatchSum.v
 TM/Code/MatchList.v

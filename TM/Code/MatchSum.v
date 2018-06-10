@@ -1,10 +1,4 @@
-Require Import TM.Code.CodeTM TM.Code.Copy.
-Require Import TM.Basic.Mono TM.Basic.Nop TM.Basic.Multi.
-Require Import TM.Combinators.Combinators.
-Require Import TM.LiftMN TM.LiftSigmaTau.
-Require Import TM.Compound.TMTac.
-Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
-
+Require Import ProgrammingTools.
 
 (* Basic pattern matching *)
 Section MatchSum.
