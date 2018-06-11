@@ -137,15 +137,14 @@ Section MatchList.
       forall (l : list X),
         tin[@Fin0] ≃ l ->
         isRight tin[@Fin1] ->
-        match l with
-        | nil =>
+        match yout, l with
+        | false, nil =>
           tout[@Fin0] ≃ nil /\
-          isRight tout[@Fin1] /\
-          yout = false
-        | x :: l' =>
+          isRight tout[@Fin1]
+        | true, x :: l' =>
           tout[@Fin0] ≃ l' /\
-          tout[@Fin1] ≃ x /\
-          yout = true
+          tout[@Fin1] ≃ x
+        | _, _ => False
         end.
 
 

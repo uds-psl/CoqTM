@@ -102,13 +102,14 @@ Section Nth.
       destruct H; TMSimp.
       { (* First "Then" case *)
         modpon H.
-        destruct n as [ | n']; destruct H as (H&H'); inv H'.
+        destruct n as [ | n']; auto; simpl_surject.
         (* We know that n = S n' *)
 
         destruct H0; TMSimp; inv_pair.
         { (* Second "Then" case *)
           modpon H0.
-          destruct l as [ | x l']; destruct H0 as (H0&H0'&H0''); inv H0''; simpl_surject.
+          destruct l as [ | x l']; auto; simpl_surject.
+          destruct H0 as [H0 H0']; simpl_surject.
           (* We know that l = x :: l' *)
           unshelve modpon H2; cycle 1.
           { eapply (tape_contains_ext H0'). cbn. now rewrite List.map_map. }
@@ -116,7 +117,7 @@ Section Nth.
         }
         { (* Second "Else" case *)
           modpon H0.
-          destruct l as [ | x l']; destruct H0 as (H0 & H0'&H0''); inv H0''; simpl_surject.
+          destruct l as [ | x l']; auto; destruct H0 as (H0 & H0'); auto; simpl_surject.
           (* We know that l = nil *)
           modpon H2.
           repeat split; eauto.
@@ -124,14 +125,13 @@ Section Nth.
       }
       { (* The first "Else" case *)
         modpon H.
-        destruct n as [ | n']; destruct H as (H&H'); inv H'.
+        destruct n as [ | n']; auto.
         (* We know that n = 0 *)
 
         destruct H0; TMSimp; inv_pair.
         { (* Second "Then" case *)
           modpon H0.
-
-          destruct l as [ | x l']; destruct H0 as (H0&H0'&H0''); inv H0''; simpl_surject.
+          destruct l as [ | x l']; auto. destruct H0 as (H0&H0'); simpl_surject.
           (* We know that l = x :: l' *)
           unshelve modpon H2; cycle 1.
           { apply (tape_contains_ext H0'). cbn. now rewrite List.map_map. }
@@ -142,7 +142,7 @@ Section Nth.
         }
         { (* Second "Else" case *)
           modpon H0.
-          destruct l as [ | x l']; destruct H0 as (H0 & H0'&H0''); inv H0''; simpl_surject.
+          destruct l as [ | x l']; auto; destruct H0 as (H0 & H0'); simpl_surject.
           (* We know that l = nil *)
           modpon H2.
           repeat split; eauto.
@@ -636,13 +636,13 @@ Section Lenght.
       destruct H; TMSimp.
       { (* Then *)
         modpon H.
-        destruct xs as [ | x xs']; cbn in *; destruct H as (H&H'&H''); inv H''; simpl_surject.
+        destruct xs as [ | x xs']; cbn in *; auto; destruct H as (H&H'); simpl_surject.
         modpon H1; modpon H2.
         repeat split; auto.
       }
       { (* Then *)
         modpon H.
-        destruct xs as [ | x xs']; cbn in *; destruct H as (H&H'&H''); inv H''; simpl_surject.
+        destruct xs as [ | x xs']; cbn in *; auto; destruct H as (H&H'); simpl_surject.
         repeat split; auto.
       }
     }

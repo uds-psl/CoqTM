@@ -130,8 +130,8 @@ Proof.
   {
     intros tin (yout, tout) H. cbn. intros a b HEncA HEncB. TMSimp.
     destruct H; TMSimp inv_pair; clear_trivial_eqs.
-    - specialize (H _ HEncB). destruct b; TMSimp; try congruence. repeat split; auto.
-    - specialize (H _ HEncB). destruct b; TMSimp; try congruence. split; auto.
+    - specialize (H _ HEncB). destruct b; auto.
+    - specialize (H _ HEncB). destruct b; auto.
   }
 Qed.
 
@@ -433,7 +433,7 @@ Proof.
     intros tin (yout, tout) H. intros c m' n HEncM' HEncN HEncC HInt3 HInt4. TMSimp.
     destruct H; TMSimp.
     - specialize (H _ HEncM').
-      destruct m' as [ | m']; TMSimp; inv_pair; try congruence.
+      destruct m' as [ | m']; auto.
       specialize (H1 _ _ HEncN HEncC HInt3).
       spec_assert H1 as (HComp1&HComp2&HComp3&HComp4).
       { intros i; destruct_fin i; cbn; assumption. }
@@ -442,7 +442,7 @@ Proof.
       specialize (H3 _ HComp3 H2) as (H7&H7').
       repeat split; eauto.
     - specialize (H _ HEncM').
-      destruct m' as [ | m']; TMSimp; inv_pair; try congruence.
+      destruct m' as [ | m']; auto.
       split; auto.
   }
 Qed.
@@ -607,12 +607,13 @@ Proof.
       + omega.
       + omega.
       + intros tmid y (HComp&HInj). TMSimp.
-        specialize (HComp _ HEncM'). cbn in *. destruct HComp as (HComp&->). omega.
+        specialize (HComp _ HEncM'). cbn in *.
+        destruct y; auto.
     - exists 5, (164 + 33 * c + 41 * n); cbn in *; repeat split.
       + omega.
       + omega.
       + intros tmid y (HComp&HInj). TMSimp.
-        specialize (HComp _ HEncM'). cbn in *. destruct HComp as (HComp&->).
+        specialize (HComp _ HEncM'). cbn in *. destruct y; auto.
         exists (Add_steps n c), (63 + 21 * c + 17 * n); cbn in *; repeat split.
         * unfold Add_steps. omega.
         * do 2 eexists. repeat split; eauto.

@@ -14,11 +14,10 @@ Section MatchNat.
       (fun tin '(yout, tout) =>
          forall (n : nat),
            tin ≃ n ->
-           match n with
-           | O =>
-             tout ≃ 0 /\ yout = false
-           | S n' =>
-             tout ≃ n' /\ yout = true
+           match yout, n with
+           | false, O => tout ≃ 0
+           | true, S n' => tout ≃ n'
+           | _, _ => False
            end).
 
   Definition MatchNat : { M : mTM sigNat^+ 1 & states M -> bool } :=

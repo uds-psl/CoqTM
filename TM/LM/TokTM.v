@@ -54,51 +54,47 @@ Instance Encode_Tok : codable sigTok Tok :=
   |}.
 
 
-
 Definition MatchTok : { M : mTM sigTok^+ 1 & states M -> option ATok } :=
   If (MatchSum _ _)
      (mono_Nop None)
-     (MATCH (ChangeAlphabet (MatchFin (FinType(EqType(ATok)))) _)
-            (fun (i:ATok) => Return (ResetEmpty1 _) (Some i))).
-
+     (ChangePartition (ChangeAlphabet (MatchFin (FinType(EqType(ATok))) ) _) Some)
+.
+     
 
 Definition MatchTok_Rel : pRel sigTok^+ (FinType (EqType (option ATok))) 1 :=
   fun tin '(yout, tout) =>
-    forall t : Tok, tin[@Fin0] ≃ t ->
-               match t with
-               | appT => isRight tout[@Fin0] /\ yout = Some appAT
-               | lamT => isRight tout[@Fin0] /\ yout = Some lamAT
-               | retT => isRight tout[@Fin0] /\ yout = Some retAT
-               | varT n => tout[@Fin0] ≃ n /\ yout = None
-               end
+    forall t : Tok,
+      tin[@Fin0] ≃ t ->
+      match yout, t with
+      | Some appAT, appT => isRight tout[@Fin0]
+      | Some lamAT, lamT => isRight tout[@Fin0]
+      | Some retAT, retT => isRight tout[@Fin0]
+      | None, varT n => tout[@Fin0] ≃ n
+      | _, _ => False
+      end
 .
 
 
-Lemma MatchTok_Sem : MatchTok ⊨c(15) MatchTok_Rel.
+Lemma MatchTok_Sem : MatchTok ⊨c(11) MatchTok_Rel.
 Proof.
   eapply RealiseIn_monotone.
   { unfold MatchTok. repeat TM_Correct.
     - apply Lift_RealiseIn. apply MatchFin_Sem.
-    - apply ResetEmpty1_Sem with (X := ATok).
-    - apply ResetEmpty1_Sem with (X := ATok).
-    - apply ResetEmpty1_Sem with (X := ATok).
   }
-  { cbn. Unshelve. 4,5,7: reflexivity. cbv. all: omega. }
+  { cbn. Unshelve. reflexivity. }
   {
     intros tin (yout, tout) H. intros t HEncT. TMSimp.
+    unfold sigTok in *.
     destruct H; TMSimp.
     { (* "Then" branche *)
       specialize (H t HEncT).
-      destruct t; cbn in *; destruct H as (H&H'); inv H'.
-      split; auto.
+      destruct t; auto.
     }
     { (* "Else" branche *)
-      rename H into HMatchSum; rename H0 into HMatchFin; rename H1 into HMove1. simpl_tape in HMatchFin. 
+      rename H into HMatchSum.
+      simpl_tape in *; cbn in *.
       specialize (HMatchSum t HEncT).
-      unfold sigTok in *.
-      destruct t; cbn in *; destruct HMatchSum as (HMatchSum&HMatchSum'); inv HMatchSum';
-        specialize (HMatchFin _ (contains_translate_tau1 HMatchSum)) as (HMatchFin % contains_translate_tau2 & ->);
-        TMSimp; eauto.
+      destruct t; cbn in *; auto; modpon H1; auto.
     }
   }
 Qed.

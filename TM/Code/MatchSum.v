@@ -9,12 +9,15 @@ Section MatchSum.
   Hypothesis (codX : codable sigX X) (codY : codable sigY Y).
 
   Definition MatchSum_Rel : Rel (tapes (sigSum sigX sigY)^+ 1) (bool * tapes ((sigSum sigX sigY)^+) 1) :=
-    Mk_R_p (fun tin '(yout, tout) =>
-              forall s : X + Y, tin ≃ s ->
-                           match s with
-                           | inl x => tout ≃ x /\ yout = true
-                           | inr y => tout ≃ y /\ yout = false
-                           end).
+    Mk_R_p (
+        fun tin '(yout, tout) =>
+          forall s : X + Y,
+            tin ≃ s ->
+            match yout, s with
+            | true, inl x => tout ≃ x
+            | false, inr y => tout ≃ y
+            | _, _ => False
+            end).
 
   (*
 Ltac destruct_shelve e :=
@@ -164,9 +167,10 @@ Section MatchOption.
     Mk_R_p (fun tin '(yout, tout) =>
               forall o : option X,
                 tin ≃ o ->
-                match o with
-                | Some x => tout ≃ x /\ yout = true
-                | None => isRight tout /\ yout = false
+                match yout, o with
+                | true, Some x => tout ≃ x
+                | false, None => isRight tout
+                | _, _ => False
                 end).
 
   Local Instance Retract_sigOption_sigSum :
@@ -220,34 +224,32 @@ Section MatchOption.
       destruct H; TMSimp; unfold tau in *.
       { (* "Then" case *)
         (* This part is the same for both branches *)
+        simpl_tape in H. cbn in *.
         specialize (H (opt_to_sum o)). spec_assert H.
-        { autounfold with tape. cbn. erewrite nth_map2'. cbn. 
-          eapply contains_translate_tau1.
+        { 
+          simpl_surject.
           eapply tape_contains_ext with (1 := HEncO).
           destruct o; cbn; f_equal. rewrite !List.map_map. apply map_ext. cbv; auto.
         }
-        destruct o as [ x | ]; cbn in *; destruct H as (H&H'); inv H'. split; auto.
+        destruct o as [ x | ]; cbn in *; auto.
+        simpl_tape in H; cbn in *; simpl_surject.
+
         (* We know now that o = Some x *)
-
-        autounfold with tape in H. cbn in H. rewrite nth_map2' in H. cbn in H.
         unfold tape_contains in H. unfold tape_contains.
-
-        apply contains_translate_tau2 in H; unfold tape_contains in H.
         eapply tape_contains_ext with (1 := H). cbn. rewrite List.map_map. apply map_ext. auto.
       }
       { (* "Else" case *)
+        simpl_tape in H. cbn in *.
         specialize (H (opt_to_sum o)). spec_assert H.
-        { autounfold with tape. cbn. erewrite nth_map2'. cbn. 
-          eapply contains_translate_tau1.
+        { 
+          simpl_surject.
           eapply tape_contains_ext with (1 := HEncO).
           destruct o; cbn; f_equal. rewrite !List.map_map. apply map_ext. cbv; auto.
         }
-        destruct o as [ x | ]; cbn in *; destruct H as (H&H'); inv H'. split; auto.
+        destruct o as [ x | ]; cbn in *; auto.
+        simpl_tape in H; cbn in *; simpl_surject.
+        modpon H1.
         (* We know now that o = None *)
-
-        autounfold with tape in H. cbn in H. rewrite nth_map2' in H. cbn in H.
-        unfold tape_contains in H.
-        apply contains_translate_tau2 in H; unfold tape_contains in H.
         eapply H1; eauto.
       }
     }
@@ -389,7 +391,7 @@ Section MapSum.
       { (* "Then" branche ([s = inl x]) *)
         specialize (H s). spec_assert H.
         { eapply contains_translate_tau1; auto. }
-        destruct s as [ x | y]; destruct H as (H&H'); inv H'.
+        destruct s as [ x | y]; auto.
         rewrite (H1 Fin1 ltac:(vector_not_in)) in *.
         apply contains_translate_tau2 in H.
         unfold tape_contains in H, H0.
@@ -409,7 +411,7 @@ Section MapSum.
       { (* "Else" branche ([s = inr y]) *)
         specialize (H s). spec_assert H.
         { eapply contains_translate_tau1; auto. }
-        destruct s as [ x | y]; destruct H as (H&H'); inv H'.
+        destruct s as [ x | y]; auto.
         rewrite (H1 Fin1 ltac:(vector_not_in)) in *.
         apply contains_translate_tau2 in H; swap 1 2.
         unfold tape_contains in H, H0.

@@ -230,39 +230,40 @@ Proof.
     { (* Then of [MatchList] *)
       rename H into HMatchList; rename H0 into HMatchTok; rename H1 into HCase.
       specialize HMatchList with (1 := HEncP) (2 := HInt _).
-      destruct P as [ | t P']; destruct HMatchList as (HMatchList&HMatchList'&HMatchList''); inv HMatchList''.
+      destruct P as [ | t P']; auto; destruct HMatchList as (HMatchList&HMatchList'); simpl_surject.
 
       specialize HMatchTok with (1 := contains_translate_tau1 HMatchList').
-      destruct t as [ n | | | ]; destruct HMatchTok as [HMatchTok ->]; try apply surjectTape_isRight' in HMatchTok; try apply contains_translate_tau2 in HMatchTok.
-      - (* t = varT n *) TMSimp.
-        idtac.
-        specialize H0 with (1 := contains_translate_tau1 HMatchTok) as H0 % contains_translate_tau2.
-        specialize H1 with (1 := HEncQ) (2 := H0). repeat spec_assert H1 by auto. destruct H1 as (H1&H1'&H1''&H''').
-        repeat split; auto. intros i; destruct_fin i; TMSimp. all: auto.
-      - (* t = appT *) TMSimp. specialize H0 with (1 := HEncQ). repeat spec_assert H0 by auto. destruct H0 as (H0&H0'&H0'').
-        split; auto. intros i; destruct_fin i; auto; TMSimp; auto.
-      - (* t = lamT *) TMSimp.
-        specialize H0 with (1 := contains_translate_tau1 HEncK) as H0 % contains_translate_tau2.
-        specialize H1 with (1 := HEncQ). repeat spec_assert H1 by auto. destruct H1 as (H1&H1'&H1'').
-        split; auto. intros i; destruct_fin i; auto. TMSimp; auto.
+      destruct t as [ n | | | ]; auto; simpl_surject.
+      - (* t = varT n *)
+        destruct ymid; auto. destruct a; auto.
+        TMSimp. modpon H0; modpon H1.
+        repeat split; auto. intros i; destruct_fin i; auto.
+      - (* t = appT *)
+        destruct ymid; auto. destruct a; auto.
+        TMSimp. modpon H0; modpon H1.
+        repeat split; auto. intros i; destruct_fin i; auto. TMSimp; auto.
+      - (* t = lamT *)
+        destruct ymid; auto. destruct a; auto.
+        TMSimp. modpon H0; modpon H1.
+        repeat split; auto. intros i; destruct_fin i; auto. TMSimp; auto.
       - (* t = retT *)
-        cbn in *. destruct HCase as [HMatchNat | HMatchNat]; TMSimp.
+        destruct ymid; auto. destruct a; auto.
+        TMSimp. destruct HCase as [HMatchNat | HMatchNat]; TMSimp.
         { (* Then of [MatchNat]: k = S k' *)
-          specialize H with (1 := contains_translate_tau1 HEncK).
-          destruct k as [ | k']; destruct H as [ HMatchNat HMatchNat']; inv HMatchNat'; apply contains_translate_tau2 in HMatchNat.
-          specialize H1 with (1 := HEncQ). repeat spec_assert H1 by auto. destruct H1 as (H1&H1'&H1'').
+          modpon H. modpon H1.
+          destruct k as [ | k']; auto; simpl_surject.
           repeat split; auto. intros i; destruct_fin i; auto. TMSimp; auto.
         }
         { (* Else case of [MatchNat]: k = O *)
-          specialize H with (1 := contains_translate_tau1 HEncK).
-          destruct k as [ | k']; destruct H as [ HMatchNat HMatchNat']; inv HMatchNat'; apply contains_translate_tau2 in HMatchNat.
-          repeat split; auto. intros i; destruct_fin i; TMSimp; auto. 
+          modpon H. modpon H1.
+          destruct k as [ | k']; auto; simpl_surject.
+          repeat split; auto. intros i; destruct_fin i; auto; TMSimp; auto.
         }
     }
     { (* Else of [MatchList] *)
       rename H into HMatchList.
       specialize HMatchList with (1 := HEncP) (2 := HInt _).
-      destruct P as [ | t P']; destruct HMatchList as (HMatchList&HMatchList'&HMatchList''); inv HMatchList''.
+      destruct P as [ | t P']; auto; destruct HMatchList as (HMatchList&HMatchList'); simpl_surject.
       repeat split; auto. intros i; destruct_fin i; auto; now TMSimp.
     }
   }
