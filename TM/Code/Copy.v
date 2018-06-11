@@ -546,15 +546,23 @@ Section CopyValue.
   Qed.
 
 
+End CopyValue.
+
+
+(** Copy and overwrite a value *)
+Section MoveValue.
+  Variable sig : finType.
+  Variable (X Y : Type) (cX : codable sig X) (cY : codable sig Y).
+
   Definition MoveValue : pTM sig^+ unit 2 :=
     Inject (Reset _) [|Fin1|];;
-    CopyValue;;
+    CopyValue _;;
     Inject (Reset _) [|Fin0|].
 
   Definition MoveValue_Rel : pRel sig^+ unit 2 :=
     ignoreParam (
         fun tin tout =>
-          forall (x y : X),
+          forall (x : X) (y : Y),
             tin[@Fin0] ≃ x ->
             tin[@Fin1] ≃ y ->
             isRight tout[@Fin0] /\
@@ -565,9 +573,9 @@ Section CopyValue.
   Proof.
     eapply Realise_monotone.
     { unfold MoveValue. repeat TM_Correct.
-      - apply Reset_Realise.
-      - apply CopyValue_Realise.
-      - apply Reset_Realise.
+      - apply Reset_Realise with (X := Y).
+      - apply CopyValue_Realise with (X := X).
+      - apply Reset_Realise with (X := X).
     }
     {
       intros tin ((), tout) H. cbn. intros x y HEncX HEncY.
@@ -581,19 +589,19 @@ Section CopyValue.
   
 
   Lemma MoveValue_Terminates :
-    projT1 MoveValue ↓ (fun tin k => exists (x y : X), tin[@Fin0] ≃ x /\ tin[@Fin1] ≃ y /\ 43 + 16 * length (cX x) + 4 * length (cX y) <= k).
+    projT1 MoveValue ↓ (fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ tin[@Fin1] ≃ y /\ 43 + 16 * length (cX x) + 4 * length (cY y) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold MoveValue. repeat TM_Correct.
-      - apply Reset_Realise.
-      - apply Reset_Terminates.
-      - apply CopyValue_Realise.
-      - apply CopyValue_Terminates.
-      - apply Reset_Terminates.
+      - apply Reset_Realise with (X := Y).
+      - apply Reset_Terminates with (X := Y).
+      - apply CopyValue_Realise with (X := X).
+      - apply CopyValue_Terminates with (X := X).
+      - apply Reset_Terminates with (X := X).
     }
     {
       intros tin k (x&y&HEncX&HEncY&Hk).
-      exists (8 + 4 * length (cX y)), (34 + 16 * length (cX x)). repeat split; cbn; eauto.
+      exists (8 + 4 * length (cY y)), (34 + 16 * length (cX x)). repeat split; cbn; eauto.
       - omega.
       - intros tmid1 () (H1&HInj1). TMSimp.
         specialize H1 with (1 := HEncY).
@@ -605,7 +613,8 @@ Section CopyValue.
     }
   Qed.
 
-End CopyValue.
+  
+End MoveValue.
 
 
 
