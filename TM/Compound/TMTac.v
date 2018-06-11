@@ -109,6 +109,13 @@ Tactic Notation "TMSimp" tactic(T) :=
 Tactic Notation "TMSimp" := TMSimp idtac.
 
 
+Ltac TMSimp_goal :=
+  repeat multimatch goal with
+         | [ H : ?X = _ |- _ ] => rewrite H
+         end.
+  
+
+
 
 (** DO NOT USE THE FOLLOWING (deprecated) TACTICS, except in [TM.Compound]! *)
 
