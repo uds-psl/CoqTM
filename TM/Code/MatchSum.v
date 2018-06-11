@@ -317,9 +317,9 @@ Arguments Constr_Some : simpl never.
 
 Ltac smpl_TM_MatchOption :=
   match goal with
-  | [ |- MatchOption _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchOption_Sem
-  | [ |- MatchOption _ _ ⊨c(_) _ ] => apply MatchOption_Sem
-  | [ |- projT1 (MatchOption _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply MatchOption_Sem
+  | [ |- MatchOption _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchOption_Sem
+  | [ |- MatchOption _ ⊨c(_) _ ] => apply MatchOption_Sem
+  | [ |- projT1 (MatchOption _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply MatchOption_Sem
   | [ |- Constr_None _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_None_Sem
   | [ |- Constr_None _ ⊨c(_) _ ] => apply Constr_None_Sem
   | [ |- projT1 (Constr_None _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Constr_None_Sem
