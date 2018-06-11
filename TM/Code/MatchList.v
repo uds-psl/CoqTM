@@ -288,6 +288,44 @@ Section MatchList.
 
 
 
+  (** *** [IsNil] *)
+
+  Definition IsNil : pTM (sigList sigX)^+ bool 1 :=
+    Move R tt;;
+    MATCH Read_char
+    (fun s =>
+       match s with
+       | Some (inr sigList_nil) =>
+         Move L true
+       | _ => Move L false
+       end).
+  
+  Definition IsNil_Rel : pRel (sigList sigX)^+ bool 1 :=
+    Mk_R_p (
+        fun tin '(yout, tout) =>
+          forall (xs : list X),
+            tin ≃ xs ->
+            match xs with
+            | nil => tout ≃ xs /\ yout = true
+            | _ => tout ≃ xs /\ yout = false
+            end). 
+
+  Lemma IsNil_Sem : IsNil ⊨c(5) IsNil_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    { unfold IsNil. repeat TM_Correct. }
+    { Unshelve. 4-11: reflexivity. omega. }
+    {
+      intros tin (yout, tout) H. cbn. intros xs HEncXs.
+      destruct HEncXs as (ls & HEncXs). TMSimp.
+      destruct xs as [ | x xs' ]; TMSimp.
+      - repeat econstructor.
+      - repeat econstructor.
+    }
+  Qed.
+
+
+
   (** ** Constructors *)
 
 
@@ -383,6 +421,7 @@ Section MatchList.
 End MatchList.
 
 Arguments MatchList : simpl never.
+Arguments IsNil : simpl never.
 Arguments Constr_nil : simpl never.
 Arguments Constr_cons : simpl never.
 
@@ -390,6 +429,11 @@ Ltac smpl_TM_MatchList :=
   match goal with
   | [ |- MatchList _ ⊨ _ ] => apply MatchList_Realise
   | [ |- MatchList _ ↓ _ ] => apply MatchList_Terminates
+
+  | [ |- IsNil _ ⊨ _ ] => eapply RealiseIn_Realise; apply IsNil_Sem
+  | [ |- IsNil _ ⊨c(_) _ ] => apply IsNil_Sem
+  | [ |- IsNil _ ↓ _ ] => eapply RealiseIn_Realise; apply IsNil_Sem
+                                  
 
   | [ |- Constr_nil _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_nil_Sem
   | [ |- Constr_nil _ ⊨c(_) _ ] => apply Constr_nil_Sem
