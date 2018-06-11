@@ -67,7 +67,7 @@ Definition App_Tok : pTM sigPro^+ (FinType(EqType unit)) 4 :=
   Inject (Constr_nil _) [|Fin3|];;
   Inject (Constr_cons _) [|Fin3; Fin1|];;
   Inject (App_Tokens) [|Fin0; Fin3; Fin2|];;
-  Inject (ChangeAlphabet (Reset sigTok) _) [|Fin1|].
+  Inject (ChangeAlphabet (Reset sigTok_fin) _) [|Fin1|].
   
 
 Definition App_Tok_Rel : pRel sigPro^+ (FinType(EqType unit)) 4 :=
@@ -147,7 +147,7 @@ Qed.
 
 
 Definition JumpToTarget_Step : pTM sigPro^+ (FinType(EqType (bool*bool))) 6 :=
-  If (Inject (MatchList sigTok) [|Fin0; Fin3|])
+  If (Inject (MatchList sigTok_fin) [|Fin0; Fin3|])
      (MATCH (Inject (ChangeAlphabet MatchTok _) [|Fin3|])
             (fun t : option ATok =>
                match t with
@@ -225,7 +225,7 @@ Proof.
   }
   {
     intros tin (yout, tout) H. cbn. intros P Q k HEncP HEncQ HEncK HInt.
-    unfold sigPro, sigTok in *.
+    unfold sigPro in *.
     destruct H; TMSimp.
     { (* Then of [MatchList] *)
       rename H into HMatchList; rename H0 into HMatchTok; rename H1 into HCase.

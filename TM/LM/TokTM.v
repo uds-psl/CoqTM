@@ -45,8 +45,8 @@ Coercion Tok_to_sum (t : Tok) : (nat + Fin.t 3) :=
 (*
 Definition sigTok := FinType (EqType (sigSum (FinType (EqType (sigNat))) (FinType(EqType(Fin.t 3))))).
 *)
-Definition sigTok := FinType (EqType (sigSum (FinType (EqType (sigNat))) (FinType(EqType(ATok))))).
-Arguments sigTok : simpl never.
+Definition sigTok := sigSum sigNat ATok.
+Definition sigTok_fin := FinType (EqType sigTok).
 
 Instance Encode_Tok : codable sigTok Tok :=
   {|
