@@ -26,5 +26,5 @@ Ltac modpon H := repeat modpon_step H.
 
 (** Machine Notations *)
 
-Notation "M @ t" := (M, t, t) (at level 41, only parsing).
+Notation "pM @ ts" := (Inject pM ts) (at level 41, only parsing).
 Notation "pM ⇑ R" := (ChangeAlphabet pM R) (at level 40, only parsing).
