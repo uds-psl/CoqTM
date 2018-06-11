@@ -15,7 +15,7 @@ Proof. intros H. now inv H. Qed.
 Local Arguments skipn { A } !n !l.
 
 
-Section MatchSum.
+Section MatchPair.
 
   Variable (sigX sigY: finType) (X Y: Type) (cX: codable sigX X) (cY: codable sigY Y).
 
@@ -167,4 +167,18 @@ Section MatchSum.
   Qed.
 
 
-End MatchSum.
+End MatchPair.
+
+
+(* TODO: Termination *)
+
+Ltac smpl_TM_MatchPair :=
+  match goal with
+  | [ |- MatchPair _ _ ⊨ _ ] => apply MatchPair_Realise
+
+  | [ |- Constr_pair _ _ ⊨ _ ] => apply Constr_pair_Realise
+
+  | [ |- Snd _ _ ⊨ _ ] => apply Snd_Realise
+  end.
+
+Smpl Add smpl_TM_MatchPair : TM_Correct.
