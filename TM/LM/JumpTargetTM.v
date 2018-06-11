@@ -241,23 +241,22 @@ Proof.
       - (* t = appT *)
         destruct ymid; auto. destruct a; auto.
         TMSimp. modpon H0; modpon H1.
-        repeat split; auto. intros i; destruct_fin i; auto. TMSimp; auto.
+        repeat split; auto. intros i; destruct_fin i; auto. TMSimp_goal; auto.
       - (* t = lamT *)
         destruct ymid; auto. destruct a; auto.
         TMSimp. modpon H0; modpon H1.
-        repeat split; auto. intros i; destruct_fin i; auto. TMSimp; auto.
+        repeat split; auto. intros i; destruct_fin i; auto. TMSimp_goal; auto.
       - (* t = retT *)
         destruct ymid; auto. destruct a; auto.
         TMSimp. destruct HCase as [HMatchNat | HMatchNat]; TMSimp.
         { (* Then of [MatchNat]: k = S k' *)
           modpon H. modpon H1.
           destruct k as [ | k']; auto; simpl_surject.
-          repeat split; auto. intros i; destruct_fin i; auto. TMSimp; auto.
+          repeat split; auto. intros i; destruct_fin i; auto. TMSimp_goal; auto.
         }
         { (* Else case of [MatchNat]: k = O *)
-          modpon H. modpon H1.
-          destruct k as [ | k']; auto; simpl_surject.
-          repeat split; auto. intros i; destruct_fin i; auto; TMSimp; auto.
+          modpon H. destruct k as [ | k']; auto; simpl_surject.
+          repeat split; auto. intros i; destruct_fin i; auto; TMSimp_goal; auto.
         }
     }
     { (* Else of [MatchList] *)

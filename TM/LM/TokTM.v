@@ -94,7 +94,7 @@ Proof.
       rename H into HMatchSum.
       simpl_tape in *; cbn in *.
       specialize (HMatchSum t HEncT).
-      destruct t; cbn in *; auto; modpon H1; auto.
+      destruct t; cbn in *; auto; modpon H1; subst; auto.
     }
   }
 Qed.

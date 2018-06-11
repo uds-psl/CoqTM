@@ -54,27 +54,24 @@ Section Nth.
         tin[@Fin0] ≃ l ->
         tin[@Fin1] ≃ n ->
         isRight tin[@Fin2] ->
-        match n, l with
-        | S n', x :: l' => (* Recursion case *)
+        match yout, n, l with
+        | (true, tt), S n', x :: l' => (* Recursion case *)
           tout[@Fin0] ≃ l' /\
           tout[@Fin1] ≃ n' /\
-          isRight tout[@Fin2] /\
-          yout = (true, tt) (* continue *)
-        | S n', nil => (* list to short *)
+          isRight tout[@Fin2] (* continue *)
+        | (false, tt), S n', nil => (* list to short *)
           tout[@Fin0] ≃ l /\
           tout[@Fin1] ≃ n' /\
-          tout[@Fin2] ≃ None /\
-          yout = (false, tt) (* return None *)
-        | 0, x::l' => (* return value *)
+          tout[@Fin2] ≃ None (* return None *)
+        | (false, tt), 0, x::l' => (* return value *)
           tout[@Fin0] ≃ l' /\
           tout[@Fin1] ≃ 0 /\
-          tout[@Fin2] ≃ Some x /\
-          yout = (false, tt) (* return Some x *)
-        | 0, nil => (* list to short *)
+          tout[@Fin2] ≃ Some x (* return Some x *)
+        | (false, tt), 0, nil => (* list to short *)
           tout[@Fin0] ≃ l /\
           tout[@Fin1] ≃ n /\
-          tout[@Fin2] ≃ None /\
-          yout = (false, tt) (* return None *)
+          tout[@Fin2] ≃ None (* return None *)
+        | _, _, _ => False
         end.
 
 
@@ -111,7 +108,7 @@ Section Nth.
           destruct l as [ | x l']; auto; simpl_surject.
           destruct H0 as [H0 H0']; simpl_surject.
           (* We know that l = x :: l' *)
-          unshelve modpon H2; cycle 1.
+          modpon H2.
           { eapply (tape_contains_ext H0'). cbn. now rewrite List.map_map. }
           repeat split; eauto.
         }
@@ -173,12 +170,12 @@ Section Nth.
     { unfold Nth_Loop. repeat TM_Correct. eapply Nth_Step_Realise. }
     {
       apply WhileInduction; intros; intros l n HEncL HEncN HRight.
-      - TMSimp. specialize (HLastStep _ _ HEncL HEncN HRight).
-        destruct n as [ | n'], l as [ | x l']; destruct HLastStep as (H1&H2&H3&H4); inv H4; cbn; repeat split; eauto.
+      - TMSimp. modpon HLastStep.
+        destruct n as [ | n'], l as [ | x l']; auto; destruct HLastStep as (H1&H2&H3); cbn; repeat split; eauto.
         now rewrite Nat.sub_0_r.
-      - TMSimp. specialize (HStar _ _ HEncL HEncN HRight).
-        destruct n as [ | n'], l as [ | x l']; destruct HStar as (H1&H2&H3&H4); inv H4; cbn in *;
-          specialize (HLastStep _ _ H1 H2 H3) as (H4&H5&H6); auto.
+      - TMSimp. modpon HStar.
+        destruct n as [ | n'], l as [ | x l']; auto; destruct HStar as (H1&H2&H3); cbn in *.
+        modpon HLastStep. auto.
     }
   Qed.
 
@@ -206,16 +203,189 @@ Section Nth.
       intros tin ((), tout) H. cbn. intros l n HEncL HEncN HOut HInt.
       specialize (HInt Fin0) as HInt1. specialize (HInt Fin1) as HInt2. clear HInt.
       TMSimp.
-      modpon H; modpon H0; modpon H1; modpon H2; modpon H3.
+      modpon H. modpon H0. modpon H1. modpon H2. modpon H3.
       repeat split; eauto.
-      - intros i. destruct_fin i; TMSimp; auto.
+      - intros i. destruct_fin i; TMSimp_goal; auto.
     }
   Qed.
 
 
-  (** ** Runtime *)
+End Nth.
+
+  
+(** * Implementation of partitially defined [nth] *)
+
+Section Nth'.
+
+  Variable (sig sigX : finType) (X : Type) (cX : codable sigX X).
+  (* Hypothesis (defX: inhabitedC sigX). *)
+
+  Variable (retr1 : Retract (sigList sigX) sig) (retr2 : Retract sigNat sig).
+  Local Instance retr_X_list' : Retract sigX sig := ComposeRetract (Retract_sigList_X _) retr1.
+
+  Check _ : codable sig (list X).
+  Check _ : codable sig nat.
+
+  Definition Nth'_Step_Rel : Rel (tapes sig^+ 3) ((bool*unit) * tapes sig^+ 3) :=
+    fun tin '(yout, tout) =>
+      forall (l : list X) (n : nat),
+        tin[@Fin0] ≃ l ->
+        tin[@Fin1] ≃ n ->
+        isRight tin[@Fin2] ->
+        match yout, n, l with
+        | (true, tt), S n', x :: l' => (* Recursion case *)
+          tout[@Fin0] ≃ l' /\
+          tout[@Fin1] ≃ n' /\
+          isRight tout[@Fin2] (* continue *)
+        | (false, tt), 0, x::l' => (* return value *)
+          tout[@Fin0] ≃ l' /\
+          tout[@Fin1] ≃ 0 /\
+          tout[@Fin2] ≃ x
+        | _, 0, nil => (* list to short *)
+          True
+        | _, S n', nil => (* list to short *)
+          True
+        | _, _, _ => False
+        end.
+
+
+  Definition Nth'_Step : { M : mTM sig^+ 3 & states M -> bool*unit } :=
+    If (Inject (ChangeAlphabet MatchNat _) [|Fin1|])
+       (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
+           (Return (Inject (Reset _) [|Fin2|]) (true, tt))
+           (Nop default))
+       (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
+           (Nop (false, tt))
+           (Nop default))
+  .
+
+  Lemma Nth'_Step_Realise : Nth'_Step ⊨ Nth'_Step_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Nth'_Step. repeat TM_Correct.
+      - eapply Reset_Realise with (X := X).
+    }
+    {
+      intros tin ((yout, ()), tout) H.
+      intros l n HEncL HEncN HRight.
+      destruct H; TMSimp.
+      { (* First "Then" case *)
+        modpon H.
+        destruct n as [ | n']; auto; simpl_surject.
+        (* We know that n = S n' *)
+
+        destruct H0; TMSimp; inv_pair.
+        { (* Second "Then" case *)
+          modpon H0.
+          destruct l as [ | x l']; auto; simpl_surject.
+          destruct H0 as [H0 H0']; simpl_surject.
+          (* We know that l = x :: l' *)
+          unshelve modpon H2; cycle 1.
+          { eapply (tape_contains_ext H0'). cbn. now rewrite List.map_map. }
+          repeat split; eauto.
+        }
+        { (* Second "Else" case *)
+          modpon H0.
+          destruct l as [ | x l']; auto; destruct H0 as (H0 & H0'); auto; simpl_surject.
+        }
+      }
+      { (* The first "Else" case *)
+        modpon H.
+        destruct n as [ | n']; auto.
+        (* We know that n = 0 *)
+
+        destruct H0; TMSimp; inv_pair.
+        { (* Second "Then" case *)
+          modpon H0.
+          destruct l as [ | x l']; auto. destruct H0 as (H0&H0'); simpl_surject.
+          (* We know that l = x :: l' *)
+          repeat split; eauto.
+          apply (tape_contains_ext H0'). cbn. now rewrite List.map_map.
+        }
+        { (* Second "Else" case *)
+          modpon H0.
+          destruct l as [ | x l']; auto; destruct H0 as (H0 & H0'); simpl_surject.
+        }
+      }
+    }
+  Qed.
+
+
+  Definition Nth'_Loop_Rel : Rel (tapes sig^+ 3) (unit * tapes sig^+ 3) :=
+    ignoreParam
+      (fun tin tout =>
+         forall l (n : nat) (x : X),
+           nth_error l n = Some x ->
+           tin[@Fin0] ≃ l ->
+           tin[@Fin1] ≃ n ->
+           isRight tin[@Fin2] ->
+           tout[@Fin0] ≃ skipn (S n) l /\
+           tout[@Fin1] ≃ n - (S (length l)) /\
+           tout[@Fin2] ≃ x).
+
+
+  Definition Nth'_Loop := WHILE Nth'_Step.
+
+
+  Lemma Nth'_Loop_Realise : Nth'_Loop ⊨ Nth'_Loop_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Nth'_Loop. repeat TM_Correct. eapply Nth'_Step_Realise. }
+    {
+      apply WhileInduction; intros; intros l n x HNth HEncL HEncN HRight.
+      - TMSimp. modpon HLastStep.
+        destruct n as [ | n'], l as [ | y l']; cbn in *; auto; inv HNth.
+        modpon HLastStep. repeat split; auto.
+      - TMSimp. modpon HStar.
+        destruct n as [ | n'], l as [ | y l']; cbn in *; auto; inv HNth; destruct HStar as (H1&H2&H3); cbn in *.
+        modpon HLastStep. repeat split; auto.
+    }
+  Qed.
+
+
+  (** We don't want to save, but reset, [n]. *)
+  Definition Nth' : { M : mTM sig^+ 4 & states M -> unit } :=
+    Inject (CopyValue _) [|Fin0; Fin3|];; (* Save l (on t0) to t3 *)
+    Inject (Nth'_Loop) [|Fin3; Fin1; Fin2|];; (* Execute the loop with the copy of l *)
+    Inject (Reset _) [|Fin3|];; (* Reset the copy of [l] *)
+    Inject (Reset _) [|Fin1|]. (* Reset [n] *)
+
+
+  Definition Nth'_Rel : pRel sig^+ unit 4 :=
+    ignoreParam (
+        fun tin tout =>
+          forall (l : list X) (n : nat) (x : X),
+            nth_error l n = Some x ->
+            tin[@Fin0] ≃ l ->
+            tin[@Fin1] ≃ n ->
+            isRight tin[@Fin2] ->
+            isRight tin[@Fin3] ->
+            tout[@Fin0] ≃ l /\
+            isRight tout[@Fin1] /\
+            tout[@Fin2] ≃ x /\
+            isRight tout[@Fin3]
+      ).
+
+  Lemma Nth'_Realise : Nth' ⊨ Nth'_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Nth'. repeat TM_Correct.
+      - apply CopyValue_Realise with (X := list X).
+      - apply Nth'_Loop_Realise.
+      - apply Reset_Realise with (X := list X).
+      - apply Reset_Realise with (X := nat).
+    }
+    {
+      intros tin ((), tout) H. cbn. intros l n x HNth HEncL HEncN HRight2 HRight3.
+      TMSimp. modpon H. modpon H0. modpon H1. modpon H2. repeat split; auto.
+    }
+  Qed.
+                
+
+
   (*
-(* XXX: This is the old runtime without [Translate], over the alphabet [bool+sigX] *)
+  (** ** Runtime *)
+
 
   Local Arguments plus : simpl never.
   Local Arguments mult : simpl never.
@@ -437,7 +607,7 @@ Section Nth.
 
 *)
 
-End Nth.
+End Nth'.
 
 
 
