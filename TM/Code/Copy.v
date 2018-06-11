@@ -493,7 +493,8 @@ End Move.
 
 (** Copy a value from to an internal (right) tape *)
 Section CopyValue.
-  Variable (sig: finType) (X:Type) (encX: codable sig X).
+
+  Variable (sig: finType) (X:Type) (cX : codable sig X).
 
 
   Definition CopyValue :=
@@ -526,7 +527,7 @@ Section CopyValue.
   Qed.
 
   Lemma CopyValue_Terminates :
-    projT1 CopyValue ↓ (fun tin k => exists x:X, tin[@Fin0] ≃ x /\ 25 + 12 * (length (encode x : list sig)) <= k).
+    projT1 CopyValue ↓ (fun tin k => exists x:X, tin[@Fin0] ≃ x /\ 25 + 12 * (length (cX x)) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold CopyValue. repeat TM_Correct.
@@ -541,6 +542,66 @@ Section CopyValue.
         apply H1 in HEncX as (r1&->).
         rewrite CopySymbols_L_TermTime_midtape; eauto.
         now rewrite map_length, rev_length.
+    }
+  Qed.
+
+
+  Definition MoveValue : pTM sig^+ unit 2 :=
+    Inject (Reset _) [|Fin1|];;
+    CopyValue;;
+    Inject (Reset _) [|Fin0|].
+
+  Definition MoveValue_Rel : pRel sig^+ unit 2 :=
+    ignoreParam (
+        fun tin tout =>
+          forall (x y : X),
+            tin[@Fin0] ≃ x ->
+            tin[@Fin1] ≃ y ->
+            isRight tout[@Fin0] /\
+            tout[@Fin1] ≃ x
+      ).
+
+  Lemma MoveValue_Realise : MoveValue ⊨ MoveValue_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold MoveValue. repeat TM_Correct.
+      - apply Reset_Realise.
+      - apply CopyValue_Realise.
+      - apply Reset_Realise.
+    }
+    {
+      intros tin ((), tout) H. cbn. intros x y HEncX HEncY.
+      TMSimp.
+      specialize H with (1 := HEncY).
+      specialize H0 with (1 := HEncX) (2 := H) as (H0&H0').
+      specialize H1 with (1 := H0).
+      repeat split; auto.
+    }
+  Qed.
+  
+
+  Lemma MoveValue_Terminates :
+    projT1 MoveValue ↓ (fun tin k => exists (x y : X), tin[@Fin0] ≃ x /\ tin[@Fin1] ≃ y /\ 43 + 16 * length (cX x) + 4 * length (cX y) <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold MoveValue. repeat TM_Correct.
+      - apply Reset_Realise.
+      - apply Reset_Terminates.
+      - apply CopyValue_Realise.
+      - apply CopyValue_Terminates.
+      - apply Reset_Terminates.
+    }
+    {
+      intros tin k (x&y&HEncX&HEncY&Hk).
+      exists (8 + 4 * length (cX y)), (34 + 16 * length (cX x)). repeat split; cbn; eauto.
+      - omega.
+      - intros tmid1 () (H1&HInj1). TMSimp.
+        specialize H1 with (1 := HEncY).
+        exists (25 + 12 * length (cX x)), (8 + 4 * length (cX x)). repeat split; cbn; eauto.
+        + omega.
+        + intros tmid2 () H2.
+          specialize H2 with (1 := HEncX) (2 := H1) as (H2&H2').
+          exists x. split; eauto.
     }
   Qed.
 
