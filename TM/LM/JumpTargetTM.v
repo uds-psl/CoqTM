@@ -356,7 +356,7 @@ Definition JumpTarget_Rel : pRel sigPro^+ (FinType(EqType unit)) 6 :=
       (forall i : Fin.t 4, isRight tin[@Fin.R 2 i]) ->
       tout[@Fin0] ≃ P' /\
       tout[@Fin1] ≃ Q' /\
-      (forall i : Fin.t 4, isRight tin[@Fin.R 2 i]).
+      (forall i : Fin.t 4, isRight tout[@Fin.R 2 i]).
 
 
 Lemma JumpTarget_Realise : JumpTarget ⊨ JumpTarget_Rel.
@@ -374,7 +374,7 @@ Proof.
     specialize H1 with (1 := HJump) (2 := HEncP) (3 := H) (4 := H0). spec_assert H1 as (H1&H1'&H1''&H1''').
     { intros i; destruct_fin i; auto; now TMSimp. }
     specialize (H2 (jumpTarget_k 0 [] P)). spec_assert H2 as H2 % surjectTape_isRight' by now apply contains_translate_tau1.
-
     repeat split; auto.
+    intros i; destruct_fin i; TMSimp_goal; auto.
   }
 Qed.
