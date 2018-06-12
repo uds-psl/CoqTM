@@ -104,20 +104,14 @@ Section Nth.
 
         destruct H0; TMSimp; inv_pair.
         { (* Second "Then" case *)
-          modpon H0.
-          destruct l as [ | x l']; auto; simpl_surject.
-          destruct H0 as [H0 H0']; simpl_surject.
+          modpon H0. destruct l as [ | x l']; auto; simpl_surject. modpon H0.
           (* We know that l = x :: l' *)
-          modpon H2.
-          { eapply (tape_contains_ext H0'). cbn. now rewrite List.map_map. }
-          repeat split; eauto.
+          modpon H2. repeat split; auto.
         }
         { (* Second "Else" case *)
-          modpon H0.
-          destruct l as [ | x l']; auto; destruct H0 as (H0 & H0'); auto; simpl_surject.
+          modpon H0. destruct l as [ | x l']; auto; modpon H0; auto; simpl_surject.
           (* We know that l = nil *)
-          modpon H2.
-          repeat split; eauto.
+          modpon H2. repeat split; eauto.
         }
       }
       { (* The first "Else" case *)
@@ -130,19 +124,13 @@ Section Nth.
           modpon H0.
           destruct l as [ | x l']; auto. destruct H0 as (H0&H0'); simpl_surject.
           (* We know that l = x :: l' *)
-          unshelve modpon H2; cycle 1.
-          { apply (tape_contains_ext H0'). cbn. now rewrite List.map_map. }
-          simpl_tape in H3; cbn in *.
-          unshelve modpon H3; simpl_surject; cycle 1.
-          { apply (tape_contains_ext H2). cbn. now rewrite List.map_map. }
-          repeat split; eauto.
+          modpon H2. simpl_tape in H3; cbn in *. modpon H3; simpl_surject. repeat split; eauto.
         }
         { (* Second "Else" case *)
           modpon H0.
           destruct l as [ | x l']; auto; destruct H0 as (H0 & H0'); simpl_surject.
           (* We know that l = nil *)
-          modpon H2.
-          repeat split; eauto.
+          modpon H2. repeat split; eauto.
         }
       }
     }
@@ -280,9 +268,7 @@ Section Nth'.
           destruct l as [ | x l']; auto; simpl_surject.
           destruct H0 as [H0 H0']; simpl_surject.
           (* We know that l = x :: l' *)
-          unshelve modpon H2; cycle 1.
-          { eapply (tape_contains_ext H0'). cbn. now rewrite List.map_map. }
-          repeat split; eauto.
+          modpon H2. repeat split; eauto.
         }
         { (* Second "Else" case *)
           modpon H0.
@@ -299,8 +285,7 @@ Section Nth'.
           modpon H0.
           destruct l as [ | x l']; auto. destruct H0 as (H0&H0'); simpl_surject.
           (* We know that l = x :: l' *)
-          repeat split; eauto.
-          apply (tape_contains_ext H0'). cbn. now rewrite List.map_map.
+          repeat split; eauto. contains_ext.
         }
         { (* Second "Else" case *)
           modpon H0.

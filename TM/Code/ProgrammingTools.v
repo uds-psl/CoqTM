@@ -3,17 +3,35 @@ Require Export TMTac.
 Require Export Basic.Mono.
 
 
-(** This tactic automatically solves/instantiates hypothesises. *)
+
+(** This tactic applys [tape_contains_ext] *)
+
+Local Ltac contains_ext' H :=
+  apply (tape_contains_ext H);
+  try solve [cbn; now rewrite !List.map_map] .
+  
+Ltac contains_ext :=
+  lazymatch goal with
+  | [ H : ?t[@?i] ≃    _ |- ?t[@?i]    ≃ _] => contains_ext' H
+  | [ H : ?t[@?i] ≃(_) _ |- ?t[@?i]    ≃ _] => contains_ext' H
+  | [ H : ?t[@?i] ≃    _ |- ?t[@?i] ≃(_) _] => contains_ext' H
+  | [ H : ?t[@?i] ≃(_) _ |- ?t[@?i] ≃(_) _] => contains_ext' H
+  end.
 
 
-
+(** This tactic automatically solves/instantiates premises of a hypothesis. If the hypothesis is a conjunction, it is destructed. *)
 Ltac modpon H :=
   simpl_surject;
   lazymatch type of H with
   | forall (x : ?X), ?P =>
     lazymatch type of X with
     | Prop =>
-      tryif spec_assert H by (simpl_surject; eauto)
+      tryif spec_assert H by
+          (simpl_surject;
+           solve [ eauto
+                 | contains_ext
+                 ]
+          )
       then idtac (* "solved premise of type" X *);
            modpon H
       else (spec_assert H;
@@ -32,6 +50,14 @@ Ltac modpon H :=
     destruct H as [H H']; modpon H; modpon H'
   | _ => idtac
   end.
+
+
+
+(** To get rid of all those uggly tape rewriting hypothesises. *)
+Ltac clear_tape_eqs :=
+  repeat match goal with
+         | [ H: ?t'[@ ?x] = ?t[@ ?x] |- _ ] => clear H
+         end.
 
 
 

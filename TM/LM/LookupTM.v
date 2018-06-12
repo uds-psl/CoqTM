@@ -154,21 +154,14 @@ t4: internal tape
       TMSimp. modpon H. destruct H0; TMSimp.
       { (* If of [MatchOption] (sigHEnt') (nth_error = Some) *)
         modpon H0. cbn in *; simpl_surject. modpon H4.
-        { instantiate (1 := (g, b)). simpl_surject. apply (tape_contains_ext H0). cbn. now rewrite !List.map_map. }
+        { instantiate (1 := (g, b)). simpl_surject. contains_ext. }
         cbn in *. destruct H5; TMSimp.
         { (* If of [MatchNat] (n = S n') *)
-          modpon H5. destruct n as [ | n']; auto; simpl_surject. inv_pair. modpon H8.
-          { instantiate (1 := b). apply (tape_contains_ext H4). cbn. now rewrite !List.map_map. }
-          modpon H9. modpon H10. modpon H11.
-          { eapply (tape_contains_ext H6). cbn. now rewrite List.map_map. }
-          repeat split; auto.
+          modpon H5. destruct n as [ | n']; auto; simpl_surject. inv_pair.
+          modpon H8. modpon H9. modpon H10. modpon H11. repeat split; auto.
         }
         { (* Else of [MatchNat] *)
-          modpon H5. destruct n; auto; simpl_surject. inv_pair. modpon H8.
-          { eapply (tape_contains_ext H4). cbn. now rewrite List.map_map. }
-          modpon H9. modpon H10.
-          { eapply (tape_contains_ext H6). cbn. now rewrite List.map_map. }
-          repeat split; auto.
+          modpon H5. destruct n; auto; simpl_surject. inv_pair. modpon H8. modpon H9. modpon H10. repeat split; auto.
         }
       }
       { (* Then of [MatchOption] (nth_error = None *) modpon H0. cbn in *; auto. }
