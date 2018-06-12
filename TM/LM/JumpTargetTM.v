@@ -349,7 +349,7 @@ Definition JumpTarget :=
 
 Definition JumpTarget_Rel : pRel sigPro^+ (FinType(EqType unit)) 6 :=
   fun tin '(yout, tout) =>
-    forall (P : Pro) (k : nat) (P' Q' : Pro),
+    forall (P : Pro) (P' Q' : Pro),
       jumpTarget 0 nil P = Some (Q', P') ->
       tin[@Fin0] ≃ P ->
       isRight tin[@Fin1] ->
@@ -367,7 +367,7 @@ Proof.
     - apply Reset_Realise with (X := nat).
   }
   {
-    intros tin ((), tout) H. cbn. intros P k P' Q' HJump HEncP HOut HInt.
+    intros tin ((), tout) H. cbn. intros P P' Q' HJump HEncP HOut HInt.
     TMSimp ( unfold sigPro, sigTok in * ).
     spec_assert H by auto.
     spec_assert H0 as H0 % contains_translate_tau2 by now apply surjectTape_isRight.
