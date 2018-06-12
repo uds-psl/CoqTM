@@ -23,6 +23,7 @@ Ltac contains_ext :=
 Ltac modpon H :=
   simpl_surject;
   lazymatch type of H with
+  | forall (i : Fin.t _), ?P => idtac
   | forall (x : ?X), ?P =>
     lazymatch type of X with
     | Prop =>
