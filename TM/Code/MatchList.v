@@ -304,9 +304,10 @@ Section MatchList.
         fun tin '(yout, tout) =>
           forall (xs : list X),
             tin ≃ xs ->
-            match xs with
-            | nil => tout ≃ xs /\ yout = true
-            | _ => tout ≃ xs /\ yout = false
+            match yout, xs with
+            | true, nil => tout ≃ xs
+            | false, _ :: _ => tout ≃ xs
+            | _, _ => False
             end). 
 
   Lemma IsNil_Sem : IsNil ⊨c(5) IsNil_Rel.
