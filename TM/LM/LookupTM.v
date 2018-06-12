@@ -60,7 +60,7 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
 
   (* No 1 *)
   Definition retr_nat_clos_ad : Retract sigNat sigHClos :=
-    Retract_sigPair_Y _ _.
+    Retract_sigPair_X _ _.
   Definition retr_nat_lookup_clos_ad : Retract sigNat sigLookup :=
     ComposeRetract retr_nat_clos_ad retr_clos_lookup.
 
@@ -72,7 +72,7 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
 
   (* No 3 *)
   Definition retr_nat_clos_var : Retract sigNat sigHClos :=
-    Retract_sigPair_X _ _.
+    Retract_sigPair_Y _ _.
   Definition retr_nat_lookup_clos_var : Retract sigNat sigLookup :=
     ComposeRetract retr_nat_clos_var retr_clos_lookup.
 

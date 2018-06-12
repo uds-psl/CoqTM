@@ -102,6 +102,8 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Local Definition retr_nat_clos_ad : Retract sigNat sigHClos := Retract_sigPair_X _ (Retract_id _).
   Local Definition retr_nat_step_clos_ad : Retract sigNat sigStep := ComposeRetract retr_nat_clos_ad retr_clos_step.
 
+  Local Definition retr_nat_clos_var : Retract sigNat sigHClos := Retract_sigPair_Y _ _.
+  Local Definition retr_nat_step_clos_var : Retract sigNat sigStep := ComposeRetract retr_nat_clos_var retr_clos_step.
 
   (** Instance of the [Lookup] and [JumpTarget] machine *)
   Local Definition Step_Lookup := Lookup retr_clos_step retr_heap_step.
@@ -189,12 +191,6 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
     }
   Qed.
 
-
-  Definition Step_lam : pTM sigStep^+ unit 11 :=
-    JumpTarget ⇑ retr_pro_step @ [|Fin3; Fin6; Fin7; Fin8; Fin9; Fin10|];;
-    TailRec @ [|Fin0; Fin3; Fin4|];;
-    ConsClos @ [|Fin1; Fin4; Fin6|].
-  
   Definition Step_lam_Rel : pRel sigStep^+ unit 11 :=
     ignoreParam (
         fun tin tout =>
@@ -211,6 +207,13 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
             tout[@Fin2] ≃ H /\
             (forall i : Fin.t 8, isRight tout[@Fin.R 3 i])
       ).
+
+
+  Definition Step_lam : pTM sigStep^+ unit 11 :=
+    JumpTarget ⇑ retr_pro_step @ [|Fin3; Fin6; Fin7; Fin8; Fin9; Fin10|];;
+    TailRec @ [|Fin0; Fin3; Fin4|];;
+    ConsClos @ [|Fin1; Fin4; Fin6|].
+  
 
   Lemma Step_lam_Realise : Step_lam ⊨ Step_lam_Rel.
   Proof.
@@ -233,50 +236,76 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
 
 
 
-
-
-  Definition Step_app : pTM sigStep^+ unit 11.
-  Admitted.
-
   Definition Step_app_Rel : pRel sigStep^+ unit 11.
+  Admitted.
+  
+  Definition Step_app : pTM sigStep^+ unit 11.
   Admitted.
 
   Lemma Step_app_Realise : Step_app ⊨ Step_app_Rel.
   Admitted.
 
   
-  Definition Step_var : pTM sigStep^+ unit 11.
-  Admitted.
 
-  Definition Step_var_Rel : pRel sigStep^+ unit 11.
-  Admitted.
+  Definition Step_var_Rel : pRel sigStep^+ unit 8 :=
+    ignoreParam (
+        fun tin tout =>
+          forall (T V : list HClos) (H : Heap) (a : HAd) (n : nat) (P : Pro) (g : HClos),
+            lookup H a n = Some g ->
+            tin[@Fin0] ≃ T ->
+            tin[@Fin1] ≃ V ->
+            tin[@Fin2] ≃ H ->
+            tin[@Fin3] ≃(Encode_map Encode_Prog retr_pro_step) P ->
+            tin[@Fin4] ≃(Encode_map Encode_nat retr_nat_step_clos_ad) a ->
+            tin[@Fin5] ≃(Encode_map Encode_nat retr_nat_step_clos_var) n ->
+            isRight tin[@Fin6] -> isRight tin[@Fin7] ->
+            tout[@Fin0] ≃ tailRecursion (a, P) T /\
+            tout[@Fin1] ≃ g :: V /\
+            tout[@Fin2] ≃ H /\
+            (forall i : Fin.t 5, isRight tout[@Fin.R 3 i])
+      ).
+  
+  Definition Step_var : pTM sigStep^+ unit 8 :=
+    TailRec @ [|Fin0; Fin3; Fin4|];;
+    Step_Lookup @ [|Fin2; Fin4; Fin5; Fin6; Fin7|];;
+    Constr_cons sigHClos_fin ⇑ _ @ [|Fin1; Fin6|];;
+    Reset _ @ [|Fin6|].
+
+  Local Definition retr_closure_step : Retract sigHClos sigStep := ComposeRetract _ retr_closures_step.
 
   Lemma Step_var_Realise : Step_var ⊨ Step_var_Rel.
-  Admitted.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Step_var. repeat TM_Correct.
+      - apply TailRec_Realise.
+      - apply Lookup_Realise.
+      - apply Reset_Realise with (cX := Encode_map Encode_HClos retr_closure_step).
+    }
+    {
+      intros tin ((), tout) H. cbn. intros T V heap a n P g HLook HEncT HEncV HEncHeap HEncP HEncA HEncN HRight6 HRight7.
+      TMSimp. rename H into HTailRec; rename H0 into HLookup; rename H1 into HCons; rename H2 into HReset.
+      modpon HTailRec. modpon HLookup. modpon HCons. modpon HReset.
+      repeat split; auto. intros i; destruct_fin i; auto; TMSimp_goal; auto.
+    }
+  Qed.
 
 
   Definition Step : pTM sigStep^+ unit 11 :=
-    If (MatchList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|])
-       (MatchPair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
-                  If (MatchList sigTok_fin ⇑ retr_pro_step @ [|Fin3; Fin5|])
-                  (MATCH (MatchTok ⇑ retr_tok_step @ [|Fin5|])
-                         (fun t : option ATok =>
-                            match t with
-                            | Some lamAT =>
-                              Step_lam
-                            | Some appAT =>
-                              Step_app
-                            | Some retAT =>
-                              Nop default
-                            | None (* Variable *) =>
-                              Step_var
-                            end)
-                  )
-                  (Nop default)
-       )
-       (Nop default)
-  .
-
+    MatchList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|];;
+    MatchPair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
+    MatchList sigTok_fin ⇑ retr_pro_step @ [|Fin3; Fin5|];;
+    MATCH (MatchTok ⇑ retr_tok_step @ [|Fin5|])
+          (fun t : option ATok =>
+             match t with
+             | Some lamAT =>
+               Step_lam
+             | Some appAT =>
+               Step_app
+             | Some retAT =>
+               Nop default
+             | None (* Variable *) =>
+               Step_var @ [|Fin0; Fin1; Fin2; Fin3; Fin4; Fin5; Fin6; Fin7|]
+             end). 
 
   Definition Step_Rel : pRel sigStep^+ unit 11 :=
     ignoreParam (
@@ -305,39 +334,22 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
     }
     {
       intros tin ((), tout) H. cbn. intros T V heap T' V' heap' HStep HEncT HEncV HEncHeap HInt.
-      destruct H; TMSimp.
-      { (* First Then *)
-        modpon H.
-        destruct T as [ | (a & P)  T ]; auto. TMSimp; simpl_surject.
-        specialize (H0 (a, P)). modpon H0. cbn in *.
-        destruct H1; TMSimp.
-        { (* Second Then *)
-          modpon H1. destruct P as [ | t P]; auto; modpon H1.
-          modpon H4. destruct ymid; TMSimp.
-          { (* not var *)
-            destruct a0.
-            { (* retT (no such step) *) destruct t; auto. inv HStep. }
-            { (* lamT *) destruct t; auto. simpl_surject. inv HStep.
-              rename H5 into HStepLam.
-              revert HStepLam; cbn; TMSimp_goal; intros.
-              modpon HStepLam.
-              { intros i; destruct_fin i; auto; TMSimp_goal; auto. }
-              repeat split; auto.
-            }
-            { (* appT *) destruct t; auto. simpl_surject. inv HStep.
-              rename H5 into HStepApp.
-              admit.
-            }
-          }
-          { (* var *) inv HStep; auto.
-            rename H5 into HStepVar. cbn in HStepVar.
-            admit.
-          }
-
-        }
-        { modpon H1. destruct P; auto. inv HStep. }
-      }
-      { (* First Else *) modpon H. destruct T; auto; simpl_surject. inv HStep. }
+      TMSimp. (* This takes long *)
+      rename H into HMatchList; rename H0 into HMatchPair; rename H1 into HMatchList'; rename H2 into HMatchTok.
+      modpon HMatchList. destruct ymid, T as [ | (a, P) T]; auto. 2: now inv HStep. modpon HMatchList.
+      specialize (HMatchPair (a, P)). modpon HMatchPair.
+      modpon HMatchList'. destruct ymid0, P as [ | t P]; auto; modpon HMatchList'. 2: now inv HStep.
+      modpon HMatchTok. destruct ymid1 as [ [ | | ] | ], t; auto; simpl_surject; inv HStep; cbn in *.
+      - (* lamT *)
+        rename H3 into HStepLam. modpon HStepLam; TMSimp_goal; eauto; try contains_ext.
+        intros i; destruct_fin i; auto; TMSimp_goal; auto.
+      - (* appT *)
+        rename H3 into HStepApp.
+        admit.
+      - (* varT *)
+        rename H3 into HStepVar. modpon HStepVar; TMSimp_goal; eauto; try contains_ext.
+        generalize (HStepVar3 Fin0); generalize (HStepVar3 Fin1); generalize (HStepVar3 Fin2); generalize (HStepVar3 Fin3); generalize (HStepVar3 Fin4); cbn; TMSimp_goal; intros.
+        simpl_not_in. repeat split; auto. intros i; destruct_fin i; auto; TMSimp_goal; auto.
     }
   Admitted.
 
