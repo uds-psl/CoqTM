@@ -224,9 +224,14 @@ End ChangeAlphabet.
 (** This tactic removes [surjectTape] in hypothesises and in the goal *)
 Ltac simpl_surject_step :=
   match goal with
+  (* encoding *)
   | [ |- surjectTape _ _ ?t ≃ _ ] => apply contains_translate_tau1
-  | [ |- isRight (surjectTape _ _ ?t) ] => apply surjectTape_isRight
   | [ H : surjectTape _ _ ?t ≃ _ |- _ ] => apply contains_translate_tau2 in H
+  (* variants with shown encoding *)
+  | [ |- surjectTape _ _ ?t ≃(_) _ ] => apply contains_translate_tau1
+  | [ H : surjectTape _ _ ?t ≃(_) _ |- _ ] => apply contains_translate_tau2 in H
+  (* [isRight] *)
+  | [ |- isRight (surjectTape _ _ ?t) ] => apply surjectTape_isRight
   | [ H : isRight (surjectTape _ _ ?t) |- _ ] => apply surjectTape_isRight' in H
   end.
 

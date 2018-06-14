@@ -37,6 +37,8 @@ TM/Code/MatchList.v
 TM/Code/MatchFin.v
 TM/Code/MatchPair.v
 
+# Programming case studies
+TM/Code/SumTM.v
 TM/Code/NatTM.v
 TM/Code/ListTM.v
 
