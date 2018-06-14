@@ -98,17 +98,16 @@ t4: internal tape
 
   Definition Lookup_Step : pTM sigLookup^+ (bool*unit) 5 :=
     Nth' retr_heap_lookup retr_nat_lookup_clos_ad @ [|Fin0; Fin1; Fin4; Fin3|];;
-    If (MatchOption sigHEnt'_fin ⇑ retr_hent_lookup @ [|Fin4|])
-       (MatchPair sigHClos_fin sigHAd_fin ⇑ retr_hent'_lookup @ [|Fin4; Fin3|];;
-        If (MatchNat ⇑ retr_nat_lookup_clos_var @ [|Fin2|])
-           (Return (CopyValue _ @ [|Fin4; Fin1|];;
-                    Translate retr_nat_lookup_entry retr_nat_lookup_clos_ad @ [|Fin1|];;
-                    Reset _ @ [|Fin4|];;
-                    Reset _ @ [|Fin3|]) (true, tt))
-           (Return (Reset _ @ [|Fin4|];;
-                    Reset _ @ [|Fin2|];;
-                    Translate retr_clos_lookup_heap retr_clos_lookup @ [|Fin3|]) (false, tt)))
-       (Nop default)
+    MatchOption sigHEnt'_fin ⇑ retr_hent_lookup @ [|Fin4|];;
+    MatchPair sigHClos_fin sigHAd_fin ⇑ retr_hent'_lookup @ [|Fin4; Fin3|];;
+    If (MatchNat ⇑ retr_nat_lookup_clos_var @ [|Fin2|])
+       (Return (CopyValue _ @ [|Fin4; Fin1|];;
+                Translate retr_nat_lookup_entry retr_nat_lookup_clos_ad @ [|Fin1|];;
+                Reset _ @ [|Fin4|];;
+                Reset _ @ [|Fin3|]) (true, tt))
+       (Return (Reset _ @ [|Fin4|];;
+                Reset _ @ [|Fin2|];;
+                Translate retr_clos_lookup_heap retr_clos_lookup @ [|Fin3|]) (false, tt))
   .
 
   Definition Lookup_Step_Rel : pRel sigLookup^+ (bool*unit) 5 :=
@@ -132,7 +131,7 @@ t4: internal tape
           tout[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_clos_var) n' /\
           isRight tout[@Fin3] /\
           isRight tout[@Fin4]
-        | _, _ => False (* underspecified *)
+        | _, _ => False (* Unreachable *)
         end.
 
 
@@ -150,24 +149,34 @@ t4: internal tape
       - apply Translate_Realise with (X := HClos).
     }
     {
-      intros tin ((yout, ()), tout) H. cbn. intros heap a n g b HNth HEncHeap HEncA HEncN HRight3 HRight4.
-      TMSimp. modpon H. destruct H0; TMSimp.
-      { (* If of [MatchOption] (sigHEnt') (nth_error = Some) *)
-        modpon H0. cbn in *; simpl_surject. modpon H4.
-        { instantiate (1 := (g, b)). simpl_surject. contains_ext. }
-        cbn in *. destruct H5; TMSimp.
-        { (* If of [MatchNat] (n = S n') *)
-          modpon H5. destruct n as [ | n']; auto; simpl_surject. inv_pair.
-          modpon H8. modpon H9. modpon H10. modpon H11. repeat split; auto.
-        }
-        { (* Else of [MatchNat] *)
-          modpon H5. destruct n; auto; simpl_surject. inv_pair. modpon H8. modpon H9. modpon H10. repeat split; auto.
-        }
+      intros tin ((yout, ()), tout) H. cbn. intros heap a n g b HNthSome HEncHeap HEncA HEncN HRight3 HRight4.
+      TMSimp. rename H into HNth, H0 into HMatchOption, H1 into HMatchPair, H2 into HIf.
+      modpon HNth.
+      modpon HMatchOption. destruct ymid; auto; modpon HMatchOption.
+      specialize (HMatchPair (g, b)). modpon HMatchPair. cbn in *.
+      destruct HIf; TMSimp.
+      { (* If of [MatchNat] (n = S n') *)
+        rename H into HMatchNat, H0 into HRet, H1 into HCopyValue, H2 into HTranslate, H3 into HReset, H4 into HReset'.
+        inv HRet.
+        modpon HMatchNat. destruct n as [ | n']; auto; simpl_surject.
+        modpon HCopyValue.
+        modpon HTranslate.
+        modpon HReset.
+        modpon HReset'.
+        repeat split; auto.
       }
-      { (* Then of [MatchOption] (nth_error = None *) modpon H0. cbn in *; auto. }
+      { (* Else of [MatchNat] *)
+        rename H into HMatchNat, H0 into HRet, H1 into HReset, H2 into HReset', H3 into HTranslate.
+        modpon HMatchNat. destruct n as [ | n']; auto.
+        inv HRet.
+        modpon HReset.
+        modpon HReset'.
+        modpon HTranslate.
+        repeat split; auto.
+      }
     }
   Qed.
-    
+  
 
   Definition Lookup := WHILE Lookup_Step.
 
