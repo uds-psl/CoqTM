@@ -604,14 +604,14 @@ Proof.
     intros tin k. intros (m'&n&c&HEncM'&HEncN&HEncC&HInt3&HInt4&Hk).
     destruct m' as [ | m']; cbn.
     - exists 5, 0. cbn in *; repeat split.
-      + omega.
-      + omega.
+      + assumption.
+      + reflexivity.
       + intros tmid y (HComp&HInj). TMSimp.
         specialize (HComp _ HEncM'). cbn in *.
         destruct y; auto.
     - exists 5, (164 + 33 * c + 41 * n); cbn in *; repeat split.
-      + omega.
-      + omega.
+      + assumption.
+      + reflexivity.
       + intros tmid y (HComp&HInj). TMSimp.
         specialize (HComp _ HEncM'). cbn in *. destruct y; auto.
         exists (Add_steps n c), (63 + 21 * c + 17 * n); cbn in *; repeat split.

@@ -29,9 +29,11 @@ Section MatchNat.
                  | _ => mono_Nop true (* invalid input *)
                  end).
 
-  Lemma MatchNat_Sem : MatchNat ⊨c(5) MatchNat_Rel.
+  Definition MatchNat_steps := 5.
+
+  Lemma MatchNat_Sem : MatchNat ⊨c(MatchNat_steps) MatchNat_Rel.
   Proof.
-    eapply RealiseIn_monotone.
+    unfold MatchNat_steps. eapply RealiseIn_monotone.
     { unfold MatchNat. repeat TM_Correct. }
     { Unshelve. 4,8: reflexivity. all: omega. }
     {

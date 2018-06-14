@@ -300,11 +300,11 @@ Section Nth'.
       intros tin k. intros (l&n&HEncL&HEncN&HRight2&Hk).
       destruct n as [ | n'] eqn:E1, l as [ | x l'] eqn:E2; auto.
       - (* [n = 0] and [l = x :: l'] *)
-        exists 5, (42 + 16 * size _ x). repeat split; cbn; try omega.
+        exists 5, (42 + 16 * size _ x). repeat split; cbn; auto.
         intros tmid b (H&HInj1); TMSimp. modpon H. destruct b; cbn in *; auto; simpl_surject.
         exists (x :: l'). repeat split; simpl_surject; auto.
       - (* [n = S n'] and [l = x :: l'] *)
-        exists 5, (51 + 20 * size _ x). repeat split; cbn; try omega.
+        exists 5, (51 + 20 * size _ x). repeat split; cbn; auto.
         intros tmid b (H&HInj1); TMSimp. modpon H. destruct b; cbn in *; auto; simpl_surject.
         exists (42 + 16 * size _ x), (8 + 4 * size _ x). repeat split; cbn; try omega.
         { exists (x :: l'). repeat split; simpl_surject; auto. }
