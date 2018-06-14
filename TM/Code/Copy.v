@@ -413,10 +413,12 @@ Section Move.
     }
   Qed.
 
+  Definition MoveRight_steps x := 8 + 4 * size cX x.
+
   Lemma MoveRight_Terminates :
-    projT1 MoveRight ↓ (fun tin k => exists x, tin[@Fin0] ≃ x /\ 8 + 4 * size cX x <= k).
+    projT1 MoveRight ↓ (fun tin k => exists x, tin[@Fin0] ≃ x /\ MoveRight_steps x <= k).
   Proof.
-    eapply TerminatesIn_monotone.
+    unfold MoveRight_steps. eapply TerminatesIn_monotone.
     { unfold MoveRight. repeat TM_Correct. }
     {
       intros tin k (x&HEncX&Hk).
@@ -425,10 +427,12 @@ Section Move.
     }
   Qed.
 
+  Definition MoveLeft_steps x := 8 + 4 * size cX x.
+
   Lemma MoveLeft_Terminates :
-    projT1 MoveLeft ↓ (fun tin k => exists x, tin[@Fin0] ≂ x /\ 8 + 4 * size cX x <= k).
+    projT1 MoveLeft ↓ (fun tin k => exists x, tin[@Fin0] ≂ x /\ MoveLeft_steps x <= k).
   Proof.
-    eapply TerminatesIn_monotone.
+    unfold MoveLeft_steps. eapply TerminatesIn_monotone.
     { unfold MoveLeft. repeat TM_Correct. }
     {
       intros tin k (x&HEncX&Hk).
@@ -439,7 +443,6 @@ Section Move.
 
   Definition Reset_Terminates := MoveRight_Terminates.
 
-  
   Definition ResetEmpty : pTM sig^+ (FinType(EqType unit)) 1 := Move R tt.
 
   Definition ResetEmpty_Rel : pRel sig^+ (FinType(EqType unit)) 1 :=
@@ -462,7 +465,6 @@ Section Move.
       destruct (cX x); cbn in *; inv HCod. cbn. repeat econstructor.
     }
   Qed.
-
 
   Definition ResetEmpty1 : pTM sig^+ (FinType(EqType unit)) 1 := Move R tt;; Move R tt.
 
@@ -526,10 +528,12 @@ Section CopyValue.
     }
   Qed.
 
+  Definition CopyValue_steps x := 25 + 12 * size cX x.
+
   Lemma CopyValue_Terminates :
-    projT1 CopyValue ↓ (fun tin k => exists x:X, tin[@Fin0] ≃ x /\ 25 + 12 * size cX x <= k).
+    projT1 CopyValue ↓ (fun tin k => exists x:X, tin[@Fin0] ≃ x /\ CopyValue_steps x <= k).
   Proof.
-    eapply TerminatesIn_monotone.
+    unfold CopyValue_steps. eapply TerminatesIn_monotone.
     { unfold CopyValue. repeat TM_Correct.
       - eapply MoveRight_Realise.
       - eapply MoveRight_Terminates. }
@@ -586,12 +590,13 @@ Section MoveValue.
       repeat split; auto.
     }
   Qed.
-  
+
+  Definition MoveValue_steps x y := 43 + 16 * size cX x + 4 * size cY y.
 
   Lemma MoveValue_Terminates :
-    projT1 MoveValue ↓ (fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ tin[@Fin1] ≃ y /\ 43 + 16 * size cX x + 4 * size cY y <= k).
+    projT1 MoveValue ↓ (fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ tin[@Fin1] ≃ y /\ MoveValue_steps x y <= k).
   Proof.
-    eapply TerminatesIn_monotone.
+    unfold MoveValue_steps. eapply TerminatesIn_monotone.
     { unfold MoveValue. repeat TM_Correct.
       - apply Reset_Realise with (X := Y).
       - apply Reset_Terminates with (X := Y).
@@ -657,8 +662,10 @@ Section Translate.
     }
   Qed.
 
+  Definition Translate'_steps x := 8 + 4 * size cX x.
+
   Lemma Translate'_Terminates :
-    projT1 Translate' ↓ (fun tin k => exists x, tin[@Fin0] ≃(Encode_map cX retr1) x /\ 8 + 4 * size cX x <= k).
+    projT1 Translate' ↓ (fun tin k => exists x, tin[@Fin0] ≃(Encode_map cX retr1) x /\ Translate'_steps x <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Translate'. repeat TM_Correct. }
@@ -713,7 +720,7 @@ Section Translate.
       exists (8 + 4 * size cX x), (8 + 4 * size cX x). repeat split; try omega.
       eexists. repeat split; eauto.
       intros tmid () H. cbn in H. specialize H with (1 := HEncX). 
-      exists x. split. eauto. cbn. now rewrite map_length.
+      exists x. split. eauto. unfold MoveLeft_steps. now rewrite Encode_map_hasSize.
     }
   Qed.
 

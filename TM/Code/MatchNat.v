@@ -54,18 +54,11 @@ Section MatchNat.
       WriteMove (inr sigNat_S) L tt;; Write (inl START) tt.
 
 
-    (*
-    Lemma tape_right_move_left' (sig : finType) rs (x:sig) ls :
-      right (tape_move_left' rs x ls) = x :: ls.
-    Proof. destruct rs; cbn; reflexivity. Qed.
+    Definition Constr_S_steps := 3.
 
-    Hint Rewrite tape_right_move_left' : tape.
-    *)
-
-
-    Lemma Constr_S_Sem : Constr_S ⊨c(3) S_Rel.
+    Lemma Constr_S_Sem : Constr_S ⊨c(Constr_S_steps) S_Rel.
     Proof.
-      eapply RealiseIn_monotone.
+      unfold Constr_S_steps. eapply RealiseIn_monotone.
       { unfold Constr_S. repeat TM_Correct. }
       { cbn. omega. }
       {
@@ -80,15 +73,16 @@ Section MatchNat.
     Definition O_Rel : Rel (tapes sigNat^+ 1) (unit * tapes sigNat^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ O)).
 
-
     Definition Constr_O : { M : mTM sigNat^+ 1 & states M -> unit } :=
       WriteMove (inl STOP) L tt;;
       WriteMove (inr sigNat_O) L tt;;
       Write (inl START) tt.
 
-    Lemma Constr_O_Sem : Constr_O ⊨c(5) O_Rel.
+    Definition Constr_O_steps := 5.
+
+    Lemma Constr_O_Sem : Constr_O ⊨c(Constr_O_steps) O_Rel.
     Proof.
-      eapply RealiseIn_monotone.
+      unfold Constr_O_steps. eapply RealiseIn_monotone.
       { unfold Constr_O. repeat TM_Correct. }
       { cbn. omega. }
       {

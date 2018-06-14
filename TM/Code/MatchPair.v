@@ -201,7 +201,7 @@ Section MatchPair.
       exists (10 + 4 * size _ x), (8 + 8 * size _ x). repeat split; try omega.
       {
         exists (8 + 4 * size _ x), 1. repeat split; try omega. 2: now intros _ _ _.
-        eexists. repeat split; eauto. now rewrite Encode_map_hasSize.
+        eexists. repeat split; eauto. unfold MoveRight_steps. now rewrite Encode_map_hasSize.
       }
       intros tmid () ?; TMSimp. modpon H. destruct H as (ls&->). cbn.
       rewrite CopySymbols_L_TermTime_moveleft; cbn; auto. now rewrite map_length, rev_length, map_length.

@@ -408,7 +408,7 @@ Section MatchList.
     {
       intros tin k (l&y&HEncL&HEncY&Hk).
       exists (10 + 4 * length (encode y)), (12 + 8 * length (encode y)). repeat split; try omega.
-      - cbn. do 2 eexists. split; eauto. rewrite map_length. omega.
+      - cbn. do 2 eexists. split; eauto. unfold MoveRight_steps. rewrite Encode_map_hasSize. unfold size. omega.
       - intros tmid () (H&HInj). TMSimp.
         specialize (H _ HEncY) as (ls&HEncY'). TMSimp.
         exists (8 + 8 * length (encode y)), 3. repeat split; try omega.
