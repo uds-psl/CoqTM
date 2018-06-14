@@ -15,8 +15,6 @@ Section Codable.
         encode :> X -> list sig
       }.
 
-  Hypothesis codable_X : codable.
-
 End Codable.
 Arguments encode { sig } { X } { _ }.
 
@@ -26,21 +24,39 @@ Hint Extern 4 (codable (FinType(EqType ?sigX)) ?X) => cbn : typeclass_instances.
 Coercion encode : codable >-> Funclass.
 
 
+(** We often use the above coercion to write [cX x] instead of [encode x], because [encode x] can be ambigious, see [Encode_map] *)
+Definition size (sig X : Type) (cX : codable sig X) (x : X) := length (cX x).
+Arguments size {sig X} (cX x).
+
+
+
 Instance Encode_unit : codable Empty_set unit :=
   {|
     encode x := nil
   |}.
+
+Lemma Encode_unit_hasSize t :
+  size Encode_unit t = 0.
+Proof. cbn. reflexivity. Qed.
+
 
 Instance Encode_bool : codable bool bool:=
   {|
     encode x := [x]
   |}.
 
+Lemma Encode_bool_hasSize b :
+  size Encode_bool b = 1.
+Proof. cbn. reflexivity. Qed.
+
 Instance Encode_Fin n : codable (Fin.t n) (Fin.t n):=
   {|
     encode i := [i]
   |}.
   
+Lemma Encode_Fin_hasSize n i :
+  size (Encode_Fin n) i = 1.
+Proof. cbn. reflexivity. Qed.
 
 Compute encode true.
 (* This works thanks to the coercion above *)
@@ -54,7 +70,7 @@ Compute encode Fin0 : list (Fin.t 10).
 Section Encode_map.
   Variable (X : Type).
   Variable (sig tau : Type).
-  Hypothesis (code_sig : codable sig X).
+  Hypothesis (cX : codable sig X).
 
   Variable inj : Retract sig tau.
 
@@ -62,6 +78,10 @@ Section Encode_map.
     {
       encode x := map Retr_f (encode x);
     }.
+
+  Lemma Encode_map_hasSize x :
+    size Encode_map x = size cX x.
+  Proof. cbn. now rewrite map_length. Qed.
   
 End Encode_map.
 
@@ -170,14 +190,23 @@ Section Encode_sum.
                   | inr y => sigSum_inr :: encode y
                   end
     |}.
+
+
+  Definition Encode_sum_size s :=
+    match s with
+       | inl x => S (size cX x)
+       | inr y => S (size cY y)
+    end.
   
+  Lemma Encode_sum_hasSize s :
+    size Encode_sum s = Encode_sum_size s.
+  Proof. cbn. destruct s; cbn; cbv [Encode_sum_size]; rewrite map_length; reflexivity. Qed.
+
 End Encode_sum.
 
 Arguments sigSum_inl {sigX sigY}. Arguments sigSum_inr {sigX sigY}. Arguments sigSum_X {sigX sigY}. Arguments sigSum_Y {sigX sigY}.
 Hint Extern 4 (finTypeC (EqType (sigSum _ _))) => eapply sigSum_fin : typeclass_instances.
 Check FinType (EqType (sigSum bool bool)).
-
-Compute Encode_sum Encode_bool Encode_unit (inl true).
 
 
 
@@ -220,6 +249,11 @@ Section Encode_pair.
       encode '(x,y) := encode x ++ encode y;
     |}.
 
+  Definition Encode_pair_size (p : X * Y) := let (x, y) := p in size cX x + size cY y.
+
+  Lemma Encode_pair_hasSize p : size Encode_pair p = Encode_pair_size p.
+  Proof. destruct p; cbn; now rewrite app_length, !map_length. Qed.
+  
 End Encode_pair.
 
 Arguments sigPair_X {sigX sigY}. Arguments sigPair_Y {sigX sigY}.
@@ -272,6 +306,15 @@ Section Encode_option.
                   end;
     |}.
 
+  Definition Encode_option_size (o : option X) :=
+    match o with
+    | None => 1
+    | Some x => S (size cX x)
+    end.
+
+  Lemma Encode_option_hasSize o : size _ o = Encode_option_size o.
+  Proof. destruct o; cbn; f_equal; now rewrite map_length. Qed.
+  
 End Encode_option.
 
 Arguments sigOption_Some {sigX}. Arguments sigOption_None {sigX}. Arguments sigOption_X {sigX}.
@@ -327,6 +370,45 @@ Section Encode_list.
       encode := encode_list;
     |}.
 
+  Lemma encode_list_app (xs ys : list X) :
+    encode_list (xs ++ ys) = removelast (encode_list xs) ++ encode_list ys.
+  Proof.
+    revert ys. induction xs; intros; cbn in *; f_equal.
+    rewrite IHxs. rewrite app_assoc, app_comm_cons; f_equal.
+    destruct (map (fun x : sigX => sigList_X x) (cX a)) eqn:E; cbn.
+    - destruct xs; cbn; auto.
+    - f_equal. destruct (cX a) eqn:E2; cbn in E. congruence.
+      rewrite removelast_app.
+      + destruct (l ++ encode_list xs) eqn:E3; cbn; auto.
+        apply app_eq_nil in E3 as (E3&E3'). destruct xs; inv E3'.
+      + destruct xs; cbn; congruence.
+  Qed.
+
+  Corollary Encode_list_app (xs ys : list X) :
+    Encode_list (xs ++ ys) = removelast (Encode_list xs) ++ Encode_list ys.
+  Proof. cbn. now apply encode_list_app. Qed.
+
+  Lemma encode_list_neq_nil (xs : list X) :
+    encode_list xs <> nil.
+  Proof. destruct xs; cbn; congruence. Qed.
+
+  Corollary Encode_list_neq_nil (xs : list X) :
+    Encode_list xs <> nil.
+  Proof. cbn. apply encode_list_neq_nil. Qed.
+
+
+  Fixpoint Encode_list_size (xs : list X) : nat :=
+    match xs with
+    | nil => 1
+    | x :: xs' => S (size cX x + Encode_list_size xs')
+    end.
+  
+  Lemma Encode_list_hasSize (xs : list X) : size _ xs = Encode_list_size xs.
+  Proof.
+    induction xs as [ | x xs IH]; cbn; f_equal.
+    rewrite app_length, !map_length. fold (size cX x). now rewrite <- IH.
+  Qed.
+  
 End Encode_list.
 
 Arguments sigList_nil {sigX}. Arguments sigList_cons {sigX}. Arguments sigList_X {sigX}.
@@ -357,6 +439,14 @@ Section Encode_nat.
     {|
       encode n := repeat sigNat_S n ++ [sigNat_O];
     |}.
+
+
+  Lemma Encode_nat_hasSize n : size _ n = S n.
+  Proof. cbn. rewrite app_length, repeat_length. cbn. omega. Qed.
+  
+  Corollary Encode_nat_eq_nil n :
+    Encode_nat n <> nil.
+  Proof. intros H % length_zero_iff_nil. fold (size _ n) in H. rewrite Encode_nat_hasSize in H. omega. Qed.
 
 End Encode_nat.
 

@@ -1,9 +1,5 @@
-Require Import TM.Code.CodeTM.
-Require Import TM.Basic.Mono TM.Basic.Nop TM.Basic.Multi.
-Require Import TM.Combinators.Combinators.
-Require Import TM.LiftMN TM.LiftSigmaTau.
-Require Import TM.Compound.TMTac.
-Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol TM.Code.Copy.
+Require Import ProgrammingTools.
+Require Import TM.Basic.Nop TM.Basic.Multi.
 
 
 (* TODO: ~> base *)
@@ -52,8 +48,6 @@ Section MatchPair.
     CopySymbols_L stopAtStart id;;
     Inject (MoveToSymbol stopAfterFirst id;; Move L tt;; Write (inl START) tt) [|Fin0|].
 
-
-
   Lemma MatchPair_Realise : MatchPair ⊨ MatchPair_Rel.
   Proof.
     eapply Realise_monotone.
@@ -64,8 +58,7 @@ Section MatchPair.
       destruct HEncXY as (ls&HEncXY).
       TMSimp; clear_trivial_eqs. rename H2 into HCopy.
       rewrite map_app, <- app_assoc in HCopy.
-
-      (* We need a case distinction, whether the encoding of [y] is empty or. However, both parts of the proof are identical. *)
+      (* We need a case distinction, whether the encoding of [y] is empty, because [MoveToSymbol] either stops in a symbol of [cY y] or on [inl STOP]. However, both parts of the proof have identical proof scripts. *)
       destruct (cY y) eqn:EY; cbn in *.
       - rewrite MoveToSymbol_correct_midtape in HCopy; cbn in *; auto.
         erewrite CopySymbols_L_correct_moveleft in HCopy; cbn; auto.
@@ -92,8 +85,63 @@ Section MatchPair.
     }
   Qed.
 
+  Local Arguments plus : simpl never. Local Arguments mult : simpl never.
+  Local Arguments size : simpl never.
 
+  Definition MatchPair_steps (p : X * Y) :=
+    34 + 16 * size _ (fst p).
 
+  Definition MatchPair_T : tRel sigPair^+ 2 :=
+    fun tin k => exists (p : X * Y), tin[@Fin0] ≃ p /\ isRight tin[@Fin1] /\ MatchPair_steps p <= k.
+      
+  Lemma MatchPair_Terminates : projT1 MatchPair ↓ MatchPair_T.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold MatchPair. repeat TM_Correct. }
+    {
+      intros tin k ((x&y)&HEncP&HRight&Hk). unfold MatchPair_steps in *. cbn in *.
+      exists 1, (32 + 16 * size _ x). repeat split; try omega.
+      intros tmid () ?; TMSimp.
+      exists (10 + 4 * size _ x), (21 + 12 * size _ x). repeat split; try omega.
+      {
+        exists (8 + 4 * size _ x), 1. repeat split; try omega. 2: now intros _ _ _.
+        destruct HEncP as (ls&->). cbn. destruct (cY y) eqn:EY.
+        - rewrite app_nil_r. rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !map_length.
+        - rewrite map_app, <- app_assoc. cbn.
+          rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !map_length.
+      }
+      intros tmid1 (). intros ?; TMSimp.
+      exists (8 + 8 * size _ x), (12 + 4 * size _ x). repeat split; try omega.
+      {
+        destruct HEncP as (ls&->). cbn. destruct (cY y) eqn:EY.
+        - rewrite app_nil_r. rewrite MoveToSymbol_correct_midtape; cbn; auto.
+          + rewrite CopySymbols_L_TermTime_moveleft; cbn; auto. now rewrite rev_length, !map_length.
+          + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
+        - rewrite map_app, <- app_assoc. cbn.
+          rewrite MoveToSymbol_correct_midtape; cbn; auto.
+          + rewrite CopySymbols_L_TermTime_moveleft; cbn; auto. now rewrite rev_length, !map_length.
+          + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
+      }
+      intros tmid2 () HCopy.
+      exists (8 + 4 * size _ x), 3. repeat split; try omega.
+      {
+        destruct HEncP as (ls&HEncP); TMSimp. cbn in *. destruct (cY y) eqn:EY.
+        - rewrite app_nil_r in HCopy. rewrite MoveToSymbol_correct_midtape in HCopy; cbn in *; auto.
+          + rewrite CopySymbols_L_correct_moveleft in HCopy; cbn; auto.
+            * inv HCopy; TMSimp. rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !rev_length, !map_length.
+            * rewrite List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
+          + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
+        - rewrite map_app, <- app_assoc in HCopy. cbn in *. rewrite MoveToSymbol_correct_midtape in HCopy; cbn in *; auto.
+          + rewrite CopySymbols_L_correct_moveleft in HCopy; cbn; auto. 
+            * inv HCopy; TMSimp. rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !rev_length, !map_length.
+            * rewrite List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
+          + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
+      }
+      intros tmid3 _ _. exists 1, 1. split. omega. split. omega. intros _ _ _. omega.
+    }
+  Qed.
+        
+      
 
   (** Constructor *)
 
@@ -110,29 +158,55 @@ Section MatchPair.
 
 
   Definition Constr_pair : { M : mTM sigPair^+ 2 & states M -> unit } :=
-    Inject (MoveToSymbol stopAfterFirst id;; Move L tt) [|Fin0|];;
+    Inject (MoveRight _;; Move L tt) [|Fin0|];;
     CopySymbols_L stopAtStart id.
 
 
   Lemma Constr_pair_Realise : Constr_pair ⊨ Constr_pair_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Constr_pair. repeat TM_Correct. }
+    { unfold Constr_pair. repeat TM_Correct.
+      - apply MoveRight_Realise with (X := X).
+    }
     {
       intros tin ((), tout) H. intros x y HEncX HEncY.
-      destruct HEncX as (ls1&HEncX), HEncY as (ls2&HEncY).
-      TMSimp; clear_trivial_eqs. rename H0 into HCopy.
-      rewrite MoveToSymbol_correct_midtape in HCopy; cbn in *; auto.
-      - rewrite CopySymbols_L_correct_moveleft in HCopy; cbn in *; auto.
-        + apply pair_eq in HCopy as (HCopy1&HCopy2). TMSimp.
-          split.
-          * repeat econstructor. cbn. f_equal. now rewrite map_id, rev_involutive.
-          * repeat econstructor. cbn. f_equal. simpl_tape. now rewrite !map_id, rev_involutive, !List.map_app, <- app_assoc.
-        + rewrite List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
-      - rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
+      TMSimp; clear_trivial_eqs. rename H into HMoveRight; rename H0 into HCopy.
+      modpon HMoveRight. destruct HMoveRight as (ls&HMoveRight); TMSimp.
+      rewrite CopySymbols_L_correct_moveleft in HCopy; cbn in *; auto.
+      - apply pair_eq in HCopy as (HCopy1&HCopy2). TMSimp. split.
+        + repeat econstructor. cbn. f_equal. now rewrite map_rev, rev_involutive.
+        + repeat econstructor. cbn. f_equal. simpl_tape.
+          destruct HEncY as (ls'&HEncY); TMSimp_goal.
+          rewrite map_id, map_rev, rev_involutive. cbn. now rewrite map_app, <- app_assoc. 
+      - rewrite map_rev, List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
     }
   Qed.
 
+
+  Definition Constr_pair_steps (p : X * Y) : nat := 19 + 12 * size _ (fst p).
+
+  Definition Constr_pair_T : tRel sigPair^+ 2 :=
+    fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ tin[@Fin0] ≃ y /\ Constr_pair_steps (x,y) <= k.
+      
+  Lemma Constr_pair_Terminates : projT1 Constr_pair ↓ Constr_pair_T.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Constr_pair. repeat TM_Correct.
+      - apply MoveRight_Realise with (X := X).
+      - apply MoveRight_Realise with (X := X).
+      - apply MoveRight_Terminates with (X := X).
+    }
+    {
+      intros tin k (x & y & HEncX & HEncY & Hk). unfold Constr_pair_steps in *. cbn in *.
+      exists (10 + 4 * size _ x), (8 + 8 * size _ x). repeat split; try omega.
+      {
+        exists (8 + 4 * size _ x), 1. repeat split; try omega. 2: now intros _ _ _.
+        eexists. repeat split; eauto. now rewrite Encode_map_hasSize.
+      }
+      intros tmid () ?; TMSimp. modpon H. destruct H as (ls&->). cbn.
+      rewrite CopySymbols_L_TermTime_moveleft; cbn; auto. now rewrite map_length, rev_length, map_length.
+    }
+  Qed.
 
 
   (** [Snd] simply discard the first element *)
@@ -167,18 +241,43 @@ Section MatchPair.
   Qed.
 
 
+  Definition Snd_steps (p : X * Y) := 12 + 4 * size _ (fst p).
+
+  Definition Snd_T : tRel sigPair^+ 1 :=
+    fun tin k => exists p : X*Y, tin[@Fin0] ≃ p /\ Snd_steps p <= k.
+
+  Lemma Snd_Terminates : projT1 Snd ↓ Snd_T.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Snd. repeat TM_Correct. }
+    {
+      intros tin k ((x,y)&HEncP&Hk). unfold Snd_steps in *; cbn in *.
+      exists (8+4*size _ x), 3. repeat split; try omega.
+      {
+        destruct HEncP as (ls&->). destruct (cY y) eqn:EY; cbn in *.
+        - rewrite MoveToSymbol_TermTime_midtape; cbn; auto. rewrite EY. cbn.
+          rewrite map_length, app_length, map_length. cbn. unfold size. omega.
+        - rewrite map_app, <- app_assoc, EY. cbn.
+          rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !map_length.
+      }
+      intros ? _ _. exists 1, 1. split. reflexivity. split. reflexivity. intros _ _ _. reflexivity.
+    }
+  Qed.
+
+
 End MatchPair.
 
-
-(* TODO: Termination *)
 
 Ltac smpl_TM_MatchPair :=
   match goal with
   | [ |- MatchPair _ _ ⊨ _ ] => apply MatchPair_Realise
+  | [ |- projT1 (MatchPair _ _) ↓ _ ] => apply MatchPair_Terminates
 
   | [ |- Constr_pair _ _ ⊨ _ ] => apply Constr_pair_Realise
+  | [ |- projT1 (Constr_pair _ _) ↓ _] => apply Constr_pair_Terminates
 
   | [ |- Snd _ _ ⊨ _ ] => apply Snd_Realise
+  | [ |- projT1 (Snd _ _) ↓ _] => apply Snd_Terminates
   end.
 
 Smpl Add smpl_TM_MatchPair : TM_Correct.

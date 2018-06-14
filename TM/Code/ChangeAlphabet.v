@@ -361,7 +361,7 @@ End Computes_ChangeAlphabet2.
 Ltac smpl_TM_ChangeAlphabet :=
   match goal with
   | [ |- ChangeAlphabet ?pM ?retr ⊨ _ ] => apply Lift_Realise
-  | [ |- ChangeAlphabet ?pM ?retr ↓ _ ] => apply Lift_TerminatesIn
+  | [ |- projT1 (ChangeAlphabet ?pM ?retr) ↓ _ ] => apply Lift_TerminatesIn
   end.
 
 

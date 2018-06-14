@@ -414,7 +414,7 @@ Section Move.
   Qed.
 
   Lemma MoveRight_Terminates :
-    projT1 MoveRight ↓ (fun tin k => exists x, tin[@Fin0] ≃ x /\ 8 + 4 * length (encode x : list sig) <= k).
+    projT1 MoveRight ↓ (fun tin k => exists x, tin[@Fin0] ≃ x /\ 8 + 4 * size cX x <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold MoveRight. repeat TM_Correct. }
@@ -426,7 +426,7 @@ Section Move.
   Qed.
 
   Lemma MoveLeft_Terminates :
-    projT1 MoveLeft ↓ (fun tin k => exists x, tin[@Fin0] ≂ x /\ 8 + 4 * length (encode x : list sig) <= k).
+    projT1 MoveLeft ↓ (fun tin k => exists x, tin[@Fin0] ≂ x /\ 8 + 4 * size cX x <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold MoveLeft. repeat TM_Correct. }
@@ -471,7 +471,7 @@ Section Move.
         fun tin tout =>
           forall (x : X),
             tin[@Fin0] ≃ x ->
-            length (cX x) = 1 ->
+            size cX x = 1 ->
             isRight tout[@Fin0]
         ).
 
@@ -482,7 +482,7 @@ Section Move.
     { reflexivity. }
     {
       intros tin ((), tout) H. cbn. intros x HEncX HCod.
-      destruct HEncX as (ls&HEncX). TMSimp; clear_trivial_eqs.
+      destruct HEncX as (ls&HEncX). unfold size in *. TMSimp; clear_trivial_eqs.
       destruct (cX x); cbn in *; inv HCod. destruct l; inv H0.
       cbn. repeat econstructor.
     }
@@ -527,7 +527,7 @@ Section CopyValue.
   Qed.
 
   Lemma CopyValue_Terminates :
-    projT1 CopyValue ↓ (fun tin k => exists x:X, tin[@Fin0] ≃ x /\ 25 + 12 * (length (cX x)) <= k).
+    projT1 CopyValue ↓ (fun tin k => exists x:X, tin[@Fin0] ≃ x /\ 25 + 12 * size cX x <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold CopyValue. repeat TM_Correct.
@@ -536,7 +536,7 @@ Section CopyValue.
     {
       intros tin k (x&HEncX&Hk).
       exists (8 + 4 * length (encode x : list sig)), (16 + 8 * length (encode x : list sig)). repeat split; cbn.
-      - omega.
+      - unfold size in *. omega.
       - eauto.
       - intros tmid () (H1&HInj). TMSimp.
         apply H1 in HEncX as (r1&->).
@@ -589,7 +589,7 @@ Section MoveValue.
   
 
   Lemma MoveValue_Terminates :
-    projT1 MoveValue ↓ (fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ tin[@Fin1] ≃ y /\ 43 + 16 * length (cX x) + 4 * length (cY y) <= k).
+    projT1 MoveValue ↓ (fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ tin[@Fin1] ≃ y /\ 43 + 16 * size cX x + 4 * size cY y <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold MoveValue. repeat TM_Correct.
@@ -602,7 +602,7 @@ Section MoveValue.
     {
       intros tin k (x&y&HEncX&HEncY&Hk).
       exists (8 + 4 * length (cY y)), (34 + 16 * length (cX x)). repeat split; cbn; eauto.
-      - omega.
+      - unfold size in *. omega.
       - intros tmid1 () (H1&HInj1). TMSimp.
         specialize H1 with (1 := HEncY).
         exists (25 + 12 * length (cX x)), (8 + 4 * length (cX x)). repeat split; cbn; eauto.
@@ -657,6 +657,18 @@ Section Translate.
     }
   Qed.
 
+  Lemma Translate'_Terminates :
+    projT1 Translate' ↓ (fun tin k => exists x, tin[@Fin0] ≃(Encode_map cX retr1) x /\ 8 + 4 * size cX x <= k).
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Translate'. repeat TM_Correct. }
+    {
+      intros tin k (x&HEncX&Hk). unfold size in *.
+      destruct HEncX as (r1&->).
+      rewrite MoveToSymbol_TermTime_midtape; auto. cbn. now rewrite !map_length.
+    }
+  Qed.
+
 
   Definition Translate := Translate';; MoveLeft _.
 
@@ -680,6 +692,31 @@ Section Translate.
       TMSimp. apply H0. apply H. apply HEncX.
     }
   Qed.
+
+
+  Definition Translate_steps (x : X) := 17 + 8 * size cX x.
+
+  Definition Translate_T : tRel tau^+ 1 :=
+    fun tin k => exists x, tin[@Fin0] ≃(Encode_map cX retr1) x /\ Translate_steps x <= k.
+
+  Lemma Translate_Terminates :
+    projT1 Translate ↓ Translate_T.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Translate. repeat TM_Correct.
+      - apply Translate'_Realise.
+      - apply Translate'_Terminates.
+      - apply MoveLeft_Terminates.
+    }
+    {
+      intros tin k (x&HEncX&Hk). unfold Translate_steps in *.
+      exists (8 + 4 * size cX x), (8 + 4 * size cX x). repeat split; try omega.
+      eexists. repeat split; eauto.
+      intros tmid () H. cbn in H. specialize H with (1 := HEncX). 
+      exists x. split. eauto. cbn. now rewrite map_length.
+    }
+  Qed.
+
 
 End Translate.
 

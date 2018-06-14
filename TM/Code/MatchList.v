@@ -428,11 +428,11 @@ Arguments Constr_cons : simpl never.
 Ltac smpl_TM_MatchList :=
   match goal with
   | [ |- MatchList _ ⊨ _ ] => apply MatchList_Realise
-  | [ |- MatchList _ ↓ _ ] => apply MatchList_Terminates
+  | [ |- projT1 (MatchList _) ↓ _ ] => apply MatchList_Terminates
 
   | [ |- IsNil _ ⊨ _ ] => eapply RealiseIn_Realise; apply IsNil_Sem
   | [ |- IsNil _ ⊨c(_) _ ] => apply IsNil_Sem
-  | [ |- IsNil _ ↓ _ ] => eapply RealiseIn_Realise; apply IsNil_Sem
+  | [ |- projT1 (IsNil _ ) ↓ _ ] => eapply RealiseIn_Realise; apply IsNil_Sem
                                   
 
   | [ |- Constr_nil _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_nil_Sem
