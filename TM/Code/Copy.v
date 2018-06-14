@@ -441,7 +441,11 @@ Section Move.
     }
   Qed.
 
-  Definition Reset_Terminates := MoveRight_Terminates.
+  Definition Reset_steps x := 8 + 4 * size cX x.
+
+  Definition Reset_Terminates :
+    projT1 Reset ↓ (fun tin k => exists x, tin[@Fin0] ≃ x /\ Reset_steps x <= k).
+  Proof. exact MoveRight_Terminates. Qed.
 
   Definition ResetEmpty : pTM sig^+ (FinType(EqType unit)) 1 := Move R tt.
 

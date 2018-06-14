@@ -310,7 +310,7 @@ Proof.
     - intros tmid () HComp. cbn in *.
       specialize (HInt Fin0).
       specialize (HComp _ _ HEncM HEncN HOut HInt) as (HComp1&HComp2&HComp3&HComp4).
-      exists 0. split. eauto. unfold MoveRight_steps. cbn. omega.
+      exists 0. split. eauto. unfold MoveRight_steps. cbn. auto.
   }
 Qed.
 
@@ -624,14 +624,14 @@ Proof.
           specialize (HComp5 Fin0). cbn in *. TMSimp.
           exists (12 + 4 * c), (50 + 17 * (c + n)). repeat split.
           -- omega.
-          -- eexists. repeat split. eauto. unfold MoveRight_steps. rewrite Encode_nat_hasSize. omega.
+          -- eexists. repeat split. eauto. unfold Reset_steps. rewrite Encode_nat_hasSize. omega.
           -- intros tmid1 () (HComp6&HInj). TMSimp.
              specialize HComp6 with (1 := HComp3).
              exists (37 + 12 * (c + n)), (12 + 4 * (c + n)). repeat split.
              ++ omega.
              ++ eexists. repeat split. eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize. omega.
              ++ intros tmid2 () (HComp7&HInj7); TMSimp. specialize HComp7 with (1 := HComp4) (2 := HComp6) as (HComp7&HComp8).
-                eexists. repeat split. eauto. unfold MoveRight_steps. rewrite Encode_nat_hasSize. omega.
+                eexists. repeat split. eauto. unfold Reset_steps. rewrite Encode_nat_hasSize. omega.
   }
 Qed.
 
