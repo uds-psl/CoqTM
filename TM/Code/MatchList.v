@@ -406,9 +406,11 @@ Section MatchList.
       - apply MoveRight_Terminates with (X := X).
     }
     {
-      intros tin k (l&y&HEncL&HEncY&Hk).
+      intros tin k (l&y&HEncL&HEncY&Hk). cbn.
       exists (10 + 4 * length (encode y)), (12 + 8 * length (encode y)). repeat split; try omega.
-      - cbn. do 2 eexists. split; eauto. unfold MoveRight_steps. rewrite Encode_map_hasSize. unfold size. omega.
+      - cbn. exists (8 + 4 * length (encode y)), 1. repeat split; try omega.
+        + eexists. split. eauto. unfold MoveRight_steps. now rewrite Encode_map_hasSize.
+        + now intros _ _ _.
       - intros tmid () (H&HInj). TMSimp.
         specialize (H _ HEncY) as (ls&HEncY'). TMSimp.
         exists (8 + 8 * length (encode y)), 3. repeat split; try omega.

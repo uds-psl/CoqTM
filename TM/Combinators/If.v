@@ -32,7 +32,7 @@ Section If.
     projT1 pM1 ↓ T1 ->
     projT1 pM2 ↓ T2 ->
     projT1 pM3 ↓ T3 ->
-    projT1 If ↓ (fun tin i => exists i1 i2, i1 + S i2 <= i /\ T1 tin i1 /\
+    projT1 If ↓ (fun tin i => exists i1 i2, T1 tin i1 /\ 1 + i1 + i2 <= i /\
                                     forall tout (b:bool),
                                       R1 tin (b, tout) ->
                                       if b then T2 tout i2

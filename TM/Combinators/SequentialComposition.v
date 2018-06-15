@@ -29,8 +29,8 @@ Section Composition.
     pM1 ⊨ R1 ->
     projT1 pM1 ↓ T1 ->
     projT1 pM2 ↓ T2 ->
-    projT1 Seq ↓ (fun tin i => exists i1 i2, i1 + S i2 <= i /\ T1 tin i1 /\
-                                    forall tout yout, R1 tin (yout, tout) -> T2 tout i2).
+    projT1 Seq ↓ (fun tin i => exists i1 i2, T1 tin i1 /\ 1 + i1 + i2 <= i /\
+                                     forall tout yout, R1 tin (yout, tout) -> T2 tout i2).
   Proof.
     intros HRealise HTerm1 HTerm2.
     eapply TerminatesIn_monotone.

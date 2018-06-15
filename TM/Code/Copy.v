@@ -543,9 +543,8 @@ Section CopyValue.
       - eapply MoveRight_Terminates. }
     {
       intros tin k (x&HEncX&Hk).
-      exists (8 + 4 * length (encode x : list sig)), (16 + 8 * length (encode x : list sig)). repeat split; cbn.
+      exists (8 + 4 * length (encode x : list sig)), (16 + 8 * length (encode x : list sig)). repeat split; cbn; eauto.
       - unfold size in *. omega.
-      - eauto.
       - intros tmid () (H1&HInj). TMSimp.
         apply H1 in HEncX as (r1&->).
         rewrite CopySymbols_L_TermTime_midtape; eauto.

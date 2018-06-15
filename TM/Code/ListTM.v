@@ -884,11 +884,10 @@ Section Append.
     }
     {
       intros tin k (xs&ys&HEncXs&HEnYs&HRigh2&Hk).
-      exists (25 + 12 * size _ ys), (App'_steps xs). repeat split; cbn.
-      - unfold App'_steps, App_steps in *. omega.
-      - eauto.
-      - intros tmid () (HApp'&HInjApp'); TMSimp. modpon HApp'.
-        hnf. cbn. do 2 eexists. repeat split; eauto.
+      exists (25 + 12 * size _ ys), (App'_steps xs). repeat split; cbn; eauto.
+      unfold App'_steps, App_steps in *. omega.
+      intros tmid () (HApp'&HInjApp'); TMSimp. modpon HApp'.
+      hnf. cbn. do 2 eexists. repeat split; eauto.
     }
   Qed.
         
