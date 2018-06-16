@@ -416,7 +416,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
           (fun t : option ATok =>
              match t with
              | Some lamAT =>
-               Step_lam
+               Step_lam @ [|Fin0; Fin1; Fin2; Fin3; Fin4; Fin5; Fin6; Fin7; Fin8; Fin9|]
              | Some appAT =>
                Step_app
              | Some retAT =>
