@@ -156,7 +156,7 @@ Section While.
             forall b yout tout,
               R tin (b, yout, tout) ->
               if b
-              then exists i2, T' tout i2 /\ i1 + S i2 <= i
+              then exists i2, T' tout i2 /\ 1 + i1 + i2 <= i
               else i1 <= i) ->
       While ↓(T').
     Proof.
