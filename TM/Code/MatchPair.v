@@ -186,7 +186,7 @@ Section MatchPair.
   Definition Constr_pair_steps (x : X) : nat := 19 + 12 * size _ x.
 
   Definition Constr_pair_T : tRel sigPair^+ 2 :=
-    fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ Constr_pair_steps x <= k.
+    fun tin k => exists (x : X), tin[@Fin0] ≃ x /\ Constr_pair_steps x <= k.
       
   Lemma Constr_pair_Terminates : projT1 Constr_pair ↓ Constr_pair_T.
   Proof.
@@ -197,7 +197,7 @@ Section MatchPair.
       - apply MoveRight_Terminates with (X := X).
     }
     {
-      intros tin k (x & y & HEncX & Hk). unfold Constr_pair_steps in *. cbn in *.
+      intros tin k (x & HEncX & Hk). unfold Constr_pair_steps in *. cbn in *.
       exists (10 + 4 * size _ x), (8 + 8 * size _ x). repeat split; try omega.
       {
         exists (8 + 4 * size _ x), 1. repeat split; try omega. 2: now intros _ _ _.
