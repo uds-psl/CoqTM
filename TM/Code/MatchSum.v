@@ -269,9 +269,11 @@ Section MatchOption.
   Definition Constr_Some : { M : mTM tau^+ 1 & states M -> unit } :=
     ChangeAlphabet (Constr_inl sigX (FinType (EqType Empty_set))) _.
 
-  Lemma Constr_Some_Sem : Constr_Some ⊨c(3) Constr_Some_Rel.
+  Definition Constr_Some_steps := 3.
+
+  Lemma Constr_Some_Sem : Constr_Some ⊨c(Constr_Some_steps) Constr_Some_Rel.
   Proof.
-    eapply RealiseIn_monotone.
+    unfold Constr_Some_steps. eapply RealiseIn_monotone.
     { unfold Constr_Some. unfold ChangeAlphabet. repeat TM_Correct. }
     { cbn. reflexivity. }
     {
