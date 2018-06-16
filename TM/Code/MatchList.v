@@ -340,9 +340,11 @@ Section MatchList.
     Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ nil)).
 
 
-  Lemma Constr_nil_Sem : Constr_nil ⊨c(5) Constr_nil_Rel.
+  Definition Constr_nil_steps := 5.
+
+  Lemma Constr_nil_Sem : Constr_nil ⊨c(Constr_nil_steps) Constr_nil_Rel.
   Proof.
-    eapply RealiseIn_monotone.
+    unfold Constr_nil_steps. eapply RealiseIn_monotone.
     { unfold Constr_nil. repeat TM_Correct. }
     { reflexivity. }
     {
