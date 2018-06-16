@@ -192,7 +192,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
     }
   Qed.
 
-  Definition Step_lam_Rel : pRel sigStep^+ unit 11 :=
+  Definition Step_lam_Rel : pRel sigStep^+ unit 10 :=
     ignoreParam (
         fun tin tout =>
           forall (T V : list HClos) (H : Heap) (a : HAd) (P : Pro) (Q P' : Pro),
@@ -202,16 +202,16 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
             tin[@Fin2] ≃ H ->
             tin[@Fin3] ≃(Encode_map Encode_Prog retr_pro_step) P ->
             tin[@Fin4] ≃(Encode_map Encode_nat retr_nat_step_clos_ad) a ->
-            (forall i : Fin.t 6, isRight tin[@Fin.R 5 i]) ->
+            (forall i : Fin.t 5, isRight tin[@Fin.R 5 i]) ->
             tout[@Fin0] ≃ tailRecursion (a, P') T /\
             tout[@Fin1] ≃ (a, Q) :: V /\
             tout[@Fin2] ≃ H /\
-            (forall i : Fin.t 8, isRight tout[@Fin.R 3 i])
+            (forall i : Fin.t 7, isRight tout[@Fin.R 3 i])
       ).
 
 
-  Definition Step_lam : pTM sigStep^+ unit 11 :=
-    JumpTarget ⇑ retr_pro_step @ [|Fin3; Fin6; Fin7; Fin8; Fin9; Fin10|];;
+  Definition Step_lam : pTM sigStep^+ unit 10 :=
+    JumpTarget ⇑ retr_pro_step @ [|Fin3; Fin6; Fin7; Fin8; Fin9|];;
     TailRec @ [|Fin0; Fin3; Fin4|];;
     ConsClos @ [|Fin1; Fin4; Fin6|].
   
@@ -231,7 +231,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
       modpon H0. (* TailRec *)
       specialize (H1 V Q a). modpon H1. (* ConsClos *)
       repeat split; auto.
-      generalize (H3 Fin0); generalize (H3 Fin1); generalize (H3 Fin2); generalize (H3 Fin3); cbn; TMSimp_goal; intros; simpl_surject; destruct_fin i; TMSimp_goal; auto.
+      generalize (H3 Fin0); generalize (H3 Fin1); generalize (H3 Fin2); cbn; TMSimp_goal; intros; simpl_surject; destruct_fin i; TMSimp_goal; auto.
     }
   Qed.
 

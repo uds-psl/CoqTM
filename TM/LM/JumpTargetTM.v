@@ -6,109 +6,65 @@ Require Import ListTM.
 Fixpoint jumpTarget (k:nat) (Q:Pro) (P:Pro) : option (Pro*Pro) :=
   match P with
   | retT :: P' => match k with
-                | 0 => Some (Q,P')
-                | S k' => jumpTarget k' (Q++[retT]) P'
-                end
+                 | 0 => Some (Q,P')
+                 | S k' => jumpTarget k' (Q++[retT]) P'
+                 end
   | lamT :: P' => jumpTarget (S k) (Q++[lamT]) P'
-  | t :: P'    => jumpTarget k (Q++[t]) P' (* either [varT n] or [appT] *)
-  | []        => None
+  | t :: P' => jumpTarget k (Q++[t]) P' (* either [varT n] or [appT] *)
+  | [] => None
   end.
 
 
+(** The [JumpTarget] machine only operates on programs. Consequently, the alphabet of [JumpTarget] is just [sigPro]. [JumpTarget] will also assume, that the result of [jumpTarget] is [Some]. *)
 
 
-
-(* This is the only way we can encode [nat] on [sigPro]: as a variable token. *)
+(** This is the only way we can encode [nat] on [sigPro]: as a variable token. *)
 Definition retr_nat_prog : Retract sigNat sigPro := Retract_sigList_X _.
 
 
 (** append a token to the token list *)
-Definition App_Tokens : pTM sigPro^+ (FinType(EqType unit)) 3 :=
-  Inject (App _) [|Fin0; Fin1; Fin2|];;
-  Inject (Reset _) [|Fin0|];;
-  Inject (CopyValue _) [|Fin2; Fin0|];;
-  Inject (Reset _) [|Fin1|];;
-  Inject (Reset _) [|Fin2|].
+Definition App_Tokens : pTM sigPro^+ (FinType(EqType unit)) 2 :=
+  App' _ @ [|Fin0; Fin1|];;
+  MoveValue _ @ [|Fin1; Fin0|].
 
-(** append a token to the token list *)
-Definition App_Tokens_Rel : pRel sigPro^+ (FinType(EqType unit)) 3 :=
+Definition App_Tokens_Rel : pRel sigPro^+ (FinType(EqType unit)) 2 :=
   ignoreParam (
       fun tin tout =>
         forall (Q Q' : list Tok),
           tin[@Fin0] ≃ Q ->
           tin[@Fin1] ≃ Q' ->
-          isRight tin[@Fin2] ->
           tout[@Fin0] ≃ Q ++ Q' /\
-          isRight tout[@Fin1] /\
-          isRight tout[@Fin2]
+          isRight tout[@Fin1]
     ).
-
-
-(** append a token to the token list *)
-Definition App_ATok (t : ATok) : pTM sigPro^+ (FinType(EqType unit)) 3 :=
-  Inject (WriteValue _ [ATok2Tok t]) [|Fin1|];;
-  App_Tokens.
-
-Definition App_ATok_Rel (t : ATok) : pRel sigPro^+ (FinType(EqType unit)) 3 :=
-  ignoreParam (
-      fun tin tout =>
-        forall (Q : list Tok),
-          tin[@Fin0] ≃ Q ->
-          isRight tin[@Fin1] ->
-          isRight tin[@Fin2] ->
-          tout[@Fin0] ≃ Q ++ [ATok2Tok t] /\
-          isRight tout[@Fin1] /\
-          isRight tout[@Fin2]
-    ).
-
-
-(** Add a singleton list of tokes to [Q] *)
-Definition App_Tok : pTM sigPro^+ (FinType(EqType unit)) 4 :=
-  Inject (Constr_nil _) [|Fin3|];;
-  Inject (Constr_cons _) [|Fin3; Fin1|];;
-  Inject (App_Tokens) [|Fin0; Fin3; Fin2|];;
-  Inject (ChangeAlphabet (Reset sigTok_fin) _) [|Fin1|].
-  
-
-Definition App_Tok_Rel : pRel sigPro^+ (FinType(EqType unit)) 4 :=
-  ignoreParam (
-      fun tin tout =>
-        forall (Q : list Tok) (t : Tok),
-          tin[@Fin0] ≃ Q ->
-          tin[@Fin1] ≃ t ->
-          isRight tin[@Fin2] ->
-          isRight tin[@Fin3] ->
-          tout[@Fin0] ≃ Q ++ [t] /\
-          isRight tout[@Fin1] /\
-          isRight tout[@Fin2] /\
-          isRight tout[@Fin3]
-    ).
-
 
 Lemma App_Tokens_Realise : App_Tokens ⊨ App_Tokens_Rel.
 Proof.
   eapply Realise_monotone.
   { unfold App_Tokens. repeat TM_Correct.
-    - apply App_Computes with (X := Tok).
-    - apply Reset_Realise with (X := list Tok).
-    - apply CopyValue_Realise with (X := list Tok).
-    - apply Reset_Realise with (X := list Tok).
-    - apply Reset_Realise with (X := list Tok).
+    - apply App'_Realise with (X := Tok).
+    - apply MoveValue_Realise with (X := Pro).
   }
   {
-    intros tin ((), tout) H. intros Q Q' HENcQ HEncQ' HRight2.
-    unfold sigPro, sigTok in *. TMSimp.
-
-    
-
-    specialize (H _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(intros i; destruct_fin i)) as (HComp1&HComp2&HComp3&_).
-    specialize (H0 _ ltac:(eauto)).
-    specialize (H1 _ ltac:(eauto) ltac:(eauto)) as (H1&H1').
-    specialize (H2 _ ltac:(eauto)).
-    specialize (H3 _ ltac:(eauto)).
-    repeat split; eauto.
+    intros tin ((), tout) H. intros Q Q' HEncQ HEncQ'.
+    TMSimp. modpon H. modpon H0. auto.
   }
 Qed.
+
+
+(** append a token to the token list *)
+Definition App_ATok (t : ATok) : pTM sigPro^+ (FinType(EqType unit)) 2 :=
+  Inject (WriteValue _ [ATok2Tok t]) [|Fin1|];;
+  App_Tokens.
+
+Definition App_ATok_Rel (t : ATok) : pRel sigPro^+ (FinType(EqType unit)) 2 :=
+  ignoreParam (
+      fun tin tout =>
+        forall (Q : list Tok),
+          tin[@Fin0] ≃ Q ->
+          isRight tin[@Fin1] ->
+          tout[@Fin0] ≃ Q ++ [ATok2Tok t] /\
+          isRight tout[@Fin1]
+    ).
 
 Lemma App_ATok_Realise t : App_ATok t ⊨ App_ATok_Rel t.
 Proof.
@@ -117,14 +73,30 @@ Proof.
     - apply App_Tokens_Realise.
   }
   {
-    intros tin ((), tout) H. intros Q HENcQ HRight1 HRight2.
-    TMSimp.
-    spec_assert H by eauto.
-    specialize (H0 _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto)) as (H0&H0'&H0'').
-    split; auto.
+    intros tin ((), tout) H. intros Q HENcQ HRight1.
+    TMSimp. modpon H0. auto.
   }
 Qed.
-  
+
+
+(** Add a singleton list of tokes to [Q] *)
+Definition App_Tok : pTM sigPro^+ (FinType(EqType unit)) 3 :=
+  Constr_nil _ @ [|Fin2|];;
+  Constr_cons _@ [|Fin2; Fin1|];;
+  App_Tokens @ [|Fin0; Fin2|];;
+  Reset _ @ [|Fin1|].
+
+Definition App_Tok_Rel : pRel sigPro^+ (FinType(EqType unit)) 3 :=
+  ignoreParam (
+      fun tin tout =>
+        forall (Q : list Tok) (t : Tok),
+          tin[@Fin0] ≃ Q ->
+          tin[@Fin1] ≃ t ->
+          isRight tin[@Fin2] ->
+          tout[@Fin0] ≃ Q ++ [t] /\
+          isRight tout[@Fin1] /\
+          isRight tout[@Fin2]
+    ).
 
 
 Lemma App_Tok_Realise : App_Tok ⊨ App_Tok_Rel.
@@ -134,88 +106,78 @@ Proof.
     - apply App_Tokens_Realise.
     - apply Reset_Realise with (X := Tok).
   }
-  { intros tin ((), tout) H. cbn. intros Q t HEncQ HEncT HRight2 HRight3.
+  { intros tin ((), tout) H. cbn. intros Q t HEncQ HEncT HRight.
     unfold sigPro, sigTok in *. TMSimp.
-    spec_assert H by auto.
-    specialize (H0 [] t ltac:(eauto) ltac:(eauto)) as (H0&H0').
-    specialize (H1 Q [t]). repeat spec_assert H1 by auto. destruct H1 as (H1&H1'&H1'').
-    specialize (H2 t). spec_assert H2 as H2 % surjectTape_isRight'. apply contains_translate_tau1. auto.
-    repeat split; auto.
+    rename H into HNil, H0 into HCons, H1 into HApp, H2 into HReset.
+    modpon HNil. modpon HCons. modpon HApp. modpon HReset. repeat split; auto.
   }
 Qed.
 
 
 
-Definition JumpToTarget_Step : pTM sigPro^+ (FinType(EqType (bool*bool))) 6 :=
-  If (Inject (MatchList sigTok_fin) [|Fin0; Fin3|])
-     (MATCH (Inject (ChangeAlphabet MatchTok _) [|Fin3|])
-            (fun t : option ATok =>
-               match t with
-               | Some retAT =>
-                 If (Inject (ChangeAlphabet MatchNat retr_nat_prog) [|Fin2|])
-                    (Return (Inject (App_ATok retAT) [|Fin1;Fin4;Fin5|]) (true,default)) (* continue *)
-                    (Nop (false, true)) (* return Some *)
-               | Some lamAT =>
-                 Return (Inject (ChangeAlphabet Constr_S retr_nat_prog) [|Fin2|];;
-                         Inject (App_ATok lamAT) [|Fin1;Fin4;Fin5|])
-                        (true,default) (* continue *)
-               | Some appAT => (* either [appT] or [retT] *)
-                 Return (Inject (App_ATok appAT) [|Fin1;Fin4;Fin5|])
-                        (true,default) (* continue *)
-               | None => (* Variable *)
-                 Return (Inject (ChangeAlphabet Constr_varT _) [|Fin3|];;
-                         Inject (App_Tok) [|Fin1;Fin3;Fin4;Fin5|])
-                        (true,default) (* continue *)
-               end))
-     (Nop (false, false))
+Definition JumpTarget_Step : pTM sigPro^+ (FinType(EqType (bool*unit))) 5 :=
+  Inject (MatchList sigTok_fin) [|Fin0; Fin3|];;
+  MATCH (Inject (ChangeAlphabet MatchTok _) [|Fin3|])
+         (fun t : option ATok =>
+            match t with
+            | Some retAT =>
+              If (MatchNat ⇑ retr_nat_prog @ [|Fin2|])
+                 (Return (App_ATok retAT @ [|Fin1; Fin4|]) (true, tt)) (* continue *)
+                 (Nop (false, tt)) (* return *)
+            | Some lamAT =>
+              Return (Constr_S ⇑ retr_nat_prog @ [|Fin2|];;
+                      App_ATok lamAT @ [|Fin1; Fin4|])
+                     (true,default) (* continue *)
+            | Some appAT =>
+              Return (App_ATok appAT @ [|Fin1;Fin4|])
+                     (true,default) (* continue *)
+            | None => (* Variable *)
+              Return (Constr_varT ⇑ _ @ [|Fin3|];;
+                      App_Tok @ [|Fin1; Fin3; Fin4|])
+                     (true,default) (* continue *)
+            end)
 .
 
 
-Definition JumpToTarget_Step_Rel : pRel sigPro^+ (FinType(EqType(bool*bool))) 6 :=
-  fun tin '(yout, tout) =>
-    forall (P Q : Pro) (k : nat),
-      tin[@Fin0] ≃ P ->
-      tin[@Fin1] ≃ Q ->
-      tin[@Fin2] ≃ k ->
-      (forall i : Fin.t 3, isRight tin[@Fin.R 3 i]) ->
-      match P with
-      | retT :: P' =>
-        match k with
-        | O =>
-          tout[@Fin0] ≃ P' /\
-          tout[@Fin1] ≃ Q /\
-          tout[@Fin2] ≃ 0 /\
-          yout = (false, true) (* return Some *)
-        | S k' =>
-          tout[@Fin0] ≃ P' /\
-          tout[@Fin1] ≃ Q ++ [retT] /\
-          tout[@Fin2] ≃ k' /\
-          yout = (true, default) (* continue *)
-        end
-      | lamT :: P' =>
-        tout[@Fin0] ≃ P' /\
-        tout[@Fin1] ≃ Q ++ [lamT] /\
-        tout[@Fin2] ≃ S k /\
-        yout = (true, default) (* continue *)
-      | t :: P' =>
-        tout[@Fin0] ≃ P' /\
-        tout[@Fin1] ≃ Q ++ [t] /\
-        tout[@Fin2] ≃ k /\
-        yout = (true, default) (* continue *)
-      | nil =>
-        tout[@Fin0] ≃ nil /\
-        tout[@Fin1] ≃ Q /\
-        tout[@Fin2] ≃ k /\
-        yout = (false, false) (* return None *)
-      end /\
-      (forall i : Fin.t 3, isRight tout[@Fin.R 3 i])
-.
+Definition JumpTarget_Step_Rel : pRel sigPro^+ (FinType(EqType(bool*unit))) 5 :=
+  ignoreSecond (
+      fun tin '(yout, tout) =>
+        forall (P Q : Pro) (k : nat) (t : Tok),
+          tin[@Fin0] ≃ t :: P ->
+          tin[@Fin1] ≃ Q ->
+          tin[@Fin2] ≃ k ->
+          isRight tin[@Fin3] -> isRight tin[@Fin4] ->
+          match yout, t with
+          | _, retT =>
+            match yout, k with
+            | false, O => (* return *)
+              tout[@Fin0] ≃ P /\
+              tout[@Fin1] ≃ Q /\
+              tout[@Fin2] ≃ 0
+            | true, S k' => (* continue *)
+              tout[@Fin0] ≃ P /\
+              tout[@Fin1] ≃ Q ++ [retT] /\
+              tout[@Fin2] ≃ k'
+            | _, _ => False (* not the case *)
+            end
+          | true, lamT => (* continue *)
+            tout[@Fin0] ≃ P /\
+            tout[@Fin1] ≃ Q ++ [lamT] /\
+            tout[@Fin2] ≃ S k
+          | true, t => (* continue *)
+            tout[@Fin0] ≃ P /\
+            tout[@Fin1] ≃ Q ++ [t] /\
+            tout[@Fin2] ≃ k
+          | _, _ => False (* not the case *)
+          end /\
+          isRight tout[@Fin3] /\
+          isRight tout[@Fin4]
+    ).
 
-
-Lemma JumpToTarget_Step_Realise : JumpToTarget_Step ⊨ JumpToTarget_Step_Rel.
+Lemma JumpTarget_Step_Realise : JumpTarget_Step ⊨ JumpTarget_Step_Rel.
 Proof.
   eapply Realise_monotone.
-  { unfold JumpToTarget_Step. repeat TM_Correct.
+  { unfold JumpTarget_Step. repeat TM_Correct.
     - eapply RealiseIn_Realise. apply MatchTok_Sem.
     - apply App_ATok_Realise.
     - apply App_ATok_Realise.
@@ -224,50 +186,44 @@ Proof.
     - apply App_Tok_Realise.
   }
   {
-    intros tin (yout, tout) H. cbn. intros P Q k HEncP HEncQ HEncK HInt.
-    unfold sigPro in *.
-    destruct H; TMSimp.
-    { (* Then of [MatchList] *)
-      rename H into HMatchList; rename H0 into HMatchTok; rename H1 into HCase.
-      specialize HMatchList with (1 := HEncP) (2 := HInt _).
-      destruct P as [ | t P']; auto; destruct HMatchList as (HMatchList&HMatchList'); simpl_surject.
-
-      specialize HMatchTok with (1 := contains_translate_tau1 HMatchList').
-      destruct t as [ n | | | ]; auto; simpl_surject.
-      - (* t = varT n *)
-        destruct ymid; auto. destruct a; auto.
-        TMSimp. modpon H0; modpon H1.
-        repeat split; auto. intros i; destruct_fin i; auto.
-      - (* t = appT *)
-        destruct ymid; auto. destruct a; auto.
-        TMSimp. modpon H0; modpon H1.
-        repeat split; auto. intros i; destruct_fin i; auto. TMSimp_goal; auto.
-      - (* t = lamT *)
-        destruct ymid; auto. destruct a; auto.
-        TMSimp. modpon H0; modpon H1.
-        repeat split; auto. intros i; destruct_fin i; auto. TMSimp_goal; auto.
-      - (* t = retT *)
-        destruct ymid; auto. destruct a; auto.
-        TMSimp. destruct HCase as [HMatchNat | HMatchNat]; TMSimp.
-        { (* Then of [MatchNat]: k = S k' *)
-          modpon H. modpon H1.
-          destruct k as [ | k']; auto; simpl_surject.
-          repeat split; auto. intros i; destruct_fin i; auto. TMSimp_goal; auto.
-        }
-        { (* Else case of [MatchNat]: k = O *)
-          modpon H. destruct k as [ | k']; auto; simpl_surject.
-          repeat split; auto. intros i; destruct_fin i; auto; TMSimp_goal; auto.
-        }
+    intros tin ((yout, ()), tout) H. cbn. intros P Q k t HEncP HEncQ HEncK HInt3 HInt4.
+    unfold sigPro in *. TMSimp. rename H into HMatchList, H0 into HMatchTok, H1 into HCase.
+    modpon HMatchList. destruct ymid; auto; modpon HMatchList.
+    modpon HMatchTok.
+    destruct ymid0 as [ [ | | ] | ]; try destruct t; auto; simpl_surject; TMSimp.
+    { (* t = retT *)
+      destruct HCase; TMSimp.
+      { (* k = S k' *) rename H into HMatchNat, H0 into HReturn, H1 into HApp.
+        modpon HMatchNat. destruct k as [ | k']; auto; modpon HMatchNat.
+        inv HReturn.
+        modpon HApp.
+        repeat split; auto.
+      }
+      { (* k = 0 *) rename H into HMatchNat, H0 into HReturn.
+        modpon HMatchNat. destruct k as [ | k']; auto; modpon HMatchNat.
+        inv HReturn.
+        repeat split; auto.
+      }
     }
-    { (* Else of [MatchList] *)
-      rename H into HMatchList.
-      specialize HMatchList with (1 := HEncP) (2 := HInt _).
-      destruct P as [ | t P']; auto; destruct HMatchList as (HMatchList&HMatchList'); simpl_surject.
-      repeat split; auto. intros i; destruct_fin i; auto; now TMSimp.
+    { (* t = lamT *) rename H into HReturn, H0 into HS, H1 into HApp.
+      inv HReturn.
+      modpon HS.
+      modpon HApp.
+      repeat split; auto.
+    }
+    { (* t = appT *) rename H into HReturn, H0 into HApp.
+      inv HReturn.
+      modpon HApp.
+      repeat split; auto.
+    }
+    { (* t = varT *) rename H into HReturn, H0 into HVar, H1 into HApp.
+      inv HReturn.
+      modpon HVar.
+      modpon HApp.
+      repeat split; auto.
     }
   }
 Qed.
-
 
 
 Fixpoint jumpTarget_k (k:nat) (Q:Pro) (P:Pro) : nat :=
@@ -282,81 +238,71 @@ Fixpoint jumpTarget_k (k:nat) (Q:Pro) (P:Pro) : nat :=
   end.
 
 
-(** We can ignore the parameter, because we can just assume that [jumpTarget] is [Some]. All the heap machine programs we will consider never get stuck, so [jumpTarget] will allways succeed. *)
-
-Definition JumpTarget_Loop := WHILE (ChangePartition JumpToTarget_Step (fun '(b, _) => (b, tt))).
+Definition JumpTarget_Loop := WHILE JumpTarget_Step.
 
 
-Definition JumpTarget_Loop_Rel : pRel sigPro^+ (FinType(EqType unit)) 6 :=
+Definition JumpTarget_Loop_Rel : pRel sigPro^+ (FinType(EqType unit)) 5 :=
   fun tin '(yout, tout) =>
     forall (P Q : Pro) (k : nat) (P' Q' : Pro),
       jumpTarget k Q P = Some (Q', P') ->
       tin[@Fin0] ≃ P ->
       tin[@Fin1] ≃ Q ->
       tin[@Fin2] ≃ k ->
-      (forall i : Fin.t 3, isRight tin[@Fin.R 3 i]) ->
+      isRight tin[@Fin3] -> isRight tin[@Fin4] ->
       tout[@Fin0] ≃ P' /\
       tout[@Fin1] ≃ Q' /\
       tout[@Fin2] ≃ jumpTarget_k k Q P /\
-      (forall i : Fin.t 3, isRight tout[@Fin.R 3 i]).
+      isRight tout[@Fin3] /\ isRight tout[@Fin4].
+
 
 
 Lemma JumpTarget_Loop_Realise : JumpTarget_Loop ⊨ JumpTarget_Loop_Rel.
 Proof.
   eapply Realise_monotone.
   { unfold JumpTarget_Loop. repeat TM_Correct.
-    - apply JumpToTarget_Step_Realise.
+    - apply JumpTarget_Step_Realise.
   }
   {
-    apply WhileInduction; intros; intros P Q k P' Q' HJump HEncP HEncQ HEncK HInt; TMSimp.
-    { inv H.
-      rename H0 into HLastStep. (* TODO Delete this after removing the parameter from [JumpToTarget_Step] completely *)
-      specialize HLastStep with (1 := HEncP) (2 := HEncQ) (3 := HEncK) (4 := HInt).
-      destruct P as [ | t P]; cbn in *; try now inv HJump.
-      destruct t as [ n | | | ]; cbn in *; try now inv HJump.
-      destruct k as [ | k']; destruct HLastStep as ((HLastStep1&HLastStep2&HLastStep3&HLastStep4)&HLastStep5); inv HLastStep4.
-      inv HJump. repeat split; auto.
+    apply WhileInduction; intros; intros P Q k P' Q' HJumpSome HEncP HEncQ HEncK HRight3 HRight4; cbn in *.
+    {
+      destruct P as [ | t P]; cbn in *; try congruence.
+      modpon HLastStep.
+      destruct t; auto. destruct k; auto; modpon HLastStep. inv HJumpSome.
+      repeat split; auto.
     }
-    { inv H.
-      rename H0 into HStar. (* TODO Delete this after removing the parameter from [JumpToTarget_Step] completely *)
-      specialize HStar with (1 := HEncP) (2 := HEncQ) (3 := HEncK) (4 := HInt).
-      destruct P as [ | t P]; cbn in *; try now inv HJump.
-      destruct t as [ n | | | ]; cbn in *; try now inv HJump.
-      - destruct HStar as ((HStar1&HStar2&HStar3&HStar4)&HStar5); inv HStar4.
-        specialize HLastStep with (1 := HJump) (2 := HStar1) (3 := HStar2) (4 := HStar3) (5 := HStar5) as (HLastStep1&HLastStep2&HLastStep3&HLastStep4).
-        repeat split; auto.
-      - destruct HStar as ((HStar1&HStar2&HStar3&HStar4)&HStar5); inv HStar4.
-        specialize HLastStep with (1 := HJump) (2 := HStar1) (3 := HStar2) (4 := HStar3) (5 := HStar5) as (HLastStep1&HLastStep2&HLastStep3&HLastStep4).
-        repeat split; auto.
-      - destruct HStar as ((HStar1&HStar2&HStar3&HStar4)&HStar5); inv HStar4.
-        specialize HLastStep with (1 := HJump) (2 := HStar1) (3 := HStar2) (4 := HStar3) (5 := HStar5) as (HLastStep1&HLastStep2&HLastStep3&HLastStep4).
-        repeat split; auto.
-      - destruct k as [ | k']; destruct HStar as ((HStar1&HStar2&HStar3&HStar4)&HStar5); inv HStar4.
-        specialize HLastStep with (1 := HJump) (2 := HStar1) (3 := HStar2) (4 := HStar3) (5 := HStar5) as (HLastStep1&HLastStep2&HLastStep3&HLastStep4).
+    {
+      destruct P as [ | t P]; cbn in *; try congruence.
+      modpon HStar.
+      destruct t; modpon HStar.
+      - (* t = varT *) modpon HLastStep. repeat split; auto.
+      - (* t = appT *) modpon HLastStep. repeat split; auto.
+      - (* t = lamT *) modpon HLastStep. repeat split; auto.
+      - (* t = varT k, k must be S k'*)
+        destruct k as [ | k']; auto; modpon HStar.
+        modpon HLastStep.
         repeat split; auto.
     }
   }
 Qed.
 
 
-
-Definition JumpTarget :=
-  Inject (WriteValue _ nil) [|Fin1|];;
-  Inject (ChangeAlphabet (WriteValue _ 0) retr_nat_prog) [|Fin2|];;
+Definition JumpTarget : pTM sigPro^+ unit 5 :=
+  WriteValue _ nil @ [|Fin1|];;
+  WriteValue _ 0 @ [|Fin2|];;
   JumpTarget_Loop;;
-  Inject (ChangeAlphabet (Reset sigHAd_fin) retr_nat_prog) [|Fin2|].
+  Reset _ @ [|Fin2|].
 
 
-Definition JumpTarget_Rel : pRel sigPro^+ (FinType(EqType unit)) 6 :=
+Definition JumpTarget_Rel : pRel sigPro^+ unit 5 :=
   fun tin '(yout, tout) =>
     forall (P : Pro) (P' Q' : Pro),
       jumpTarget 0 nil P = Some (Q', P') ->
       tin[@Fin0] ≃ P ->
       isRight tin[@Fin1] ->
-      (forall i : Fin.t 4, isRight tin[@Fin.R 2 i]) ->
+      (forall i : Fin.t 3, isRight tin[@Fin.R 2 i]) ->
       tout[@Fin0] ≃ P' /\
       tout[@Fin1] ≃ Q' /\
-      (forall i : Fin.t 4, isRight tout[@Fin.R 2 i]).
+      (forall i : Fin.t 3, isRight tout[@Fin.R 2 i]).
 
 
 Lemma JumpTarget_Realise : JumpTarget ⊨ JumpTarget_Rel.
@@ -368,13 +314,11 @@ Proof.
   }
   {
     intros tin ((), tout) H. cbn. intros P P' Q' HJump HEncP HOut HInt.
-    TMSimp ( unfold sigPro, sigTok in * ).
-    spec_assert H by auto.
-    spec_assert H0 as H0 % contains_translate_tau2 by now apply surjectTape_isRight.
-    specialize H1 with (1 := HJump) (2 := HEncP) (3 := H) (4 := H0). spec_assert H1 as (H1&H1'&H1''&H1''').
-    { intros i; destruct_fin i; auto; now TMSimp. }
-    specialize (H2 (jumpTarget_k 0 [] P)). spec_assert H2 as H2 % surjectTape_isRight' by now apply contains_translate_tau1.
-    repeat split; auto.
-    intros i; destruct_fin i; TMSimp_goal; auto.
+    TMSimp (unfold sigPro, sigTok in *). rename H into HWriteNil, H0 into HWriteO, H1 into HLoop, H2 into HReset.
+    modpon HWriteNil.
+    modpon HWriteO.
+    modpon HLoop.
+    modpon HReset.
+    repeat split; auto. intros i; destruct_fin i; TMSimp_goal; auto.
   }
 Qed.
