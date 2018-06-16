@@ -114,9 +114,11 @@ Definition Constr_varT : { M : mTM sigTok^+ 1 & states M -> unit } := Constr_inl
 Definition Constr_varT_Rel : pRel sigTok^+ (FinType (EqType unit)) 1 :=
   Mk_R_p (ignoreParam (fun tin tout => forall x : nat, tin ≃ x -> tout ≃ varT x)).
 
-Lemma Constr_varT_Sem : Constr_varT ⊨c(3) Constr_varT_Rel.
+Definition Constr_varT_steps := 3.
+
+Lemma Constr_varT_Sem : Constr_varT ⊨c(Constr_varT_steps) Constr_varT_Rel.
 Proof.
-  eapply RealiseIn_monotone.
+  unfold Constr_varT_steps. eapply RealiseIn_monotone.
   - unfold Constr_varT. apply Constr_inl_Sem.
   - reflexivity.
   - intros tin ((), tout) H. intros n HEncN. TMSimp. now apply tape_contains_ext with (1 := H n HEncN).
