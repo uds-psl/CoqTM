@@ -74,10 +74,11 @@ Definition MatchTok_Rel : pRel sigTok^+ (FinType (EqType (option ATok))) 1 :=
       end
 .
 
+Definition MatchTok_steps := 11.
 
-Lemma MatchTok_Sem : MatchTok ⊨c(11) MatchTok_Rel.
+Lemma MatchTok_Sem : MatchTok ⊨c(MatchTok_steps) MatchTok_Rel.
 Proof.
-  eapply RealiseIn_monotone.
+  unfold MatchTok_steps. eapply RealiseIn_monotone.
   { unfold MatchTok. repeat TM_Correct.
     - apply Lift_RealiseIn. apply MatchFin_Sem.
   }
