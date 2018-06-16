@@ -183,7 +183,7 @@ t4: internal tape
   
 
   Definition Lookup_Step_steps (H: Heap) (a: HAd) (g: HClos) (b: HAd) :=
-    7 + Nth'_steps _ H a + MatchOption_steps + MatchPair_steps _ (g,b) + MatchNat_steps + CopyValue_steps _ b +
+    7 + Nth'_steps _ H a + MatchOption_steps + MatchPair_steps _ g + MatchNat_steps + CopyValue_steps _ b +
     Translate_steps _ b + Reset_steps _ b + Reset_steps _ g.
 
   Definition Lookup_Step_T : tRel sigLookup^+ 5 :=
@@ -231,20 +231,19 @@ t4: internal tape
     }
     {
       intros tin k. cbn. intros (H&a&n&g&b&NthSome&HEncH&HEncA&HEncN&HRight3&HRight4&Hk). unfold Lookup_Step_steps in Hk.
-      exists (Nth'_steps _ H a), (1 + MatchOption_steps + 1 + MatchPair_steps _ (g,b) + 1 + MatchNat_steps + 1 + CopyValue_steps _ b +
+      exists (Nth'_steps _ H a), (1 + MatchOption_steps + 1 + MatchPair_steps _ g + 1 + MatchNat_steps + 1 + CopyValue_steps _ b +
                              1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g).
       repeat split; try omega.
       hnf; cbn; eauto 9.
       intros tmid () (HNth&HNthInj); TMSimp. modpon HNth.
-      exists (MatchOption_steps), (1 + MatchPair_steps _ (g,b) + 1 + MatchNat_steps + 1 + CopyValue_steps _ b +
+      exists (MatchOption_steps), (1 + MatchPair_steps _ g + 1 + MatchNat_steps + 1 + CopyValue_steps _ b +
                               1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g). repeat split; try omega.
       now rewrite !Nat.add_assoc.
       intros tmid0 bif (HMatchOpt&HMatchOptInj). modpon HMatchOpt. destruct bif; cbn in *; auto; modpon HMatchOpt; TMSimp.
-      exists (MatchPair_steps _ (g,b)), (1 + MatchNat_steps + 1 + CopyValue_steps _ b + 1 + Translate_steps _ b +
+      exists (MatchPair_steps _ g), (1 + MatchNat_steps + 1 + CopyValue_steps _ b + 1 + Translate_steps _ b +
                                     1 + Reset_steps _ b + Reset_steps _ g).
       repeat split; try omega.
-      hnf; cbn; do 1 eexists; repeat split; simpl_surject; eauto. contains_ext.
-      now rewrite !Nat.add_assoc.
+      hnf; cbn. exists (g, b); repeat split; simpl_surject; eauto. contains_ext. now rewrite !Nat.add_assoc.
       intros tmid1 () (HMatchPair&HMatchPairInj); TMSimp. specialize (HMatchPair (g,b)). modpon HMatchPair. cbn in *.
       exists (MatchNat_steps), (1 + CopyValue_steps _ b + 1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g).
       repeat split; try omega. now rewrite !Nat.add_assoc.
@@ -252,7 +251,7 @@ t4: internal tape
       { (* Then of [MatchNat] *)
         exists (CopyValue_steps _ b), (1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g).
         repeat split; try omega.
-        do 1 eexists. repeat split; eauto. contains_ext. admit. (* Here I need that every encoding has the same size *)
+        do 1 eexists. repeat split; eauto. contains_ext. now setoid_rewrite CopyValue_steps_comp.
         now rewrite !Nat.add_assoc.
         intros tmid3 () (HCopyValue&HCopyValueInj); TMSimp. modpon HCopyValue.
         exists (Translate_steps _ b), (1 + Reset_steps _ b + Reset_steps _ g). repeat split; try omega.
@@ -260,10 +259,10 @@ t4: internal tape
         now rewrite !Nat.add_assoc.
         intros tmid4 () (HTranslate&HTranslateInj); TMSimp. modpon HTranslate.
         exists (Reset_steps _ b), (Reset_steps _ g). repeat split; try omega.
-        eexists. split. eauto. admit.
+        eexists. split. eauto. now setoid_rewrite Reset_steps_comp.
         reflexivity.
         intros tmid5 () (HReset&HResetInj); TMSimp. modpon HReset.
-        eexists. split. contains_ext. admit.
+        eexists. split. contains_ext. now setoid_rewrite Reset_steps_comp.
       }
       {
         (* TODO: Branch in [Lookup_Step_steps] *)
@@ -274,7 +273,6 @@ t4: internal tape
     
     
 
-  
   Definition Lookup := WHILE Lookup_Step.
 
   Definition Lookup_Rel : pRel sigLookup^+ unit 5 :=

@@ -88,11 +88,11 @@ Section MatchPair.
   Local Arguments plus : simpl never. Local Arguments mult : simpl never.
   Local Arguments size : simpl never.
 
-  Definition MatchPair_steps (p : X * Y) :=
-    34 + 16 * size _ (fst p).
+  Definition MatchPair_steps (x : X) :=
+    34 + 16 * size _ x.
 
   Definition MatchPair_T : tRel sigPair^+ 2 :=
-    fun tin k => exists (p : X * Y), tin[@Fin0] ≃ p /\ isRight tin[@Fin1] /\ MatchPair_steps p <= k.
+    fun tin k => exists (p : X * Y), tin[@Fin0] ≃ p /\ isRight tin[@Fin1] /\ MatchPair_steps (fst p) <= k.
       
   Lemma MatchPair_Terminates : projT1 MatchPair ↓ MatchPair_T.
   Proof.
@@ -183,10 +183,10 @@ Section MatchPair.
   Qed.
 
 
-  Definition Constr_pair_steps (p : X * Y) : nat := 19 + 12 * size _ (fst p).
+  Definition Constr_pair_steps (x : X) : nat := 19 + 12 * size _ x.
 
   Definition Constr_pair_T : tRel sigPair^+ 2 :=
-    fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ tin[@Fin0] ≃ y /\ Constr_pair_steps (x,y) <= k.
+    fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ tin[@Fin0] ≃ y /\ Constr_pair_steps x <= k.
       
   Lemma Constr_pair_Terminates : projT1 Constr_pair ↓ Constr_pair_T.
   Proof.
@@ -241,10 +241,10 @@ Section MatchPair.
   Qed.
 
 
-  Definition Snd_steps (p : X * Y) := 12 + 4 * size _ (fst p).
+  Definition Snd_steps (x : X) := 12 + 4 * size _ x.
 
   Definition Snd_T : tRel sigPair^+ 1 :=
-    fun tin k => exists p : X*Y, tin[@Fin0] ≃ p /\ Snd_steps p <= k.
+    fun tin k => exists p : X*Y, tin[@Fin0] ≃ p /\ Snd_steps (fst p) <= k.
 
   Lemma Snd_Terminates : projT1 Snd ↓ Snd_T.
   Proof.
@@ -266,6 +266,24 @@ Section MatchPair.
 
 
 End MatchPair.
+
+Section Steps_comp.
+  Variable (sig tau: finType) (X Y:Type) (cX: codable sig X).
+  Variable (I : Retract sig tau).
+
+  Lemma MatchPair_steps_comp l :
+    MatchPair_steps (Encode_map cX I) l = MatchPair_steps cX l.
+  Proof. unfold MatchPair_steps. now rewrite Encode_map_hasSize. Qed.
+
+  Lemma Constr_pair_steps_comp l :
+    Constr_pair_steps (Encode_map cX I) l = Constr_pair_steps cX l.
+  Proof. unfold Constr_pair_steps. now rewrite Encode_map_hasSize. Qed.
+
+  Lemma Snd_steps_comp l :
+    Snd_steps (Encode_map cX I) l = Snd_steps cX l.
+  Proof. unfold Snd_steps. now rewrite Encode_map_hasSize. Qed.
+
+End Steps_comp.
 
 
 Ltac smpl_TM_MatchPair :=

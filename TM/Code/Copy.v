@@ -497,11 +497,30 @@ Section Move.
 End Move.
 
 
+Section Move_steps_comp.
+  Variable (sig tau: finType) (X:Type) (cX: codable sig X).
+  Variable (I : Retract sig tau).
+
+  Lemma MoveRight_steps_comp (x : X):
+    MoveRight_steps (Encode_map cX I) x = MoveRight_steps cX x.
+  Proof. unfold MoveRight_steps. now rewrite Encode_map_hasSize. Qed.
+
+  Lemma MoveLeft_steps_comp (x : X):
+    MoveLeft_steps (Encode_map cX I) x = MoveLeft_steps cX x.
+  Proof. unfold MoveLeft_steps. now rewrite Encode_map_hasSize. Qed.
+  
+  Lemma Reset_steps_comp (x : X):
+    Reset_steps (Encode_map cX I) x = Reset_steps cX x.
+  Proof. unfold Reset_steps. now rewrite Encode_map_hasSize. Qed.
+
+End Move_steps_comp.
+
+
+
+
 (** Copy a value from to an internal (right) tape *)
 Section CopyValue.
-
   Variable (sig: finType) (X:Type) (cX : codable sig X).
-
 
   Definition CopyValue :=
     Inject (MoveRight _) [|Fin0|];; CopySymbols_L (@isStart sig) id.
@@ -552,8 +571,19 @@ Section CopyValue.
     }
   Qed.
 
-
 End CopyValue.
+
+
+Section CopyValue_steps_comp.
+  Variable (sig tau: finType) (X:Type) (cX: codable sig X).
+  Variable (I : Retract sig tau).
+
+  Lemma CopyValue_steps_comp (x : X):
+    CopyValue_steps (Encode_map cX I) x = CopyValue_steps cX x.
+  Proof. unfold CopyValue_steps. now rewrite Encode_map_hasSize. Qed.
+
+End CopyValue_steps_comp.
+
 
 
 (** Copy and overwrite a value *)
@@ -624,6 +654,16 @@ Section MoveValue.
   
 End MoveValue.
 
+
+Section MoveValue_steps_comp.
+  Variable (sig tau: finType) (X Y:Type) (cX: codable sig X) (cY : codable sig Y).
+  Variable (I1 I2 : Retract sig tau).
+
+  Lemma MoveValue_steps_comp (x : X) (y: Y):
+    MoveValue_steps (Encode_map cX I1) (Encode_map cY I2) x y = MoveValue_steps cX cY x y.
+  Proof. unfold MoveValue_steps. now rewrite !Encode_map_hasSize. Qed.
+
+End MoveValue_steps_comp.
 
 
 Section Translate.
@@ -730,37 +770,12 @@ Section Translate.
 
 End Translate.
 
+Section Translate_steps_comp.
+  Variable (sig tau: finType) (X:Type) (cX: codable sig X).
+  Variable (I : Retract sig tau).
 
-(*
+  Lemma Translate_steps_comp (x : X):
+    Translate_steps (Encode_map cX I) x = Translate_steps cX x.
+  Proof. unfold Translate_steps. now rewrite Encode_map_hasSize. Qed.
 
-(* TODO: Arguments *)
-
-Arguments MoveToSymbol_Code : simpl never.
-Arguments MoveToSymbol_Code_L : simpl never.
-Arguments CopySymbols_Code : simpl never.
-
-Arguments MoveToSymbol_Code_Rel { sig X encX } x y /.
-Arguments MoveToSymbol_Code_L_Rel { sig X encX } x y /.
-Arguments CopySymbols_Code_Rel { sig X encX } x y /.
-
-Arguments MoveToLeft : simpl never.
-Arguments RestoreValue : simpl never.
-
-Arguments MoveToLeft_Rel { sig X } (codX) x y /.
-Arguments RestoreValue_Rel { sig X } (codX) x y /.
-Arguments RestoreValue_Rel_size { sig X } (codX) x y /.
-
-
-
-(*
-Ltac smpl_TM_CopyMoveCode :=
-  match goal with
-  | [ |- MoveToSymbol_Code    _ ⊨ _ ] => eapply MoveToSymbol_Code_Realise
-  | [ |- MoveToSymbol_Code_L  _ ⊨ _ ] => eapply MoveToSymbol_Code_L_Realise
-  | [ |- CopySymbols_Code     _ ⊨ _ ] => eapply CopySymbols_Code_Realise
-  end.
-
-Smpl Add smpl_TM_CopyMoveCode : TM_Correct.
-*)
-
-*)
+End Translate_steps_comp.

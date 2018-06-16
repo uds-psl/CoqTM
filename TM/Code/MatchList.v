@@ -16,7 +16,7 @@ Section MatchList.
 
   Variable X : Type.
   Variable (sigX : finType).
-  Hypothesis (codX : codable sigX X).
+  Hypothesis (cX : codable sigX X).
 
   Definition stop (s: (sigList sigX)^+) :=
     match s with
@@ -187,17 +187,17 @@ Section MatchList.
               exists ls rs (x : X) (l : list X),
                 tin[@Fin0] = midtape (inl START :: ls) (inr sigList_cons)
                                      (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) /\
-                 6 + 4 * length (encode x : list sigX) <= k).
+                 6 + 4 * size cX x <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Skip_cons. repeat TM_Correct. }
     {
       intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
-      exists 1, (4 + 4 * length (encode x : list sigX)). repeat split. 1-2: omega.
+      exists 1, (4 + 4 * size cX x). repeat split. 1-2: omega.
       intros tmid () (_&H). TMSimp. clear H.
       destruct l as [ | x' l]; cbn.
-      - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. rewrite !map_length. omega.
-      - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. rewrite !map_length. omega.
+      - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. now rewrite !map_length.
+      - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. now rewrite !map_length.
     }
   Qed.
 
@@ -208,34 +208,39 @@ Section MatchList.
               exists ls rs (x : X) (l : list X),
                 tin[@Fin0] = midtape (inl START :: ls) (inr sigList_cons)
                                      (map inr (encode x) ++ map inr (encode l) ++ inl STOP :: rs) /\
-                 23 + 12 * length (encode x : list sigX) <= k).
+                 23 + 12 * size cX x <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold M1. repeat TM_Correct. eapply Skip_cons_Realise. eapply Skip_cons_Terminates. }
     {
       intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
-      exists (6 + 4 * length (encode x)), (16 + 8 * length (encode x)). repeat split; try omega. eauto 6.
+      exists (6 + 4 * size cX x), (16 + 8 * size cX x). repeat split; try omega. eauto 6.
       intros tmid (). intros (H&HInj); TMSimp. specialize H with (1 := eq_refl).
       destruct l as [ | x' l']; TMSimp. (* Both cases are identical *)
-      1-2: exists 1, (14 + 8 * length (encode x)); repeat split; try omega.
+      1-2: exists 1, (14 + 8 * size cX x); repeat split; try omega.
       - intros tmid2 (). intros (_&HInj2); TMSimp.
-        exists 3, (10 + 8 * length (encode x)). repeat split; try omega.
+        exists 3, (10 + 8 * size cX x). repeat split; try omega.
         intros tmid3 (). intros (_&H3&H3'); TMSimp.
-        exists (8+8*length(encode x)), 1. repeat split; cbn; try omega.
+        exists (8+8*size cX x), 1. repeat split; cbn; try omega.
         + rewrite CopySymbols_L_TermTime_moveleft; auto.
-          rewrite rev_length, !map_length. omega.
+          now rewrite rev_length, !map_length.
         + intros tmid4 () _. omega.
       - intros tmid2 (). intros (_&HInj2); TMSimp.
-        exists 3, (10 + 8 * length (encode x)). repeat split; try omega.
+        exists 3, (10 + 8 * size cX x). repeat split; try omega.
         intros tmid3 (). intros (_&H3&H3'); TMSimp.
-        exists (8+8*length(encode x)), 1. repeat split; cbn; try omega.
+        exists (8+8*size cX x), 1. repeat split; cbn; try omega.
         + rewrite CopySymbols_L_TermTime_moveleft; auto.
-          rewrite rev_length, !map_length. omega.
+          now rewrite rev_length, !map_length.
         + intros tmid4 () _. omega.
     }
   Qed.
 
 
+  Definition MatchList_steps l :=
+    match l with
+    | nil => 5
+    | x::l' => 42 + 16 * size cX x
+    end.
 
   Lemma MatchList_Terminates :
     projT1 MatchList ↓
@@ -243,13 +248,9 @@ Section MatchList.
               exists l : list X,
                 tin[@Fin0] ≃ l /\
                 isRight tin[@Fin1] /\
-                match l with
-                | nil => 5 <= k
-                | x::l' =>
-                  42 + 16 * length (encode x) <= k
-                end).
+                MatchList_steps l <= k).
   Proof.
-    eapply TerminatesIn_monotone.
+    unfold MatchList_steps. eapply TerminatesIn_monotone.
     { unfold MatchList. repeat TM_Correct.
       - eapply M1_Realise.
       - eapply M1_Terminates.
@@ -268,15 +269,15 @@ Section MatchList.
         omega.
       }
       {
-        exists 1, (40 + 16 * length (encode x)). repeat split; try omega.
+        exists 1, (40 + 16 * size cX x). repeat split; try omega.
         intros tmid (). intros ((_&H1)&HInj1); TMSimp.
-        exists 1, (38 + 16 * length (encode x)). repeat split; try omega.
+        exists 1, (38 + 16 * size cX x). repeat split; try omega.
         intros tmid2 ymid2 ((H2&H2')&HInj2). apply Vector.cons_inj in H2' as (H2'&_). TMSimp. rewrite <- H2'.
-        exists (23 + 12 * length (encode x)), (14 + 4 * length (encode x)). repeat split; try omega.
+        exists (23 + 12 * size cX x), (14 + 4 * size cX x). repeat split; try omega.
         { rewrite map_app, <- app_assoc. eauto 6. }
         intros tmid3 () H3'. 
         rewrite map_app, <- app_assoc in H3'. specialize H3' with (1 := HRight) (2 := eq_refl). TMSimp.
-        exists (6 + 4 * length (encode x)), 3. repeat split; try omega. eauto 6.
+        exists (6 + 4 * size cX x), 3. repeat split; try omega. eauto 6.
         intros tmid4 () (H4&HInj4); TMSimp. specialize H4 with (1 := eq_refl).
         destruct l' as [ | x' l'']; TMSimp. (* both cases are equal *)
         - exists 1, 1. repeat split; try omega. intros ? _ _. omega.
@@ -389,7 +390,8 @@ Section MatchList.
       - f_equal. now rewrite !map_rev, rev_involutive.
     }
   Qed.
-            
+
+  Definition Constr_cons_steps (x : X) := 23 + 12 * size _ x.
 
   Lemma Constr_cons_Terminates :
     projT1 Constr_cons ↓
@@ -397,9 +399,9 @@ Section MatchList.
               exists (l: list X) (y: X),
                 tin[@Fin0] ≃ l /\
                 tin[@Fin1] ≃ y /\
-                23 + 12 * length (encode y) <= k).
+                Constr_cons_steps y <= k).
   Proof.
-    eapply TerminatesIn_monotone.
+    unfold Constr_cons_steps. eapply TerminatesIn_monotone.
     { unfold Constr_cons. repeat TM_Correct.
       - apply MoveRight_Realise with (X := X).
       - apply MoveRight_Realise with (X := X).
@@ -407,20 +409,36 @@ Section MatchList.
     }
     {
       intros tin k (l&y&HEncL&HEncY&Hk). cbn.
-      exists (10 + 4 * length (encode y)), (12 + 8 * length (encode y)). repeat split; try omega.
-      - cbn. exists (8 + 4 * length (encode y)), 1. repeat split; try omega.
+      exists (10 + 4 * size _ y), (12 + 8 * size _ y). repeat split; try omega.
+      - cbn. exists (8 + 4 * size _ y), 1. repeat split; try omega.
         + eexists. split. eauto. unfold MoveRight_steps. now rewrite Encode_map_hasSize.
         + now intros _ _ _.
       - intros tmid () (H&HInj). TMSimp.
         specialize (H _ HEncY) as (ls&HEncY'). TMSimp.
-        exists (8 + 8 * length (encode y)), 3. repeat split; try omega.
-        + erewrite CopySymbols_L_TermTime_moveleft; eauto. rewrite map_length, rev_length, map_length. omega.
+        exists (8 + 8 * size _ y), 3. repeat split; try omega.
+        + erewrite CopySymbols_L_TermTime_moveleft; eauto. now rewrite map_length, rev_length, map_length.
         + intros tmid2 (). intros (H2&HInj2). TMSimp.
           exists 1, 1. repeat split; try omega. intros ? _ _. omega.
     }
   Qed.
 
 End MatchList.
+
+
+Section Steps_comp.
+  Variable (sig tau: finType) (X:Type) (cX: codable sig X).
+  Variable (I : Retract sig tau).
+
+  Lemma MatchList_steps_comp l :
+    MatchList_steps (Encode_map cX I) l = MatchList_steps cX l.
+  Proof. unfold MatchList_steps. destruct l; auto. now rewrite Encode_map_hasSize. Qed.
+
+  Lemma Constr_cons_steps_comp l :
+    Constr_cons_steps (Encode_map cX I) l = Constr_cons_steps cX l.
+  Proof. unfold Constr_cons_steps. now rewrite Encode_map_hasSize. Qed.
+  
+End Steps_comp.
+
 
 Arguments MatchList : simpl never.
 Arguments IsNil : simpl never.
@@ -436,7 +454,6 @@ Ltac smpl_TM_MatchList :=
   | [ |- IsNil _ ⊨c(_) _ ] => apply IsNil_Sem
   | [ |- projT1 (IsNil _ ) ↓ _ ] => eapply RealiseIn_Realise; apply IsNil_Sem
                                   
-
   | [ |- Constr_nil _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_nil_Sem
   | [ |- Constr_nil _ ⊨c(_) _ ] => apply Constr_nil_Sem
   | [ |- projT1 (Constr_nil _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Constr_nil_Sem
