@@ -25,12 +25,14 @@ Section WriteValue.
     Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ x)).
 
 
+  Definition WriteValue_steps (x : X) := 5 + 3 * size cX x.
+  
   Lemma WriteValue_Sem (x : X) :
-    WriteValue x ⊨c(5 + 3 * length (cX x)) WriteValue_Rel x.
+    WriteValue x ⊨c(WriteValue_steps x) WriteValue_Rel x.
   Proof.
-    eapply RealiseIn_monotone.
+    unfold WriteValue_steps. eapply RealiseIn_monotone.
     { unfold WriteValue. repeat TM_Correct. eapply WriteString_Sem. }
-    { cbn. rewrite rev_length, map_length. apply Nat.eq_le_incl. omega. }
+    { cbn. rewrite rev_length, map_length. apply Nat.eq_le_incl. unfold size. omega. }
     {
       intros tin ((), tout) H. intros HRight.
       TMSimp; clear_trivial_eqs.
@@ -40,6 +42,17 @@ Section WriteValue.
   Qed.
 
 End WriteValue.
+
+
+Section Steps_comp.
+  Variable (sig tau: finType) (X:Type) (cX: codable sig X).
+  Variable (I : Retract sig tau).
+
+  Lemma WriteValue_steps_comp l :
+    WriteValue_steps (Encode_map cX I) l = WriteValue_steps cX l.
+  Proof. unfold WriteValue_steps. now rewrite Encode_map_hasSize. Qed.
+
+End Steps_comp.
 
 
 
