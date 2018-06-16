@@ -568,7 +568,68 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
     }
   Qed.
 
-  (* TODO *)
+  Definition Step_app_steps T H a P g b Q c :=
+    6 + MatchList_steps_cons _ g + MatchList_steps_cons _ (b, Q) + MatchPair_steps _ b + TailRec_steps P a +
+    Reset_steps _ a + Put_steps H g b + ConsClos_steps Q c.
+
+  Definition Step_app_T : tRel sigStep^+ 11 :=
+    fun tin k =>
+      exists (T V : list HClos) (H : Heap) (a : HAd) (P : Pro)
+        (g : HClos) (b : HAd) (Q : Pro),
+        let (c, H') := put H (Some (g, b)) in
+        tin[@Fin0] ≃ T /\
+        tin[@Fin1] ≃ g :: (b, Q) :: V /\
+        tin[@Fin2] ≃ H /\
+        tin[@Fin3] ≃(Encode_map Encode_Prog retr_pro_step) P /\
+        tin[@Fin4] ≃(Encode_map Encode_nat retr_nat_step_clos_ad) a /\
+        (forall i : Fin.t 6, isRight tin[@FinR 5 i]) /\
+        Step_app_steps T H a P g b Q c <= k.
+
+  Lemma Step_app_Terminates : projT1 Step_app ↓ Step_app_T.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Step_app. repeat TM_Correct.
+      - apply TailRec_Realise.
+      - apply TailRec_Terminates.
+      - apply Reset_Realise with (cX := Encode_map Encode_nat retr_nat_step_clos_ad).
+      - apply Reset_Terminates with (cX := Encode_map Encode_nat retr_nat_step_clos_ad).
+      - apply Put_Realise.
+      - apply Put_Terminates.
+      - apply ConsClos_Terminates.
+    }
+    {
+      intros tin k. intros (T&V&H&a&P&g&b&Q&HEncT&HEncV&HEncH&HEncP&HEncA&HInt&Hk). unfold Step_app_steps in Hk.
+      exists (MatchList_steps_cons _ g),
+      (1 + MatchList_steps_cons _ (b, Q) + 1 + MatchPair_steps _ b + 1 + TailRec_steps P a + 1 + Reset_steps _ a +
+       1 + Put_steps H g b + ConsClos_steps Q (length H)).
+      cbn; repeat split; try omega.
+      { exists (g :: (b, Q) :: V). repeat split; simpl_surject; eauto. apply HInt. }
+      intros tmid bml1 (HMatchList&HMatchListInj); TMSimp. modpon HMatchList. destruct bml1; auto; modpon HMatchList.
+      exists (MatchList_steps_cons _ (b, Q)),
+      (1 + MatchPair_steps _ b + 1 + TailRec_steps P a + 1 + Reset_steps _ a +
+       1 + Put_steps H g b + ConsClos_steps Q (length H)).
+      cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+      { exists ((b, Q) :: V). repeat split; simpl_surject; eauto. }
+      intros tmid1 bml2 (HMatchList'&HMatchListInj'); TMSimp. modpon HMatchList'. destruct bml2; auto; modpon HMatchList'.
+      exists (MatchPair_steps _ b), (1 + TailRec_steps P a + 1 + Reset_steps _ a + 1 + Put_steps H g b + ConsClos_steps Q (length H)).
+      cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+      { hnf; cbn. exists (b, Q). repeat split; simpl_surject; eauto. contains_ext. }
+      intros tmid2 () (HMatchPair&HMatchPairInj); TMSimp. specialize (HMatchPair (b,Q)); modpon HMatchPair.
+      exists (TailRec_steps P a), (1 + Reset_steps _ a + 1 + Put_steps H g b + ConsClos_steps Q (length H)).
+      cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+      { hnf; cbn. do 3 eexists. repeat split; simpl_surject; eauto. }
+      intros tmid3 () (HTailRec&HTailRecInj); TMSimp. modpon HTailRec.
+      exists (Reset_steps _ a), (1 + Put_steps H g b + ConsClos_steps Q (length H)).
+      cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+      { hnf; cbn. do 1 eexists. repeat split; simpl_surject; eauto. now setoid_rewrite Reset_steps_comp. }
+      intros tmid4 () (HReset&HResetInj); TMSimp. modpon HReset.
+      exists (Put_steps H g b), (ConsClos_steps Q (length H)).
+      cbn; repeat split; try omega.
+      { hnf; cbn. do 3 eexists. repeat split; simpl_surject; eauto; contains_ext. }
+      intros tmid5 () (HPut&HInjPut); TMSimp. modpon HPut.
+      { hnf; cbn. do 3 eexists. repeat split; simpl_surject; eauto; contains_ext. }
+    }
+  Qed.
 
 
   Definition Step_var_Rel : pRel sigStep^+ unit 8 :=
@@ -612,6 +673,53 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
       repeat split; auto. intros i; destruct_fin i; auto; TMSimp_goal; auto.
     }
   Qed.
+
+
+  Definition Step_var_steps P V H a n g := 3 + TailRec_steps P a + Lookup_steps H a n + Constr_cons_steps _ g + Reset_steps _ g.
+
+  Definition Step_var_T : tRel sigStep^+ 8 :=
+    fun tin k =>
+      exists (T V : list HClos) (H : Heap) (a : HAd) (n : nat) (P : Pro) (g : HClos),
+        lookup H a n = Some g /\
+        tin[@Fin0] ≃ T /\
+        tin[@Fin1] ≃ V /\
+        tin[@Fin2] ≃ H /\
+        tin[@Fin3] ≃(Encode_map Encode_Prog retr_pro_step) P /\
+        tin[@Fin4] ≃(Encode_map Encode_nat retr_nat_step_clos_ad) a /\
+        tin[@Fin5] ≃(Encode_map Encode_nat retr_nat_step_clos_var) n /\
+        isRight tin[@Fin6] /\ isRight tin[@Fin7] /\
+        Step_var_steps P V H a n g <= k.
+
+  Lemma Step_var_Terminates : projT1 Step_var ↓ Step_var_T.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Step_var. repeat TM_Correct.
+      - apply TailRec_Realise.
+      - apply TailRec_Terminates.
+      - apply Lookup_Realise.
+      - apply Lookup_Terminates.
+      - apply Reset_Terminates with (cX := Encode_map Encode_HClos retr_closure_step).
+    }
+    {
+      intros tin k. intros (T&V&H&a&n&P&g&HLookupSome&HEncT&HEncV&HEncH&HEncP&HEncA&HEncN&HRight6&HRigth7&Hk). unfold Step_var_steps in Hk.
+      exists (TailRec_steps P a), (1 + Lookup_steps H a n + 1 + Constr_cons_steps _ g + Reset_steps _ g).
+      cbn; repeat split; try omega.
+      { hnf; cbn. do 3 eexists; repeat split; eauto. }
+      intros tmid () (HTailRec&HTailRecInj); TMSimp. modpon HTailRec.
+      exists (Lookup_steps H a n), (1 + Constr_cons_steps _ g + Reset_steps _ g).
+      cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+      { hnf; cbn. do 4 eexists; repeat split; eauto. }
+      intros tmid0 () (HLookup&HLookupInj); TMSimp. modpon HLookup.
+      exists (Constr_cons_steps _ g), (Reset_steps _ g).
+      cbn; repeat split; try omega. 2: reflexivity.
+      { hnf; cbn. do 2 eexists; repeat split; simpl_surject; eauto. contains_ext. }
+      intros tmid1 () (HCons&HConsInj); TMSimp. modpon HCons.
+      { hnf; cbn. do 1 eexists; repeat split; simpl_surject; eauto. contains_ext. now setoid_rewrite Reset_steps_comp. }
+    }
+  Qed.
+
+
+  (* TODO: Halt in [false], iff [T] is [nil] *)
 
 
   Definition Step : pTM sigStep^+ unit 11 :=
