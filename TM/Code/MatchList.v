@@ -235,11 +235,12 @@ Section MatchList.
     }
   Qed.
 
+  Definition MatchList_steps_cons (x : X) := 42 + 16 * size cX x.
 
   Definition MatchList_steps l :=
     match l with
     | nil => 5
-    | x::l' => 42 + 16 * size cX x
+    | x::l' => MatchList_steps_cons x
     end.
 
   Lemma MatchList_Terminates :
@@ -250,7 +251,7 @@ Section MatchList.
                 isRight tin[@Fin1] /\
                 MatchList_steps l <= k).
   Proof.
-    unfold MatchList_steps. eapply TerminatesIn_monotone.
+    unfold MatchList_steps, MatchList_steps_cons. eapply TerminatesIn_monotone.
     { unfold MatchList. repeat TM_Correct.
       - eapply M1_Realise.
       - eapply M1_Terminates.
@@ -431,9 +432,13 @@ Section Steps_comp.
   Variable (sig tau: finType) (X:Type) (cX: codable sig X).
   Variable (I : Retract sig tau).
 
+  Lemma MatchList_steps_cons_comp x :
+    MatchList_steps_cons (Encode_map cX I) x = MatchList_steps_cons cX x.
+  Proof. unfold MatchList_steps_cons. now rewrite Encode_map_hasSize. Qed.
+
   Lemma MatchList_steps_comp l :
     MatchList_steps (Encode_map cX I) l = MatchList_steps cX l.
-  Proof. unfold MatchList_steps. destruct l; auto. now rewrite Encode_map_hasSize. Qed.
+  Proof. unfold MatchList_steps. destruct l; auto. apply MatchList_steps_cons_comp. Qed.
 
   Lemma Constr_cons_steps_comp l :
     Constr_cons_steps (Encode_map cX I) l = Constr_cons_steps cX l.
