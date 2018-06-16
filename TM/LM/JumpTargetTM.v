@@ -2,6 +2,8 @@ Require Import HeapTM.
 Require Import MatchList.
 Require Import ListTM.
 
+Local Arguments plus : simpl never.
+Local Arguments mult : simpl never.
 
 Fixpoint jumpTarget (k:nat) (Q:Pro) (P:Pro) : option (Pro*Pro) :=
   match P with
@@ -51,9 +53,32 @@ Proof.
 Qed.
 
 
+Definition App_Tokens_steps (Q Q': Pro) := 1 + App'_steps _ Q + MoveValue_steps _ _ (Q ++ Q') Q.
+
+Definition App_Tokens_T : tRel sigPro^+ 2 :=
+  fun tin k => exists (Q Q' : list Tok), tin[@Fin0] ≃ Q /\ tin[@Fin1] ≃ Q' /\ App_Tokens_steps Q Q' <= k.
+
+Lemma App_Tokens_Terminates : projT1 App_Tokens ↓ App_Tokens_T.
+Proof.
+  eapply TerminatesIn_monotone.
+  { unfold App_Tokens. repeat TM_Correct.
+    - apply App'_Realise with (X := Tok).
+    - apply App'_Terminates with (X := Tok).
+    - apply MoveValue_Terminates with (X := Pro) (Y := Pro).
+  }
+  {
+    intros tin k (Q&Q'&HEncQ&HEncQ'&Hk).
+    exists (App'_steps _ Q), (MoveValue_steps _ _ (Q++Q') Q); cbn; repeat split; try omega.
+    hnf; cbn. eauto. now rewrite Hk.
+    intros tmid () (HApp&HInjApp); TMSimp. modpon HApp.
+    exists (Q++Q'), Q. repeat split; eauto.
+  }
+Qed.
+    
+
 (** append a token to the token list *)
 Definition App_ATok (t : ATok) : pTM sigPro^+ (FinType(EqType unit)) 2 :=
-  Inject (WriteValue _ [ATok2Tok t]) [|Fin1|];;
+  WriteValue _ [ATok2Tok t] @ [|Fin1|];;
   App_Tokens.
 
 Definition App_ATok_Rel (t : ATok) : pRel sigPro^+ (FinType(EqType unit)) 2 :=
@@ -77,6 +102,26 @@ Proof.
     TMSimp. modpon H0. auto.
   }
 Qed.
+
+Definition App_ATok_steps (Q: Pro) (t: ATok) := 1 + WriteValue_steps _ [ATok2Tok t] + App_Tokens_steps Q [ATok2Tok t].
+
+Definition App_ATok_T (t: ATok) : tRel sigPro^+ 2 :=
+  fun tin k => exists (Q: list Tok), tin[@Fin0] ≃ Q /\ isRight tin[@Fin1] /\ App_ATok_steps Q t <= k.
+
+Lemma App_ATok_Terminates (t: ATok) : projT1 (App_ATok t) ↓ App_ATok_T t.
+Proof.
+  eapply TerminatesIn_monotone.
+  { unfold App_ATok. repeat TM_Correct.
+    - apply App_Tokens_Terminates.
+  }
+  {
+    intros tin k. intros (Q&HEncQ&HRight&Hk).
+    exists (WriteValue_steps _ [ATok2Tok t]), (App_Tokens_steps Q [ATok2Tok t]). cbn; repeat split; try omega.
+    now rewrite Hk.
+    intros tmid () (HWrite&HInjWrite); hnf; cbn; TMSimp. modpon HWrite. eauto.
+  }
+Qed.
+
 
 
 (** Add a singleton list of tokes to [Q] *)
@@ -110,6 +155,34 @@ Proof.
     unfold sigPro, sigTok in *. TMSimp.
     rename H into HNil, H0 into HCons, H1 into HApp, H2 into HReset.
     modpon HNil. modpon HCons. modpon HApp. modpon HReset. repeat split; auto.
+  }
+Qed.
+
+Definition App_Tok_steps (Q: Pro) (t:Tok) :=
+  3 + Constr_nil_steps + Constr_cons_steps _ t + App_Tokens_steps Q [t] + Reset_steps _ t.
+
+Definition App_Tok_T : tRel sigPro^+ 3 :=
+  fun tin k => exists (Q: list Tok) (t: Tok), tin[@Fin0] ≃ Q /\ tin[@Fin1] ≃ t /\ isRight tin[@Fin2] /\ App_Tok_steps Q t <= k.
+
+Lemma App_Tok_Terminates : projT1 App_Tok ↓ App_Tok_T.
+Proof.
+  eapply TerminatesIn_monotone.
+  { unfold App_Tok. repeat TM_Correct.
+    - apply App_Tokens_Realise.
+    - apply App_Tokens_Terminates.
+    - apply Reset_Terminates with (X := Tok).
+  }
+  {
+    intros tin k (Q&t&HEncQ&HEncT&HRight&Hk). unfold App_Tok_steps in Hk. 
+    exists (Constr_nil_steps), (1 + Constr_cons_steps _ t + 1 + App_Tokens_steps Q [t] + Reset_steps _ t). cbn. repeat split; try omega.
+    intros tmid () (HNil&HInjNil); TMSimp. modpon HNil.
+    exists (Constr_cons_steps _ t), (1 + App_Tokens_steps Q [t] + Reset_steps _ t). cbn. repeat split; try omega.
+    eauto. now rewrite !Nat.add_assoc.
+    unfold sigPro in *. intros tmid0 () (HCons&HInjCons); TMSimp. modpon HCons.
+    exists (App_Tokens_steps Q [t]), (Reset_steps _ t). cbn. repeat split; try omega.
+    hnf; cbn. do 2 eexists; repeat split; eauto. reflexivity.
+    intros tmid1 _ (HApp&HInjApp); TMSimp. modpon HApp.
+    eexists. split; eauto. now setoid_rewrite Reset_steps_comp.
   }
 Qed.
 
@@ -174,6 +247,7 @@ Definition JumpTarget_Step_Rel : pRel sigPro^+ (FinType(EqType(bool*unit))) 5 :=
           isRight tout[@Fin4]
     ).
 
+
 Lemma JumpTarget_Step_Realise : JumpTarget_Step ⊨ JumpTarget_Step_Rel.
 Proof.
   eapply Realise_monotone.
@@ -224,6 +298,75 @@ Proof.
     }
   }
 Qed.
+
+
+Definition JumpTarget_Step_steps' (Q: Pro) (k: nat) (t: Tok) :=
+  match t with
+  | retT =>
+    match k with
+    | S _ => 1 + MatchNat_steps + App_ATok_steps Q retAT
+    | 0 => 1 + MatchNat_steps
+    end
+  | lamT => 1 + Constr_S_steps + App_ATok_steps Q lamAT
+  | appT => App_ATok_steps Q appAT
+  | varT n => 1 + Constr_varT_steps + App_Tok_steps Q t
+  end.
+
+Definition JumpTarget_Step_steps (Q: Pro) (k: nat) (t: Tok) :=
+  2 + MatchList_steps_cons _ t + MatchTok_steps + JumpTarget_Step_steps' Q k t.
+
+Definition JumpTarget_Step_T : tRel sigPro^+ 5 :=
+  fun tin steps => (* Warning: I have to use another variable for the steps, since [k] is used. *)
+    exists (P Q : Pro) (k : nat) (t : Tok),
+      tin[@Fin0] ≃ t :: P /\
+      tin[@Fin1] ≃ Q /\
+      tin[@Fin2] ≃ k /\
+      isRight tin[@Fin3] /\ isRight tin[@Fin4] /\
+      JumpTarget_Step_steps Q k t <= steps.
+
+Lemma JumpTarget_Step_Terminates : projT1 JumpTarget_Step ↓ JumpTarget_Step_T.
+Proof.
+  eapply TerminatesIn_monotone.
+  { unfold JumpTarget_Step. repeat TM_Correct.
+    - eapply RealiseIn_Realise. apply MatchTok_Sem.
+    - eapply RealiseIn_terminatesIn. apply MatchTok_Sem.
+    - apply App_ATok_Terminates.
+    - apply App_ATok_Terminates.
+    - apply App_ATok_Terminates.
+    - eapply RealiseIn_Realise. apply Constr_varT_Sem.
+    - eapply RealiseIn_terminatesIn. apply Constr_varT_Sem.
+    - apply App_Tok_Terminates.
+  }
+  {
+    intros tin steps (P&Q&k&t&HEncP&HEncQ&HEncK&HRight3&HRight4&Hk). unfold JumpTarget_Step_steps in Hk. cbn in *.
+    unfold sigPro in *.
+    exists (MatchList_steps _ (t::P)), (1 + MatchTok_steps + JumpTarget_Step_steps' Q k t). cbn; repeat split; try omega. eauto.
+    intros tmid bmatchlist (HMatchList&HMatchListInj); TMSimp. modpon HMatchList. destruct bmatchlist; auto; modpon HMatchList.
+    exists (MatchTok_steps), (JumpTarget_Step_steps' Q k t). cbn; repeat split; try omega.
+    intros tmid1 ytok (HMatchTok&HMatchTokInj); TMSimp. modpon HMatchTok.
+    destruct ytok as [ [ | | ] | ]; destruct t; auto; simpl_surject; TMSimp.
+    { (* t = retT *)
+      exists MatchNat_steps.
+      destruct k as [ | k'].
+      - (* k = 0 *)
+        exists 0. repeat split; try omega.
+        intros tmid2 bMatchNat (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct bMatchNat; auto.
+      - (* k = S k' *)
+        exists (App_ATok_steps Q retAT). repeat split; try omega.
+        intros tmid2 bMatchNat (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct bMatchNat; auto. hnf; cbn. eauto.
+    }
+    { (* t = lamT *)
+      exists (Constr_S_steps), (App_ATok_steps Q lamAT). repeat split; try omega.
+      intros tmid2 () (HS&HSInj); TMSimp. modpon HS. hnf; cbn. eauto.
+    }
+    { (* t = appT *) hnf; cbn; eauto. }
+    { (* t = varT n *)
+      exists (Constr_varT_steps), (App_Tok_steps Q (varT n)). repeat split; try omega.
+      intros tmid2 H (HVarT&HVarTInj); TMSimp. modpon HVarT. hnf; cbn. eauto 6.
+    }
+  }
+Qed.
+
 
 
 Fixpoint jumpTarget_k (k:nat) (Q:Pro) (P:Pro) : nat :=
@@ -285,9 +428,86 @@ Proof.
   }
 Qed.
 
+(*
+  match t with
+  | retT =>
+    match k with
+    | S _ => 1 + MatchNat_steps + App_ATok_steps Q retAT
+    | 0 => 1 + MatchNat_steps
+    end
+  | lamT => 1 + Constr_S_steps + App_ATok_steps Q lamAT
+  | appT => App_ATok_steps Q appAT
+  | varT n => 1 + Constr_varT_steps + App_Tok_steps Q t
+  end.
+*)
 
+
+Fixpoint JumpTarget_Loop_steps (P Q: Pro) (k: nat) : nat :=
+  match P with
+  | nil => 0 (* underspecified *)
+  | t :: P' =>
+    match t with
+    | retT =>
+      match k with
+      | S k' => 1 + JumpTarget_Step_steps Q k t + JumpTarget_Loop_steps P' (Q++[t]) k'
+      | 0 =>        JumpTarget_Step_steps Q k retT (* terminal case *)
+      end
+    | lamT =>   1 + JumpTarget_Step_steps Q k t + JumpTarget_Loop_steps P' (Q++[t]) (S k)
+    | appT =>   1 + JumpTarget_Step_steps Q k t + JumpTarget_Loop_steps P' (Q++[t]) k
+    | varT n => 1 + JumpTarget_Step_steps Q k t + JumpTarget_Loop_steps P' (Q++[t]) k
+    end
+  end.
+
+Definition JumpTarget_Loop_T : tRel sigPro^+ 5 :=
+  fun tin steps =>
+    exists (P Q : Pro) (k : nat) (P' Q' : Pro),
+      jumpTarget k Q P = Some (Q', P') /\
+      tin[@Fin0] ≃ P /\
+      tin[@Fin1] ≃ Q /\
+      tin[@Fin2] ≃ k /\
+      isRight tin[@Fin3] /\ isRight tin[@Fin4] /\
+      JumpTarget_Loop_steps P Q k <= steps.
+
+
+Lemma JumpTarget_Loop_Terminates : projT1 JumpTarget_Loop ↓ JumpTarget_Loop_T.
+Proof.
+  unfold JumpTarget_Loop. repeat TM_Correct.
+  { apply JumpTarget_Step_Realise. }
+  { apply JumpTarget_Step_Terminates. }
+  {
+    intros tin steps. intros (P&Q&k&P'&Q'&HJump&HEncP&HEncQ&HEncK&HRight3&HRight4&Hk).
+    destruct P as [ | t P]; cbn in *. now inv HJump.
+    exists (JumpTarget_Step_steps Q k t). repeat split. hnf; cbn; eauto 10.
+    intros b () tmid HStep. modpon HStep. destruct b.
+    { (* recursion cases *)
+      destruct t; modpon HStep.
+      - (* t = varT n *)
+        exists (JumpTarget_Loop_steps P (Q++[varT n]) k). split.
+        + hnf. do 5 eexists; repeat split; eauto.
+        + assumption.
+      - (* t = appT *)
+        exists (JumpTarget_Loop_steps P (Q++[appT]) k). split.
+        + hnf. do 5 eexists; repeat split; eauto.
+        + assumption.
+      - (* t = lamT *)
+        exists (JumpTarget_Loop_steps P (Q++[lamT]) (S k)). split.
+        + hnf. do 5 eexists; repeat split; eauto.
+        + assumption.
+      - (* t = retT, k = S k' *)
+        destruct k as [ | k']; auto; modpon HStep.
+        exists (JumpTarget_Loop_steps P (Q++[retT]) k'). split.
+        + hnf. do 5 eexists; repeat split; eauto.
+        + assumption.
+    }
+    { (* termination case, i.e. t=retT and k=0 *)
+      destruct t; auto. destruct k; auto.
+    }
+  }
+Qed.
+
+                            
 Definition JumpTarget : pTM sigPro^+ unit 5 :=
-  WriteValue _ nil @ [|Fin1|];;
+  WriteValue _ (@nil Tok) @ [|Fin1|];;
   WriteValue _ 0 @ [|Fin2|];;
   JumpTarget_Loop;;
   Reset _ @ [|Fin2|].
@@ -314,11 +534,51 @@ Proof.
   }
   {
     intros tin ((), tout) H. cbn. intros P P' Q' HJump HEncP HOut HInt.
-    TMSimp (unfold sigPro, sigTok in *). rename H into HWriteNil, H0 into HWriteO, H1 into HLoop, H2 into HReset.
+    TMSimp ( unfold sigPro, sigTok in *; cbv [plus] in * ).
+    rename H into HWriteNil, H0 into HWriteO, H1 into HLoop, H2 into HReset.
     modpon HWriteNil.
     modpon HWriteO.
     modpon HLoop.
     modpon HReset.
     repeat split; auto. intros i; destruct_fin i; TMSimp_goal; auto.
+  }
+Qed.
+
+
+Definition JumpTarget_steps (P : Pro) :=
+  3 + WriteValue_steps _ (@nil Tok) + WriteValue_steps _ 0 + JumpTarget_Loop_steps P nil 0 + Reset_steps _ (jumpTarget_k 0 nil P).
+
+
+Definition JumpTarget_T : tRel sigPro^+ 5 :=
+  fun tin k =>
+    exists (P : Pro) (P' Q' : Pro),
+      jumpTarget 0 nil P = Some (Q', P') /\
+      tin[@Fin0] ≃ P /\
+      isRight tin[@Fin1] /\
+      (forall i : Fin.t 3, isRight tin[@Fin.R 2 i]) /\
+      JumpTarget_steps P <= k.
+
+
+Lemma JumpTarget_Terminates : projT1 JumpTarget ↓ JumpTarget_T.
+Proof.
+  eapply TerminatesIn_monotone.
+  { unfold JumpTarget. repeat TM_Correct.
+    - apply JumpTarget_Loop_Realise.
+    - apply JumpTarget_Loop_Terminates.
+    - apply Reset_Terminates with (X := nat).
+  }
+  {
+    intros tin k (P&P'&Q'&HJumpSome&HEncP&Hout&HInt&Hk). unfold JumpTarget_steps in Hk.
+    exists (WriteValue_steps _ (@nil Tok)), (1 + WriteValue_steps _ 0 + 1 + JumpTarget_Loop_steps P nil 0 + Reset_steps _ (jumpTarget_k 0 nil P)).
+    cbn; repeat split; try omega.
+    intros tmid () (HWrite&HWriteInj); TMSimp. modpon HWrite.
+    exists (WriteValue_steps _ 0), (1 + JumpTarget_Loop_steps P nil 0 + Reset_steps _ (jumpTarget_k 0 nil P)).
+    cbn; repeat split; try omega. now setoid_rewrite WriteValue_steps_comp. now rewrite Nat.add_assoc.
+    unfold sigPro in *. intros tmid1 () (HWrite'&HWriteInj'); TMSimp. modpon HWrite'.
+    exists (JumpTarget_Loop_steps P nil 0), (Reset_steps _ (jumpTarget_k 0 nil P)).
+    TMSimp. cbn; repeat split; try omega.
+    { hnf. do 5 eexists; repeat split; TMSimp_goal; eauto. now setoid_rewrite HWriteInj'_0. now setoid_rewrite HWriteInj'_1. now setoid_rewrite HWriteInj'_2. now setoid_rewrite HWriteInj'_3. (* WHY do I need setoid_rewrite here? *) }
+    intros tmid2 () HLoop. modpon HLoop.
+    eexists; repeat split; eauto. now setoid_rewrite Reset_steps_comp.
   }
 Qed.
