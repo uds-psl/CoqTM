@@ -312,9 +312,11 @@ Section MatchList.
             | _, _ => False
             end). 
 
-  Lemma IsNil_Sem : IsNil ⊨c(5) IsNil_Rel.
+  Definition IsNil_steps := 5.
+
+  Lemma IsNil_Sem : IsNil ⊨c(IsNil_steps) IsNil_Rel.
   Proof.
-    eapply RealiseIn_monotone.
+    unfold IsNil_steps. eapply RealiseIn_monotone.
     { unfold IsNil. repeat TM_Correct. }
     { Unshelve. 4-11: reflexivity. omega. }
     {
