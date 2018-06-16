@@ -460,7 +460,11 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
       modpon HMatchTok. destruct ymid1 as [ [ | | ] | ], t; auto; simpl_surject; inv HStep; cbn in *.
       - (* lamT *)
         rename H3 into HStepLam. modpon HStepLam; TMSimp_goal; eauto; try contains_ext.
-        intros i; destruct_fin i; auto; TMSimp_goal; auto.
+        intros i; destruct_fin i; auto; TMSimp_goal; cbn; auto.
+        repeat split; auto.
+        generalize (HStepLam3 Fin0); generalize (HStepLam3 Fin1); generalize (HStepLam3 Fin2); generalize (HStepLam3 Fin3); generalize (HStepLam3 Fin4); generalize (HStepLam3 Fin5); generalize (HStepLam3 Fin6); cbn; TMSimp_goal; intros.
+        destruct_fin i; TMSimp_goal; auto.
+        rewrite HStepLam0 by vector_not_in. now TMSimp_goal.
       - (* appT *)
         rename H3 into HStepApp. cbn in HStepApp. move HStepApp at bottom. (* for less scrolling... *)
         cbv [put] in *. inv H1.
