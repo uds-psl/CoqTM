@@ -1,8 +1,6 @@
 Require Import HeapTM.
 Require Import ListTM.
 
-Require Import Lia.
-
 (** ** Lookup *)
 
 Local Arguments plus : simpl never.
@@ -181,10 +179,14 @@ t4: internal tape
     }
   Qed.
   
+  Definition Lookup_steps_MatchNat (n: nat) (g: HClos) (b: HAd) :=
+    match n with
+    | O => 2 + Reset_steps _ b + Reset_steps _ 0 + Translate_steps _ g
+    | S _ => 3 + CopyValue_steps _ b + Translate_steps _ b + Reset_steps _ b + Reset_steps _ g
+    end.
 
-  Definition Lookup_Step_steps (H: Heap) (a: HAd) (g: HClos) (b: HAd) :=
-    7 + Nth'_steps _ H a + MatchOption_steps + MatchPair_steps _ g + MatchNat_steps + CopyValue_steps _ b +
-    Translate_steps _ b + Reset_steps _ b + Reset_steps _ g.
+  Definition Lookup_Step_steps (H: Heap) (a: HAd) (n: nat) (g: HClos) (b: HAd) :=
+    4 + Nth'_steps _ H a + MatchOption_steps + MatchPair_steps _ g + MatchNat_steps + Lookup_steps_MatchNat n g b.
 
   Definition Lookup_Step_T : tRel sigLookup^+ 5 :=
     fun tin k =>
@@ -194,21 +196,8 @@ t4: internal tape
         tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_clos_ad ) a /\
         tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_clos_var) n /\
         isRight tin[@Fin3] /\ isRight tin[@Fin4] /\
-        Lookup_Step_steps H a g b <= k.
+        Lookup_Step_steps H a n g b <= k.
 
-  Ltac o :=
-    lazymatch goal with
-    | [ |- ?X + S (?Y + _) <= _ ] =>
-      apply Nat.eq_le_incl;
-      rewrite <- !Nat.add_succ_l;
-      rewrite !Nat.add_assoc;
-      rewrite (Nat.add_comm _ X);
-      reflexivity
-    | [ |- ?X + S ?Y <= _ ] =>
-      apply Nat.eq_le_incl;
-      now rewrite Nat.add_succ_r, <- Nat.add_1_l, Nat.add_assoc
-    end.
-  
 
   Lemma Lookup_Step_Terminates : projT1 Lookup_Step ↓ Lookup_Step_T.
   Proof.
@@ -216,43 +205,40 @@ t4: internal tape
     { unfold Lookup_Step. repeat TM_Correct.
       - apply Nth'_Realise.
       - apply Nth'_Terminates.
-      - apply CopyValue_Realise    with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
+      - apply CopyValue_Realise with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
       - apply CopyValue_Terminates with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
-      - apply Translate_Realise    with (X := nat).
+      - apply Translate_Realise with (X := nat).
       - apply Translate_Terminates with (X := nat).
-      - apply Reset_Realise        with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
-      - apply Reset_Terminates     with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
-      - apply Reset_Terminates     with (cX := Encode_map Encode_HClos retr_clos_lookup_heap).
-      - apply Reset_Realise        with (cX := Encode_map Encode_HClos retr_clos_lookup_heap).
-      - apply Reset_Terminates     with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
-      - apply Reset_Realise        with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
-      - apply Reset_Terminates     with (cX := Encode_map Encode_nat retr_nat_lookup_clos_var).
+      - apply Reset_Realise with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
+      - apply Reset_Terminates with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
+      - apply Reset_Terminates with (cX := Encode_map Encode_HClos retr_clos_lookup_heap).
+      - apply Reset_Realise with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
+      - apply Reset_Terminates with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
+      - apply Reset_Realise with (cX := Encode_map Encode_nat retr_nat_lookup_clos_var).
+      - apply Reset_Terminates with (cX := Encode_map Encode_nat retr_nat_lookup_clos_var).
       - apply Translate_Terminates with (X := HClos).
     }
     {
       intros tin k. cbn. intros (H&a&n&g&b&NthSome&HEncH&HEncA&HEncN&HRight3&HRight4&Hk). unfold Lookup_Step_steps in Hk.
-      exists (Nth'_steps _ H a), (1 + MatchOption_steps + 1 + MatchPair_steps _ g + 1 + MatchNat_steps + 1 + CopyValue_steps _ b +
-                             1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g).
+      exists (Nth'_steps _ H a), (1 + MatchOption_steps + 1 + MatchPair_steps _ g + 1 + MatchNat_steps + Lookup_steps_MatchNat n g b).
       repeat split; try omega.
       hnf; cbn; eauto 9.
       intros tmid () (HNth&HNthInj); TMSimp. modpon HNth.
-      exists (MatchOption_steps), (1 + MatchPair_steps _ g + 1 + MatchNat_steps + 1 + CopyValue_steps _ b +
-                              1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g). repeat split; try omega.
+      exists (MatchOption_steps), (1 + MatchPair_steps _ g + 1 + MatchNat_steps + Lookup_steps_MatchNat n g b).
+      repeat split; try omega.
       now rewrite !Nat.add_assoc.
       intros tmid0 bif (HMatchOpt&HMatchOptInj). modpon HMatchOpt. destruct bif; cbn in *; auto; modpon HMatchOpt; TMSimp.
-      exists (MatchPair_steps _ g), (1 + MatchNat_steps + 1 + CopyValue_steps _ b + 1 + Translate_steps _ b +
-                                    1 + Reset_steps _ b + Reset_steps _ g).
+      exists (MatchPair_steps _ g), (1 + MatchNat_steps + Lookup_steps_MatchNat n g b).
       repeat split; try omega.
       hnf; cbn. exists (g, b); repeat split; simpl_surject; eauto. contains_ext. now rewrite !Nat.add_assoc.
       intros tmid1 () (HMatchPair&HMatchPairInj); TMSimp. specialize (HMatchPair (g,b)). modpon HMatchPair. cbn in *.
-      exists (MatchNat_steps), (1 + CopyValue_steps _ b + 1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g).
-      repeat split; try omega. now rewrite !Nat.add_assoc.
-      intros tmid2 bif (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct bif, n as [ | n']; auto; modpon HMatchNat.
+      exists (MatchNat_steps), (Lookup_steps_MatchNat n g b).
+      repeat split; try omega.
+      intros tmid2 bif (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct bif, n as [ | n']; auto; modpon HMatchNat; cbn.
       { (* Then of [MatchNat] *)
         exists (CopyValue_steps _ b), (1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g).
         repeat split; try omega.
         do 1 eexists. repeat split; eauto. contains_ext. now setoid_rewrite CopyValue_steps_comp.
-        now rewrite !Nat.add_assoc.
         intros tmid3 () (HCopyValue&HCopyValueInj); TMSimp. modpon HCopyValue.
         exists (Translate_steps _ b), (1 + Reset_steps _ b + Reset_steps _ g). repeat split; try omega.
         hnf. cbn. eauto.
@@ -265,12 +251,16 @@ t4: internal tape
         eexists. split. contains_ext. now setoid_rewrite Reset_steps_comp.
       }
       {
-        (* TODO: Branch in [Lookup_Step_steps] *)
-        admit.
+        exists (Reset_steps _ b), (1 + Reset_steps _ 0 + Translate_steps _ g). repeat split; try omega.
+        exists b. repeat split; eauto. contains_ext. now setoid_rewrite Reset_steps_comp.
+        intros tmid3 () (HReset&HResetInj); TMSimp. modpon HReset.
+        exists (Reset_steps _ 0), (Translate_steps _ g). repeat split; try omega.
+        exists 0. split; eauto. reflexivity.
+        intros tmid4 () (HReset'&HResetInj'); TMSimp. modpon HReset'.
+        hnf; cbn. exists g. split. contains_ext. reflexivity.
       }
     }
-  Abort.
-    
+  Qed.
     
 
   Definition Lookup := WHILE Lookup_Step.
@@ -306,5 +296,44 @@ t4: internal tape
         modpon HStar. destruct n; auto. modpon HStar. modpon HLastStep. repeat split; auto.
     }
   Qed.
-        
+
+  Fixpoint Lookup_steps (H : Heap) (a : HAd) (n : nat) : nat :=
+    match nth_error H a with
+    | Some (Some (g, b)) =>
+      match n with
+      | 0 => Lookup_Step_steps H a n g b
+      | S n' => 1 + Lookup_Step_steps H a n g b + Lookup_steps H b n'
+      end
+    | _ => 0 (* runtime not specified *)
+    end.
+
+  Definition Lookup_T : tRel sigLookup^+ 5 :=
+    fun tin k =>
+      exists (H: Heap) (a n: nat) (g : HClos),
+        lookup H a n = Some g /\
+        tin[@Fin0] ≃ H /\
+        tin[@Fin1] ≃(Encode_map Encode_nat retr_nat_lookup_clos_ad) a /\
+        tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_lookup_clos_var) n /\
+        isRight tin[@Fin3] /\ isRight tin[@Fin4] /\
+        Lookup_steps H a n <= k.
+
+  Lemma Lookup_Terminates : projT1 Lookup ↓ Lookup_T.
+  Proof.
+    unfold Lookup. repeat TM_Correct.
+    { apply Lookup_Step_Realise. }
+    { apply Lookup_Step_Terminates. }
+    {
+      intros tin k (H&a&n&g&HLookupSome&HEncH&HEncA&HEncN&HRight3&HRight4&Hk).
+      rewrite lookup_eq in HLookupSome. destruct (nth_error H a) eqn:HNthSome; try congruence.
+      destruct h as [ (g',b) | ]; cbn in *; try congruence.
+      exists (Lookup_Step_steps H a n g' b). split.
+      - hnf. do 5 eexists. repeat split; eauto.
+      - intros bwhile () tmid HStep. cbn in *. modpon HStep.
+        destruct bwhile, n as [ | n']; auto; modpon HStep; cbn in *.
+        + eexists (Lookup_steps H b n'). split. do 4 eexists; repeat split; eauto.
+          rewrite <- Hk. cbn. now rewrite HNthSome.
+        + now rewrite HNthSome in Hk.
+    }
+  Qed.
+
 End Lookup.
