@@ -186,3 +186,24 @@ Section Map.
   Definition map_left  : (X -> Z) -> X * Y -> Z * Y := fun f '(x,y) => (f x, y).
   Definition map_right : (Y -> Z) -> X * Y -> X * Z := fun f '(x,y) => (x, f y).
 End Map.
+
+
+
+(** We often use
+<<
+Local Arguments plus : simpl never.
+Local Arguments mult : simpl never.
+>>
+in runtime proofs. However, if we then use [Fin.R], this can brake proofs, since the [plus] in the type of [Fin.R] doesn't simplify with [cbn] any more. To avoid this problem, we simply have a copy of [Fin.R] and [plus], that isn't affected by these commands.
+*)
+Fixpoint plus' (n m : nat) { struct n } : nat :=
+  match n with
+  | 0 => m
+  | S p => S (plus' p m)
+  end.
+
+Fixpoint FinR {m} n (p : Fin.t m) : Fin.t (plus' n m) :=
+  match n with
+  | 0 => p
+  | S n' => Fin.FS (FinR n' p)
+  end.

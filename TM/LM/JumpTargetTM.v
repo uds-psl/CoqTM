@@ -519,11 +519,10 @@ Definition JumpTarget_Rel : pRel sigPro^+ unit 5 :=
       jumpTarget 0 nil P = Some (Q', P') ->
       tin[@Fin0] ≃ P ->
       isRight tin[@Fin1] ->
-      (forall i : Fin.t 3, isRight tin[@Fin.R 2 i]) ->
+      (forall i : Fin.t 3, isRight tin[@FinR 2 i : Fin.t 5]) ->
       tout[@Fin0] ≃ P' /\
       tout[@Fin1] ≃ Q' /\
-      (forall i : Fin.t 3, isRight tout[@Fin.R 2 i]).
-
+      (forall i : Fin.t 3, isRight tout[@FinR 2 i : Fin.t 5]).
 
 Lemma JumpTarget_Realise : JumpTarget ⊨ JumpTarget_Rel.
 Proof.
@@ -534,7 +533,7 @@ Proof.
   }
   {
     intros tin ((), tout) H. cbn. intros P P' Q' HJump HEncP HOut HInt.
-    TMSimp ( unfold sigPro, sigTok in *; cbv [plus] in * ).
+    TMSimp ( unfold sigPro, sigTok in * ).
     rename H into HWriteNil, H0 into HWriteO, H1 into HLoop, H2 into HReset.
     modpon HWriteNil.
     modpon HWriteO.
@@ -576,8 +575,8 @@ Proof.
     cbn; repeat split; try omega. now setoid_rewrite WriteValue_steps_comp. now rewrite Nat.add_assoc.
     unfold sigPro in *. intros tmid1 () (HWrite'&HWriteInj'); TMSimp. modpon HWrite'.
     exists (JumpTarget_Loop_steps P nil 0), (Reset_steps _ (jumpTarget_k 0 nil P)).
-    TMSimp. cbn; repeat split; try omega.
-    { hnf. do 5 eexists; repeat split; TMSimp_goal; eauto. now setoid_rewrite HWriteInj'_0. now setoid_rewrite HWriteInj'_1. now setoid_rewrite HWriteInj'_2. now setoid_rewrite HWriteInj'_3. (* WHY do I need setoid_rewrite here? *) }
+    TMSimp. cbn; repeat split; try omega. cbn in *.
+    { hnf. do 5 eexists; repeat split; unfold sigPro in *; unfold eqType_X in *; cbn in *; TMSimp_goal; eauto. }
     intros tmid2 () HLoop. modpon HLoop.
     eexists; repeat split; eauto. now setoid_rewrite Reset_steps_comp.
   }
