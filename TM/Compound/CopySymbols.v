@@ -21,19 +21,19 @@ Section CopySymbols.
   (* translation *)
   Variable g : sig -> sig.
 
-  Definition M1 : { M : mTM sig 2 & states M -> bool * unit} :=
+  Definition M1 : { M : mTM sig 2 & states M -> option unit} :=
     MATCH (ReadChar_at Fin.F1)
           (fun b : option sig =>
              match b with
              | Some x =>
                (* First write the read symbol to tape 1 *)
                if f x
-               then (* found the symbol: write it to tape 1; break and return true *)
-                 Inject (Write (g x) (false, tt)) [|Fin.FS Fin.F1|]
+               then (* found the symbol: write it to tape 1; break and return *)
+                 Inject (Write (g x) (Some tt)) [|Fin.FS Fin.F1|]
                else (* wrong symbol: write it to tape 1 and move both tapes right and continue *)
                  Inject (Write (g x) tt) [|Fin.FS Fin.F1|];;
-                 MovePar R R (true, tt)
-             | _ => Nop (false, tt) (* there is no such symbol, break and return false *)
+                 MovePar R R (None)
+             | _ => Nop (Some tt) (* there is no such symbol, break and return *)
              end).
 
   Definition M1_Fun : tape sig * tape sig -> tape sig * tape sig :=
@@ -68,12 +68,14 @@ Section Test.
 End Test.
 *)
 
-  Definition M1_Rel : Rel (tapes sig 2) (bool * unit * tapes sig 2) :=
+  Definition M1_Rel : Rel (tapes sig 2) (option unit * tapes sig 2) :=
     (fun tin '(yout, tout) =>
        (tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = M1_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]) /\
        match tin[@Fin0] with
-       | midtape _ m _ => yout = (negb (f m), tt)
-       | _ => yout = (false, tt)
+       | midtape _ m _ => yout = if f m
+                                then Some tt (* break *)
+                                else None (* continue *)
+       | _ => yout = Some tt (* break *)
        end
     ).
 
@@ -178,12 +180,12 @@ End Test.
     1-2: eapply Realise_total; eapply M1_RealiseIn.
     {
       intros tin k Hk. destruct tin[@Fin0] eqn:E; rewrite CopySymbols_TermTime_equation in *; cbn in *; try rewrite E.
-      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
-      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
-      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
       - destruct (f e) eqn:E2.
-        + eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
-        + eexists. split. eauto. intros b () tmid (H1&H2); inv H1; inv H2; TMSimp.
+        + eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
+        + eexists. split. eauto. intros o tmid (H1&->); inv H1. TMSimp.
           exists (CopySymbols_TermTime (tape_move_right' l e l0)). repeat split; auto.
     }
   Qed.

@@ -25,14 +25,14 @@ Section move_to_symbol.
    * If the read symbol fulfills [ f ], return [ Some true ].
    * Else move one to the right and return [ Some false ].
    *)
-  Definition M1 : { M : mTM sig 1 & states M -> bool * unit} :=
+  Definition M1 : { M : mTM sig 1 & states M -> option unit} :=
     MATCH (Read_char)
           (fun b : option sig =>
              match b with
              | Some x => if f x
-                        then mono_Nop (false, tt) (* found the symbol, break *)
-                        else WriteMove (g x) R (true, tt) (* wrong symbol, move right and continue *)
-             | _ => mono_Nop (false, tt) (* there is no such symbol, break *)
+                        then mono_Nop (Some tt) (* found the symbol, break *)
+                        else WriteMove (g x) R (None) (* wrong symbol, move right and continue *)
+             | _ => mono_Nop (Some tt) (* there is no such symbol, break *)
              end).
 
   Definition M1_Fun : tape sig -> tape sig :=
@@ -42,12 +42,15 @@ Section move_to_symbol.
       | _ => t1
       end.
 
-  Definition M1_Rel : Rel (tapes sig 1) (bool * unit * tapes sig 1) :=
+  Definition M1_Rel : Rel (tapes sig 1) (option unit * tapes sig 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
               tout = M1_Fun tin /\
               match tin with
-              | midtape _ m _ => yout = (negb (f m), tt)
-              | _ => yout = (false, tt)
+              | midtape _ m _ =>
+                yout = if f m
+                       then Some tt (* break *)
+                       else None (* continue *) 
+              | _ => yout = (Some tt) (* break *)
               end
            ).  
 
@@ -159,10 +162,10 @@ Section move_to_symbol.
       eapply WhileInduction; intros; hnf in *.
       - destruct HLastStep as (H1&H2); TMSimp.
         destruct tin[@Fin0]; cbn in *; inv H2; rewrite MoveToSymbol_Fun_equation; auto.
-        destruct (f e); cbn in *; auto.
+        destruct (f e); cbn in *; auto. congruence.
       - destruct HStar as (H1&H2); TMSimp.
         destruct tin[@Fin0]; cbn in *; inv H2.
-        assert (f e = false) as E. destruct (f e); cbn in *; auto. rewrite E in *.
+        assert (f e = false) as E. destruct (f e); cbn in *; inv H0; auto. rewrite E in *.
         now rewrite MoveToSymbol_skip.
     }
   Qed.
@@ -197,12 +200,12 @@ Section move_to_symbol.
     1-2: eapply Realise_total; eapply M1_RealiseIn.
     {
       intros tin k Hk. destruct tin[@Fin0] eqn:E; rewrite MoveToSymbol_TermTime_equation in *; cbn in *; try rewrite E.
-      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
-      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
-      - eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
+      - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
       - destruct (f e) eqn:E2.
-        + eexists. split. eauto. intros b () tmid (H1&H2); inv H2. omega.
-        + eexists. split. eauto. intros b () tmid (H1&H2); inv H2; TMSimp.
+        + eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
+        + eexists. split. eauto. intros o tmid (H1&H2); inv H2; TMSimp.
           exists (MoveToSymbol_TermTime (tape_move_mono (midtape l e l0) (Some (g e), R))). cbn. repeat split; auto.
     }
   Qed.
