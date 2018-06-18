@@ -387,19 +387,18 @@ Section Nth'.
 
   Fixpoint Nth'_Loop_steps (l : list X) (n : nat) { struct l } :=
     match n, l with
-    | S n', x :: l'  =>
-      S (Nth'_Step_steps l n) + Nth'_Loop_steps l' n'
-    | S n', nil => 6 (* [MatchNat_steps] + [MatchList_steps _nil]  *)
-    | O, x :: l' =>
-      Nth'_Step_steps l n
+    | S n', x :: l'  => S (Nth'_Step_steps l n) + Nth'_Loop_steps l' n' (* continue *)
+    | S n', nil => Nth'_Step_steps l n (* return *)
+    | O, x :: l' => Nth'_Step_steps l n (* return *)
     | O, nil => Nth'_Step_steps l n (* only [MatchNat] and [If] *)
     end.
   
 
   Definition Nth'_Loop_T : tRel sig^+ 3 :=
-    fun tin k => exists (l : list X) (n : nat) (y : X),
-        nth_error l n = Some y /\
-        tin[@Fin0] ≃ l /\ tin[@Fin1] ≃ n /\ isRight tin[@Fin2] /\
+    fun tin k => exists (l : list X) (n : nat),
+        tin[@Fin0] ≃ l /\
+        tin[@Fin1] ≃ n /\
+        isRight tin[@Fin2] /\
         Nth'_Loop_steps l n <= k.
 
   
@@ -409,18 +408,26 @@ Section Nth'.
     { apply Nth'_Step_Realise. }
     { apply Nth'_Step_Terminates. }
     {
-      intros tin k (l&n&y&HNth&HEncL&HEncN&HRight&Hk).
+      intros tin k (l&n&HEncL&HEncN&HRight&Hk).
       destruct l as [ | x l'] eqn:E1, n as [ | n'] eqn:E2; cbn in *; auto; TMSimp.
-      - (* [n=0] and [l = y :: l'] *)
-        exists (Nth'_Step_steps (y::l') 0). split.
-        { hnf. exists (y :: l'), 0. repeat split; auto. }
+      - (* [n=0] and [l=0]; return *)
+        exists (Nth'_Step_steps nil 0). split.
+        { hnf; cbn. exists nil, 0. repeat split; auto. }
+        intros b ymid H. modpon H. destruct b; auto.
+      - (* [n=S n'] and [l=nil]; return *)
+        exists (Nth'_Step_steps nil (S n')). split.
+        { hnf; cbn. exists nil, (S n'). repeat split; auto. }
+        intros b ymid H. modpon H. destruct b as [ [ | ] | ]; auto.
+      - (* [n=0] and [l = x :: l']; return *)
+        exists (Nth'_Step_steps (x::l') 0). split.
+        { hnf. exists (x :: l'), 0. repeat split; auto. }
         intros b tmid H1; TMSimp. modpon H1. destruct b; auto; modpon H1.
-      - (* [n=S n'] and [l = x :: l'] *)
+      - (* [n=S n'] and [l = x :: l']; continue *)
         exists (Nth'_Step_steps (x::l') (S n')). repeat split.
         { hnf. exists (x :: l'), (S n'). auto. }
         intros b tmid H1. modpon H1. destruct b; auto; modpon H1. now destruct b.
         exists (Nth'_Loop_steps l' n'). repeat split; auto; try omega.
-        hnf. exists l', n', y. repeat split; eauto.
+        hnf. exists l', n'. auto.
     }
   Qed.
 
@@ -491,9 +498,10 @@ Section Nth'.
     3 + CopyValue_steps _ l + Nth'_Loop_steps l n + Reset_steps _ (skipn (S n) l) + Reset_steps _ (n - S (length l)).
 
   Definition Nth'_T : tRel sig^+ 4 :=
-    fun tin k => exists (l : list X) (n : nat) (y : X),
-        nth_error l n = Some y /\
-        tin[@Fin0] ≃ l /\ tin[@Fin1] ≃ n /\ isRight tin[@Fin2] /\ isRight tin[@Fin3] /\
+    fun tin k => exists (l : list X) (n : nat),
+        tin[@Fin0] ≃ l /\
+        tin[@Fin1] ≃ n /\
+        isRight tin[@Fin2] /\ isRight tin[@Fin3] /\
         Nth'_steps l n <= k.
 
   Lemma Nth'_Terminates : projT1 Nth' ↓ Nth'_T.
@@ -512,14 +520,14 @@ Section Nth'.
       - apply Reset_Terminates with (X := nat).
     }
     {
-      intros tin k (l&n&y&HNth&HEncL&HEncN&HRigh2&HRight3&Hk). unfold Nth'_steps in *.
+      intros tin k (l&n&HEncL&HEncN&HRigh2&HRight3&Hk). unfold Nth'_steps in *.
       exists (CopyValue_steps _ l), (1 + Nth'_Loop_steps l n + 1 + Reset_steps _ (skipn (S n) l) + Reset_steps _ (n - S (length l))).
       repeat split; cbn; try omega.
       exists l. repeat split; eauto. unfold CopyValue_steps. now rewrite Encode_map_hasSize.
       intros tmid () (HCopy&HInjCopy); TMSimp. modpon HCopy.
       exists (Nth'_Loop_steps l n), (1 + Reset_steps _ (skipn (S n) l) + Reset_steps _ (n - S (length l))).
       repeat split; cbn; try omega. 2: now rewrite !Nat.add_assoc.
-      hnf. do 3 eexists. repeat split; eauto.
+      { hnf; cbn. eauto 6. }
       intros tmid2 b (HLoop&HInjLoop); TMSimp. modpon HLoop. destruct b.
       {
         destruct HLoop as (x&HLoop); modpon HLoop.
@@ -534,7 +542,8 @@ Section Nth'.
         exists (Reset_steps _ (skipn (S n) l)), (Reset_steps _ (n - S (length l))).
         repeat split; cbn; try omega. 2: reflexivity.
         do 1 eexists. repeat split; eauto. unfold Reset_steps. now rewrite Encode_map_hasSize.
-        intros tmid3 () (HReset&HInjReset); TMSimp.
+        intros tmid3 () (HReset&HInjReset); TMSimp. modpon HReset.
+        eexists; repeat split; eauto. now setoid_rewrite Reset_steps_comp.
       }
     }
   Qed.
