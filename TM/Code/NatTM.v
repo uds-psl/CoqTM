@@ -62,10 +62,10 @@ Qed.
  * t0: a
  * t1: b
  *)
-Definition Add_Step : { M : mTM _ 2 & states M -> bool * unit } :=
+Definition Add_Step : { M : mTM _ 2 & states M -> option unit } :=
   If (Inject MatchNat [|Fin1|])
-     (Return (Inject Constr_S [|Fin0|]) (true, tt))
-     (Nop (false, tt)).
+     (Return (Inject Constr_S [|Fin0|]) None)
+     (Nop (Some tt)).
 
 
 Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := WHILE Add_Step.
@@ -104,20 +104,19 @@ Definition Add :=
 
 (** ** Correctness of [Add] *)
 
-Definition Add_Step_Rel : Rel (tapes sigNat^+ 2) ((bool * unit) * tapes sigNat^+ 2) :=
+Definition Add_Step_Rel : Rel (tapes sigNat^+ 2) (option unit * tapes sigNat^+ 2) :=
   fun tin '(yout, tout) =>
     forall a b,
       tin [@Fin0] ≃ a ->
       tin [@Fin1] ≃ b ->
-      match b with
-      | O =>
+      match yout, b with
+      | Some tt, O => (* break *)
         tout[@Fin0] ≃ a /\
-        tout[@Fin1] ≃ b /\
-        yout = (false, tt)
-      | S b' =>
+        tout[@Fin1] ≃ b
+      | None, S b' =>
         tout[@Fin0] ≃ S a /\
-        tout[@Fin1] ≃ b' /\
-        yout = (true, tt)
+        tout[@Fin1] ≃ b'
+      | _, _ => False
       end.
 
 Lemma Add_Step_Sem : Add_Step ⊨c(11) Add_Step_Rel.
@@ -151,11 +150,11 @@ Proof.
   eapply Realise_monotone.
   { unfold Add_Loop. repeat TM_Correct. eapply RealiseIn_Realise. apply Add_Step_Sem. }
   {
-    apply WhileInduction; intros; intros a b HEncA HEncB; cbn in *.
-    - specialize (HLastStep _ _ HEncA HEncB). destruct b; TMSimp; inv_pair. auto.
+    apply WhileInduction; intros; intros a b HEncA HEncB; cbn in *; destruct_unit.
+    - specialize (HLastStep _ _ HEncA HEncB). destruct b; auto.
     - specialize (HStar _ _ HEncA HEncB).
-      destruct b; TMSimp; inv_pair.
-      specialize (HLastStep _ _ H H0) as (IH1&IH2).
+      destruct b; auto. destruct HStar as (HStar1&HStar2).
+      specialize (HLastStep _ _ HStar1 HStar2) as (IH1&IH2).
       rewrite <- Nat.add_succ_comm in IH1. cbn in *. auto.
   }
 Qed.
@@ -241,12 +240,12 @@ Proof.
     destruct b.
     - exists 11. repeat split.
       + omega.
-      + intros y () tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn in *.
-        destruct H; TMSimp; inv_pair. omega.
+      + intros o tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn in *.
+        destruct o; auto.
     - exists 11. repeat split.
       + omega.
-      + intros y () tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn -[plus mult] in *.
-        destruct H as (H1&H2&H3). inv H3.
+      + intros o tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn -[plus mult] in *.
+        destruct o as [ () | ]; auto. destruct H.
         exists (11 + b * 12). repeat split.
         * do 2 eexists. repeat split; eauto. omega.
         * omega.
@@ -359,15 +358,15 @@ Qed.
  *   break
  * }
  *)
-Definition Mult_Step : { M : mTM _ 5 & states M -> bool * unit } :=
+Definition Mult_Step : { M : mTM _ 5 & states M -> option unit } :=
   If (Inject MatchNat [|Fin0|])
      (Return (
           Inject Add [|Fin1; Fin2; Fin3; Fin4|];; (* Add(n, c, c') *)
           Inject (Reset _) [|Fin2|];;
           Inject (CopyValue _) [|Fin3; Fin2|];; (* c := c' *)
           Inject (Reset _) [|Fin3|] (* Reset c' *)
-        ) (true, tt)) (* continue *)
-     (Nop (false, tt)). (* break *)
+        ) (None)) (* continue *)
+     (Nop (Some tt)). (* break *)
 
 
 Definition Mult_Loop : { M : mTM _ 5 & states M -> unit } := WHILE Mult_Step.
@@ -394,7 +393,7 @@ Definition Mult : { M : mTM _ 6 & states M -> unit } :=
 
 (** ** Correctness of [Mult] *)
 
-Definition Mult_Step_Rel : Rel (tapes sigNat^+ 5) ((bool * unit) * tapes sigNat^+ 5) :=
+Definition Mult_Step_Rel : Rel (tapes sigNat^+ 5) (option unit * tapes sigNat^+ 5) :=
   fun tin '(yout, tout) =>
     forall c m' n,
       tin[@Fin0] ≃ m' ->
@@ -402,21 +401,20 @@ Definition Mult_Step_Rel : Rel (tapes sigNat^+ 5) ((bool * unit) * tapes sigNat^
       tin[@Fin2] ≃ c ->
       isRight tin[@Fin3] ->
       isRight tin[@Fin4] ->
-      match m' with
-      | O =>
+      match yout, m' with
+      | (Some tt), O => (* return *)
         tout[@Fin0] ≃ m' /\
         tout[@Fin1] ≃ n /\
         tout[@Fin2] ≃ c /\
         isRight tout[@Fin3] /\
-        isRight tout[@Fin4] /\
-        yout = (false, tt) (* return *)
-      | S m'' =>
+        isRight tout[@Fin4]
+      | None, S m'' => (* continue *)
         tout[@Fin0] ≃ m'' /\
         tout[@Fin1] ≃ n /\
         tout[@Fin2] ≃ n + c /\
         isRight tout[@Fin3] /\
-        isRight tout[@Fin4] /\
-        yout = (true, tt) (* contine *)
+        isRight tout[@Fin4]
+      | _, _ => False
       end.
 
 Lemma Mult_Step_Realise : Mult_Step ⊨ Mult_Step_Rel.
@@ -434,16 +432,15 @@ Proof.
     destruct H; TMSimp.
     - specialize (H _ HEncM').
       destruct m' as [ | m']; auto.
-      specialize (H1 _ _ HEncN HEncC HInt3).
-      spec_assert H1 as (HComp1&HComp2&HComp3&HComp4).
+      specialize (H0 _ _ HEncN HEncC HInt3).
+      spec_assert H0 as (HComp1&HComp2&HComp3&HComp4).
       { intros i; destruct_fin i; cbn; assumption. }
       specialize (HComp4 Fin0); cbn in HComp4.
-      specialize (H2 _ HComp2).
-      specialize (H3 _ HComp3 H2) as (H7&H7').
+      specialize (H1 _ HComp2).
+      specialize (H2 _ HComp3 H1) as (H7&H7').
       repeat split; eauto.
     - specialize (H _ HEncM').
       destruct m' as [ | m']; auto.
-      split; auto.
   }
 Qed.
 
@@ -474,9 +471,9 @@ Proof.
   {
     eapply WhileInduction; intros; intros c m' n HEncM' HEncN HEncC HInt3 HInt4; TMSimp.
     - specialize (HLastStep _ _ _ HEncM' HEncN HEncC HInt3 HInt4).
-      destruct m' as [ | m']; TMSimp; inv_pair; try congruence. auto.
+      destruct m' as [ | m']; auto.
     - specialize (HStar _ _ _ HEncM' HEncN HEncC HInt3 HInt4).
-      destruct m' as [ | m']; TMSimp; inv_pair; try congruence.
+      destruct m' as [ | m']; auto. destruct HStar as (HStar1&HStar2&HStar3&HStar4&HStar5).
       specialize (HLastStep _ _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto)) as (HL1&HL2&HL3&HL4&HL).
       rewrite Nat.add_assoc in HL3. replace (n + m' * n + c) with (m' * n + n + c) by omega.
       repeat split; auto. apply tape_contains_ext with (1 := HL3). f_equal. rewrite Nat.mul_succ_l. omega.
@@ -655,20 +652,20 @@ Proof.
     {
       repeat split.
       - do 3 eexists. repeat split; eauto. cbn. unfold Mult_Step_steps. destruct m'; omega.
-      - intros b () tmid H1.
-        specialize H1 with (1 := HEncM') (2 := HEncN) (3 := HEncC) (4 := HRight3) (5 := HRight4) as
-            (HComp1&HComp2&HComp3&HComp4&HComp5&H'); inv H'.
-        cbn. omega.
+      - intros o tmid H1.
+        specialize H1 with (1 := HEncM') (2 := HEncN) (3 := HEncC) (4 := HRight3) (5 := HRight4).
+        destruct o as [ () | ]; auto. destruct H1 as (HComp1&HComp2&HComp3&HComp4&HComp5).
+        subst. cbn. omega.
     }
     {
       repeat split.
       - do 3 eexists. repeat split; eauto. cbn. unfold Mult_Step_steps. destruct m'; omega.
-      - intros b () tmid H1.
-        specialize H1 with (1 := HEncM') (2 := HEncN) (3 := HEncC) (4 := HRight3) (5 := HRight4) as
-            (HComp1&HComp2&HComp3&HComp4&HComp5&H'); inv H'.
+      - intros o tmid H1.
+        specialize H1 with (1 := HEncM') (2 := HEncN) (3 := HEncC) (4 := HRight3) (5 := HRight4).
+        destruct o as [ () | ]; auto. destruct H1 as (HComp1&HComp2&HComp3&HComp4&HComp5).
         cbn. eexists. repeat split.
         + do 3 eexists. repeat split; eauto.
-        + cbn. rewrite <- Hk. clear_all. omega.
+        + cbn. rewrite <- Hk. subst. clear_all. unfold Mult_Step_steps. omega.
     }
   }
 Qed.

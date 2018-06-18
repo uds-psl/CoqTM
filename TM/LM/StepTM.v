@@ -719,9 +719,6 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Qed.
 
 
-  (* TODO: Halt in [false], iff [T] is [nil] *)
-
-
   Definition Step : pTM sigStep^+ unit 11 :=
     MatchList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|];;
     MatchPair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
@@ -739,19 +736,21 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
                Step_var @ [|Fin0; Fin1; Fin2; Fin3; Fin4; Fin5; Fin6; Fin7|]
              end). 
 
+
   Definition Step_Rel : pRel sigStep^+ unit 11 :=
     ignoreParam (
         fun tin tout =>
-          forall (T : list HClos) (V : list HClos) (H : Heap) (T' : list HClos) (V' : list HClos) (H' : Heap),
-            step (T, V, H) (T', V', H') ->
-            tin[@Fin0] ≃ T ->
+          forall (a : HAd) (t : Tok) (P : Pro) (T : list HClos) (V : list HClos) (H : Heap),
+            tin[@Fin0] ≃ (a, t :: P) :: T ->
             tin[@Fin1] ≃ V ->
             tin[@Fin2] ≃ H ->
             (forall i : Fin.t 8, isRight tin[@FinR 3 i]) ->
-            tout[@Fin0] ≃ T' /\
-            tout[@Fin1] ≃ V' /\
-            tout[@Fin2] ≃ H' /\
-            (forall i : Fin.t 8, isRight tout[@FinR 3 i])
+            exists (T' : list HClos) (V' : list HClos) (H' : Heap),
+              step ((a, t:: P) :: T, V, H) (T', V', H') /\
+              tout[@Fin0] ≃ T' /\
+              tout[@Fin1] ≃ V' /\
+              tout[@Fin2] ≃ H' /\
+              (forall i : Fin.t 8, isRight tout[@FinR 3 i])
       ).
 
 
@@ -765,13 +764,13 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
       - apply Step_var_Realise.
     }
     {
-      intros tin ((), tout) H. cbn. intros T V heap T' V' heap' HStep HEncT HEncV HEncHeap HInt.
+      intros tin ((), tout) H. cbn. intros a t P T V heap HEncT HEncV HEncHeap HInt.
       TMSimp. (* This takes long *)
       rename H into HMatchList; rename H0 into HMatchPair; rename H1 into HMatchList'; rename H2 into HMatchTok.
-      modpon HMatchList. destruct ymid, T as [ | (a, P) T]; auto. 2: now inv HStep. modpon HMatchList.
-      specialize (HMatchPair (a, P)). modpon HMatchPair.
-      modpon HMatchList'. destruct ymid0, P as [ | t P]; auto; modpon HMatchList'. 2: now inv HStep.
-      modpon HMatchTok. destruct ymid1 as [ [ | | ] | ], t; auto; simpl_surject; inv HStep; cbn in *.
+      modpon HMatchList. destruct ymid; auto. modpon HMatchList.
+      specialize (HMatchPair (a, t::P)). modpon HMatchPair. cbn in *.
+      specialize (HMatchList' (t::P)). modpon HMatchList'. destruct ymid0; auto; modpon HMatchList'.
+      modpon HMatchTok. destruct ymid1 as [ [ | | ] | ], t; auto; simpl_surject.
       - (* lamT *)
         rename H3 into HStepLam. modpon HStepLam; TMSimp_goal; eauto; try contains_ext.
         intros i; destruct_fin i; auto; TMSimp_goal; cbn; auto.

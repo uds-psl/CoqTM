@@ -54,26 +54,26 @@ Section Nth.
    * t2: x (output)
    *)
 
-  Definition Nth_Step_Rel : Rel (tapes sig^+ 3) ((bool*unit) * tapes sig^+ 3) :=
+  Definition Nth_Step_Rel : Rel (tapes sig^+ 3) (option unit * tapes sig^+ 3) :=
     fun tin '(yout, tout) =>
       forall (l : list X) (n : nat),
         tin[@Fin0] ≃ l ->
         tin[@Fin1] ≃ n ->
         isRight tin[@Fin2] ->
         match yout, n, l with
-        | (true, tt), S n', x :: l' => (* Recursion case *)
+        | None, S n', x :: l' => (* Recursion case *)
           tout[@Fin0] ≃ l' /\
           tout[@Fin1] ≃ n' /\
           isRight tout[@Fin2] (* continue *)
-        | (false, tt), S n', nil => (* list to short *)
+        | Some tt, S n', nil => (* list to short *)
           tout[@Fin0] ≃ l /\
           tout[@Fin1] ≃ n' /\
           tout[@Fin2] ≃ None (* return None *)
-        | (false, tt), 0, x::l' => (* return value *)
+        | Some tt, 0, x::l' => (* return value *)
           tout[@Fin0] ≃ l' /\
           tout[@Fin1] ≃ 0 /\
           tout[@Fin2] ≃ Some x (* return Some x *)
-        | (false, tt), 0, nil => (* list to short *)
+        | Some tt, 0, nil => (* list to short *)
           tout[@Fin0] ≃ l /\
           tout[@Fin1] ≃ n /\
           tout[@Fin2] ≃ None (* return None *)
@@ -81,15 +81,15 @@ Section Nth.
         end.
 
 
-  Definition Nth_Step : { M : mTM sig^+ 3 & states M -> bool*unit } :=
+  Definition Nth_Step : { M : mTM sig^+ 3 & states M -> option unit } :=
     If (Inject (ChangeAlphabet MatchNat _) [|Fin1|])
        (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
-           (Return (Inject (Reset _) [|Fin2|]) (true, tt))
-           (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (false, tt)))
+           (Return (Inject (Reset _) [|Fin2|]) (None))
+           (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (Some tt)))
        (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
            (Return (Inject (Translate retr_X_list retr_X_opt;;
-                            ChangeAlphabet (Constr_Some sigX) _) [|Fin2|]) (false, tt))
-           (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (false, tt)))
+                            ChangeAlphabet (Constr_Some sigX) _) [|Fin2|]) (Some tt))
+           (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (Some tt)))
   .
 
   Lemma Nth_Step_Realise : Nth_Step ⊨ Nth_Step_Rel.
@@ -100,7 +100,7 @@ Section Nth.
       - apply Translate_Realise with (X := X).
     }
     {
-      intros tin ((yout, ()), tout) H.
+      intros tin (yout, tout) H.
       intros l n HEncL HEncN HRight.
       destruct H; TMSimp.
       { (* First "Then" case *)
@@ -108,15 +108,17 @@ Section Nth.
         destruct n as [ | n']; auto; simpl_surject.
         (* We know that n = S n' *)
 
-        destruct H0; TMSimp; inv_pair.
+        destruct H0; TMSimp.
         { (* Second "Then" case *)
           modpon H0. destruct l as [ | x l']; auto; simpl_surject. modpon H0.
+          modpon H1.
           (* We know that l = x :: l' *)
           modpon H2. repeat split; auto.
         }
         { (* Second "Else" case *)
           modpon H0. destruct l as [ | x l']; auto; modpon H0; auto; simpl_surject.
           (* We know that l = nil *)
+          modpon H1.
           modpon H2. repeat split; eauto.
         }
       }
@@ -125,18 +127,19 @@ Section Nth.
         destruct n as [ | n']; auto.
         (* We know that n = 0 *)
 
-        destruct H0; TMSimp; inv_pair.
+        destruct H0; TMSimp.
         { (* Second "Then" case *)
           modpon H0.
           destruct l as [ | x l']; auto. destruct H0 as (H0&H0'); simpl_surject.
           (* We know that l = x :: l' *)
-          modpon H2. simpl_tape in H3; cbn in *. modpon H3; simpl_surject. repeat split; eauto.
+          modpon H1.
+          simpl_tape in H2. modpon H2. repeat split; auto.
         }
         { (* Second "Else" case *)
           modpon H0.
           destruct l as [ | x l']; auto; destruct H0 as (H0 & H0'); simpl_surject.
           (* We know that l = nil *)
-          modpon H2. repeat split; eauto.
+          modpon H1. repeat split; eauto.
         }
       }
     }
@@ -207,9 +210,11 @@ Section Nth.
 End Nth.
 
   
-(** * Implementation of partitially defined [nth] *)
+(** * Other Implementation of [nth_error] *)
 
 Section Nth'.
+
+  (** In this implementation of [nth_error], instead of encoding an option to the output tape, we use the finite parameter to indicate whether the result is [Some] or [None]. The advantage is that the client doesn't have to add the option to its alphabet. *)
 
   Variable (sig sigX : finType) (X : Type) (cX : codable sigX X).
   (* Hypothesis (defX: inhabitedC sigX). *)
@@ -220,35 +225,39 @@ Section Nth'.
   Check _ : codable sig (list X).
   Check _ : codable sig nat.
 
-  Definition Nth'_Step_Rel : Rel (tapes sig^+ 3) ((bool*unit) * tapes sig^+ 3) :=
+  Definition Nth'_Step_Rel : Rel (tapes sig^+ 3) (option bool * tapes sig^+ 3) :=
     fun tin '(yout, tout) =>
       forall (l : list X) (n : nat),
         tin[@Fin0] ≃ l ->
         tin[@Fin1] ≃ n ->
         isRight tin[@Fin2] ->
         match yout, n, l with
-        | (true, tt), S n', x :: l' => (* Recursion case *)
+        | None, S n', x :: l' => (* Recursion case *)
           tout[@Fin0] ≃ l' /\
           tout[@Fin1] ≃ n' /\
           isRight tout[@Fin2] (* continue *)
-        | (false, tt), 0, x::l' => (* return value *)
+        | Some true, 0, x::l' => (* return value *)
           tout[@Fin0] ≃ l' /\
           tout[@Fin1] ≃ 0 /\
           tout[@Fin2] ≃ x
-        | _, 0, nil => (* list to short *)
-          True
-        | _, S n', nil => (* list to short *)
-          True
+        | Some false, 0, nil => (* list to short *)
+          tout[@Fin0] ≃ nil /\
+          tout[@Fin1] ≃ 0 /\
+          isRight tout[@Fin2]
+        | Some false, S n', nil => (* list to short *)
+          tout[@Fin0] ≃ nil /\
+          tout[@Fin1] ≃ n' /\
+          isRight tout[@Fin2]
         | _, _, _ => False
         end.
 
 
-  Definition Nth'_Step : { M : mTM sig^+ 3 & states M -> bool*unit } :=
+  Definition Nth'_Step : { M : mTM sig^+ 3 & states M -> option bool } :=
     If (Inject (ChangeAlphabet MatchNat _) [|Fin1|])
-       (Return (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|];;
-                Inject (Reset _) [|Fin2|]) (true, tt))
-       (Return (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
-               (false, tt))
+       (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) (* n = S n' *)
+           (Return (Inject (Reset _) [|Fin2|]) None) (* l = x :: l'; continue *)
+           (Nop (Some false))) (* l = nil; return false *)
+       (ChangePartition (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) Some) (* n = 0 *)
   .
 
   Lemma Nth'_Step_Realise : Nth'_Step ⊨ Nth'_Step_Rel.
@@ -258,37 +267,44 @@ Section Nth'.
       - eapply Reset_Realise with (X := X).
     }
     {
-      intros tin ((yout, ()), tout) H.
+      intros tin (yout, tout) H.
       intros l n HEncL HEncN HRight.
       destruct H; TMSimp.
-      { (* First "Then" case *)
-        modpon H. inv H0.
-        destruct n as [ | n']; auto; simpl_surject.
-        (* We know that n = S n' *)
-        modpon H1. destruct ymid; destruct l; auto; modpon H1.
-        modpon H2. repeat split; auto.
+      { (* First "Then"; n = S n' *) rename H into HMatchNat, H0 into HIf.
+        modpon HMatchNat. destruct n as [ | n']; auto; simpl_surject.
+        destruct HIf; TMSimp.
+        { (* Second "Then"; l = x :: l' *) rename H into HMatchList, H0 into HReset.
+          modpon HMatchList. destruct l as [ | x l']; auto. modpon HMatchList.
+          modpon HReset. repeat split; auto.
+        }
+        { (* Second "Else"; l = nil *) rename H into HMatchList.
+          modpon HMatchList. destruct l as [ | x l']; auto. modpon HMatchList. repeat split; auto.
+        }
       }
-      { (* The first "Else" case *)
-        modpon H. inv H0.
-        destruct n as [ | n']; auto.
-        (* We know that n = 0 *)
-        modpon H1. destruct ymid; destruct l; auto; modpon H1.
-        TMSimp_goal. repeat split; auto. contains_ext.
+      { (* The first "Else"; n = 0 *) rename H into HMatchNat, H0 into HMatchList.
+        modpon HMatchNat. destruct n as [ | n']; auto; simpl_surject.
+        modpon HMatchList. destruct ymid, l; auto; modpon HMatchList; repeat split; auto. contains_ext.
       }
     }
   Qed.
 
-  
+  Definition Nth'_Step_steps (l : list X) (n : nat) :=
+    match n, l with
+    | S n', x :: l' =>
+      2 + MatchNat_steps + MatchList_steps_cons _ x + Reset_steps _ x
+    | S n', nil =>
+      2 + MatchNat_steps + MatchList_steps_nil
+    | O, x :: l' =>
+      1 + MatchNat_steps + MatchList_steps_cons _ x
+    | O, nil =>
+      1 + MatchNat_steps + MatchList_steps_nil
+    end.
+
   Definition Nth'_Step_T : tRel sig^+ 3 :=
     fun tin k => exists (l : list X) (n : nat),
         tin[@Fin0] ≃ l /\ tin[@Fin1] ≃ n /\ isRight tin[@Fin2] /\
-        match l, n with
-        | x :: l', S n' =>
-          57 + 20 * size _ x <= k
-        | x :: l', O =>
-          48 + 16 * size _ x <= k
-        | _, _ => False (* runtime not specified *)
-        end.
+        Nth'_Step_steps l n <= k.
+
 
   Lemma Nth'_Step_Terminates : projT1 Nth'_Step ↓ Nth'_Step_T.
   Proof.
@@ -297,16 +313,26 @@ Section Nth'.
       - apply Reset_Terminates with (X := X).
     }
     {
-      intros tin k. intros (l&n&HEncL&HEncN&HRight2&Hk).
-      destruct n as [ | n'] eqn:E1, l as [ | x l'] eqn:E2; auto.
+      intros tin k. intros (l&n&HEncL&HEncN&HRight2&Hk). unfold Nth'_Step_steps in Hk.
+      destruct n as [ | n'] eqn:E1, l as [ | x l'] eqn:E2; cbn.
+      - (* [n = 0] and [l = nil] *)
+        exists (MatchNat_steps), (MatchList_steps_nil). repeat split; auto; try omega.
+        intros tmid b (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct b; auto; simpl_surject.
+        { eexists; repeat split; simpl_surject; eauto. }
       - (* [n = 0] and [l = x :: l'] *)
-        exists 5, (42 + 16 * size _ x). repeat split; cbn; auto.
+        exists MatchNat_steps, (MatchList_steps_cons _ x). repeat split; cbn; auto.
         intros tmid b (H&HInj1); TMSimp. modpon H. destruct b; cbn in *; auto; simpl_surject.
-        exists (x :: l'). repeat split; simpl_surject; auto.
+        { eexists; repeat split; simpl_surject; eauto. }
+      - (* [n = S n'] and [l = nil] *) 
+        exists (MatchNat_steps), (S (MatchList_steps_nil)). repeat split; try omega.
+        intros tmid b (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct b; auto. simpl_surject.
+        exists (MatchList_steps_nil), 0. repeat split; try omega.
+        { eexists; repeat split; simpl_surject; eauto. }
+        intros tmid0 b (HMatchList&HMatchListInj); TMSimp. modpon HMatchList. destruct b; auto.
       - (* [n = S n'] and [l = x :: l'] *)
-        exists 5, (51 + 20 * size _ x). repeat split; cbn; auto.
+        exists MatchNat_steps, (S (MatchList_steps_cons _ x + Reset_steps _ x)). repeat split; cbn; auto.
         intros tmid b (H&HInj1); TMSimp. modpon H. destruct b; cbn in *; auto; simpl_surject.
-        exists (42 + 16 * size _ x), (8 + 4 * size _ x). repeat split; cbn; try omega.
+        exists (MatchList_steps_cons _ x), (Reset_steps _ x). repeat split; cbn; try omega.
         { exists (x :: l'). repeat split; simpl_surject; auto. }
         intros tmid2 b (H2&HInj2); TMSimp. modpon H2. destruct b; cbn in *; auto; simpl_surject; modpon H2.
         exists x. repeat split; eauto. contains_ext. unfold Reset_steps. now rewrite Encode_map_hasSize.
@@ -314,17 +340,25 @@ Section Nth'.
   Qed.
 
 
-  Definition Nth'_Loop_Rel : Rel (tapes sig^+ 3) (unit * tapes sig^+ 3) :=
-    ignoreParam
-      (fun tin tout =>
-         forall l (n : nat) (x : X),
-           nth_error l n = Some x ->
-           tin[@Fin0] ≃ l ->
-           tin[@Fin1] ≃ n ->
-           isRight tin[@Fin2] ->
-           tout[@Fin0] ≃ skipn (S n) l /\
-           tout[@Fin1] ≃ n - (S (length l)) /\
-           tout[@Fin2] ≃ x).
+  Definition Nth'_Loop_Rel : Rel (tapes sig^+ 3) (bool * tapes sig^+ 3) :=
+    fun tin '(yout, tout) =>
+      forall (l:list X) (n : nat),
+          tin[@Fin0] ≃ l ->
+          tin[@Fin1] ≃ n ->
+          isRight tin[@Fin2] ->
+          match yout with
+          | true =>
+            exists (x : X),
+            nth_error l n = Some x /\
+            tout[@Fin0] ≃ skipn (S n) l /\
+            tout[@Fin1] ≃ n - (S (length l)) /\
+            tout[@Fin2] ≃ x
+          | false =>
+            nth_error l n = None /\
+            tout[@Fin0] ≃ skipn (S n) l /\
+            tout[@Fin1] ≃ n - (S (length l)) /\
+            isRight tout[@Fin2]
+          end.
 
 
   Definition Nth'_Loop := WHILE Nth'_Step.
@@ -335,24 +369,30 @@ Section Nth'.
     eapply Realise_monotone.
     { unfold Nth'_Loop. repeat TM_Correct. eapply Nth'_Step_Realise. }
     {
-      apply WhileInduction; intros; intros l n x HNth HEncL HEncN HRight.
-      - TMSimp. modpon HLastStep.
-        destruct n as [ | n'], l as [ | y l']; cbn in *; auto; inv HNth.
-        modpon HLastStep. repeat split; auto.
-      - TMSimp. modpon HStar.
-        destruct n as [ | n'], l as [ | y l']; cbn in *; auto; inv HNth; destruct HStar as (H1&H2&H3); cbn in *.
-        modpon HLastStep. repeat split; auto.
+      apply WhileInduction; intros; intros l n HEncL HEncN HRight; cbn in *.
+      - modpon HLastStep. destruct yout.
+        + destruct n; auto. destruct l as [ | x l']; auto. modpon HLastStep.
+          cbn. exists x. tauto.
+        + destruct n; auto.
+          * destruct l as [ | x l']; auto.
+          * destruct l as [ | x l']; auto. modpon HLastStep.
+            cbn. now rewrite Nat.sub_0_r.
+      - modpon HStar. destruct n as [ | n']; auto. destruct l as [ | x l']; auto. modpon HStar.
+        modpon HLastStep. destruct yout.
+        + destruct HLastStep as (y&HLastStep); modpon HLastStep. cbn. exists y. eauto.
+        + modpon HLastStep. cbn. eauto.
     }
   Qed.
 
 
   Fixpoint Nth'_Loop_steps (l : list X) (n : nat) { struct l } :=
-    match l, n with
-    | x :: l', S n' =>
-      58 + 20 * size _ x + Nth'_Loop_steps l' n'
-    | x :: l', O =>
-      48 + 16 * size _ x
-    | _, _ => 0 (* runtime not specified *)
+    match n, l with
+    | S n', x :: l'  =>
+      S (Nth'_Step_steps l n) + Nth'_Loop_steps l' n'
+    | S n', nil => 6 (* [MatchNat_steps] + [MatchList_steps _nil]  *)
+    | O, x :: l' =>
+      Nth'_Step_steps l n
+    | O, nil => Nth'_Step_steps l n (* only [MatchNat] and [If] *)
     end.
   
 
@@ -372,13 +412,13 @@ Section Nth'.
       intros tin k (l&n&y&HNth&HEncL&HEncN&HRight&Hk).
       destruct l as [ | x l'] eqn:E1, n as [ | n'] eqn:E2; cbn in *; auto; TMSimp.
       - (* [n=0] and [l = y :: l'] *)
-        exists (48 + 16 * size cX y). split.
-        { unfold Nth'_Step_T. exists (y :: l'), 0. repeat split; auto. }
-        intros b () tmid H1; TMSimp. modpon H1. destruct b; auto; modpon H1.
+        exists (Nth'_Step_steps (y::l') 0). split.
+        { hnf. exists (y :: l'), 0. repeat split; auto. }
+        intros b tmid H1; TMSimp. modpon H1. destruct b; auto; modpon H1.
       - (* [n=S n'] and [l = x :: l'] *)
-        exists (57 + 20 * size _ x). repeat split.
-        { unfold Nth'_Step_T. exists (x :: l'), (S n'). auto. }
-        intros b () tmid H1. modpon H1. destruct b; auto; modpon H1.
+        exists (Nth'_Step_steps (x::l') (S n')). repeat split.
+        { hnf. exists (x :: l'), (S n'). auto. }
+        intros b tmid H1. modpon H1. destruct b; auto; modpon H1. now destruct b.
         exists (Nth'_Loop_steps l' n'). repeat split; auto; try omega.
         hnf. exists l', n', y. repeat split; eauto.
     }
@@ -386,27 +426,39 @@ Section Nth'.
 
 
   (** We don't want to save, but reset, [n]. *)
-  Definition Nth' : { M : mTM sig^+ 4 & states M -> unit } :=
+  Definition Nth' : { M : mTM sig^+ 4 & states M -> bool } :=
     Inject (CopyValue _) [|Fin0; Fin3|];; (* Save l (on t0) to t3 *)
-    Inject (Nth'_Loop) [|Fin3; Fin1; Fin2|];; (* Execute the loop with the copy of l *)
-    Inject (Reset _) [|Fin3|];; (* Reset the copy of [l] *)
-    Inject (Reset _) [|Fin1|]. (* Reset [n] *)
+    If (Inject (Nth'_Loop) [|Fin3; Fin1; Fin2|]) (* Execute the loop with the copy of l *)
+       (Return (Inject (Reset _) [|Fin3|];; (* Reset the copy of [l] *)
+                Inject (Reset _) [|Fin1|] (* Reset [n] *)
+               ) true)
+       (Return (Inject (Reset _) [|Fin3|];; (* Reset the copy of [l] *)
+                Inject (Reset _) [|Fin1|] (* Reset [n] *)
+               ) false)
+  .
 
-
-  Definition Nth'_Rel : pRel sig^+ unit 4 :=
-    ignoreParam (
-        fun tin tout =>
-          forall (l : list X) (n : nat) (x : X),
-            nth_error l n = Some x ->
-            tin[@Fin0] ≃ l ->
-            tin[@Fin1] ≃ n ->
-            isRight tin[@Fin2] ->
-            isRight tin[@Fin3] ->
-            tout[@Fin0] ≃ l /\
-            isRight tout[@Fin1] /\
-            tout[@Fin2] ≃ x /\
-            isRight tout[@Fin3]
-      ).
+  Definition Nth'_Rel : pRel sig^+ bool 4 :=
+    fun tin '(yout, tout) =>
+      forall (l : list X) (n : nat),
+        tin[@Fin0] ≃ l ->
+        tin[@Fin1] ≃ n ->
+        isRight tin[@Fin2] ->
+        isRight tin[@Fin3] ->
+        match yout with
+        | true =>
+          exists (x : X),
+          nth_error l n = Some x /\
+          tout[@Fin0] ≃ l /\
+          isRight tout[@Fin1] /\
+          tout[@Fin2] ≃ x /\
+          isRight tout[@Fin3]
+        | false =>
+          nth_error l n = None /\
+          tout[@Fin0] ≃ l /\
+          isRight tout[@Fin1] /\
+          isRight tout[@Fin2] /\
+          isRight tout[@Fin3]
+        end.
 
   Lemma Nth'_Realise : Nth' ⊨ Nth'_Rel.
   Proof.
@@ -416,17 +468,28 @@ Section Nth'.
       - apply Nth'_Loop_Realise.
       - apply Reset_Realise with (X := list X).
       - apply Reset_Realise with (X := nat).
+      - apply Reset_Realise with (X := list X).
+      - apply Reset_Realise with (X := nat).
     }
     {
-      intros tin ((), tout) H. cbn. intros l n x HNth HEncL HEncN HRight2 HRight3.
-      TMSimp. modpon H. modpon H0. modpon H1. modpon H2. repeat split; auto.
+      intros tin (yout, tout) H. cbn. intros l n HEncL HEncN HRight2 HRight3.
+      TMSimp. rename H into HCopy, H0 into HIf.
+      destruct HIf; TMSimp.
+      { rename H into HLoop, H0 into HReset, H1 into HReset'.
+        modpon HCopy. modpon HLoop. destruct HLoop as (HLoop1&HLoop2&HLoop3&HLoop4&HLoop5).
+        modpon HReset. eexists; repeat split; eauto.
+      }
+      { rename H into HLoop, H0 into HReset, H1 into HReset'.
+        modpon HCopy. modpon HLoop.
+        modpon HReset. eexists; repeat split; eauto.
+      }
     }
   Qed.
 
 
   Definition Nth'_steps (l : list X) (n : nat) :=
-    44 + Nth'_Loop_steps l n + 4 * (size _ (skipn (S n) l) + size _ (n - S (length l))) + 12 * size _ l.
-    
+    3 + CopyValue_steps _ l + Nth'_Loop_steps l n + Reset_steps _ (skipn (S n) l) + Reset_steps _ (n - S (length l)).
+
   Definition Nth'_T : tRel sig^+ 4 :=
     fun tin k => exists (l : list X) (n : nat) (y : X),
         nth_error l n = Some y /\
@@ -444,243 +507,38 @@ Section Nth'.
       - apply Reset_Realise with (X := list X).
       - apply Reset_Terminates with (X := list X).
       - apply Reset_Terminates with (X := nat).
+      - apply Reset_Realise with (X := list X).
+      - apply Reset_Terminates with (X := list X).
+      - apply Reset_Terminates with (X := nat).
     }
     {
       intros tin k (l&n&y&HNth&HEncL&HEncN&HRigh2&HRight3&Hk). unfold Nth'_steps in *.
-      exists (25+12*size _ l), (18 + Nth'_Loop_steps l n + 4*(size _ (skipn (S n) l) + size _ (n - S (length l)))). repeat split; cbn; try omega.
+      exists (CopyValue_steps _ l), (1 + Nth'_Loop_steps l n + 1 + Reset_steps _ (skipn (S n) l) + Reset_steps _ (n - S (length l))).
+      repeat split; cbn; try omega.
       exists l. repeat split; eauto. unfold CopyValue_steps. now rewrite Encode_map_hasSize.
       intros tmid () (HCopy&HInjCopy); TMSimp. modpon HCopy.
-      exists (Nth'_Loop_steps l n), (17 + 4*(size _ (skipn (S n) l) + size _ (n - S (length l)))). repeat split; cbn; try omega.
+      exists (Nth'_Loop_steps l n), (1 + Reset_steps _ (skipn (S n) l) + Reset_steps _ (n - S (length l))).
+      repeat split; cbn; try omega. 2: now rewrite !Nat.add_assoc.
       hnf. do 3 eexists. repeat split; eauto.
-      intros tmid2 () (HLoop&HInjLoop); TMSimp. modpon HLoop.
-      exists (8 + 4 * size _ (skipn (S n) l)), (8 + 4 * size _ (n - S (length l))). repeat split; cbn; try omega.
-      do 1 eexists. repeat split; eauto. unfold Reset_steps. now rewrite Encode_map_hasSize.
-      intros tmid3 () (HReset&HInjReset); TMSimp. modpon HReset.
-      do 1 eexists. repeat split; eauto. unfold Reset_steps. now rewrite Encode_map_hasSize.
+      intros tmid2 b (HLoop&HInjLoop); TMSimp. modpon HLoop. destruct b.
+      {
+        destruct HLoop as (x&HLoop); modpon HLoop.
+        exists (Reset_steps _ (skipn (S n) l)), (Reset_steps _ (n - S (length l))).
+        repeat split; cbn; try omega. 2: reflexivity.
+        do 1 eexists. repeat split; eauto. unfold Reset_steps. now rewrite Encode_map_hasSize.
+        intros tmid3 () (HReset&HInjReset); TMSimp. modpon HReset.
+        do 1 eexists. repeat split; eauto. unfold Reset_steps. now rewrite Encode_map_hasSize.
+      }
+      {
+        modpon HLoop.
+        exists (Reset_steps _ (skipn (S n) l)), (Reset_steps _ (n - S (length l))).
+        repeat split; cbn; try omega. 2: reflexivity.
+        do 1 eexists. repeat split; eauto. unfold Reset_steps. now rewrite Encode_map_hasSize.
+        intros tmid3 () (HReset&HInjReset); TMSimp.
+      }
     }
   Qed.
   
-
-  (*
-  (** ** Runtime *)
-
-
-  Definition Nth_Step_steps l n :=
-    6 + (* [5] for [MatchNat], [1] for first [If] *)
-    match n, l with
-    | S n, x :: l' =>
-      51 + 20 * length (cX x) (* [1] for [If], [42+16*|x|] for [MatchList], [8+4*|x|] for Reset *)
-    | S n, nil =>
-      11 (* [1] for [If], [5] for [MatchList], [5] for [Constr_None] *)
-    | O, x :: l =>
-      46 + 16 * length (cX x) (* [1] for [42+16*|x|] for [MatchList], [3] for [Constr_Some] *)
-    | 0, nil =>
-      11 (* [1] for [If], [5] for [MatchList], [5] for [Constr_None] *)
-    end.
-
-  Definition Nth_Step_T : tRel tau^+ 3 :=
-    fun tin k =>
-      exists (l : list X) (n : nat),
-        tin[@Fin0] ≃ l /\
-        tin[@Fin1] ≃ n /\
-        isRight tin[@Fin2] /\
-        Nth_Step_steps l n <= k.
-
-  Lemma Nth_Step_Terminates : projT1 Nth_Step ↓ Nth_Step_T.
-  Proof.
-    eapply TerminatesIn_monotone.
-    { unfold Nth_Step. repeat TM_Correct.
-      - unfold ChangeAlphabet. TM_Correct. eapply RealiseIn_Realise. apply MatchNat_Sem.
-      - unfold ChangeAlphabet. TM_Correct. eapply RealiseIn_terminatesIn. apply MatchNat_Sem.
-      - apply MatchList_Realise with (X := X).
-      - apply MatchList_Terminates with (X := X).
-      - unfold Reset. apply MoveRight_Terminates with (X := X).
-      - eapply RealiseIn_terminatesIn. apply Constr_None_Sem with (X := X).
-      - apply MatchList_Realise with (X := X).
-      - apply MatchList_Terminates with (X := X).
-      - eapply RealiseIn_terminatesIn. apply Constr_Some_Sem with (X := X).
-      - eapply RealiseIn_terminatesIn. apply Constr_None_Sem with (X := X).
-    }
-    {
-      unfold Nth_Step_T, Nth_Step_steps. intros tin k (l&n&HEncL&HEncN&HRight&Hk).
-      destruct n as [ | n'], l as [ | x l']; exists 5.
-      { (* n = 0, l = nil *)
-        exists 11. repeat split; cbn; try omega.
-        intros tmid ymid (H&HInj); TMSimp.
-        specialize (H _ (contains_translate_tau1 HEncN)) as (H % contains_translate_tau2 & ->).
-        exists 5, 5. repeat split. omega.
-        - exists nil. repeat split; eauto.
-        - intros tmid2 ymid2 (H2&HInj2). TMSimp. specialize (H2 nil) with (1 := HEncL) (2 := HRight) as (H2&H2'&->). omega.
-      }
-      { (* n = 0, l = x :: l' *)
-        exists (46 + 16 * length (cX x)). repeat split; cbn; try omega.
-        intros tmid ymid (H&HInj); TMSimp.
-        specialize (H _ (contains_translate_tau1 HEncN)) as (H % contains_translate_tau2 & ->).
-        exists (42+16*length(cX x)), 3. repeat split; try omega.
-        - exists (x :: l'). repeat split; auto.
-          apply tape_contains_ext with (1 := HEncL). cbn. f_equal. now rewrite !List.map_app, !List.map_map, map_id.
-        - intros tmid2 ymid2 (H2&HInj2). TMSimp.
-          specialize (H2 (x :: l')) with (2 := HRight) as (H2&H2'&->); try omega.
-          apply tape_contains_ext with (1 := HEncL). cbn. f_equal. now rewrite !List.map_app, !List.map_map, map_id.
-      }
-      { (* n = S n'; l = nil *)
-        exists 11. repeat split; cbn; try omega.
-        intros tmid ymid (H&HInj); TMSimp.
-        specialize (H _ (contains_translate_tau1 HEncN)) as (H % contains_translate_tau2 & ->).
-        exists 5, 5. repeat split; cbn; try omega.
-        - exists nil. auto.
-        - intros tmid2 ymid2 (H2&HInj2). TMSimp. specialize (H2 nil) with (1 := HEncL) (2 := HRight) as (H2&H2'&->). omega.
-      }
-      { (* n = S n; l = x :: l' *)
-        exists (51 + 20 * length (cX x)). repeat split; cbn; try omega.
-        intros tmid ymid (H&HInj); TMSimp.
-        specialize (H _ (contains_translate_tau1 HEncN)) as (H % contains_translate_tau2 & ->).
-        exists (42+16*length (cX x)), (8+4*length (cX x)). repeat split; try omega.
-        - exists (x :: l'). repeat split; auto.
-          apply tape_contains_ext with (1 := HEncL). cbn. f_equal. now rewrite !List.map_app, !List.map_map, map_id.
-        - intros tmid2 ymid2 (H2&HInj2). TMSimp.
-          specialize (H2 (x :: l')) with (2 := HRight) as (H2&H2'&->).
-          + apply tape_contains_ext with (1 := HEncL). cbn. f_equal. now rewrite !List.map_app, !List.map_map, map_id.
-          + exists x. repeat split; auto. rewrite map_length. omega.
-      }
-    }
-  Qed.
-
-
-  Fixpoint Nth_Loop_steps l n :=
-    match n, l with
-    | S n', x :: l' => S (Nth_Step_steps l n) + Nth_Loop_steps l' n' (* Only recursion case *)
-    | _, _ => S (Nth_Step_steps l n)
-    end.
-
-
-  Definition Nth_Loop_T : tRel tau^+ 3 :=
-    fun tin k =>
-      exists (l : list X) (n : nat),
-        tin[@Fin0] ≃ l /\
-        tin[@Fin1] ≃ n /\
-        isRight tin[@Fin2] /\
-        Nth_Loop_steps l n <= k.
-
-  Lemma Nth_Loop_Terminates : projT1 Nth_Loop ↓ Nth_Loop_T.
-  Proof.
-    unfold Nth_Loop. repeat TM_Correct.
-    { apply Nth_Step_Realise. }
-    { apply Nth_Step_Terminates. }
-    {
-      unfold Nth_Loop_T. intros tin k (l&n&HEncL&HEncN&HRight&Hk).
-      destruct n as [ | n'] eqn:E1, l as [ | x l'] eqn:E2; exists (Nth_Step_steps l n); subst.
-      {
-        split. hnf. do 2 eexists. repeat split; eauto.
-        intros b ymid tmid H. cbn in H.
-        specialize H with (1 := HEncL) (2 := HEncN) (3 := HRight); destruct H as (H1&H2&H3&H4); inv H4.
-        cbv in Hk; cbv. omega.
-      }
-      {
-        split. hnf. do 2 eexists. repeat split; eauto.
-        intros b ymid tmid H. cbn in H.
-        specialize H with (1 := HEncL) (2 := HEncN) (3 := HRight); destruct H as (H1&H2&H3&H4); inv H4.
-        cbv in Hk; cbv. omega.
-      }
-      {
-        split. hnf. do 2 eexists. repeat split; eauto.
-        intros b ymid tmid H. cbn in H.
-        specialize H with (1 := HEncL) (2 := HEncN) (3 := HRight); destruct H as (H1&H2&H3&H4); inv H4.
-        cbv in Hk; cbv. omega.
-      }
-      {
-        split. hnf. do 2 eexists. repeat split; eauto.
-        intros b ymid tmid H. cbn in H.
-        specialize H with (1 := HEncL) (2 := HEncN) (3 := HRight); destruct H as (H1&H2&H3&H4); inv H4.
-        cbn in *.
-        exists (Nth_Loop_steps l' n'). repeat split.
-        - exists l', n'. eauto.
-        - rewrite <- Hk. cbv [Nth_Step_steps]. omega.
-      }
-    }
-  Qed.
-
-  Arguments Encode_list : simpl never.
-  Arguments Encode_nat : simpl never.
-
-  (* 25 + 12 * | encode l | for Copy l *)
-  (* 25 + 12 * | encode n| for Copy n *)
-  (* [Nth_Loop_steps l n] for the Loop *)
-  (* 8 + 4 * | encode (skipn (S n)) | for Reset l *)
-  (* 8 + 4 * | encode (n - (S (length l))) | for Reset n *)
-  Definition Nth_steps l n :=
-    70 +
-    Nth_Loop_steps l n +
-    4 * length (Encode_list cX (skipn (S n) l)) +
-    4 * length (Encode_nat (n - (S (length l)))) +
-    12 * length (Encode_list cX l) +
-    12 * length (Encode_nat n).
-
-  Lemma Nth_Terminates : projT1 Nth ↓ Computes2_T Nth_steps.
-  Proof.
-    eapply TerminatesIn_monotone.
-    { unfold Nth. repeat TM_Correct.
-      - apply CopyValue_Realise with (X := list X).
-      - apply CopyValue_Terminates with (X := list X).
-      - apply CopyValue_Realise with (X := nat).
-      - apply CopyValue_Terminates with (X := nat).
-      - apply Nth_Loop_Realise.
-      - apply Nth_Loop_Terminates.
-      - apply Reset_Realise with (X := list X).
-      - apply MoveRight_Terminates with (X := list X).
-      - apply MoveRight_Terminates with (X := nat).
-    }
-    {
-      intros tin k (l&n&HEncL&HEncN&HRight2&HInt&Hk). unfold Nth_steps in Hk.
-      specialize (HInt Fin0) as HRight3. specialize (HInt Fin1) as HRight4. clear HInt.
-      exists (25 + 12 * length (Encode_list cX (l))).
-      exists (44 + Nth_Loop_steps l n +
-         4 * length (Encode_list cX (skipn (S n) l)) + 4 * length (Encode_nat (n - (S (length l)))) +
-         12 * length (Encode_nat n)).
-      repeat split; cbn.
-      - rewrite <- Hk.
-        subst tau.
-        (* Somehow, [generalize] doesn't work here as expected. *)
-        enough (forall a b c d,
-                   25 + 12 * a +
-                   S (44 + Nth_Loop_steps l n + 4 * b + 4 * c + 12 * d) <=
-                   70 + Nth_Loop_steps l n + 4 * b + 4 * c +
-                   12 * a + 12 * d
-               ) by auto; intros. omega.
-      - exists l. repeat split. cbn. eauto. rewrite map_length. omega.
-      - intros tmid () (H1&HInj1). TMSimp.
-        exists (25 + 12 * length (Encode_nat n)).
-        exists (18 + Nth_Loop_steps l n + 4 * length (Encode_list cX (skipn (S n) l)) + 4 * length (Encode_nat (n - (S (length l))))).
-        repeat split.
-        + enough (forall a b c,
-                     25 + 12 * a +
-                     S (18 + Nth_Loop_steps l n + 4 * b + 4 * c) <=
-                     44 + Nth_Loop_steps l n + 4 * b + 4 * c + 12 * a
-                 ) as H by auto; intros. omega.
-        + exists n. repeat split. auto. rewrite map_length. reflexivity. (* [omega] doesn't work, but [reflexivity] ? *)
-        + intros tmid2 () (H2&HInj2); TMSimp.
-          specialize H2 with (1 := HEncN) (2 := HRight4) as (H2&H2').
-          specialize H1 with (x := l). destruct H1 as (H1&H1'); auto.
-          exists (Nth_Loop_steps l n).
-          exists (17 + 4 * length (Encode_list cX (skipn (S n) l)) + 4 * length (Encode_nat (n - (S (length l))))).
-          repeat split.
-          * enough (forall a b,
-                       Nth_Loop_steps l n + S (17 + 4 * a + 4 * b) <=
-                       18 + Nth_Loop_steps l n + 4 * a + 4 * b) by auto; intros; omega.
-          * hnf. cbn. exists l, n. auto.
-          * intros tmid3 () (H3&HInj3).
-            specialize H3 with (1 := H1') (2 := H2') (3 := HRight2) as (H3&H3'&H3'').
-            exists (8 + 4 * length (Encode_list cX (skipn (S n) l))).
-            exists (8 + 4 * length (Encode_nat (n - S (length l)))).
-            repeat split.
-            -- omega.
-            -- eexists. repeat split. eauto. rewrite map_length. auto.
-            -- intros tmid4 () (H4&HInj4); TMSimp. specialize H4 with (1 := H3).
-               eexists. repeat split. eauto. rewrite map_length. auto.
-    }
-  Qed.
-
-*)
 
 End Nth'.
 
@@ -905,26 +763,26 @@ Section Lenght.
   Variable (retr1 : Retract (sigList sigX) sig) (retr2 : Retract sigNat sig).
 
 
-  Definition Length_Step : pTM sig^+ (bool*unit) 3 :=
+  Definition Length_Step : pTM sig^+ (option unit) 3 :=
     If (Inject (ChangeAlphabet (MatchList _) _) [|Fin0; Fin2|])
        (Return (Inject (Reset _) [|Fin2|];;
                 Inject (ChangeAlphabet (Constr_S) _) [|Fin1|])
-               (true, tt))
-       (Nop (false, tt))
+               (None)) (* continue *)
+       (Nop (Some tt)) (* break *)
   .
 
-  Definition Length_Step_Rel : pRel sig^+ (bool*unit) 3 :=
+  Definition Length_Step_Rel : pRel sig^+ (option unit) 3 :=
     fun tin '(yout, tout) =>
       forall (xs : list X) (n : nat),
         tin[@Fin0] ≃ xs ->
         tin[@Fin1] ≃ n ->
         isRight tin[@Fin2] ->
         match yout, xs with
-        | (false, tt), nil =>
+        | (Some tt), nil => (* break *)
           tout[@Fin0] ≃ nil /\
           tout[@Fin1] ≃ n /\
           isRight tout[@Fin2]
-        | (true, tt), _ :: xs' =>
+        | None, _ :: xs' => (* continue *)
           tout[@Fin0] ≃ xs' /\
           tout[@Fin1] ≃ S n /\
           isRight tout[@Fin2]
@@ -939,18 +797,14 @@ Section Lenght.
       - apply Reset_Realise with (X := X).
     }
     {
-      intros tin ((yout, ()), tout) H. cbn. intros xs n HEncXS HEncN HRight.
+      intros tin (yout, tout) H. cbn. intros xs n HEncXS HEncN HRight.
       destruct H; TMSimp.
-      { (* Then *)
-        modpon H. inv H0.
-        destruct xs as [ | x xs']; cbn in *; auto; destruct H as (H&H'); simpl_surject.
-        modpon H1; modpon H2.
-        repeat split; auto.
+      { (* Then *) rename H into HMatchList, H0 into HReset, H1 into HS.
+        modpon HMatchList. destruct xs as [ | x xs']; cbn in *; auto; modpon HMatchList.
+        modpon HReset. modpon HS. repeat split; auto.
       }
-      { (* Then *)
-        modpon H. inv H0.
-        destruct xs as [ | x xs']; cbn in *; auto; destruct H as (H&H'); simpl_surject.
-        repeat split; auto.
+      { (* Then *) rename H into HMatchList.
+        modpon HMatchList. destruct xs as [ | x xs']; cbn in *; auto; modpon HMatchList. repeat split; auto.
       }
     }
   Qed.
@@ -958,8 +812,8 @@ Section Lenght.
 
   Definition Length_Step_steps (xs : list X) :=
     match xs with
-    | nil => 6
-    | x :: xs' => 55 + 20 * size _ x
+    | nil => 1 + MatchList_steps_nil
+    | x :: xs' => 2 + MatchList_steps_cons _ x + Reset_steps _ x + Constr_S_steps
     end.
 
   Definition Length_Step_T : tRel sig^+ 3 :=
@@ -973,15 +827,15 @@ Section Lenght.
       - apply Reset_Terminates with (X := X).
     }
     {
-      intros tin k (xs&n&HEncXs&HEncN&HRight2&Hk).
+      intros tin k (xs&n&HEncXs&HEncN&HRight2&Hk). unfold Length_Step_steps in Hk.
       destruct xs as [ | x xs'].
-      - exists 5, 0. repeat split; cbn in *; try omega.
+      - exists MatchList_steps_nil, 0. repeat split; cbn in *; try omega.
         eexists; repeat split; simpl_surject; eauto; cbn; eauto.
         intros tmid b (HMatchList&HInjMatchList); TMSimp. modpon HMatchList. destruct b; cbn in *; auto.
-      - exists (42 + 16 * size _ x), (12 + 4 * size _ x). repeat split; cbn in *; try omega.
+      - exists (MatchList_steps_cons _ x), (1 + Reset_steps _ x + Constr_S_steps). repeat split; cbn in *; try omega.
         eexists; repeat split; simpl_surject; eauto; cbn; eauto.
         intros tmid b (HMatchList&HInjMatchList); TMSimp. modpon HMatchList. destruct b; cbn in *; auto; modpon HMatchList.
-        exists (8 + 4 * size _ x), 3. repeat split; cbn; try omega.
+        exists (Reset_steps _ x), Constr_S_steps. repeat split; cbn; try omega.
         eexists; repeat split; simpl_surject; eauto; cbn; eauto. unfold Reset_steps. now rewrite !Encode_map_hasSize.
         now intros _ _ _.
     }
@@ -1044,7 +898,7 @@ Section Lenght.
     {
       intros tin k (xs&n&HEncXs&HEncN&HRight2&Hk). exists (Length_Step_steps xs). repeat split.
       - hnf. do 2 eexists. repeat split; eauto.
-      - intros b () tmid HStep. hnf in HStep. modpon HStep. destruct b, xs as [ | x xs']; cbn in *; auto; modpon HStep.
+      - intros b tmid HStep. hnf in HStep. modpon HStep. destruct b as [ () | ], xs as [ | x xs']; cbn in *; auto; modpon HStep.
         eexists (Length_Loop_steps xs'). repeat split; try omega. hnf. exists xs', (S n). repeat split; eauto.
     }
   Qed.
