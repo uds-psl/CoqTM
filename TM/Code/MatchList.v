@@ -237,9 +237,11 @@ Section MatchList.
 
   Definition MatchList_steps_cons (x : X) := 42 + 16 * size cX x.
 
+  Definition MatchList_steps_nil := 5.
+
   Definition MatchList_steps l :=
     match l with
-    | nil => 5
+    | nil => MatchList_steps_nil
     | x::l' => MatchList_steps_cons x
     end.
 
@@ -251,7 +253,7 @@ Section MatchList.
                 isRight tin[@Fin1] /\
                 MatchList_steps l <= k).
   Proof.
-    unfold MatchList_steps, MatchList_steps_cons. eapply TerminatesIn_monotone.
+    unfold MatchList_steps, MatchList_steps_cons, MatchList_steps_nil. eapply TerminatesIn_monotone.
     { unfold MatchList. repeat TM_Correct.
       - eapply M1_Realise.
       - eapply M1_Terminates.
