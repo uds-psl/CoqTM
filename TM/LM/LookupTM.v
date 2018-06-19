@@ -1,38 +1,13 @@
-Require Import HeapTM.
-Require Import ListTM.
+Require Import TM.Code.ProgrammingTools.
+Require Import TM.LM.Semantics TM.LM.Alphabets.
+Require Import TM.Code.ListTM TM.Code.MatchPair TM.Code.MatchSum TM.Code.MatchNat.
 
-(** ** Lookup *)
+(** * Lookup *)
 
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 
 Section Lookup.
-
-
-  Fixpoint lookup (H:Heap) (a:nat) (n:nat) : option HClos :=
-    match nth_error H a with
-    | Some (Some (g, b)) =>
-      match n with
-      | 0 => Some g
-      | S n' => lookup H b n'
-      end
-    | _ => None
-    end.
-
-  Lemma lookup_eq H a n :
-    lookup H a n =
-    match nth_error H a with
-    | Some (Some (g, b)) =>
-      match n with
-      | 0 => Some g
-      | S n' => lookup H b n'
-      end
-    | _ => None
-    end.
-  Proof. destruct n; auto. Qed.
-
-    
-
 
   (**
 There is no need to save [n], however [H] must be saved. We use the [Nth'] machine, because we don't want to introduce an additional [sigOption sigHEnt] to the alphabet. [Nth'] also doesn't save [a] (which is the parameter of [Nth'] here, not [n]).
@@ -141,13 +116,9 @@ t4: internal tape
           isRight tout[@Fin3] /\
           isRight tout[@Fin4]
         | Some false, _ =>
-          lookup H a n = None /\
-          tout[@Fin0] ≃ H /\
-          isRight tout[@Fin3] /\
-          isRight tout[@Fin4]
+          lookup H a n = None (* Tapes are not specified *)
         | _, _ => False (* Unreachable *)
         end.
-  (* TODO: also match over [nth_error H a]? *)
 
 
 
@@ -320,7 +291,6 @@ t4: internal tape
         isRight tin[@Fin3] -> isRight tin[@Fin4] ->
         match yout with
         | true =>
-          (* TODO: Also match over [lookup H a] ? *)
           exists g,
           lookup H a n = Some g /\
           tout[@Fin0] ≃ H /\ (* [H] is saved *)
@@ -329,16 +299,9 @@ t4: internal tape
           tout[@Fin3] ≃(Encode_map Encode_HClos retr_clos_lookup) g /\ (* result *)
           isRight tout[@Fin4] (* internal tape *)
         | false =>
-          lookup H a n = None /\
-          tout[@Fin0] ≃ H /\ (* [H] is saved *)
-          isRight tout[@Fin1] /\ (* [a] is discarded *)
-          isRight tout[@Fin2] /\ (* [n] is discarded *)
-          isRight tout[@Fin3] /\ (* NO result *)
-          isRight tout[@Fin4] (* internal tape *)
+          lookup H a n = None (* Tapes are not specified *)
         end.
 
-
-  (* TODO: input tapes aren't reseted when machine returns false *)
 
   Lemma Lookup_Realise : Lookup ⊨ Lookup_Rel.
   Proof.
@@ -349,10 +312,8 @@ t4: internal tape
     {
       apply WhileInduction; intros; intros heap a n HEncHeap HEncA HEncN HRight3 HRight4; cbn in *.
       - modpon HLastStep. destruct yout, n as [ | n']; auto.
-        + destruct HLastStep as (g&b&HLastStep); modpon HLastStep.
-          eexists. rewrite lookup_eq, HLastStep. eauto 10.
-        + modpon HLastStep. repeat split; eauto. admit. admit.
-        + modpon HLastStep. repeat split; eauto. admit. admit.
+        destruct HLastStep as (g&b&HLastStep); modpon HLastStep.
+        eexists. rewrite lookup_eq, HLastStep. eauto 10.
       - modpon HStar. destruct n as [ | n']; auto.
         destruct HStar as (g&b&HStar); modpon HStar.
         modpon HLastStep. destruct yout.
@@ -360,18 +321,17 @@ t4: internal tape
           eexists. rewrite lookup_eq, HStar. eauto 10.
         + modpon HLastStep. cbn. rewrite HStar. repeat split; auto.
     }
-  Admitted.
+  Qed.
 
-  Fixpoint Lookup_steps (H : Heap) (a : HAd) (n : nat) : nat. (* :=
+  Fixpoint Lookup_steps (H : Heap) (a : HAd) (n : nat) : nat :=
     match nth_error H a with
     | Some (Some (g, b)) =>
       match n with
       | 0 => Lookup_Step_steps H a n
       | S n' => 1 + Lookup_Step_steps H a n + Lookup_steps H b n'
       end
-    | _ => 0 (* TODO: runtime not specified *)
-    end. *)
-  Admitted.
+    | _ => Lookup_Step_steps H a n
+    end.
 
   Definition Lookup_T : tRel sigLookup^+ 5 :=
     fun tin k =>
@@ -387,7 +347,17 @@ t4: internal tape
     unfold Lookup. repeat TM_Correct.
     { apply Lookup_Step_Realise. }
     { apply Lookup_Step_Terminates. }
-    admit.
-  Admitted.
+    {
+      intros tin k (Heap&a&n&HEncHeap&HEncA&HEncN&HRight3&HRight4&Hk).
+      exists (Lookup_Step_steps Heap a n). split.
+      - hnf. do 3 eexists; repeat split; eauto.
+      - intros ymid tmid HStep. cbn in *. modpon HStep. destruct ymid as [ [ | ] | ], n as [ | n']; cbn in *; auto.
+        + destruct HStep as (g&b&HStep); modpon HStep. rewrite HStep in Hk. auto.
+        + destruct (nth_error Heap a) as [ [ (g&b) | ] | ] eqn:E; auto.
+        + destruct (nth_error Heap a) as [ [ (g&b) | ] | ] eqn:E; auto. omega.
+        + destruct HStep as (g&b&HStep); modpon HStep. rewrite HStep in Hk.
+          eexists; repeat split; eauto. hnf. do 3 eexists; repeat split; eauto.
+    }
+  Qed.
 
 End Lookup.
