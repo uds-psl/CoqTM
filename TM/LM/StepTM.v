@@ -499,8 +499,9 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
           tout[@Fin1] ≃ V /\
           tout[@Fin2] ≃ H' /\
           (forall i : Fin.t 8, isRight tout[@FinR 3 i])
-        | true, _ => False (* Nothing other terminates in true *)
-        | false, _ => True
+        | false, [] => True
+        | false, [_] => True
+        | _, _ => False
         end.
 
   
@@ -545,9 +546,9 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
           repeat split; auto.
           intros i; destruct_fin i; auto; TMSimp_goal; auto.
         }
-        { auto. }
+        { modpon H. destruct V'; auto. }
       }
-      { auto. }
+      { modpon H. destruct V; auto. }
     }
   Qed.
 
@@ -740,40 +741,57 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Qed.
 
 
-  Definition Step : pTM sigStep^+ unit 11 :=
-    MatchList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|];;
-    MatchPair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
-    MatchList sigTok_fin ⇑ retr_pro_step @ [|Fin3; Fin5|];;
-    MATCH (MatchTok ⇑ retr_tok_step @ [|Fin5|])
-          (fun t : option ATok =>
-             match t with
-             | Some lamAT =>
-               Step_lam @ [|Fin0; Fin1; Fin2; Fin3; Fin4; Fin5; Fin6; Fin7; Fin8; Fin9|]
-             | Some appAT =>
-               Step_app
-             | Some retAT =>
-               Nop default
-             | None (* Variable *) =>
-               Step_var @ [|Fin0; Fin1; Fin2; Fin3; Fin4; Fin5; Fin6; Fin7|]
-             end). 
+  (* I forgot that [WHILE] takes a machine over [option unit] instead of [bool]. But that's no problem since we have [ChangePartition]. *)
+  Coercion bool2optunit := fun b : bool => if b then None else Some tt.
+
+  Definition Step : pTM sigStep^+ (option unit) 11 :=
+    ChangePartition
+      (If (MatchList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|])
+          (MatchPair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
+           If (MatchList sigTok_fin ⇑ retr_pro_step @ [|Fin3; Fin5|])
+              (MATCH (MatchTok ⇑ retr_tok_step @ [|Fin5|])
+                     (fun t : option ATok =>
+                        match t with
+                        | Some lamAT =>
+                          Step_lam @ [|Fin0; Fin1; Fin2; Fin3; Fin4; Fin5; Fin6; Fin7; Fin8; Fin9|]
+                        | Some appAT =>
+                          Step_app
+                        | Some retAT =>
+                          Nop false
+                        | None (* Variable *) =>
+                          Step_var @ [|Fin0; Fin1; Fin2; Fin3; Fin4; Fin5; Fin6; Fin7|]
+                        end))
+              (Nop false))
+          (Nop false)
+        ) bool2optunit.
 
 
-  Definition Step_Rel : pRel sigStep^+ unit 11 :=
-    ignoreParam (
-        fun tin tout =>
-          forall (a : HAd) (t : Tok) (P : Pro) (T : list HClos) (V : list HClos) (H : Heap),
-            tin[@Fin0] ≃ (a, t :: P) :: T ->
-            tin[@Fin1] ≃ V ->
-            tin[@Fin2] ≃ H ->
-            (forall i : Fin.t 8, isRight tin[@FinR 3 i]) ->
-            exists (T' : list HClos) (V' : list HClos) (H' : Heap),
-              step ((a, t:: P) :: T, V, H) (T', V', H') /\
-              tout[@Fin0] ≃ T' /\
-              tout[@Fin1] ≃ V' /\
-              tout[@Fin2] ≃ H' /\
-              (forall i : Fin.t 8, isRight tout[@FinR 3 i])
-      ).
-
+  Definition Step_Rel : pRel sigStep^+ (option unit) 11 :=
+    fun tin '(yout, tout) =>
+      forall (T V : list HClos) (H: Heap),
+        tin[@Fin0] ≃ T ->
+        tin[@Fin1] ≃ V ->
+        tin[@Fin2] ≃ H ->
+        (forall i : Fin.t 8, isRight tin[@FinR 3 i]) ->
+        match yout with
+        | None =>
+          exists T' V' H',
+          step (T,V,H) (T',V',H') /\
+          tout[@Fin0] ≃ T' /\
+          tout[@Fin1] ≃ V' /\
+          tout[@Fin2] ≃ H' /\
+          (forall i : Fin.t 8, isRight tout[@FinR 3 i])
+        | Some tt =>
+          halt_state (T,V,H) /\
+          match T with
+          | nil => 
+            tout[@Fin0] ≃ (@nil HClos) /\
+            tout[@Fin1] ≃ V /\
+            tout[@Fin2] ≃ H /\
+            (forall i : Fin.t 8, isRight tout[@FinR 3 i])
+          | _ => True
+          end
+        end.
 
   Lemma Step_Realise : Step ⊨ Step_Rel.
   Proof.
@@ -785,31 +803,65 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
       - apply Step_var_Realise.
     }
     {
-      intros tin ((), tout) H. cbn. intros a t P T V heap HEncT HEncV HEncHeap HInt.
-      TMSimp. (* This takes long *)
-      rename H into HMatchList; rename H0 into HMatchPair; rename H1 into HMatchList'; rename H2 into HMatchTok.
-      modpon HMatchList. destruct ymid; auto. modpon HMatchList.
-      specialize (HMatchPair (a, t::P)). modpon HMatchPair. cbn in *.
-      specialize (HMatchList' (t::P)). modpon HMatchList'. destruct ymid0; auto; modpon HMatchList'.
-      modpon HMatchTok. destruct ymid1 as [ [ | | ] | ], t; auto; simpl_surject.
-      - (* lamT *)
-        rename H3 into HStepLam. modpon HStepLam; TMSimp_goal; eauto; try contains_ext.
-        intros i; destruct_fin i; auto; TMSimp_goal; cbn; auto.
-        repeat split; auto.
-        generalize (HStepLam3 Fin0); generalize (HStepLam3 Fin1); generalize (HStepLam3 Fin2); generalize (HStepLam3 Fin3); generalize (HStepLam3 Fin4); generalize (HStepLam3 Fin5); generalize (HStepLam3 Fin6); cbn; TMSimp_goal; intros.
-        destruct_fin i; TMSimp_goal; auto.
-        rewrite HStepLam0 by vector_not_in. now TMSimp_goal.
-      - (* appT *)
-        rename H3 into HStepApp. cbn in HStepApp. move HStepApp at bottom. (* for less scrolling... *)
-        cbv [put] in *. inv H1.
-        modpon HStepApp; TMSimp_goal; eauto; try contains_ext.
-        intros i; destruct_fin i; auto; TMSimp_goal; auto.
-      - (* varT *)
-        rename H3 into HStepVar. modpon HStepVar; TMSimp_goal; eauto; try contains_ext.
-        generalize (HStepVar3 Fin0); generalize (HStepVar3 Fin1); generalize (HStepVar3 Fin2); generalize (HStepVar3 Fin3); generalize (HStepVar3 Fin4); cbn; TMSimp_goal; intros.
-        simpl_not_in. repeat split; auto. intros i; destruct_fin i; auto; TMSimp_goal; auto.
+      intros tin (yout, tout) H. cbn. intros T V Heap HEncT HEncV HEncHeap HInt.
+      TMSimp. rename H0 into HIf.
+      destruct HIf; TMSimp.
+      { (* Then of [MatchList], i.e. [T = (a, P) :: T'] *) rename H into HMatchList, H0 into HMatchPair, H1 into HIf'.
+        modpon HMatchList. destruct T as [ | (a, P) T' ]; auto; modpon HMatchList.
+        specialize (HMatchPair (a, P)); modpon HMatchPair.
+        destruct HIf'; TMSimp.
+        { (* Then of second [MatchList], i.e [P = t :: P'] *) rename H into HMatchList', H0 into HMatchTok, H1 into HCase.
+          modpon HMatchList'. destruct P as [ | t P']; auto; modpon HMatchList'.
+          modpon HMatchTok. destruct ymid0 as [ [ | | ] | ], t; auto; simpl_surject; cbn in *.
+          { (* retT *)
+            destruct HCase as (->&->); cbn. split; auto. hnf. intros s HStep. inv HStep.
+          }
+          { (* lamT *)
+            rename HCase into HStepLam. modpon HStepLam; TMSimp_goal; eauto; try contains_ext.
+            intros i; destruct_fin i; auto; TMSimp_goal; cbn; auto.
+            destruct ymid.
+            - cbn. destruct HStepLam as (jump_P&jump_Q&HStepLam); modpon HStepLam.
+              do 3 eexists. repeat split; eauto.
+              + econstructor. eauto.
+              + generalize (HStepLam4 Fin0); generalize (HStepLam4 Fin1); generalize (HStepLam4 Fin2); generalize (HStepLam4 Fin3); generalize (HStepLam4 Fin4); generalize (HStepLam4 Fin5); generalize (HStepLam4 Fin6); cbn; TMSimp_goal; intros.
+                destruct_fin i; TMSimp_goal; auto. rewrite HStepLam0 by vector_not_in. now TMSimp_goal.
+            - cbn. split; auto. intros s' HStep. inv HStep. congruence.
+          }
+          { (* appT *)
+            rename HCase into HStepApp. cbn in HStepApp.
+            cbv [put] in *. modpon HStepApp; TMSimp_goal; eauto; try contains_ext.
+            { intros i; destruct_fin i; auto; TMSimp_goal; auto. }
+            destruct ymid; cbn.
+            - destruct V as [ | g V']; auto.
+              destruct V' as [ | (b, Q) V'']; auto. modpon HStepApp.
+              do 3 eexists. repeat split; eauto.
+              + econstructor. reflexivity.
+            - split; auto. intros s' HStep. now inv HStep.
+          }
+          { (* varT *)
+            rename HCase into HStepVar. modpon HStepVar; TMSimp_goal; eauto; try contains_ext.
+            destruct ymid; cbn.
+            - destruct HStepVar as (g&HStepVar); modpon HStepVar.
+              do 3 eexists; repeat split; eauto.
+              + econstructor; eauto.
+              + generalize (HStepVar4 Fin0); generalize (HStepVar4 Fin1); generalize (HStepVar4 Fin2); generalize (HStepVar4 Fin3); generalize (HStepVar4 Fin4); cbn; TMSimp_goal; intros.
+                simpl_not_in. destruct_fin i; auto; TMSimp_goal; auto.
+            - split; auto. intros s' HStep. inv HStep. congruence.
+          }
+        }
+        { (* Else of the second [MatchList], i.e [P = nil] *)
+          modpon H. destruct P; auto. split; auto. intros s HStep. now inv HStep.
+        }
+      }
+      { (* Else of the first [MatchList], i.e. [T = nil] *)
+        modpon H. destruct T; auto. modpon H. split; auto. intros s HStep. now inv HStep.
+        repeat split; eauto. intros i; destruct_fin i; TMSimp_goal; auto.
+      }
     }
   Qed.
+
+
+  (* TODO: Termination *)
 
 
 End StepMachine.
