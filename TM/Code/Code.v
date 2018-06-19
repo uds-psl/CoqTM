@@ -53,7 +53,7 @@ Instance Encode_Fin n : codable (Fin.t n) (Fin.t n):=
   {|
     encode i := [i]
   |}.
-  
+
 Lemma Encode_Fin_hasSize n i :
   size (Encode_Fin n) i = 1.
 Proof. cbn. reflexivity. Qed.
@@ -65,6 +65,22 @@ Compute encode tt.
 Check encode Fin0.
 Compute encode Fin0 : list (Fin.t 10).
 
+
+Section Encode_Finite.
+  Variable sig : finType.
+
+  (* This instance is not declared globally, because of overlaps *)
+  Local Instance Encode_Finite : codable sig sig :=
+    {|
+      encode x := [x];
+    |}.
+
+  Lemma Encode_Finite_hasSize f :
+    size Encode_Finite f = 1.
+  Proof. reflexivity. Qed.
+
+End Encode_Finite.
+  
 
 (** We restrict mapping of encodings to injective/retractable mappings. *)
 Section Encode_map.

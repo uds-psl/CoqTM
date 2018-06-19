@@ -1,58 +1,6 @@
 Require Import ProgrammingTools.
 Require Import TM.Code.MatchNat TM.Code.MatchSum TM.Code.MatchFin.
-
-Require Import TM.LM.Definitions.
-
-Inductive ATok : Type := retAT | lamAT | appAT.
-
-Coercion ATok2Tok (a : ATok) : Tok :=
-  match a with
-  | retAT => retT
-  | lamAT => lamT
-  | appAT => appT
-  end.
-
-
-Instance ATok_dec : eq_dec ATok.
-Proof. intros x y; hnf. decide equality. Defined.
-
-Instance ATok_fin : finTypeC (EqType ATok).
-Proof. split with (enum := [retAT; lamAT; appAT]). intros [ | | ]; cbn; reflexivity. Defined.
-
-Instance ATok_inhab : inhabitedC ATok := ltac:(repeat constructor).
-
-Instance Encode_ATok : codable (FinType(EqType ATok)) ATok := Encode_Fin (FinType(EqType(ATok))).
-
-
-Coercion Tok_to_sum (t : Tok) : (nat + ATok) :=
-  match t with
-  | varT x => inl x
-  | appT => inr appAT
-  | lamT => inr lamAT
-  | retT => inr retAT
-  end.
-
-(*
-Coercion Tok_to_sum (t : Tok) : (nat + Fin.t 3) :=
-  match t with
-  | varT x => inl x
-  | appT => inr Fin0
-  | lamT => inr Fin1
-  | retT => inr Fin2
-  end.
-*)
-
-(*
-Definition sigTok := FinType (EqType (sigSum (FinType (EqType (sigNat))) (FinType(EqType(Fin.t 3))))).
-*)
-Definition sigTok := sigSum sigNat ATok.
-Definition sigTok_fin := FinType (EqType sigTok).
-
-Instance Encode_Tok : codable sigTok Tok :=
-  {|
-    encode x := encode (Tok_to_sum x)
-  |}.
-
+Require Import TM.LM.Semantics TM.LM.Alphabets.
 
 Definition MatchTok : { M : mTM sigTok^+ 1 & states M -> option ATok } :=
   If (MatchSum _ _)

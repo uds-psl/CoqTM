@@ -7,12 +7,6 @@ Section MatchFin.
   Variable sig : finType.
   Hypothesis defSig : inhabitedC sig.
 
-  (* This instance is not declared globally, because of overlaps *)
-  Local Instance Encode_Fin : codable sig sig :=
-    {|
-      encode x := [x];
-    |}.
-  
   Definition MatchFin : pTM sig^+ sig 1 :=
     Move R tt;;
     MATCH (Read_char)
@@ -20,6 +14,8 @@ Section MatchFin.
            | Some (inr x) => Move R x
            | _ => mono_Nop default
            end).
+
+  Local Existing Instance Encode_Finite.
 
   Definition MatchFin_Rel : pRel sig^+ sig 1 :=
     fun tin '(yout, tout) => forall x : sig, tin[@Fin0] ≃ x -> isRight tout[@Fin0] /\ yout = x.

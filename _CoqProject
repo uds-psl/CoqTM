@@ -56,9 +56,9 @@ TM/Compound/CopySymbols.v
 
 
 # Abstract Machine simulator
-TM/LM/Definitions.v
-TM/LM/TokTM.v
-TM/LM/HeapTM.v
+TM/LM/Semantics.v
+TM/LM/Alphabets.v
+TM/LM/MatchTok.v
 TM/LM/LookupTM.v
 TM/LM/JumpTargetTM.v
 TM/LM/StepTM.v
