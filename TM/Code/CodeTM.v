@@ -137,6 +137,25 @@ Section Fix_Sig.
   End Encodes_Ext.
 
 
+  (** Define tapes that contain a value or are right. *)
+  Section InitTape.
+    Context `{cX : codable sig X}.
+    
+    Definition initValue (x : X) :=
+      midtape nil (inl START) (encode x ++ [inl STOP]).
+
+    Lemma initValue_contains (x : X) :
+      initValue x ≃ x.
+    Proof. repeat econstructor. Qed.
+
+    Definition initRight : tape sig^+ := midtape nil (inl STOP) nil.
+
+    Lemma initRight_isRight : isRight initRight.
+    Proof. repeat econstructor. Qed.
+
+  End InitTape.
+
+
 
   (** ** Definition of the computation relations *)
 
