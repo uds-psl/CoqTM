@@ -23,6 +23,18 @@ TM/LiftMN.v
 TM/LiftSigmaTau.v
 TM/Mirror.v
 
+# Basic Machines
+TM/Basic/Nop.v
+TM/Basic/Mono.v
+TM/Basic/Multi.v
+TM/Basic/WriteString.v
+
+# Compound Machines
+TM/Compound/TMTac.v
+TM/Compound/Peek.v
+TM/Compound/MoveToSymbol.v
+TM/Compound/CopySymbols.v
+
 # Programming
 TM/Code/Code.v
 TM/Code/CodeTM.v
@@ -42,19 +54,6 @@ TM/Code/SumTM.v
 TM/Code/NatTM.v
 TM/Code/ListTM.v
 
-# Basic Machines
-TM/Basic/Nop.v
-TM/Basic/Mono.v
-TM/Basic/Multi.v
-TM/Basic/WriteString.v
-
-# Compound Machines
-TM/Compound/TMTac.v
-TM/Compound/Peek.v
-TM/Compound/MoveToSymbol.v
-TM/Compound/CopySymbols.v
-
-
 # Abstract Machine simulator
 TM/LM/Semantics.v
 TM/LM/Alphabets.v
@@ -62,3 +61,4 @@ TM/LM/MatchTok.v
 TM/LM/LookupTM.v
 TM/LM/JumpTargetTM.v
 TM/LM/StepTM.v
+TM/LM/HaltingProblem.v
