@@ -864,4 +864,72 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   (* TODO: Termination *)
 
 
+  Definition Step_steps_MatchTok a t P' T' V H :=
+    match t with
+    | varT n => Step_var_steps P' V H a n
+    | appT => Step_app_steps T' V H a P'
+    | lamT => Step_lam_steps P' a
+    | retT => 0 (* Nop *)
+    end.
+
+  Definition Step_steps_MatchList' a P T' V H :=
+    match P with
+    | nil => 0
+    | t :: P' => 1 + MatchTok_steps + Step_steps_MatchTok a t P' T' V H
+    end.
+
+  Definition Step_steps_MatchList T V H :=
+    match T with
+    | nil => 0
+    | (a,P) :: T' => 2 + MatchPair_steps _ a + MatchList_steps _ P + Step_steps_MatchList' a P T' V H
+    end.
+
+  Definition Step_steps T V H :=
+    1 + MatchList_steps _ T + Step_steps_MatchList T V H.
+
+  
+  Definition Step_T : tRel sigStep^+ 11 :=
+    fun tin k =>
+      exists (T V : list HClos) (H: Heap),
+        tin[@Fin0] ≃ T /\
+        tin[@Fin1] ≃ V /\
+        tin[@Fin2] ≃ H /\
+        (forall i : Fin.t 8, isRight tin[@FinR 3 i]) /\
+        Step_steps T V H <= k.
+
+
+  Lemma Step_Terminates : projT1 Step ↓ Step_T.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold Step. repeat TM_Correct.
+      - eapply RealiseIn_Realise. apply MatchTok_Sem.
+      - eapply RealiseIn_terminatesIn. apply MatchTok_Sem.
+      - apply Step_lam_Terminates.
+      - apply Step_app_Terminates.
+      - apply Step_var_Terminates.
+    }
+    {
+      intros tin k (T&V&H&HEncT&HEncV&HEncH&HInt&Hk). unfold Step_steps in Hk.
+      exists (MatchList_steps _ T), (Step_steps_MatchList T V H). cbn; repeat split; try omega.
+      { do 1 eexists; repeat split; simpl_surject; eauto. apply HInt. }
+      intros tmid bif (HMatchList&HMatchListInj); TMSimp. modpon HMatchList.
+      destruct bif, T as [ | (a,P) T']; cbn; auto; modpon HMatchList.
+      exists (MatchPair_steps _ a), (1 + MatchList_steps _ P + Step_steps_MatchList' a P T' V H). cbn; repeat split; try omega.
+      { hnf; cbn. exists (a, P); repeat split; simpl_surject; eauto. contains_ext. }
+      intros tmid0 () (HMatchPair&HMatchPairInj); TMSimp. specialize (HMatchPair (a,P)). modpon HMatchPair. cbn in *.
+      exists (MatchList_steps _ P), (Step_steps_MatchList' a P T' V H). cbn; repeat split; try omega. 2: reflexivity.
+      { hnf; cbn. exists P; repeat split; simpl_surject; eauto. contains_ext. }
+      intros tmid1 bif (HMatchList'&HMatchListInj'); TMSimp. modpon HMatchList'.
+      destruct bif, P as [ | t P']; auto; modpon HMatchList'. cbn.
+      exists (MatchTok_steps), (Step_steps_MatchTok a t P' T' V H). cbn; repeat split; try omega.
+      intros tmid2 ymid (HMatchTok&HMatchTokInj); TMSimp. modpon HMatchTok.
+      destruct ymid as [ [ | | ] | ]; destruct t; cbn; auto; simpl_surject.
+      - hnf; cbn. do 5 eexists; repeat split; TMSimp_goal; eauto. contains_ext. intros i; destruct_fin i; cbn; TMSimp_goal; auto.
+      - hnf; cbn. do 5 eexists; repeat split; TMSimp_goal; eauto. contains_ext. intros i; destruct_fin i; cbn; TMSimp_goal; auto.
+      - hnf; cbn. do 6 eexists; repeat split; TMSimp_goal; eauto. contains_ext. contains_ext.
+    }
+  Qed.
+  
+
+
 End StepMachine.
