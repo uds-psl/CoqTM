@@ -48,7 +48,7 @@ Section Peek.
   Proof.
     unfold Peek_Steps. eapply RealiseIn_monotone.
     - unfold Peek. repeat TM_Correct.
-    - Unshelve. 6,9: constructor 1. all: cbn. all: try omega. 4-7: constructor. cbn. constructor.
+    - Unshelve. 10, 13: reflexivity. 6,8,10,11: reflexivity. all: cbn. all: omega.
     - intros tin (yout,tout) H. now TMCrush; TMSolve 1.
       (*
       Undo.
