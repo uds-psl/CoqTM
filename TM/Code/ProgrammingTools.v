@@ -8,7 +8,7 @@ Require Export Basic.Mono.
 
 Local Ltac contains_ext' H :=
   apply (tape_contains_ext H);
-  try solve [cbn; now rewrite !List.map_map] .
+  try solve [now rewrite !Encode_map_comp].
   
 Ltac contains_ext :=
   lazymatch goal with

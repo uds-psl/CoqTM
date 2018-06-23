@@ -98,8 +98,24 @@ Section Encode_map.
   Lemma Encode_map_hasSize x :
     size Encode_map x = size cX x.
   Proof. cbn. now rewrite map_length. Qed.
-  
+
 End Encode_map.
+
+
+Section Encode_map_comp.
+  Variable (X : Type).
+  Variable (sig1 sig2 sig3 : Type).
+  Variable (cX : codable sig1 X).
+  Variable (I1 : Retract sig1 sig2) (I2 : Retract sig2 sig3).
+
+  Check Encode_map (Encode_map cX I1) I2.
+  Check Encode_map cX (ComposeRetract I1 I2).
+
+  Lemma Encode_map_comp x :
+    Encode_map (Encode_map cX I1) I2 x = Encode_map cX (ComposeRetract I1 I2) x.
+  Proof. cbn. rewrite List.map_map. reflexivity. Qed.
+  
+End Encode_map_comp.
 
 
 
