@@ -1,4 +1,17 @@
-Very nice thesis. \todo{Write an abstract.}
+Developing and verifying Turing machines can be a tedious task because they are very low level.  Turing machines can be completely unstructured:
+from any state of the execution, it could continue at any other state.  Furthermore Turing machines are not compositional: Having two Turing
+machines $A$ and $B$ it is not trivial to generate a new machine $A\;~B$ that executes a copy of $B$ after the execution of a copy of $A$.
+Control flow operations, like if then else and while have to be constructed and verified first.  However, it is also not clear how to combine
+machines with different alphabets and numbers of tapes.
+
+We carried over the basic definition of multi-tape Turing machines from the Matita devolepment of Asperti et al.  Our aproach for defining the
+semantics of machine is similiar to the aproach choosen by Asperti et al.  We define specifications for Turing machines in terms of relations over
+tape vectors.  Relations have the benefit of being compositional.  For example, the correctness statement of our $\mathsf{While}$ operator can be
+expressed using the relational Kleene star operator.  Our new aproach makes it superfluent to reason about internal states of machines.  We also
+show how to reason about runtime and space usage.
+
+The first contribution of this thesis is a framework devoleped in Coq, for programming and verifying multi-tape Turing machines.  Secondly, we use
+this framework to implement and verify an interpreter for the weak call-by-value $\lambda$-calculus.
 
 %%% Local Variables:
 %%% TeX-master: "thesis"
