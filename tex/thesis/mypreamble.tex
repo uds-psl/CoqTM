@@ -82,19 +82,24 @@
 \newcommand{\Some}[1]{\left\lfloor {#1}\right\rfloor}
 % \None is defined sometimes
 \def\None{\emptyset}
-\newcommand{\true}{\mathbf{true}}
-\newcommand{\false}{\mathbf{false}}
-\newcommand{\unit}{\mathbf{()}}
+\newcommand{\true}{\MS{true}}
+\newcommand{\false}{\MS{false}}
+\newcommand{\unit}{\MS{()}}
 \newcommand{\nil}{\MS{nil}}
 \newcommand{\cons}{\mathbin{::}}
 
 % Functions
 \newcommand{\map}[2]{\ensuremath{\MS{map}~#1~#2}}
+\newcommand{\maptwo}[3]{\ensuremath{\MS{map}_2~#1~#2~#3}}
 \newcommand{\rev}[1]{\MS{rev}~#1}
 
 
 % Vector
 \newcommand{\Vector}[1]{\left\llbracket #1 \right\rrbracket}
+
+
+% Big-Step semantics
+\newcommand{\terminates}{\mathrel{\triangleright}}
 
 
 %%% Local Variables:
