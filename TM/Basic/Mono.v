@@ -21,7 +21,7 @@ Section Mk_Mono.
   Defined.
 
   Variable (F : finType) (R : Rel (tape sig) (F * tape sig)).
-  
+
   Definition Mk_R_p : Rel (tapes sig 1) (F * tapes sig 1) :=
       fun tps1 '(p, tps2) => R (tps1[@Fin.F1]) (p, tps2[@Fin.F1]).
 
@@ -36,7 +36,7 @@ Section DoAct.
   Variable c : sig.
 
   Variable act : option sig * move.
-  
+
   Variable (F : finType) (f : F).
 
   Definition DoAct_TM :=
@@ -52,10 +52,10 @@ Section DoAct.
     Mk_R_p (fun t '(y, t') => y = f /\ t' = tape_move_mono t act).
 
   Lemma DoAct_Sem : DoAct ⊨c(1) DoAct_Rel.
-  Proof. hnf. intros i. destruct_tapes. exists (mk_mconfig true [|tape_move_mono h act|]). cbn. auto. Qed.
+  Proof. intros t. destruct_tapes. cbn. unfold initc; cbn. eexists (mk_mconfig _ _); cbn; eauto. Qed.
 
 End DoAct.
-  
+
 Arguments DoAct : simpl never.
 Arguments DoAct_Rel { sig } act { F } f x y /.
 
@@ -87,7 +87,7 @@ Section Write.
   Definition Move_Rel :=
     Mk_R_p (F := F)
            (fun t '(y, t') => y = f /\ t' = tape_move (sig := sig) t D).
-  
+
   Lemma Move_Sem :
     Move ⊨c(1) Move_Rel.
   Proof.
@@ -101,7 +101,7 @@ Section Write.
 
   Definition WriteMove_Rel :=
     Mk_R_p (fun t '(y, t') => y = f /\ t' = tape_move (tape_write t (Some c)) D).
-  
+
   Lemma WriteMove_Sem :
     WriteMove ⊨c(1) WriteMove_Rel.
   Proof.
@@ -152,9 +152,10 @@ Section ReadChar.
 
   Definition ReadChar_Sem : ReadChar ⊨c(1) ReadChar_Rel.
   Proof.
-    intros t. destruct_tapes. cbn. destruct (current h) eqn:E.
-    - exists (mk_mconfig (inr e) [|h|]). cbv [step]. cbn. autounfold with tape; cbn. rewrite E. cbn. repeat (try split; auto; hnf).
-    - exists (mk_mconfig (inl true) [|h|]). unfold step. cbn; autounfold with tape; cbn. rewrite E. cbn. repeat (try split; auto; hnf).
+    intros t. destruct_tapes. cbn. unfold initc; cbn. cbv [step]; cbn. unfold current_chars; cbn.
+    destruct (current h) eqn:E.
+    - eexists (mk_mconfig _ _); cbv [step]; cbn. split; eauto.
+    - eexists (mk_mconfig _ _); cbv [step]; cbn. split; eauto.
   Qed.
 
 End ReadChar.
@@ -181,9 +182,7 @@ Section Mono_Nop.
   Definition mono_Nop_R := (fun (t : tapes sig 1) '(y, t') => y = f /\ t = t').
 
   Lemma mono_Nop_Sem: mono_Nop ⊨c(0) mono_Nop_R.
-  Proof.
-    intros ?. exists (initc mono_nop input). cbn. firstorder.
-  Qed.
+  Proof. intros t. cbn. unfold initc; cbn. eexists (mk_mconfig _ _); cbn; eauto. Qed.
 
 End Mono_Nop.
 
