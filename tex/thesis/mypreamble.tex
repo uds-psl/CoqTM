@@ -1,0 +1,102 @@
+% To get \VDash to work (three options)
+% \usepackage{fdsymbol} % other math-font
+% \usepackage{mathabx}  % other math-font
+% \newcommand{\VDash}{\mathrel{|}\joinrel \Relbar}
+% \newcommand{\VDash}{\mathrel{|\mkern-2mu|}\joinrel \Relbar}
+
+
+\newcommand{\lam}[2]{\lambda#1{.}\hskip.7pt#2}
+\newcommand{\Cond}[3]{\mathsf{if}\;#1\;\mathsf{then}\;#2\;\mathsf{else}\;#3}
+
+% Formating
+\newcommand{\MS}[1]{\ensuremath{\textsf{#1}}} % Sans-serif font in mathematical mode
+
+
+% ++ operator:
+% Source: https://tex.stackexchange.com/questions/4194/how-to-typeset-haskell-operator-and-friends
+\newcommand\doubleplus{+\kern-1.3ex+\kern0.8ex}
+\newcommand\mdoubleplus{\ensuremath{\mathbin{+\mkern-10mu+}}}
+\newcommand{\app}{\mdoubleplus}
+
+\newcommand{\rew}{\Rightarrow}
+\newcommand{\trew}{\stackrel{\textrm{T}}\Rightarrow}
+\newcommand{\llrew}{\stackrel{\textrm{L}}\Rightarrow}
+\newcommand{\rlrew}{\stackrel{\textrm{R}}\Rightarrow}
+\newcommand{\arew}{\triangleright}
+\newcommand{\conc}{\mathop{{+}\hskip-5pt{+}}}
+\newcommand{\gen}{\Rightarrow}
+
+% Sets
+\newcommand{\setOf}[1]{\bigl\{ #1 \bigr \}}
+\newcommand{\setMap}[2]{\setOf{#1~\big|~#2}}
+\newcommand{\depPair}[2]{\setOf{#1~{\&}~#2}}
+\newcommand{\pair}[2]{\bigl( #1 , #2 \bigr)}
+\newcommand{\class}[1]{\bigl[ #1 \bigr]}
+\newcommand{\choice}[1]{\bigl< #1 \bigr>}
+\newcommand{\explainRel}[2]{\stackrel{\text{#1}}{#2}}
+\newcommand{\family}[2]{\bigl( #1 \bigr)_{#2}}
+\newcommand{\from}{:}
+\renewcommand{\to}{\rightarrow}
+
+% Types
+\newcommand{\Option}{\MS{Option}}
+\newcommand{\Fin}{\MS{Fin}}
+\newcommand{\Bool}{\MS{Bool}}
+\newcommand{\Nat}{\MS{Nat}}
+\newcommand{\Prop}{\MS{Prop}}
+\newcommand{\Type}{\MS{Type}}
+\newcommand{\Unit}{\MS{Unit}}
+\newcommand{\List}{\MS{List}}
+\newcommand{\Rel}{\mathsf{Rel}}
+
+% Tapes
+\newcommand{\tape}[1]{[ #1 ]}
+\newcommand{\tapePointer}[1]{\underset{\uparrow}{#1}}
+\newcommand{\niltape}{\tape{\tapePointer{}}}
+\newcommand{\midtape}[3]{\tape{#1~\tapePointer{#2}~#3}}
+\newcommand{\leftof}[2]{\tape{\tapePointer{}~#1~#2}}
+\newcommand{\rightof}[2]{\tape{#1~#2~\tapePointer{}}}
+
+\newcommand{\Tape}{\MS{Tape}}
+\newcommand{\Tapes}[1]{\Tape^{#1}}
+\newcommand{\Move}{\MS{Move}}
+\newcommand{\Tau}{\Gamma}
+
+% Relations
+\newcommand{\rif}{\mathbin{\phi}}
+\newcommand{\at} [2][]{#1{|}_{#2}}
+\newcommand{\att}[2][]{#1{|\mkern-2mu|}_{#2}}
+\DeclareMathOperator{\ignoreParam}{\Uparrow}
+\DeclareMathOperator{\hideParam}{\Downarrow}
+
+% ``Keywords'' in math
+\newcommand{\While}[1]{\MS{While}}
+\newcommand{\Seq}{;~}
+\newcommand{\If}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
+\newcommand{\Match}{\MS{match}}
+\newcommand{\Let}[2]{\MS{let}~#1~\MS{in}~#2}
+
+% Constructors
+\DeclareMathOperator{\inl}{\ensuremath{\MS{inl}}}
+\DeclareMathOperator{\inr}{\ensuremath{\MS{inr}}}
+\newcommand{\Some}[1]{\left\lfloor {#1}\right\rfloor}
+% \None is defined sometimes
+\def\None{\emptyset}
+\newcommand{\true}{\mathbf{true}}
+\newcommand{\false}{\mathbf{false}}
+\newcommand{\unit}{\mathbf{()}}
+\newcommand{\nil}{\MS{nil}}
+\newcommand{\cons}{\mathbin{::}}
+
+% Functions
+\newcommand{\map}[2]{\ensuremath{\MS{map}~#1~#2}}
+\newcommand{\rev}[1]{\MS{rev}~#1}
+
+
+% Vector
+\newcommand{\Vector}[1]{\left\llbracket #1 \right\rrbracket}
+
+
+%%% Local Variables:
+%%% TeX-master: "thesis"
+%%% End:
