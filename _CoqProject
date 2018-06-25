@@ -26,11 +26,11 @@ TM/Mirror.v
 # Basic Machines
 TM/Basic/Nop.v
 TM/Basic/Mono.v
-TM/Basic/Multi.v
-TM/Basic/WriteString.v
 
 # Compound Machines
 TM/Compound/TMTac.v
+TM/Compound/Multi.v
+TM/Compound/WriteString.v
 TM/Compound/MoveToSymbol.v
 TM/Compound/CopySymbols.v
 

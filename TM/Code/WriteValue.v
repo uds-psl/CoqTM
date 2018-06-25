@@ -1,6 +1,6 @@
 Require Import CodeTM.
-Require Import TM.Basic.WriteString.
 Require Import Basic.Mono.
+Require Import TM.Compound.WriteString.
 Require Import TMTac.
 
 
