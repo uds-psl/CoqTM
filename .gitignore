@@ -1,11 +1,15 @@
+// Temporal files
+\#*#
+*~
+*.tmp
+*.sw*
+
 // Coq Files
 CoqMakefile.conf
 *.vo
 *.glob
 *.aux
 *.d
-\#*#
-*~
 Makefile.coq
 .lia.cache
 
@@ -22,10 +26,13 @@ Makefile.coq
 *.ilg
 *.vrg
 *.pyg
-/tex/auto
-
-// Vim files
-*.sw*
+*/auto
+*/*/auto
+*.bbl
+*.blg
+*.glo
+*.ist
+*.tdo
 
 // TODO files
 TODO
