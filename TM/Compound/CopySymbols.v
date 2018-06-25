@@ -1,8 +1,8 @@
 Require Import TM.Prelim.
-Require Import TM.Basic.Mono TM.Basic.Multi.
+Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Combinators.
 Require Import TM.Mirror.
-Require Import TM.Compound.TMTac.
+Require Import TM.Compound.TMTac. TM.Compound.Multi.
 Require Import TM.LiftMN.
 
 Require Import FunInd.

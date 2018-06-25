@@ -1,5 +1,5 @@
 Require Import TM.Code.CodeTM.
-Require Import TM.Basic.Mono TM.Basic.Nop TM.Basic.Multi.
+Require Import TM.Basic.Mono TM.Basic.Nop TM.Compound.Multi.
 Require Import TM.Combinators.Combinators.
 Require Import TM.LiftMN TM.LiftSigmaTau.
 Require Import TM.Compound.TMTac.
