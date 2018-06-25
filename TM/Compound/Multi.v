@@ -52,53 +52,44 @@ Section Copy.
 
   Variable f : sig -> sig.
 
-  Definition Copy_char : { M : mTM sig 2 & states M -> bool} :=
-    MATCH (Inject Read_char [|Fin.F1|])
+  Definition CopyChar : pTM sig unit 2 :=
+    MATCH (Inject ReadChar [|Fin.F1|])
           (fun s : option sig =>
              match s with
-               None =>  Nop false
-             | Some s => Inject (Write (f s) true) [|Fin.FS Fin.F1|]
+             | None =>  Nop tt
+             | Some s => Inject (Write (f s) tt) [|Fin1|]
              end).
 
-  Definition Copy_char_R :=
-    (if? (fun t t' : tapes sig 2 =>
-            exists c, current t[@Fin.F1] = Some c /\
-                 t'[@Fin.FS Fin.F1] = tape_write t[@Fin.FS Fin.F1] (Some (f c)) /\
-                 t[@Fin.F1] = t'[@Fin.F1])
-         ! (fun t t' => current t[@Fin.F1] = None) ∩ (@IdR _)).
+  Definition CopyChar_Rel : pRel sig unit 2 :=
+    ignoreParam (
+        fun tin tout =>
+          tout[@Fin0] = tin[@Fin0] /\
+          tout[@Fin1] = tape_write tin[@Fin1] (map_opt f (current tin[@Fin0]))
+      ).
 
-  Lemma Copy_char_Sem : Copy_char ⊨c(3) Copy_char_R.
+  Lemma CopyChar_Sem : CopyChar ⊨c(3) CopyChar_Rel.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold Copy_char. eapply Match_RealiseIn. cbn.
-      eapply Inject_RealisesIn; [ vector_dupfree| eapply read_char_sem].
-      instantiate (2 := fun o : option sig => match o with Some s => _ | None => _ end).
-      intros [ s | ]; cbn.
-      - eapply Inject_RealisesIn; [ vector_dupfree| eapply Write_Sem].
-      - eapply RealiseIn_monotone'. eapply Nop_total. omega.
+      unfold CopyChar. eapply Match_RealiseIn; cbn.
+      - apply Inject_RealisesIn. vector_dupfree. apply ReadChar_Sem.
+      - instantiate (2 := fun o : option sig => match o with Some s => _ | None => _ end).
+        intros [ s | ]; cbn.
+        + eapply Inject_RealisesIn. vector_dupfree. apply Write_Sem.
+        + eapply RealiseIn_monotone'. apply Nop_Sem. omega.
     }
+    { omega. }
     {
-      cbn. omega.
-    }
-    {
-      hnf. intros tin (yout&tout). intros (o&t&((H1&H2)&H3)&H4); hnf in *; subst.
-      cbn in H2. destruct_tapes. cbn -[Vector.nth] in *. cbn in H2. inv H2. cbn in H4.
-      specialize (H3 (Fin.FS Fin.F1) ltac:(vector_not_in)); cbn in H3; subst.
-      destruct h; cbn [current] in *.
-      - destruct H4 as (H4&H5); hnf in *; subst. inv H5. now cbv.
-      - destruct H4 as (H4&H5); hnf in *; subst. inv H5. now cbv.
-      - destruct H4 as (H4&H5); hnf in *; subst. inv H5. now cbv.
-      - destruct H4 as ((H4&H5)&H6); hnf in *; subst. cbn in H5; subst.
-        specialize (H6 Fin.F1 ltac:(vector_not_in)); cbn in H6; subst. cbn. eauto.
+      intros tin ((), tout) H. cbn in *. TMSimp.
+      destruct (current tin[@Fin0]) eqn:E; TMSimp; auto.
     }
   Qed.
 
 End Copy.
 
-Arguments Copy_char_R { sig } ( f ) x y /.
-Arguments Copy_char { sig }.
-Arguments Copy_char : simpl never.
+Arguments CopyChar_Rel { sig } ( f ) x y /.
+Arguments CopyChar { sig }.
+Arguments CopyChar : simpl never.
 
 
 (* Read a char at an arbitrary tape *)
@@ -108,10 +99,12 @@ Section ReadChar.
   Variable (n : nat) (k : Fin.t n).
 
   Definition ReadChar_at : { M : mTM sig n & states M -> option sig} :=
-    Inject Read_char [|k|].
+    Inject ReadChar [|k|].
 
   Definition ReadChar_at_R  : Rel (tapes sig n) (option sig * tapes sig n) :=
-    (fun (t : tapes sig n) '(s,t') => s = current t[@k]) ∩ ignoreParam (@IdR _).
+    fun tin '(yout, tout) =>
+      yout = current tin[@k] /\
+      tout = tin.
 
   Lemma ReadChar_at_Sem :
     ReadChar_at ⊨c(1) ReadChar_at_R.
@@ -124,7 +117,7 @@ Section ReadChar.
       hnf. TMSimp; clear_trivial_eqs. split; auto.
       eapply VectorSpec.eq_nth_iff; intros p ? <-.
       decide (p = k) as [->|HnEq]; TMSimp; auto.
-      - symmetry. apply H0. vector_not_in.
+      - apply H0. vector_not_in.
     }
   Qed.
 
@@ -140,9 +133,9 @@ Ltac smpl_TM_Multi :=
   | [ |- MovePar _ _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply MovePar_Sem
   | [ |- MovePar _ _ _ ⊨c(_) _ ] => eapply MovePar_Sem
   | [ |- projT1 (MovePar _ _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply MovePar_Sem
-  | [ |- Copy_char _ ⊨ _ ] => eapply RealiseIn_Realise; eapply Copy_char_Sem
-  | [ |- Copy_char _ ⊨c(_) _ ] => eapply Copy_char_Sem
-  | [ |- projT1 (Copy_char _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply Copy_char_Sem
+  | [ |- CopyChar _ ⊨ _ ] => eapply RealiseIn_Realise; eapply CopyChar_Sem
+  | [ |- CopyChar _ ⊨c(_) _ ] => eapply CopyChar_Sem
+  | [ |- projT1 (CopyChar _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply CopyChar_Sem
   | [ |- ReadChar_at _ ⊨ _ ] => eapply RealiseIn_Realise; eapply ReadChar_at_Sem
   | [ |- ReadChar_at _ ⊨c(_) _ ] => eapply ReadChar_at_Sem
   | [ |- projT1 (ReadChar_at _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply ReadChar_at_Sem

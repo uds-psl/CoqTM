@@ -30,138 +30,138 @@ End Mk_Mono.
 Arguments Mk_R_p { sig F } ( R ) x y /.
 
 
+
+Section DoAct.
+  Variable sig : finType.
+  Variable c : sig.
+
+  Variable act : option sig * move.
+  
+  Variable (F : finType) (f : F).
+
+  Definition DoAct_TM :=
+    {|
+      trans := fun '(q, sym) => (true, [| act |]);
+      start := false;
+      halt x := x;
+    |}.
+
+  Definition DoAct := (DoAct_TM; fun _ => f).
+
+  Definition DoAct_Rel :=
+    Mk_R_p (fun t '(y, t') => y = f /\ t' = tape_move_mono t act).
+
+  Lemma DoAct_Sem : DoAct ⊨c(1) DoAct_Rel.
+  Proof. hnf. intros i. destruct_tapes. exists (mk_mconfig true [|tape_move_mono h act|]). cbn. auto. Qed.
+
+End DoAct.
+  
+Arguments DoAct : simpl never.
+Arguments DoAct_Rel { sig } act { F } f x y /.
+
+
 Section Write.
 
   Variable sig : finType.
-  Variable c : sig.
+  Variable c : sig. (* for Write *)
+  Variable (D : move). (* for Move *)
   Variable (F : finType) (f : F).
 
-  Definition Write_TM : mTM sig 1.
-  Proof.
-    apply Mk_Mono_TM with (states := FinType (EqType bool)).
-    - intros [ | ] _.
-      + (* final state *)
-        apply (true, (None, N)).
-      + (* write c *)
-        apply (true, (Some c, N)).
-    - apply false.
-    - apply id.
-  Defined.
-  
-  Definition Write := (Write_TM; fun _ => f).
+  Definition Write : pTM sig F 1 := DoAct (Some c, N) f.
 
-  Definition Write_R :=
-    Mk_R_p (F := F)
-           (fun t '(y, t') => y = f /\ t' = midtape (left t) c (right t)).
+  Definition Write_Rel :=
+    Mk_R_p (fun t '(y, t') => y = f /\ t' = midtape (left t) c (right t)).
 
   Lemma Write_Sem :
-    Write ⊨c(1) Write_R.
+    Write ⊨c(1) Write_Rel.
   Proof.
-    intros t. destruct_tapes. cbn in *. eauto.
+    eapply RealiseIn_monotone.
+    - apply DoAct_Sem.
+    - reflexivity.
+    - hnf. firstorder.
+  Qed.
+
+
+  Definition Move : pTM sig F 1 := DoAct (None, D) f.
+
+  Definition Move_Rel :=
+    Mk_R_p (F := F)
+           (fun t '(y, t') => y = f /\ t' = tape_move (sig := sig) t D).
+  
+  Lemma Move_Sem :
+    Move ⊨c(1) Move_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    - apply DoAct_Sem.
+    - reflexivity.
+    - hnf. firstorder.
+  Qed.
+
+  Definition WriteMove := DoAct (Some c, D) f.
+
+  Definition WriteMove_Rel :=
+    Mk_R_p (fun t '(y, t') => y = f /\ t' = tape_move (tape_write t (Some c)) D).
+  
+  Lemma WriteMove_Sem :
+    WriteMove ⊨c(1) WriteMove_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    - apply DoAct_Sem.
+    - reflexivity.
+    - hnf. firstorder.
   Qed.
 
 End Write.
 
 Arguments Write : simpl never.
-Arguments Write_R { sig } c { F } p x y / : rename.
-
-
-
-Section Move.
-
-  Variable sig : finType.
-  Variable D : TM.move.
-  Variable (F : finType) (f : F).
-
-  Definition move_trans : bool -> option sig -> bool * (option sig * move) := fun _ _ => (true, (None, D)).
-  
-  Definition Move_TM : mTM sig 1 :=
-    Mk_Mono_TM move_trans false (fun q => q).
-
-  Definition Move := (Move_TM; (fun x => f)).
-
-  Definition Move_R :=
-    Mk_R_p (F := F)
-           (fun t '(y, t') => y = f /\ t' = tape_move (sig := sig) t D).
-  
-  Lemma Move_Sem :
-    Move ⊨c(1) Move_R.
-  Proof.
-    unfold Mk_R_p, Move_R. hnf. intros tapes. destruct_tapes. cbn in *. eauto.
-  Qed.
-
-End Move.
+Arguments Write_Rel { sig } c { F } p x y / : rename.
 
 Arguments Move : simpl never.
 Arguments Move { sig } D { F } f.
-Arguments Move_R { sig } ( D ) { F } ( f ) x y /.
-
-
-
-(* write and move *)
-Section WriteMove.
-
-  Variable sig : finType.
-  Variable w : sig.
-  Variable D : move.
-  Variable (F : finType) (f : F).
-
-  Definition write_move_trans : bool -> option sig -> bool * (option sig * move) :=
-    fun _ _ => (true, (Some w, D)).
-  
-  Definition WriteMove_TM : mTM sig 1 :=
-    Mk_Mono_TM write_move_trans false (fun q => q).
-
-  Definition WriteMove := (WriteMove_TM; (fun x => f)).
-
-  Definition WriteMove_R :=
-    Mk_R_p (F := F)
-           (fun t '(y, t') => y = f /\ t' = tape_move (tape_write t (Some w)) D).
-  
-  Lemma WriteMove_Sem :
-    WriteMove ⊨c(1) WriteMove_R.
-  Proof.
-    unfold Mk_R_p, Move_R. hnf. intros tapes. destruct_tapes. cbn in *. eauto.
-  Qed.
-
-End WriteMove.
+Arguments Move_Rel { sig } ( D ) { F } ( f ) x y /.
 
 Arguments WriteMove : simpl never.
-Arguments WriteMove_R { sig } (w D) { F } p x y / : rename.
+Arguments WriteMove_Rel { sig } (w D) { F } p x y / : rename.
 
 
-Section Read_char.
+Section ReadChar.
 
   Variable sig : finType.
   Definition rc_states : finType := FinType (EqType ((bool + sig)%type)).
 
-  Definition read_char : mTM sig 1 :=
-    Mk_Mono_TM
-      (fun _ sym =>
-         match sym with
-         | None => (inl false, (None, TM.N))
-         | Some c => (inr c, (None,TM.N))
-         end)
-      (inl true) (fun s => match s with inl true => false | _ => true end).
+  Definition ReadChar_TM : mTM sig 1 :=
+    {|
+      trans := fun '(_, sym) =>
+                 match sym[@Fin0] with
+                 | None => (inl true, [|(None, N)|])
+                 | Some c => (inr c, [|(None, N)|])
+                 end;
+      start := inl false;
+      halt := fun s => match s with
+                    | inl b => b
+                    | inr _ => true
+                    end;
+    |}.
 
-  Definition read_char_R :=
-    Mk_R_p (fun (t : tape sig) '(s,t') => s = current t) ∩ ignoreParam (@IdR _).
+  Definition ReadChar := (ReadChar_TM; fun s => match s with inl _ => None | inr s => Some s end).
 
-  Definition Read_char := (read_char; fun s : rc_states => match s with inl _ => None | inr s => Some s end).
+  Definition ReadChar_Rel : pRel sig (option sig) 1 :=
+    fun t '(y, t') =>
+      y = current t[@Fin0] /\
+      t' = t.
 
-  Lemma read_char_sem :
-    Read_char ⊨c(1) read_char_R.
+  Definition ReadChar_Sem : ReadChar ⊨c(1) ReadChar_Rel.
   Proof.
     intros t. destruct_tapes. cbn. destruct (current h) eqn:E.
-    - exists (mk_mconfig (inr e) [|h|]). unfold step. cbn; autounfold with tape; cbn. rewrite E. cbn. repeat (try split; auto; hnf).
-    - exists (mk_mconfig (inl false) [|h|]). unfold step. cbn; autounfold with tape; cbn. rewrite E. cbn. repeat (try split; auto; hnf).
+    - exists (mk_mconfig (inr e) [|h|]). cbv [step]. cbn. autounfold with tape; cbn. rewrite E. cbn. repeat (try split; auto; hnf).
+    - exists (mk_mconfig (inl true) [|h|]). unfold step. cbn; autounfold with tape; cbn. rewrite E. cbn. repeat (try split; auto; hnf).
   Qed.
 
-End Read_char.
+End ReadChar.
 
-Arguments Read_char : simpl never.
-Arguments Read_char {sig}.
-Arguments read_char_R sig x y /.
+Arguments ReadChar : simpl never.
+Arguments ReadChar {sig}.
+Arguments ReadChar_Rel sig x y /.
 
 
 Section Mono_Nop.
@@ -194,6 +194,9 @@ Arguments mono_Nop_R { sig F } ( p ) x y / : rename.
 
 Ltac smpl_TM_Mono :=
   match goal with
+  | [ |- DoAct _ _ ⊨ _] => eapply RealiseIn_Realise; eapply DoAct_Sem
+  | [ |- DoAct _ _ ⊨c(_) _] => eapply DoAct_Sem
+  | [ |- projT1 (DoAct _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply DoAct_Sem
   | [ |- Write _ _ ⊨ _] => eapply RealiseIn_Realise; eapply Write_Sem
   | [ |- Write _ _ ⊨c(_) _] => eapply Write_Sem
   | [ |- projT1 (Write _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Write_Sem
@@ -203,9 +206,9 @@ Ltac smpl_TM_Mono :=
   | [ |- WriteMove _ _ _ ⊨ _] => eapply RealiseIn_Realise; eapply WriteMove_Sem
   | [ |- WriteMove _ _ _ ⊨c(_) _] => eapply WriteMove_Sem
   | [ |- projT1 (WriteMove _ _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply WriteMove_Sem
-  | [ |- Read_char ⊨ _] => eapply RealiseIn_Realise; eapply read_char_sem
-  | [ |- Read_char ⊨c(_) _] => eapply read_char_sem
-  | [ |- projT1 (Read_char) ↓ _] => eapply RealiseIn_terminatesIn; eapply read_char_sem
+  | [ |- ReadChar ⊨ _] => eapply RealiseIn_Realise; eapply ReadChar_Sem
+  | [ |- ReadChar ⊨c(_) _] => eapply ReadChar_Sem
+  | [ |- projT1 (ReadChar) ↓ _] => eapply RealiseIn_terminatesIn; eapply ReadChar_Sem
   | [ |- mono_Nop _ ⊨ _] => eapply RealiseIn_Realise; eapply mono_Nop_Sem
   | [ |- mono_Nop _ ⊨c(_) _] => eapply mono_Nop_Sem
   | [ |- projT1 (mono_Nop _) ↓ _] => eapply RealiseIn_terminatesIn; eapply mono_Nop_Sem

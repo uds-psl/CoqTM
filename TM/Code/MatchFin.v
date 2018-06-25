@@ -9,7 +9,7 @@ Section MatchFin.
 
   Definition MatchFin : pTM sig^+ sig 1 :=
     Move R tt;;
-    MATCH (Read_char)
+    MATCH (ReadChar)
     (fun s => match s with
            | Some (inr x) => Move R x
            | _ => mono_Nop default

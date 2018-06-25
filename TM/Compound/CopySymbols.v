@@ -2,7 +2,7 @@ Require Import TM.Prelim.
 Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Combinators.
 Require Import TM.Mirror.
-Require Import TM.Compound.TMTac. TM.Compound.Multi.
+Require Import TM.Compound.TMTac TM.Compound.Multi.
 Require Import TM.LiftMN.
 
 Require Import FunInd.
@@ -84,13 +84,13 @@ End Test.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold M1. eapply Match_RealiseIn. cbn. eapply Inject_RealisesIn; [vector_dupfree| eapply read_char_sem].
+      unfold M1. eapply Match_RealiseIn. cbn. eapply Inject_RealisesIn; [vector_dupfree| eapply ReadChar_Sem].
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e); swap 1 2.
         + eapply Seq_RealiseIn. eapply Inject_RealisesIn; [vector_dupfree | eapply Write_Sem]. eapply MovePar_Sem.
         + cbn. eapply Inject_RealisesIn; [vector_dupfree | eapply Write_Sem].
-      - cbn. eapply RealiseIn_monotone'. eapply Nop_total. omega.
+      - cbn. eapply RealiseIn_monotone'. eapply Nop_Sem. omega.
     }
     {
       (cbn; omega).

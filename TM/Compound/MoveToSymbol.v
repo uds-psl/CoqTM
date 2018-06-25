@@ -26,7 +26,7 @@ Section move_to_symbol.
    * Else move one to the right and return [ Some false ].
    *)
   Definition M1 : { M : mTM sig 1 & states M -> option unit} :=
-    MATCH (Read_char)
+    MATCH (ReadChar)
           (fun b : option sig =>
              match b with
              | Some x => if f x
@@ -59,7 +59,7 @@ Section move_to_symbol.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold M1. eapply Match_RealiseIn. eapply read_char_sem. cbn.
+      unfold M1. eapply Match_RealiseIn. eapply ReadChar_Sem. cbn.
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e). 

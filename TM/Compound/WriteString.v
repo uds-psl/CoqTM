@@ -35,7 +35,7 @@ Section Write_String.
     match str with
     | nil => mono_Nop_R tt
     | s :: str' =>
-      WriteMove_R s D tt |_tt ∘ WriteString_sem_fix str'
+      WriteMove_Rel s D tt |_tt ∘ WriteString_sem_fix str'
     end.
     
   Lemma WriteString_fix_Sem (str : list sig) :

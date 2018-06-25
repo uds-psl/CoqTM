@@ -1,13 +1,6 @@
 (* List destruct and construction *)
 
-Require Import TM.Code.CodeTM.
-Require Import TM.Basic.Mono TM.Basic.Nop TM.Basic.Multi.
-Require Import TM.Combinators.Combinators.
-Require Import TM.LiftMN TM.LiftSigmaTau.
-Require Import TM.Compound.TMTac.
-Require Import TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
-Require Import TM.Code.Copy.
-
+Require Import ProgrammingTools.
 
 Section MatchList.
 
@@ -41,7 +34,7 @@ Section MatchList.
 
   Definition MatchList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
     Inject (Move R tt) [|Fin0|];;
-    MATCH (Inject (Read_char) [|Fin0|])
+    MATCH (Inject (ReadChar) [|Fin0|])
           (fun s => match s with
                  | Some (inr sigList_nil) => (* nil *)
                    Inject (Move L false) [|Fin0|]
@@ -275,9 +268,9 @@ Section MatchList.
         exists 1, (40 + 16 * size cX x). repeat split; try omega.
         intros tmid (). intros ((_&H1)&HInj1); TMSimp.
         exists 1, (38 + 16 * size cX x). repeat split; try omega.
-        intros tmid2 ymid2 ((H2&H2')&HInj2). apply Vector.cons_inj in H2' as (H2'&_). TMSimp. rewrite <- H2'.
+        intros tmid2 ymid2 ((H2&H2')&HInj2). apply Vector.cons_inj in H2' as (H2'&_). TMSimp.
         exists (23 + 12 * size cX x), (14 + 4 * size cX x). repeat split; try omega.
-        { rewrite map_app, <- app_assoc. eauto 6. }
+        { TMSimp_goal. rewrite List.map_app, <- app_assoc. do 4 eexists; eauto. }
         intros tmid3 () H3'. 
         rewrite map_app, <- app_assoc in H3'. specialize H3' with (1 := HRight) (2 := eq_refl). TMSimp.
         exists (6 + 4 * size cX x), 3. repeat split; try omega. eauto 6.
@@ -295,7 +288,7 @@ Section MatchList.
 
   Definition IsNil : pTM (sigList sigX)^+ bool 1 :=
     Move R tt;;
-    MATCH Read_char
+    MATCH ReadChar
     (fun s =>
        match s with
        | Some (inr sigList_nil) =>

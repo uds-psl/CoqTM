@@ -14,7 +14,7 @@ Section FinTM1.
   Check default : F.
 
   Definition UnaryFinTM : { M : mTM (sig^+) 1 & states M ->  F } :=
-    MATCH (Read_char _)
+    MATCH (ReadChar _)
           (fun r1 =>
              match r1 with
              | Some (inr r1') => Write (inr (f r1')) (param r1')
@@ -54,7 +54,7 @@ Section FinTM2.
   Variable (F : inhabitedFinType) (param : sig -> sig -> F).
 
   Definition ReadAt1 : { M : mTM (sig^+) 2 & states M -> option (sig^+) } :=
-    Inject (Read_char _) [| Fin.F1 |].
+    Inject (ReadChar _) [| Fin.F1 |].
 
   Definition Nop2 : { M : mTM (sig^+) 2 & states M -> F } := Nop 2 _ default.
 

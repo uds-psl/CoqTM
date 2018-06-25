@@ -5,9 +5,9 @@ Require Import FunInd.
 Require Import TM.Code.CodeTM.
 Require Export TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 
-Require Import TM.Basic.Mono TM.Basic.Multi.
+Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Combinators.
-Require Import TM.Compound.TMTac.
+Require Import TM.Compound.TMTac TM.Compound.Multi.
 Require Import TM.Mirror.
 Require Import TM.LiftMN.
 

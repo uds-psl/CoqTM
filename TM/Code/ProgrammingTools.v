@@ -1,6 +1,6 @@
 Require Export CodeTM Copy ChangeAlphabet WriteValue.
 Require Export TMTac.
-Require Export Basic.Mono.
+Require Export Basic.Mono Compound.Multi.
 
 
 

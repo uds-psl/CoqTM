@@ -47,7 +47,7 @@ Ltac destruct_shelve e :=
 
   Definition MatchSum : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> bool } :=
     Move R tt;; (* skip the [START] symbol *)
-    MATCH (Read_char) (* read the "constructor" symbol *)
+    MATCH (ReadChar) (* read the "constructor" symbol *)
           (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding partition *)
                  | Some (inr sigSum_inl) => Write (inl START) true  (* inl *)
                  | Some (inr sigSum_inr) => Write (inl START) false (* inr *)

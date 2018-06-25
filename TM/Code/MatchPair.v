@@ -1,6 +1,4 @@
 Require Import ProgrammingTools.
-Require Import TM.Basic.Nop TM.Basic.Multi.
-
 
 (* TODO: ~> base *)
 Lemma pair_eq (A B : Type) (a1 a2 : A) (b1 b2 : B) :

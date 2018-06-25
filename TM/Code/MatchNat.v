@@ -22,7 +22,7 @@ Section MatchNat.
 
   Definition MatchNat : { M : mTM sigNat^+ 1 & states M -> bool } :=
     Move R tt;;
-    MATCH (Read_char)
+    MATCH (ReadChar)
           (fun o => match o with
                  | Some (inr sigNat_S)  => Write (inl START) true (* S *)
                  | Some (inr sigNat_O) => Move L false (* O *)

@@ -11,19 +11,19 @@ Section Peek.
   Variable f : sig -> F.
 
   Definition Peek : { M : mTM sig 1 & states M -> F + move } :=
-    MATCH (Read_char)
+    MATCH (ReadChar)
           (fun r1 =>
              match r1 with
              | Some r1' => mono_Nop (inl (f r1'))
              | None =>
                Move L tt ;;
-                    MATCH (Read_char)
+                    MATCH (ReadChar)
                     (fun r2 =>
                        match r2 with
                        | Some r2' => Move R (inr R)
                        | None =>
                          Move R tt ;;
-                              MATCH (Read_char)
+                              MATCH (ReadChar)
                               (fun r3 =>
                                  match r3 with
                                  | Some r3' => Move L (inr L)
