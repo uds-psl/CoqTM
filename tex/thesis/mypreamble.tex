@@ -8,7 +8,7 @@
 \newcommand{\lam}[2]{\lambda#1{.}\hskip.7pt#2}
 \newcommand{\Cond}[3]{\mathsf{if}\;#1\;\mathsf{then}\;#2\;\mathsf{else}\;#3}
 
-% Formating
+%% Formating
 \newcommand{\MS}[1]{\ensuremath{\textsf{#1}}} % Sans-serif font in mathematical mode
 
 
@@ -26,7 +26,7 @@
 \newcommand{\conc}{\mathop{{+}\hskip-5pt{+}}}
 \newcommand{\gen}{\Rightarrow}
 
-% Sets
+%% Sets
 \newcommand{\setOf}[1]{\bigl\{ #1 \bigr \}}
 \newcommand{\setMap}[2]{\setOf{#1~\big|~#2}}
 \newcommand{\depPair}[2]{\setOf{#1~{\&}~#2}}
@@ -38,7 +38,7 @@
 \newcommand{\from}{:}
 \renewcommand{\to}{\rightarrow}
 
-% Types
+%% Types
 \newcommand{\Option}{\MS{Option}}
 \newcommand{\Fin}{\MS{Fin}}
 \newcommand{\Bool}{\MS{Bool}}
@@ -49,7 +49,7 @@
 \newcommand{\List}{\MS{List}}
 \newcommand{\Rel}{\mathsf{Rel}}
 
-% Tapes
+%% Tapes
 \newcommand{\tape}[1]{[ #1 ]}
 \newcommand{\tapePointer}[1]{\underset{\uparrow}{#1}}
 \newcommand{\niltape}{\tape{\tapePointer{}}}
@@ -57,26 +57,34 @@
 \newcommand{\leftof}[2]{\tape{\tapePointer{}~#1~#2}}
 \newcommand{\rightof}[2]{\tape{#1~#2~\tapePointer{}}}
 
+% \newcommand{\niltape}{\MS{niltape}}
+% \newcommand{\midtape}[3]{\MS{midtape}~#1~#2~#3}
+% \newcommand{\leftof}[2]{\MS{leftof}~#1~#2}
+% \newcommand{\rightof}[2]{\MS{rightof}~#1~#2}
+
+%% Turing machine types
 \newcommand{\Tape}{\MS{Tape}}
 \newcommand{\Tapes}[1]{\Tape^{#1}}
+\newcommand{\TM}{\MS{TM}}
 \newcommand{\Move}{\MS{Move}}
+\newcommand{\Act}{\MS{Act}}
 \newcommand{\Tau}{\Gamma}
 
-% Relations
+%% Relations
 \newcommand{\rif}{\mathbin{\phi}}
 \newcommand{\at} [2][]{#1{|}_{#2}}
 \newcommand{\att}[2][]{#1{|\mkern-2mu|}_{#2}}
 \DeclareMathOperator{\ignoreParam}{\Uparrow}
 \DeclareMathOperator{\hideParam}{\Downarrow}
 
-% ``Keywords'' in math
+%% ``Keywords'' in math
 \newcommand{\While}[1]{\MS{While}}
 \newcommand{\Seq}{;~}
 \newcommand{\If}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
 \newcommand{\Match}{\MS{match}}
 \newcommand{\Let}[2]{\MS{let}~#1~\MS{in}~#2}
 
-% Constructors
+%% Constructors
 \DeclareMathOperator{\inl}{\ensuremath{\MS{inl}}}
 \DeclareMathOperator{\inr}{\ensuremath{\MS{inr}}}
 \newcommand{\Some}[1]{\left\lfloor {#1}\right\rfloor}
@@ -88,20 +96,20 @@
 \newcommand{\nil}{\MS{nil}}
 \newcommand{\cons}{\mathbin{::}}
 
-% Functions
+%% Functions
 \newcommand{\map}[2]{\ensuremath{\MS{map}~#1~#2}}
 \newcommand{\maptwo}[3]{\ensuremath{\MS{map}_2~#1~#2~#3}}
 \newcommand{\rev}[1]{\MS{rev}~#1}
 
-
-% Vector
+%% Vector
 \newcommand{\Vector}[1]{\left\llbracket #1 \right\rrbracket}
 
 
-% Big-Step semantics
+%% Big-Step semantics
 \newcommand{\terminates}{\mathrel{\triangleright}}
 
 
 %%% Local Variables:
+%%% mode: LaTeX
 %%% TeX-master: "thesis"
 %%% End:
