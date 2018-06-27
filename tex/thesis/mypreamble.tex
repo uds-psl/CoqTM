@@ -1,16 +1,36 @@
-% To get \VDash to work (three options)
-% \usepackage{fdsymbol} % other math-font
-% \usepackage{mathabx}  % other math-font
-% \newcommand{\VDash}{\mathrel{|}\joinrel \Relbar}
-% \newcommand{\VDash}{\mathrel{|\mkern-2mu|}\joinrel \Relbar}
+%%
+%%% Shared preamble for all files, e.g. thesis, TikZ standalones, slides, etc.
+%%% It defines \macros for types, Turing machines, etc.
+%%%
+
+% Packages needed
+\usepackage[utf8]{inputenc}
+\usepackage{geometry}
+\usepackage[small,compact]{titlesec}
+\usepackage[final]{listings}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{tipa}
+\usepackage[english]{babel}
+\usepackage{lstautogobble}
+\usepackage{proof}
+\usepackage{bussproofs}
+\usepackage{xparse}
+\usepackage{needspace}
+\usepackage{xspace}
+\usepackage{mathpartir}
+\usepackage{stmaryrd} % for |llbracket and \rrbracket
+\usepackage{standalone}
 
 
-\newcommand{\lam}[2]{\lambda#1{.}\hskip.7pt#2}
-\newcommand{\Cond}[3]{\mathsf{if}\;#1\;\mathsf{then}\;#2\;\mathsf{else}\;#3}
+% TikZ ist *kein* Zeichenprogramm.
+\usepackage{tikz}
+\usetikzlibrary{arrows,shapes,snakes,automata,backgrounds,fit,positioning}
+\usepackage{tikz-cd} % for commutative diagrams
+
 
 %% Formating
 \newcommand{\MS}[1]{\ensuremath{\textsf{#1}}} % Sans-serif font in mathematical mode
-
 
 % ++ operator:
 % Source: https://tex.stackexchange.com/questions/4194/how-to-typeset-haskell-operator-and-friends
@@ -27,6 +47,7 @@
 \newcommand{\gen}{\Rightarrow}
 
 %% Sets
+\newcommand{\lam}[2]{\lambda#1{.}\hskip.7pt#2}
 \newcommand{\setOf}[1]{\bigl\{ #1 \bigr \}}
 \newcommand{\setMap}[2]{\setOf{#1~\big|~#2}}
 \newcommand{\depPair}[2]{\setOf{#1~{\&}~#2}}
@@ -77,11 +98,11 @@
 \DeclareMathOperator{\ignoreParam}{\Uparrow}
 \DeclareMathOperator{\hideParam}{\Downarrow}
 
-%% ``Keywords'' in math
+%% Control flow operators in math
 \newcommand{\While}[1]{\MS{While}}
 \newcommand{\Seq}{;~}
 \newcommand{\If}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
-\newcommand{\Match}{\MS{match}}
+\newcommand{\Match}{\MS{Match}}
 \newcommand{\Let}[2]{\MS{let}~#1~\MS{in}~#2}
 
 %% Constructors
