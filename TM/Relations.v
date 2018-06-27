@@ -21,28 +21,10 @@ Coercion Rel3_is_Rel : Rel3 >-> Rel.
 Definition fun_to_Rel F B Z  (R : F -> Rel B Z) : Rel (F * B) Z := fun p z => let (f,b) := p in R f b z.
 Notation "'⇑' R" := (fun_to_Rel R) (at level 30, format "'⇑' R").
 
-Definition Univ_rel {X Y : Type} : Rel X Y := fun x y => True.
-Definition Empty_rel {X Y : Type} : Rel X Y := fun x y => False.
-
-Arguments Univ_rel {X Y} x y /.
-Arguments Empty_rel {X Y} x y /.
-
-(* This is the behaviour I want *)
-Goal True.
-Proof.
-  assert (Univ_rel 0 0) as H by (hnf;auto); assert (Empty_rel 0 0) as H' by give_up.
-  pose (R := Univ_rel (X := nat) (Y := nat)).
-  cbn in *.
-Abort.
-
 Definition rcomp X Y Z (R : Rel X Y) (S : Rel Y Z) : Rel X Z :=
   fun x z => exists y, R x y /\ S y z.
 Notation "R1 '∘' R2" := (rcomp R1 R2) (at level 40, left associativity).
 Arguments rcomp {X Y Z} (R S) x y /.
-
-Goal (Univ_rel (X := nat) (Y := nat) ∘ Univ_rel) 42 42.
-Proof. cbn [Univ_rel]. cbn [rcomp]. cbn [Univ_rel]. exists 42. auto. Qed.
-
 
 Definition runion X Y (R : Rel X Y) (S : Rel X Y) : Rel X Y := fun x y => R x y \/ S x y.
 Notation "R '∪' S" := (runion R S) (at level 42).
@@ -51,10 +33,6 @@ Arguments runion { X Y } ( R S ) x y /.
 Definition rintersection X Y (R : Rel X Y) (S : Rel X Y) : Rel X Y := fun x y => R x y /\ S x y.
 Notation "R '∩' S" := (rintersection R S) (at level 41).
 Arguments rintersection { X Y } ( R S ) x y /.
-
-
-Goal (Univ_rel ∪ Univ_rel) 42 42.
-Proof. cbn. auto. Qed.
 
 
 Definition rimplication X Y (R : Rel X Y) (S : Rel X Y) : Rel X Y := fun x y => R x y -> S x y.
@@ -117,23 +95,10 @@ Definition eqrel X Y (R S: Rel X Y) := (R <<=2 S /\ S <<=2 R) .
 
 Notation "R '=2' S"  := (eqrel R S) (at level 70).
 
-Definition rif X Y (R1 R2 : Rel X Y) : Rel X (bool * Y) := ((fun x p => let (b,z) := p in if b : bool  then R1 x z else R2 x z)).
-Notation "'if?' R1 '!' R2" := (rif R1 R2) (at level 60).
-Arguments rif { X Y } ( R1 R2 ) x y /.
-
-Goal rif (Empty_rel) (Univ_rel) 42 (false, 42).
-Proof. cbn. auto. Qed.
 
 Definition restrict X Y Z (R : Rel X (Y * Z)) f : Rel X Z := (fun x1 x2 => R x1 (f, x2)).
 Notation "R '|_' f" := (restrict R f) (at level 30, format "R '|_' f").
 Arguments restrict { X Y Z } ( R f ) x y /.
-
-
-
-Lemma rif_restrict X Y (R1 R2 : Rel X Y) b : (if? R1 ! R2) |_b =2 if b then R1 else R2.
-Proof.
-  destruct b; firstorder.
-Qed.
 
 Lemma rintersect_restrict X Y (R1 R2 : Rel X (bool * Y)) b : (R1 ∩ R2) |_ b = (R1 |_ b) ∩ (R2 |_ b).
 Proof.
@@ -196,8 +161,6 @@ End Fix_X2.
 
 Arguments Eq_in { X n } P x y / : rename.
 
-Definition IdR (X : Type) : Rel X X := eq.
-Arguments IdR { X } x y /.
 
 
 Inductive star X (R: Rel X X) : Rel X X :=
@@ -409,12 +372,6 @@ Proof.
 Qed.
 
 
-Instance eqrel_rif_proper X Y :
-  Proper (@eqrel X Y ==> @eqrel X Y ==> @eqrel X (bool * Y)) (@rif X Y).
-Proof.
-  cbv. firstorder; destruct *; firstorder.
-Qed.
-
 Instance eqrel_rprod_proper X Y Z :
   Proper (@eqrel X Y ==> @eqrel X Z ==> @eqrel X (Y * Z)) (@rprod X Y Z).
 Proof.
@@ -426,40 +383,6 @@ Instance eqrel_ignoreParam_proper X Y Z :
 Proof.
   cbv. firstorder; destruct *; firstorder.
 Qed.
-
-
-Lemma compose_id X Y (R : Rel X Y) :
-  R ∘ (@IdR _) =2 R.
-Proof.
-  split; intros ? ? ?; hnf in *; firstorder congruence.
-Qed.
-
-
-Coercion Fin.of_nat_lt : lt >-> Fin.t.
-
-Definition rifb (b : bool) X Y (R1 R2 : Rel X Y) := if b then R1 else R2.
-
-Definition update_R X Y (Z : eqType) e (R1: Rel X Y) (R2 : Z -> Rel X Y) :=
-  fun z : Z => rifb ( Dec (e = z) )  R1  (R2 z).
-
-Lemma update_sem X Y (Z : eqType) (R1 : Rel X Y) (R2 : Z -> Rel X Y) (z : Z) : R1 <<=2 update_R z R1 R2 z.
-Proof. 
-  intros ? ? ?. unfold update_R, rifb. dec; cbn; firstorder. 
-Qed.
-
-Lemma update_sem2 X Y (Z : eqType) (R1 : Rel X Y) (R2 : Z -> Rel X Y) (z1 z2 : Z) :
-  z1 <> z2 ->
-  R2 z2 <<=2 update_R z1 R1 R2 z2.
-Proof.
-  (* split; *) intros ? ?; firstorder. unfold update_R. dec; cbn; firstorder. 
-Qed.
-
-Instance rifb_proper (b : bool) X Y :
-  Proper (@eqrel X Y ==> @eqrel X Y ==> @eqrel X Y) (@rifb b X Y).
-Proof.
-  intros ? ? ? ? ? ?. split; intros ? ? ?; unfold rifb;
-                        destruct b; firstorder. 
-Qed.      
 
 
 (* Introduce a param that is fixed to a value *)
