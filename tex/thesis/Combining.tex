@@ -32,8 +32,7 @@ $\MS{Match}~M~f : \TM_\Sigma^n(F')$.
       \bigl(\inr (part_M~q, start_{f (part_M~q)}), (\None, N)^n \bigr) & halt_M(q) \\
       \Let{(q', a) := \delta_M(q, s)}{\left(\inl q', a \right)} & \lnot halt_M(q)
     \end{cases} \\
-    \delta ~&(\inr q, s) &~:=~& \Let{(q', a) := \delta_{f(\pi_1 q)} (\pi_2 q, s)}{\\
-            &            &~  ~& \bigl( \inr (\pi_1 q, q'), a \bigr)} \\
+    \delta ~&(\inr q, s) &~:=~& \Let{(q', a) := \delta_{f(\pi_1 q)} (\pi_2 q, s)}{\bigl( \inr (\pi_1 q, q'), a \bigr)} \\
     halt   ~&(\inl  q)   &~:=~& \false \\
     halt   ~&(\inr  q)   &~:=~& halt_{f(\pi_1~q)} (\pi_2~q) \\
     part   ~&(\inl  q)   &~:=~& \_ \\
@@ -48,9 +47,10 @@ canonical value.
 \begin{figure}
   \center
   \input{fig-MatchExample}
-  \caption{Example for a $\MS{Match}$.  The left blue box stands for the first machine.  After it reaches on of the terminal states
-    $s_1, \cdots, s_3$, it continues its execution either in the right top machine or in the right bottom case machine.
-  The halting states of the match machine are exactly the halting states of the case-machines.}
+  \caption{Example of a $\MS{Match}$.  The left box stands for the first machine $M_1:\TM_\Sigma^n(\Bool)$.  The states $q_1$ and $q_2$ are mapped to
+    $\true$, $q_3$ is mapped to $\false$.  After the $\MS{Match}$ reaches one of the injections of the terminal states $q_1, \cdots, q_3$ of $M_1$, it
+    continues its execution either in the top case machine $M_2$ or in the bottom case machine $M_3$.  The halting states of $\MS{Match}$ are exactly
+    the injections of the halting states of the case-machines.}
   \label{fig:match}
 \end{figure}
 
@@ -66,6 +66,10 @@ There is a problem when we want to combine machines --- for example using sequen
 The number of tapes and the alphabets of both machines have to be exactly the same.
 How can we re-use a single-tape Turing machine when we want to build a multi-tape machine?
 How can we combine two machines with different alphabets?
+
+
+
+
 
 
 \section{Examples}
