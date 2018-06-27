@@ -8,33 +8,53 @@ Section Match.
 
   Variable F : finType.
 
-  Variable pM1 : { M1 : mTM sig n & states M1 -> F}.
+  Variable pM1 : pTM sig F n.
   Variable F' : finType.
-  Variable pMf : F -> { Mf : mTM sig n & states Mf -> F'}.
+  Variable pMf : F -> pTM sig F' n.
+
+  Notation "'M1'" := (projT1 pM1) (only parsing).
+  Notation "'p1'":= (projT2 pM1) (only parsing).
 
   Notation "'Mf' f" := (projT1 (pMf f)) (only parsing, at level 10).
   Notation "'p2' f" := (projT2 (pMf f)) (only parsing, at level 10).
 
-
-  Notation "'M1'" := (projT1 pM1).
-  Notation "'p1'":= (projT2 pM1).
-
-  Definition match_trans :
+  Definition Match_trans :
     (TM.states M1 + { f : F & TM.states (Mf f) }) * Vector.t (option sig) n ->
     (TM.states M1 + { f : F & TM.states (Mf f) }) * Vector.t (option sig * move) n :=
-    fun st => let (s,a) := st in
-           match s with
-           | inl s1 => if halt s1 then (inr (existT (fun f : F => states (Mf f)) (p1 s1) (start (Mf (p1 s1)))), null_action)
-                      else let (news1,m) := trans (s1,a) in (inl news1, m)
-           | inr s2 => let (f,s2) := s2 in let (news2, m) := trans (s2, a) in (inr (existT (fun f0 : F => states (Mf f0)) f news2), m)
-           end.
+    fun '(q, s) =>
+        match q with
+        | inl q =>
+          if halt q
+          then (inr (existT _ (p1 q) (start (Mf (p1 q)))), null_action)
+          else let (q', a) := trans (q, s) in (inl q', a)
+        | inr q =>
+          let (q', a) := trans (projT2 q, s) in
+          (inr (existT _ (projT1 q) q'), a)
+        end.
 
+  Definition Match_halt : (TM.states M1 + { f : F & TM.states (Mf f) }) -> bool :=
+    fun q => 
+      match q with
+      | inl _ => false
+      | inr q => halt (projT2 q)
+      end.
+  
   Definition Match : mTM sig n :=
-    Build_mTM match_trans (inl (start M1))
-              (fun s => match s with
-                     | inl _ => false
-                     | inr s0 => let (f, s0) := s0 in halt s0
-                     end).
+    {|
+      trans := Match_trans;
+      halt  := Match_halt;
+      start := inl (start M1);
+    |}.
+
+  
+  Definition Match_p : (states Match) -> F' :=
+    fun q => match q with
+          | inl q => p2 (p1 q) (start (Mf (p1 q))) (* Canonical value *)
+          | inr q => p2 (projT1 q) (projT2 q)
+          end.
+  
+  Definition MATCH := (Match; Match_p).
+  
 
   Definition lift_confL (c : mconfig sig (states M1) n) : mconfig sig (states Match) n :=
     mk_mconfig (inl (cstate c)) (ctapes c).
@@ -61,32 +81,6 @@ Section Match.
     | inr s => let (f, s) := s in halt (m := Mf f) s
     end.
 
-  Definition Match_p : (states Match) -> F'.
-  Proof.
-    intros s. 
-    destruct s.
-    - cbn in e. eapply (projT2 pM1) in e.
-      eapply pMf in e.
-      eapply (projT2 e).
-      eapply start.
-    - destruct s.
-      destruct (pMf x).
-      eapply e0. exact e.
-      (* Show Proof. *)
-      (* Show Proof. *)
-      (* fun s => match s with *)
-      (*     | inl _ => p2 (p (start M1)) (start (Mf (p (start M1)))) *)
-      (*     | inr (existT _ f' s2) => p2 f' s2 *)
-      (*     end. *)
-  Defined.
-
-  (* Definition lift_partR : (states Match) -> F' := *)
-  (*   fun s => match s with *)
-  (*         | inl e => (fun e0 : F => (fun (e1 : { Mff : mTM sig n & states Mff -> F'}) => projT2 e1 (start (projT1 e1))) (pMf e0))  *)
-  (*      (p1 e) *)
-  (*         | inr (existT _ f' s2) => p2 s2 *)
-  (*         end. *)
-
   Lemma Match_merge (k1 k2 : nat)
         (c1 : mconfig sig (states M1) n)
         (c2 : mconfig sig (states (projT1 (pMf (p1 (cstate c1))))) n)
@@ -98,7 +92,7 @@ Section Match.
     intros H H1.
     unfold loopM.
     eapply (loop_merge (p := halt_liftL) (a2 := lift_confL c1)).
-    - intros ? H3. cbn. unfold halt_liftL in H3. now destruct cstate.
+    - intros ? H3. cbn. unfold halt_liftL in H3. now destruct cstate as [ q | (f&q)].
     - unfold loopM in H. cbn.
       eapply loop_lift with (lift := lift_confL) (hlift := halt_liftL) in H; eauto.
       + intuition. rewrite step_seq_liftL; eauto.
@@ -202,24 +196,6 @@ Section Match.
     - intros. cbn in *. destruct cstate. reflexivity. inv H0.
   Qed.
 
-  (* Definition Match_p : (states (Match pM1 (fun f => projT1 (Mf f)))) -> F'. *)
-  (* Proof. *)
-  (*   intros s. *)
-  (*   destruct s. *)
-  (*   - destruct pM1. cbn in e. eapply e0 in e. eapply Mf in e. destruct e. *)
-  (*     eapply e. *)
-  (*     exact (start x0). *)
-  (*   - destruct s. *)
-  (*     destruct (Mf x). *)
-  (*     eapply e0. exact e. *)
-  (*     (* Show Proof. *) *)
-  (*     (* fun s => match s with *) *)
-  (*     (*     | inl _ => p2 (p (start M1)) (start (Mf (p (start M1)))) *) *)
-  (*     (*     | inr (existT _ f' s2) => p2 f' s2 *) *)
-  (*     (*     end. *) *)
-  (* Defined. *)
-
-  Definition MATCH := (Match; Match_p).
 
   Lemma Match_Realise (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) :
     pM1 ⊨ R1 ->
