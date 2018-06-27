@@ -10,10 +10,50 @@ and Ricciotti \cite{asperti2015}.  We define basic machines and prove their corr
 \label{sec:notational-conventions}
 
 We use superscripts ($X^n$) to denote lists of fixed length (also called vectors).  Natural zero-based numbers are used as indexes for vector-access
-($x[i]$).  We use the symbols $\Unit$, $\Bool$, $\Type$, $\Prop$, $\Nat$, $\Option(X)$, $X+Y$, and $\List(X)$ for the well-known standard types.  We
-use the notation $R \subseteq A \times \cdots \times Z$ to declare relations $R \from A \to \cdots \to Z \to \Prop$, but $\lambda a~\cdots~z.~\cdots$
-to define relations.  For tuples $A = (a, b, c, \cdots)$, we use subscripts ($a_M$) for the projections.  We leave the subscript out if it is clear
-from the context.  We use the symbols $\None$ and $\Some x : \Option(X)$.
+($x[i]$).  We use the symbols $\Unit$, $\Bool$, $\Type$, $\Prop$, $\Nat$, $\Option(X)$, $X+Y$, and $\List(X)$ for the well-known standard types.
+$\sum_{a:A} B$ denote sigma types, i.e. dependet pairs, with the projections $\pi_1$ and $\pi_2$.  We write $(a,b)$ for instances of sigma types. For
+tuples $A = (a, b, c, \cdots)$, we use subscripts ($a_M$) for the projections.  We usually leave subscripts out if they are clear from the context.
+We use the symbols $\None$ and $\Some x$ as instances of the type $\Option(X)$.
+
+
+\section{Relations}
+\label{sec:relations}
+
+We define the semantics of concrete Turing machines in terms of relations.  We use the notation $R \subseteq A \times \cdots \times Z$ to declare a
+relation $R \from A \to \cdots \to Z \to \Prop$.  We call relations of the form $R \subseteq A \times B \times A$ \emph{partitioned relations}.  We
+use lambda-notation, i.e. $\lambda a~\cdots~z.~\cdots$, to define relations.  We write unit-partioned relations $R \subseteq A \times \Unit \times A$
+simply as relations $R \subseteq A \times A$.
+
+We use the following standard relational operators:
+
+\begin{definition}[Relational operators]
+  Let $R, S \subseteq A \times B$ and $T \subseteq B \times C$.
+  \begin{align*}
+    R \cap S &:= \lam{x~y}{R~x~y \land S~x~y} \\
+    R \cup S &:= \lam{x~y}{R~x~y \lor S~x~y} \\
+    R \circ T &:= \lam{x~z}{\exists y.~R~x~y \land S~y~z}
+  \end{align*}
+\end{definition}
+
+We also have the reflexive transitive closure of binary relations:
+
+\begin{definition}[Kleene star]
+  Let $R \subseteq A \times A$.  The relation $R^*$ is defined inductively:
+  \[
+    \inferrule{ }{R^*~x~x}
+    \qquad
+    \inferrule{R~x~y \and R^*~y~z}{R^*~x~z}
+  \]
+\end{definition}
+
+We also have an operator that restricts the partition part of a partitioned relation and yields a binary relation:
+
+\begin{definition}[Relational restriction]
+  Let $R \subseteq A \times B \times A$ and $y:B$.
+  \[
+    R \at b := \lam{x~y}{R~x~y~z}
+  \]
+\end{definition}
 
 
 
@@ -49,18 +89,17 @@ start state of the machine and $halt$ represents the subset of halting states.  
 \emph{actions}.  They are refered to with the symbol $\MS{Act}_\Sigma$ or $\MS{Act}$ if $\Sigma$ is clear.  Our machines behave deterministically,
 because $\delta$ is a function.
 
-Later, when we want to verify complex machines, we do not want to reason about internal states.  We rather want to reason about partitions of states,
+When we want to verify complex machines, we do not want to reason about internal states.  We rather want to reason about partitions of states,
 e.g. positive or negative states.  In general, if $F$ is a finite type, then $M = (M', part)$ is a \emph{partitioned} machine, where $M'$ is an
 unpartitioned machine and $part \from Q_M \to F$ the partitioning function.  We write $\MS{TM}_\Sigma^n(F)$ for the type of partioned machines over
-$F$.  However, we overload the notation $\MS{TM}_\Sigma^n := \MS{TM}_\Sigma^n(\Unit)$ for machines partitioned over the unit type.  We use the symbol
-$M$ for both partioned and unpartitioned machines.  It should however be always clear from the context, whether $M$ is a partitioned or unpartitioned
-machine.
+$F$\footnote{Formally, it is defined as a sigma type: $\MS{TM}_\Sigma^n(F) := \sum_{M:\MS{TM}_\Sigma^n}\bigl(Q_M \to F\bigr)$}.  We overload the
+notation $\MS{TM}_\Sigma^n := \MS{TM}_\Sigma^n(\Unit)$ for machines partitioned over the unit type.  We use the symbol $M$ for both partioned and
+unpartitioned machines.  It should however be always clear from the context, whether $M$ is a partitioned or unpartitioned machine.
 
-%% TODO
-Arbitrary much memory can be allocated on a tape, however every tape has only finitely many symbols, i.e. there is a left-most and a right-most
-symbol.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol on which the (read/write) head of tape is.  It is essential
-that the symbol lists are ordered such that the head of the list is the symbol next to the symbol $m$.  With other words, $ls$ is stored in reversed
-order.
+On a \emph{tape}, arbitrary much memory can be allocated.  However every tape has only finitely many symbols, i.e. there is a left-most and a
+right-most symbol.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol on which the (read/write) head of tape is.  It is
+essential that the symbol lists are ordered such that the head of the list is the symbol next to the symbol $m$.  With other words, $ls$ is stored in
+reversed order.
 
 There are three cases where there is no current symbol: the tape can be completely empty, or the head can be to the left (or right) outermost of the
 non-empty tape.  Formally, tapes are defined inductively:
@@ -182,16 +221,16 @@ $\MS{loop} \from \Nat \to (A \to A) \to (A \to \Bool) \to A \to \Option(A)$, for
 \begin{align*}
   \MS{loop}~n~f~h~s :=
   \begin{cases}
-    \Some{s}              & h(s) = \true \\
-    \None                 & h(s) = \false \land n = 0 \\
-    \MS{loop}~(n-1)~f~h~(f s)  & h(s) = \false \land n > 0
+    \Some{s}                   & h(s) \\
+    \None                      & \lnot h(s) \land n = 0 \\
+    \MS{loop}~(n-1)~f~h~(f~s)  & \lnot h(s) \land n > 0
   \end{cases}
 \end{align*}
 
 We can show some basic Lemmas about $\MS{loop}$.
 \begin{lemma}[Basic facts about $\MS{loop}$]
   \label{lem:loop}
-  Let $f \from A \to A$ be a step function and $h \from A \to \Bool$ be a halting function, $s:A$, and $k, l:\Nat$.  Then:
+  Let $f \from A \to A$, $h \from A \to \Bool$, $s:A$, and $k, l:\Nat$.  Then:
   \begin{enumerate}
   \item If $k \le l$ and $\MS{loop}~k~f~h~s = \Some x$, then $\MS{loop}~l~f~h~s = \Some x$.
   \item If $\MS{loop}~k~f~h~s = \Some x$ and $\MS{loop}~l~f~h~s = \Some y$, then $x = y$.
@@ -215,8 +254,8 @@ of the machine, given initial tapes $t: \Tape_\Sigma^n$:
 
 We write $M(t) \terminates^k c$ for $\MS{exec}~t~k = \Some{c}$.
 
-All definitions, except parametrised machines are from Asperti and Ricciotti \cite{asperti2015}, with similiar names.  However, the $\MS{loop}$
-function was slightly changed for convenience, so that it needs zero steps when the (abstract) state is a halting state.
+All definitions, except partioned machines are from Asperti and Ricciotti \cite{asperti2015}, with similiar names.  However, the $\MS{loop}$ function
+was slightly changed for convenience, so that it needs zero steps when the (abstract) state is a halting state.
 
 \section{Specification of Semantics}
 \label{sec:spec_semantics}
@@ -309,9 +348,9 @@ next chapter, I will show how to combine these basic machines and build complex 
 \label{sec:basic_machines-Nop}
 
 A very simple class of (partitioned) machine is the one-tape $\MS{Nop}$ machine.  It terminates immediately, i.e. after 0 steps.  For convenience, We
-parametrise $\MS{Nop}$ over a partition $f:F$, i.e. all states of $\MS{Nop}$ are mapped into the same partition.  We do this for all basic machines,
-except $\MS{Read}$, but there is no real need to do this, since we will introduce a simple operator on partitioned machines that simply changes the
-partition in Chapter~\ref{chap:combining}.
+define $\MS{Nop}$ over a partition $f:F$, i.e. all states of $\MS{Nop}$ are mapped into the same partition.  We do this for all basic machines, except
+$\MS{Read}$, but there is no real need to do this, since we will introduce a simple operator on partitioned machines that simply changes the partition
+in Chapter~\ref{chap:combining}.
 \begin{definition}[Nop]
   \label{def:Nop}
   Let $f:F$ be a partition.  $\MS{Nop}~f: \TM_\Sigma^1(F)$ is defined as follows:
@@ -320,7 +359,7 @@ partition in Chapter~\ref{chap:combining}.
     start      &:= \unit \\
     \delta ~\_ &:= (\unit, \Vector{(\None, N)}) \\
     halt   ~\_ &:= \true \\
-    param  ~\_ &:= f
+    part   ~\_ &:= f
   \end{align*}
 \end{definition}
 The correctness relation says exactly that the tapes don't change and that the machine terminates in $f$:
@@ -349,8 +388,8 @@ The next class of machines, $\MS{DoAct}~a~f : \TM_\Sigma^1(F)$, do only one acti
     Q          &:= \Bool \\
     start      &:= \false \\
     \delta ~\_ &:= (\true, \Vector{a}) \\
-    halt   ~ q &:= q \\
-    param  ~\_ &:= f
+    halt   ~ b &:= b \\
+    part   ~\_ &:= f
   \end{align*}
 \end{definition}
 The semantics of $\MS{DoAct}$ is easily expressed using $\MS{doAct}$ (see Definition \ref{def:step}):
@@ -405,8 +444,8 @@ symbol and terminate in the state that corresponds to this symbol.  They have a 
                      \end{cases} \\
     halt   ~ (\inl  b) &:= b \\
     halt   ~ (\inr \_) &:= \true \\
-    param  ~ (\inl  b) &:= \None \\
-    param  ~ (\inr  c) &:= \Some c
+    part   ~ (\inl  q) &:= \None \\
+    part   ~ (\inr  s) &:= \Some s
   \end{align*}
 \end{definition}
 

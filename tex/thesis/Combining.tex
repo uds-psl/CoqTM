@@ -1,14 +1,62 @@
 \chapter{Combining Turing Machines}
 \label{chap:combining}
 
-We have defined the notion of multi-tape Turing machines and some basic machines in Chapter \ref{chap:definitions}.
-Now we want to construct bigger machines, for example a single-tape machine that moves the head to the right or to a certain symbol.
+We have defined the notion of multi-tape Turing machines and basic machines in Chapter \ref{chap:definitions}.  Now we want to construct bigger
+machines, for example a single-tape machine that moves the head to the right or to a certain symbol.
 
 \section{Control Flow Operators}
 \label{sec:control}
 
 We define control flow operators, like ``match'', ``if then else'', ``sequential composition'', and ``while''.
 As a result, we get a shallow-embeded language for programming multi-tape Turing machines in an imperative way.
+
+\subsection{Match}
+\label{sec:match}
+
+Asperti and Ricciotti \cite{asperti2015} also define the control flow operators sequential composition, conditional, and while.  However, for the
+conditional they have to give one explicit ``else'' state.  Giving an explicit state is very tedious for complex machines.  That is why we use the
+generalised notion of partioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  If $M_1$
+terminated in a ``positive'' state (i.e. a state beloning to the partition $\true$), $M_2$ is executed after $M_1$.  Else it executes $M_3$ after
+$M_1$.  We observe that sequential composition and conditional can be defined as instances of a more general operator we call $\MS{Match}$.
+
+Let $M : \TM_\Sigma^n(F)$ and $f \from F \to \TM_\Sigma^n(F')$ be a function from partitions to machines.  We define
+$\MS{Match}~M~f : \TM_\Sigma^n(F')$.
+
+\begin{definition}[$\MS{Match}~M~f$]
+  \label{def:Match}
+  \begin{alignat*}{3}
+    & Q                  &~:=~& Q_M +  \sum_{y:F} Q_{f(y)} \\
+    & start              &~:=~& \inl start_M \\
+    \delta ~&(\inl q, s) &~:=~&
+    \begin{cases}
+      \bigl(\inr (part_M~q, start_{f (part_M~q)}), (\None, N)^n \bigr) & halt_M(q) \\
+      \Let{(q', a) := \delta_M(q, s)}{\left(\inl q', a \right)} & \lnot halt_M(q)
+    \end{cases} \\
+    \delta ~&(\inr q, s) &~:=~& \Let{(q', a) := \delta_{f(\pi_1 q)} (\pi_2 q, s)}{\\
+            &            &~  ~& \bigl( \inr (\pi_1 q, q'), a \bigr)} \\
+    halt   ~&(\inl  q)   &~:=~& \false \\
+    halt   ~&(\inr  q)   &~:=~& halt_{f(\pi_1~q)} (\pi_2~q) \\
+    part   ~&(\inl  q)   &~:=~& \_ \\
+    part   ~&(\inr  q)   &~:=~& part_{f(\pi_1~q)} (\pi_2~q)
+  \end{alignat*}
+\end{definition}
+
+In Definition~\ref{def:Match}, the $part$ value for $\inl$ is unimportant, because the states of $M_1$ are not terminating states.  We just use a
+canonical value.
+
+
+\begin{figure}
+  \center
+  \input{fig-MatchExample}
+  \caption{Example for a $\MS{match}$.  The left blue box stands for the first machine.  After it reaches on of the terminal states
+    $s_1, \cdots, s_3$, it continues its execution either in the right top machine or in the right bottom case machine.
+  The halting states of the match machine are exactly the halting states of the case-machines.}
+  \label{fig:match}
+\end{figure}
+
+
+
+\todo{Semantics of Match}
 
 
 \section{Machine Transformations}
@@ -18,6 +66,12 @@ There is a problem when we want to combine machines --- for example using sequen
 The number of tapes and the alphabets of both machines have to be exactly the same.
 How can we re-use a single-tape Turing machine when we want to build a multi-tape machine?
 How can we combine two machines with different alphabets?
+
+
+\section{Examples}
+\label{sec:combining-examples}
+
+
 
 
 %%% Local Variables:
