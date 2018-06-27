@@ -43,7 +43,6 @@ $\MS{Match}~M~f : \TM_\Sigma^n(F')$.
 In Definition~\ref{def:Match}, the $part$ value for $\inl$ is unimportant, because the states of $M_1$ are not terminating states.  We just use a
 canonical value.
 
-
 \begin{figure}
   \center
   \input{fig-MatchExample}
@@ -54,9 +53,26 @@ canonical value.
   \label{fig:match}
 \end{figure}
 
+\subsubsection{Correctness of Match}
+\label{sec:Match-correct}
 
 
-\todo{Semantics of Match}
+$\MS{Match}~M~f$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``$\MS{Nop}$'' action and changes to to the
+injection of the start state of the machine $f(part~q)$.  When $\MS{Match}~M~f$ reaches a state that is the injection of a final state of a machine
+$M'$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
+
+\begin{lemma}[Correctness of $\MS{Match}~M~f$]
+  \label{lem:Match_Realise}
+  Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$ and $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$ for all $y:F$.
+  If $M \vDash R$ and $f~y \vDash R'~y$ for all $y:F$, then
+  \[
+    \MS{Match}~M~f \vDash \bigcup_{y:F} \bigl( R\at y \circ R'~y \bigr)
+  \]
+\end{lemma}
+
+
+
+\todo{Proof correctness Match}
 
 
 \section{Machine Transformations}
