@@ -13,7 +13,7 @@ As a result, we get a shallow-embeded language for programming multi-tape Turing
 \subsection{Match}
 \label{sec:match}
 
-Asperti and Ricciotti \cite{asperti2015} also define the control flow operators sequential composition, conditional, and while.  However, for the
+Asperti and Ricciotti~\cite{asperti2015} also define the control flow operators sequential composition, conditional, and while.  However, for the
 conditional they have to give one explicit ``else'' state.  Giving an explicit state is very tedious for complex machines.  That is why we use the
 generalised notion of partioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  If $M_1$
 terminated in a ``positive'' state (i.e. a state beloning to the partition $\true$), $M_2$ is executed after $M_1$.  Else it executes $M_3$ after
@@ -71,6 +71,7 @@ $M'$, it terminates.  The correctness part of the semantics can be expressed usi
 \end{lemma}
 
 
+\todo{In the above relation, a unpartioned relation is composed with a partioned relation!}
 \todo{Proof correctness of $\MS{Match}$}
 
 
@@ -135,18 +136,85 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
 
 The machine $\While M$ essentially behaves like a ``do-while'' loop in imperative languages like C.  At the end of the execution of the loop body $M$,
 $M$ decides either to continue or break out of the loop.  If $M$ terminated in the partiton $\None$, then the loop is continued, and if $M$ terminated
-in $\Some{y}$, then the loop brakes and $\While M$ terminates in $y$.  When $M : \TM_\Sigma^n(\Option(F))$, then $\While M : \TM_\Sigma^n(F)$.
+in $\Some{y}$, the loop brakes and $\While M$ terminates in $y$.  When $M : \TM_\Sigma^n(\Option(F))$, then $\While M : \TM_\Sigma^n(F)$.
+
+
+\begin{definition}[$\MS{While}~M$]
+  \label{def:While}
+  Let $M : \TM_\Sigma^n(\Option(F))$ and $def:F$.
+  \begin{alignat*}{3}
+    & F              &~:=~& F \\
+    & Q              &~:=~& Q_M \\
+    & start          &~:=~& start_M \\
+    \delta ~& (q, s) &~:=~&
+    \begin{cases}
+      (q,       (\None, N)^n) & halt_M(q) \land part_M(q) = \Some y \\
+      (start_M, (\None, N)^n) & halt_M(q) \land part_M(q) = \None \\
+      \delta_M (q,s)    & \lnot halt_M(q)
+    \end{cases} \\
+    halt ~& q      &~:=~& halt_M(q) \land \MS{isSome}(part_M(q)) \\
+    part ~& q      &~:=~&
+    \begin{cases}
+      y   & part_M(q) = \Some y \\
+      def & part_M(q) = \None
+    \end{cases}
+  \end{alignat*}
+\end{definition}
+
+In Definition~\ref{def:While}, we have to assume that $F$ is inhabited.  However, the choice of $def:F$ is semantically irrelevant, because $\While M$
+only halts in states where $part_M(q)$ has a $\Some{.}$ value.
+
+\subsubsection{Correctness of While}
+\label{sec:While-correct}
+
+\todo{}
+
+
+\subsubsection{Runtime of While}
+\label{sec:While-runtime}
+
+We can not simply give a runtime relation in that $\While M$ terminates, because we do not know the number of iterations in general.
+
+\todo{}
+
+
 
 
 \section{Machine Transformations}
 \label{sec:transformations}
 
-There is a problem when we want to combine machines --- for example using sequential composition:
-The number of tapes and the alphabets of both machines have to be exactly the same.
-How can we re-use a single-tape Turing machine when we want to build a multi-tape machine?
-How can we combine two machines with different alphabets?
+We observe that whenever we want to combine machines, the numbers of tapes and alphabets of all involved machines have to match.
+
+For example, assume that we have a one-tape machine that moves the head to the right.  If we need a two-tape machine that moves both tapes to the
+rigth, we would like to use sequencial composition and move one tape after the other tape to right.  But we would need two two-tape machines: one that
+moves the first tape to the right and one that moves the second tape to the right.  There are multiple ways to solve this problem.  For example, we
+could define a class of $n$-tape machines that move the $i$th tape to the right and leave all other tapes unchanged.  However, it is in general easier
+to build and prove correctness of small machines that operate on a minimal amount of tapes.  Asperti and Ricciotti~\cite{asperti2015} defined an
+\emph{injecting} operator that translates an one-tape machine into a $1+n$-tape machine.  We generalised this approach and implemented an operator
+that takes an $m$-tape machine and yields an $n$-tape machine, where $m \le n$.
+
+The second part of this problem is how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that sums
+(encodings of) natural numbers, we could want to build a machine $\MS{Sum}$ that sums numbers in a list of numbers.  Consider an alphabet
+$\Sigma_\Nat$ where we could ``encode'' natural numbers on, and an alphabet $\Sigma_{\List(\Nat)}$ to ``encode'' lists of natural numbers.  If the
+alphabet $\Sigma_\Nat$ is ``included'' in $\Sigma_{\List(\Nat)}$, we would like to ``lift'' $\MS{Add}$ to the alphabet $\Sigma_{\List(\Nat)}$, to
+define $\MS{Sum}$.
+
+Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem.  They consider a fixed alphabet to ``encode'' all needed data on, to implement an
+universal Turing machine.  However, this approach does not scale.  When the you need to change the alphabet, for example because you have to add a new
+``data type'', they must change the definitions of the involved smaller machines (which are combined using the injecting operation).  That is why we
+also introduce an operator that \emph{lifts} a machine to a bigger alphabet.
+
+\subsection{$n$-Lift}
+\label{sec:n-Lift}
+
+\todo{}
 
 
+\subsection{$\Sigma$-Lift}
+\label{sec:sigma-Lift}
+
+
+\todo{}
 
 
 
