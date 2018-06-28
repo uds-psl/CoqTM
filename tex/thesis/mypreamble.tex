@@ -9,6 +9,8 @@
 \usepackage[small,compact]{titlesec}
 \usepackage[final]{listings}
 \usepackage{amsmath}
+\usepackage[amsmath,hyperref,thmmarks]{ntheorem}
+% Warning: The package ntheorem defines a \None macro!
 \usepackage{amssymb}
 \usepackage{tipa}
 \usepackage[english]{babel}
@@ -20,7 +22,7 @@
 \usepackage{xspace}
 \usepackage{mathpartir}
 \usepackage{stmaryrd} % for |llbracket and \rrbracket
-\usepackage{standalone}
+\usepackage{standalone} % useful to out-source graphics
 
 
 % TikZ ist *kein* Zeichenprogramm.
@@ -99,18 +101,19 @@
 \DeclareMathOperator{\hideParam}{\Downarrow}
 
 %% Control flow operators in math
-\newcommand{\While}[1]{\MS{While}}
+\newcommand{\While}{\MS{While}~}
 \newcommand{\Seq}{;~}
-\newcommand{\If}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
 \newcommand{\Match}{\MS{Match}}
+\newcommand{\If}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
 \newcommand{\Let}[2]{\MS{let}~#1~\MS{in}~#2}
+\newcommand{\cond}[3]{\MS{if}~#1~\MS{then}~#2~\MS{else}~#3}
 
 %% Constructors
 \DeclareMathOperator{\inl}{\ensuremath{\MS{inl}}}
 \DeclareMathOperator{\inr}{\ensuremath{\MS{inr}}}
-\newcommand{\Some}[1]{\left\lfloor {#1}\right\rfloor}
+\newcommand{\Some}[1]{\left\lfloor {#1} \right\rfloor}
 % \None is defined sometimes
-\def\None{\emptyset}
+\renewcommand{\None}{\emptyset}
 \newcommand{\true}{\MS{true}}
 \newcommand{\false}{\MS{false}}
 \newcommand{\unit}{\MS{()}}
