@@ -71,8 +71,75 @@ $M'$, it terminates.  The correctness part of the semantics can be expressed usi
 \end{lemma}
 
 
+\todo{Proof correctness of $\MS{Match}$}
 
-\todo{Proof correctness Match}
+
+\subsubsection{Runtime of Match}
+\label{sec:match-runtime}
+
+To specify the runtime of $\MS{Match}~M~f$, we need to know: first, the relation that $M$ realisis, second, the runtime relation in that $M$
+terminates, and third, for each $y:F$ the runtime of $f~y$.
+
+
+\begin{lemma}[Runtime of $\MS{Match}~M~f$]
+  Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, $T \subseteq \Tape_\Sigma^n \times \Nat$, and
+  $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \vDash R$, $M \downarrow T$, and $f~y \downarrow T'~y$ for all $y:F$, then
+  $\MS{Match}~M~f \downarrow \MS{MatchT}~R~T~T'$, where
+  \[
+    \MS{MatchT}~R~T~T' :=
+    \lambda~t~i.~ \exists~i_1~i_2.~T~t~i_1 \land 1+i_1+i_2 \le i \land
+      \forall~y~t'.~ R~t~y~t' \rightarrow T'~y~t'~i_2
+  \]
+  % (fun tin i => exists i1 i2, T1 tin i1 /\ 1 + i1 + i2 <= i /\ forall tout yout, R1 tin (yout, tout) -> T2 yout tout i2)
+
+\end{lemma}
+
+
+\subsubsection{Derived Operators}
+\label{sec:match-derived-operators}
+
+As mentioned above, conditional and sequential composition can be defined as instances of the Match operator.  For the conditional
+$\If{M_1}{M_2}{M_3}$ with $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F')$, $f$ simply maps $\true$ to $M_2$ and $\false$ to $M_3$.  For the
+sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$, $f$ maps all partitions of $F$ to $M_2$.
+
+\begin{definition}[Conditional]
+  \label{def:If}
+  Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F')$.
+  \[
+    \If{M_1}{M_2}{M_3} := \MS{Match}~M_1~
+    \Bigl(
+    \lambda~b.~
+    \begin{cases}
+      M_1 & b \\\
+      M_2 & \lnot b
+    \end{cases}
+    \Bigr)
+  \]
+\end{definition}
+
+\begin{definition}[Sequencial composition]
+  Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
+  \[
+    M_1 \Seq M_2 := \MS{Match}~M_1~
+    \bigl(
+    \lambda~\_.~M_2
+    \bigr)
+  \]
+\end{definition}
+
+
+
+\subsection{While}
+\label{sec:While}
+
+
+The machine $\While M$ essentially behaves like a ``do-while'' loop in imperative languages like C.  At the end of the execution of the loop body $M$,
+$M$ decides either to continue or break out of the loop.  If $M$ terminated in the partiton $\None$, then the loop is continued, and if $M$ terminated
+in $\Some{y}$, then the loop brakes and $\While M$ terminates in $y$.  When $M : \TM_\Sigma^n(\Option(F))$, then $\While M : \TM_\Sigma^n(F)$.
+
+$\None, \emptyset$
+
+
 
 
 \section{Machine Transformations}
