@@ -13,15 +13,27 @@ function computation.  We present a generic pattern how to program and verify Tu
 \label{sec:value-containing}
 
 We first want to define what it means that a tape $t$ \emph{contains} a value $x$, written as $t \simeq x$.  Tapes, as defined in \ref{def:tape}, are
-essentially a list of symbols, so we have to linearise values to strings.  We say that a type $X$ is \emph{encodable} over $\Sigma$, if we have
-defined an injective function $encode_\Sigma : X \to \List(\Sigma)$.
+essentially a list of symbols, so we have to linearise values to strings.
 
-If $X$ is encodable over $\Sigma$, we encode values of $x$ on tapes with an extended alphabet $\Sigma^+$.  $\Sigma^+$ has an additional start symbol
-and end symbol.
+\begin{definition}[Encodable types]
+  We say that a type $X$ is \emph{encodable} over $\Sigma$, if there is an injective function $encode : X \to \List(\Sigma)$.
+\end{definition}
+
+We write $encode_\Sigma$ if $\Sigma$ is not clear from the context.  For example, we can map encodings to different alphabets:
+
+\begin{definition}[Map encodings]
+  Let $X$ be encodable over $\Sigma$ and $f : \Sigma \to \Tau$ be injective.  Then $X$ is also encodable over $\Tau$ with the following encoding
+  function:
+  \[ encode_\Tau(x) = \map{f}{(encode_\Sigma(x))}. \]
+\end{definition}
+
+
+If $X$ is encodable over $\Sigma$, we encode values of $x$ on tapes with an extended alphabet $\Sigma^+$ that has an additional start symbol and end
+symbol.
 
 \begin{definition}[$\Sigma^+$] Let $\Sigma$ be an alphabet.
   \[
-    \Sigma^+ ::= \MS{START} ~|~ \MS{STOP} ~|~ \Sigma
+    \Sigma^+ ::= \MS{START} ~|~ \MS{STOP} ~|~ (s: \Sigma)
   \]
 \end{definition}
 
@@ -36,7 +48,28 @@ Then we can define what $t \simeq x$ means:
   \]
 \end{definition}
 
-Note that in Definition~\ref{def:tape_contains}, we have to map the encoding of $x$ to the extended alphabet $\Sigma^+$.
+Note that in Definition~\ref{def:tape_contains}, we have to map the encoding of $x$ to the extended alphabet $\Sigma^+$.  If $t \simeq x$, the head of
+$t$ stands on the start symbol.  To the right, there is the encoding, which is terminated by the stop-symbol.  To the left of the head, there may be
+arbitrary many ``rest'' symbols.
+
+We found the convention usefull, that there are no further symbols beyond the stop symbol.  In future work we also want to reason about space usage of
+machines.  If a tape contains a value, the size of the tape (i.e.\ the number of symbols on it), only depends on the length of the encoding and the
+number of rest symbols $ls$ to the left.  We have the convention to only add symbols to the left of a tape.  We also only write on tapes, if the head
+of the tape is on the right-most symbol.
+
+\section{Value-Manipulating Machines}
+\label{sec:value-manipulate}
+
+
+We defined what it means that a tape contains a value.  Now we want to define machines that manipulate values, e.g\ increase or increase a number.
+Also, a very useful operation is to copy a value from one tape to another tape.
+
+
+\todo{}
+
+
+
+
 
 
 

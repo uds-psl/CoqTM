@@ -66,19 +66,24 @@ $M'$, it terminates.  The correctness part of the semantics can be expressed usi
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$ and $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$ for all $y:F$.
   If $M \vDash R$ and $f~y \vDash R'~y$ for all $y:F$, then
   \[
-    \MS{Match}~M~f \vDash \bigcup_{y:F} \bigl( R\at y \circ R'~y \bigr)
+    \MS{Match}~M~f \vDash \MS{MatchRel}~R~R'
+  \]
+  with
+  \[
+    \MS{MatchRel}~R~R' := \bigcup_{y:F} \bigl( R\at y \circ R'~y \bigr).
   \]
 \end{lemma}
 
+Note that in the relation $\MS{MatchRel}$, we compose the unpartioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the partioned
+relation $R'~y \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$.
 
-\todo{In the above relation, a unpartioned relation is composed with a partioned relation!}
-\todo{Proof correctness of $\MS{Match}$}
+\todo{Proof scratch}
 
 
 \subsubsection{Runtime of Match}
 \label{sec:match-runtime}
 
-To specify the runtime of $\MS{Match}~M~f$, we need to know: first, the relation that $M$ realisis, second, the runtime relation in that $M$
+To specify the runtime of $\MS{Match}~M~f$, we need to know: first, the relation that $M$ realises, second, the runtime relation in that $M$
 terminates, and third, for each $y:F$ the runtime of $f~y$.
 
 
@@ -96,6 +101,9 @@ terminates, and third, for each $y:F$ the runtime of $f~y$.
 \end{lemma}
 
 
+\todo{Proof scratch}
+
+
 \subsubsection{Derived Operators}
 \label{sec:match-derived-operators}
 
@@ -108,13 +116,7 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
   Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F')$.
   \[
     \If{M_1}{M_2}{M_3} := \MS{Match}~M_1~
-    \Bigl(
-    \lambda~b.~
-    \begin{cases}
-      M_1 & b \\\
-      M_2 & \lnot b
-    \end{cases}
-    \Bigr)
+    \left(\lam{b}{\cond{b}{M_1}{M_2} \right})
   \]
 \end{definition}
 
@@ -167,15 +169,93 @@ only halts in states where $part_M(q)$ has a $\Some{.}$ value.
 \subsubsection{Correctness of While}
 \label{sec:While-correct}
 
-\todo{}
+The correctness of $\MS{While}$ can be easily expressed using the following relation:
+
+
+\begin{definition}[$\MS{WhileRel}$]
+  \label{def:While_Rel}
+  Let $R \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.  $\MS{WhileRel}~R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$
+  is defined inductively by the following two rules:
+  \[
+    \inferrule{R~t~(\None, t') \and \MS{WhileRel}~t'~(y, t'')}{\MS{WhileRel}~t~(y, t'')}
+    \quad
+    \inferrule{R~t~(\Some y, t')}{\MS{WhileRel}~t~(y, t')}
+  \]
+\end{definition}
+
+
+\begin{figure}
+  \center
+  \input{fig-WhileExample}
+  \caption{Example for $\While M$ with $M:\TM_\Sigma^n(\Option(\Bool))$.  When the $M$ reaches the state $q_1$, the loop is continued, because $q_1$
+    is in the partition $\None$ of $M$.  $q_2$ and $q_3$ are in the partition $\Some{\true}$ and $\Some{\false}$, therefore $\While M$ terminates in
+    its partition $\true$ or $\false$, when the copy of $M$ terminated in $q_2$ or $q_3$.}
+  \label{fig:while-example}
+\end{figure}
+
+
+
+We can also express this relation using the Kleene star:
+
+\begin{lemma}[Alternative specification of $\While M$]
+  ~
+  \[
+    \MS{WhileRel}~R \equiv (R \at \None)^* \circ \Bigl( \bigcup_{y:F} \bigl( R \at {\Some y} \bigr) \att y \Bigr)
+  \]
+\end{lemma}
+
+Both definitions of $\MS{WhileRel}$ should really make clear what $\While~M$ does: It repeats the execution of $M$ as long as it terminated in
+$\None$, and after it terminated in $\Some y$, it terminates in the partition $y$.  This is visualised in Figure~\ref{fig:while-example}.  However,
+the inductive definition is more practical when we prove correctness of concrete $\MS{While}$ machines, because we can just do induction on the
+inductive predicate.
+
+\begin{lemma}[Correctness of $\MS{While}$]
+  If $M \vDash R$, then $\While M \vDash \MS{WhileRel}~M$.
+\end{lemma}
+
+
+\todo{Proof scratch}
 
 
 \subsubsection{Runtime of While}
 \label{sec:While-runtime}
 
-We can not simply give a runtime relation in that $\While M$ terminates, because we do not know the number of iterations in general.
+We can not simply give a runtime relation in that $\While M$ terminates, because we do not know the number of iterations in general.  However if we
+know that $M$ realises $R$ and terminates in $T$, we can show $\While M \downarrow T'$ for another runtime relation $T'$, if $T'$ ``decreases'' in
+terms of $R$ and $t$:
 
-\todo{}
+\begin{lemma}[Runtime of $\While M$]
+  If $M \vDash R$, $M \downarrow T$.  We can show $\While M \downarrow T'$ under the following assumption:
+  \begin{multline*}
+    \forall~t~i.~
+    T'~t~i \rightarrow
+    \exists~i_1.~
+    \forall~y~t'.~ \\
+    \bigl(
+    R~t~(\Some y, t') \rightarrow i_1 \le i
+    \bigl) \quad\land\quad
+    \bigl(
+    R~t~(\None, t') \rightarrow
+    \exists~i_2.~
+    T'~t'~i_2 \land
+    1 + i_1 + i_2 \le i
+    \bigr)
+  \end{multline*}
+  % (forall (tin : tapes sig n) (i : nat),
+  %        T' tin i ->
+  %        exists i1,
+  %          T tin i1 /\
+  %          forall (ymid : option F) tmid,
+  %            R tin (ymid, tmid) ->
+  %            match ymid with
+  %            | Some _ => i1 <= i
+  %            | None => exists i2, T' tmid i2 /\ 1 + i1 + i2 <= i
+  %            end)
+\end{lemma}
+
+
+
+\todo{Proof scratch}
 
 
 

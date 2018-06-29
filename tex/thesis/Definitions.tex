@@ -19,10 +19,10 @@ We use the symbols $\None$ and $\Some x$ as instances of the type $\Option(X)$.
 \section{Relations}
 \label{sec:relations}
 
-We define the semantics of concrete Turing machines in terms of relations.  We use the notation $R \subseteq A \times \cdots \times Z$ to declare a
-relation $R \from A \to \cdots \to Z \to \Prop$.  We call relations of the form $R \subseteq A \times B \times A$ \emph{partitioned relations}.  We
-use lambda-notation, i.e.\ $\lambda a~\cdots~z.~\cdots$, to define relations.  We write unit-partioned relations $R \subseteq A \times \Unit \times A$
-simply as relations $R \subseteq A \times A$.
+We define the semantics of concrete Turing machines in terms of relations.  We use the notation $R \subseteq A \times B$ to declare relations
+$R : A \to B \to Prop$.  We call relations of the form $R \subseteq A \times B \times A$ \emph{partitioned relations}, that means
+$R : A \to B \times A \to \Prop$.  We use lambda-notation, i.e.\ $\lambda a~b.~\cdots$, to define relations.  We write unit-partioned relations
+$R \subseteq A \times \Unit \times A$ simply as relations $R \subseteq A \times A$.
 
 We use the following standard relational operators:
 
@@ -35,9 +35,13 @@ We use the following standard relational operators:
   \end{align*}
 \end{definition}
 
-We also have the reflexive transitive closure of binary relations:
+Note that if we compose a binary relation $R \subseteq A \times A$ with a partioned relation $S \subseteq A \times B \times A$, we get a partioned
+relation $R \circ S \subseteq A \times B \times A$.
+
+We can also define the reflexive transitive closure of binary relations, also known as relational Kleene star:
 
 \begin{definition}[Kleene star]
+  \label{def:Kleene}
   Let $R \subseteq A \times A$.  The relation $R^*$ is defined inductively:
   \[
     \inferrule{ }{R^*~x~x}
@@ -46,12 +50,23 @@ We also have the reflexive transitive closure of binary relations:
   \]
 \end{definition}
 
-We also have an operator that restricts the partition part of a partitioned relation and yields a binary relation:
+We also have an operator that restricts the partition $B$ of a partitioned relation and yields a binary relation:
 
 \begin{definition}[Relational restriction]
+  \label{def:rel-restrict}
   Let $R \subseteq A \times B \times A$ and $y:B$.
   \[
-    R \at b := \lam{x~y}{R~x~y~z}
+    R \at y := \lam{x~y}{R~x~y~z}
+  \]
+\end{definition}
+
+Similarly, we can define an operator that takes a binary relation and yields a partioned relation where we fix the parameter.
+
+\begin{definition}[Relational fix]
+  \label{def:rel-fix}
+  Let $R \subseteq A \times A$ and $y : B$.
+  \[
+    R \att y := \lam{x~(y', z)}{R~x~z \land y'=y}
   \]
 \end{definition}
 
@@ -92,9 +107,10 @@ because $\delta$ is a function.
 When we want to verify complex machines, we do not want to reason about internal states.  We rather want to reason about partitions of states, e.g.\
 positive or negative states.  In general, if $F$ is a finite type, then $M = (M', part)$ is a \emph{partitioned} machine, where $M'$ is an
 unpartitioned machine and $part \from Q_M \to F$ the partitioning function.  We write $\MS{TM}_\Sigma^n(F)$ for the type of partioned machines over
-$F$\footnote{Formally, it is defined as a sigma type: $\MS{TM}_\Sigma^n(F) := \sum_{M:\MS{TM}_\Sigma^n}\bigl(Q_M \to F\bigr)$}.  We overload the
-notation $\MS{TM}_\Sigma^n := \MS{TM}_\Sigma^n(\Unit)$ for machines partitioned over the unit type.  We use the symbol $M$ for both partioned and
-unpartitioned machines.  It should however be always clear from the context, whether $M$ is a partitioned or unpartitioned machine.
+$F$\footnote{Formally, it could be defined as a sigma type: $\MS{TM}_\Sigma^n(F) := \sum_{M:\MS{TM}_\Sigma^n}\bigl(Q_M \to F\bigr)$}.  For brevity, we
+will make no distinction between unit-partioned machines $\TM_\Sigma^n(\Unit)$ and unpartioned machines $\TM_\Sigma^n$.  We use the symbol $M$ for
+both partioned and unpartitioned machines $\TM_\Sigma^n$.  It should however be always clear from the context, whether $M$ is a partitioned or
+unpartitioned machine.
 
 On a \emph{tape}, arbitrary much memory can be allocated.  However every tape has only finitely many symbols, i.e.\ there is a left-most and a
 right-most symbol.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol on which the (read/write) head of tape is.  It is
@@ -142,24 +158,25 @@ Now we can define the \emph{configuration} of a multi-tape Turing machine.  It i
 % The function $\MS{mv}_L$ is defined analogously.
 The function $\MS{mv} \from \Move \to \Tape_\Sigma \to \Tape_\Sigma$ moves a tape in a direction.
 \begin{definition}[Tape movement]
-  \begin{alignat*}{2}
-    & \MS{mv}~L~(\MS{leftof}~r~rs)              &&:= \MS{leftof}~r~rs \\
-    & \MS{mv}~L~(\MS{midtape}~\nil~m~rs         &&:= \MS{leftof}~m~rs \\
-    & \MS{mv}~L~(\MS{midtape}~(l \cons ls)~m~rs &&:= \MS{midtape}~ls~l~(m \cons rs) \\
-    & \MS{mv}~L~(\MS{rightof}~l~ls)             &&:= \MS{midtape}~ls~l~\nil \\
-    & \MS{mv}~L~(\MS{niltape})                  &&:= \MS{niltape} \\
-    & \MS{mv}~R~(\MS{leftof}~r~rs)              &&:= \MS{midtape}~\nil~r~rs \\
-    & \MS{mv}~R~(\MS{midtape}~ls~m~\nil         &&:= \MS{rightof}~m~ls \\
-    & \MS{mv}~R~(\MS{midtape}~ls~m~(r \cons rs) &&:= \MS{midtape}~(m \cons ls)~r~rs \\
-    & \MS{mv}~R~(\MS{rightof}~l~ls)             &&:= \MS{rightof}~l~ls \\
-    & \MS{mv}~R~(\MS{niltape})                  &&:= \MS{niltape} \\
-    & \MS{mv}~N~t                               &&:= t
+  \footnotesize
+  \begin{alignat*}{4}
+    & \MS{mv}~L~(\MS{leftof}~r~rs)               &&:= \MS{leftof}~r~rs
+    &~~~&
+      \MS{mv}~R~(\MS{leftof}~r~rs)               &&:= \MS{midtape}~\nil~r~rs \\
+    & \MS{mv}~L~(\MS{midtape}~\nil~m~rs          &&:= \MS{leftof}~m~rs
+    && \MS{mv}~R~(\MS{midtape}~ls~m~\nil         &&:= \MS{rightof}~m~ls \\
+    & \MS{mv}~L~(\MS{midtape}~(l \cons ls)~m~rs  &&:= \MS{midtape}~ls~l~(m \cons rs)
+    && \MS{mv}~R~(\MS{midtape}~ls~m~(r \cons rs) &&:= \MS{midtape}~(m \cons ls)~r~rs \\
+    & \MS{mv}~L~(\MS{rightof}~l~ls)              &&:= \MS{midtape}~ls~l~\nil
+    && \MS{mv}~R~(\MS{rightof}~l~ls)             &&:= \MS{rightof}~l~ls \\
+    & \MS{mv}~\_~(\MS{niltape})                  &&:= \MS{niltape}
+    && \MS{mv}~N~t                               &&:= t
   \end{alignat*}
 \end{definition}
 Note that moving further right (or left) when that tape already is to the right (or left) of the symbols, does not change the tape.
 
+The functions $\MS{left},~\MS{right} \from \Tape \to \List(\Sigma)$ return the symbols to the left (or right) side of the head:
 \begin{definition}[$\MS{left}$ and $\MS{right}$]
-  The functions $\MS{left},~\MS{right} \from \Tape \to \List(\Sigma)$ return the symbols to the left (or right) side of the pointer.
   \begin{alignat*}{4}
     \MS{left} &~(\MS{niltape})                 &&:= \nil
     \quad\quad\quad\quad
@@ -467,14 +484,15 @@ symbol and terminate in the state that corresponds to this symbol.  They have a 
 \end{definition}
 
 
-\[
-  \MS{ReadRel} := \lambda~t~y~t'.~ y = \MS{current}~t[0] \land t' = t
-\]
 \begin{lemma}[Correctness of $\MS{Read}$]
   \label{lem:Read_Sem}
   ~
   \[
-    \MS{Read}~f \vDash^0 \MS{NopRel}~f.
+    \MS{Read}~f \vDash^0 \MS{ReadRel}~f.
+  \]
+  where
+  \[
+    \MS{ReadRel} := \lambda~t~y~t'.~ y = \MS{current}~t[0] \land t' = t
   \]
 \end{lemma}
 \begin{proof}
