@@ -9,6 +9,36 @@ simulate control flow of imperative programming languages.  Using the definition
 function computation.  We present a generic pattern how to program and verify Turing machines and show more complex case studies.
 
 
+\section{Value-Containing}
+\label{sec:value-containing}
+
+We first want to define what it means that a tape $t$ \emph{contains} a value $x$, written as $t \simeq x$.  Tapes, as defined in \ref{def:tape}, are
+essentially a list of symbols, so we have to linearise values to strings.  We say that a type $X$ is \emph{encodable} over $\Sigma$, if we have
+defined an injective function $encode_\Sigma : X \to \List(\Sigma)$.
+
+If $X$ is encodable over $\Sigma$, we encode values of $x$ on tapes with an extended alphabet $\Sigma^+$.  $\Sigma^+$ has an additional start symbol
+and end symbol.
+
+\begin{definition}[$\Sigma^+$] Let $\Sigma$ be an alphabet.
+  \[
+    \Sigma^+ ::= \MS{START} ~|~ \MS{STOP} ~|~ \Sigma
+  \]
+\end{definition}
+
+Then we can define what $t \simeq x$ means:
+
+\begin{definition}[$t \simeq x$]
+  \label{def:tape_contains}
+  Let $X$ be encodable over $\Sigma$ and $t : \Tape_{\Sigma^+}$.
+  \[
+    t \simeq x := \exists~ls.~
+    t = \MS{midtape}~ls~(\MS{START})~(encode(x) \app [\MS{STOP}])
+  \]
+\end{definition}
+
+Note that in Definition~\ref{def:tape_contains}, we have to map the encoding of $x$ to the extended alphabet $\Sigma^+$.
+
+
 
 %%% Local Variables:
 %%% TeX-master: "thesis"
