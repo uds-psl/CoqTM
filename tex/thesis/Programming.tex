@@ -1,10 +1,14 @@
 \chapter{Programming Turing Machines}
 \label{chap:programming}
 
-In Chapter \ref{chap:combining}, we introduced control-flow operators for Turing machines.
-In this chapter we define what it means that a tape \emph{contains} a \emph{value}.
-When we \emph{program} Turing machines, we only use \emph{value-manipulating} machines, combinators, and lifts.
-Then we introduce a convention, so that a machine computes a function and give a few case-studies (Add, Mult, Nth).
+We can define machines using primitive operations like $\MS{DoAct}$, and can combine machines in an imperative programming style.  However, our
+imperative ``language'' still has no notion of \emph{variables} or data cells.  We want to use each tape as a data cell to store one variable.
+Therefore, we have to define what it means that a tape \emph{contains} a value.  When we ``\emph{program}'' Turing machines, instead of using basic
+machines, we only use machines that directly change the value of a tape.  We use the combinators introduced in Chapter \ref{chap:combining} to
+simulate control flow of imperative programming languages.  Using the definition of value-containing, we specify a ``callee-saving'' convention for
+function computation.  We present a generic pattern how to program and verify Turing machines and show more complex case studies.
+
+
 
 %%% Local Variables:
 %%% TeX-master: "thesis"
