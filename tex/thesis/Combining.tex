@@ -1,8 +1,8 @@
 \chapter{Combining Turing Machines}
 \label{chap:combining}
 
-We have defined the notion of multi-tape Turing machines and basic machines in Chapter \ref{chap:definitions}.  Now we want to construct bigger
-machines, for example a single-tape machine that moves the head to the right or to a certain symbol.
+In Chapter \ref{chap:definitions}, we have defined the notion of multi-tape Turing machines and basic machines.  In this chapter, we want to construct
+more complex machines, for example a single-tape machine that moves the head to the right or to a certain symbol.
 
 \section{Control Flow Operators}
 \label{sec:control}
@@ -76,6 +76,10 @@ $M'$, it terminates.  The correctness part of the semantics can be expressed usi
 
 Note that in the relation $\MS{MatchRel}$, we compose the unpartioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the partioned
 relation $R'~y \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$.
+
+To prove Lemma~\ref{lem:Match_Realise}, we use the same technique Asperti and Ricciotti use to verify their sequential composition and conditional.
+We show abstract lemmas about $loop$.
+
 
 \todo{Proof scratch}
 

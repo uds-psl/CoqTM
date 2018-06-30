@@ -9,11 +9,11 @@ and Ricciotti \cite{asperti2015}.  We define basic machines and prove their corr
 \section{Notational Conventions}
 \label{sec:notational-conventions}
 
-We use superscripts ($X^n$) to denote lists of fixed length (also called vectors).  Natural zero-based numbers are used as indexes for vector-access
-($x[i]$).  We use the symbols $\Unit$, $\Bool$, $\Type$, $\Prop$, $\Nat$, $\Option(X)$, $X+Y$, and $\List(X)$ for the well-known standard types.
-$\sum_{a:A} B$ denote sigma types, i.e.\ dependet pairs, with the projections $\pi_1$ and $\pi_2$.  We write $(a,b)$ for instances of sigma types. For
-tuples $A = (a, b, c, \cdots)$, we use subscripts ($a_M$) for the projections.  We usually leave subscripts out if they are clear from the context.
-We use the symbols $\None$ and $\Some x$ as instances of the type $\Option(X)$.
+We use superscripts ($X^n$) to denote lists of fixed length (also called vectors).  Natural zero-based numbers are used as indexes for list and
+vector-access ($x[i]$).  We also use standard list notations for vectors.  The symbols $\Unit$, $\Bool$, $\Type$, $\Prop$, $\Nat$, $\Option(X)$,
+$X+Y$, and $\List(X)$ stand for the well-known standard types.  $\sum_{a:A} B$ denote sigma types, i.e.\ dependet pairs, with the projections $\pi_1$
+and $\pi_2$.  We write $(a,b)$ for instances of sigma types. For tuples $A = (a, b, c, \cdots)$, we use subscripts ($a_M$) for the projections.  We
+usually leave subscripts out if they are clear from the context.  We use the symbols $\None$ and $\Some x$ as instances of the type $\Option(X)$.
 
 
 \section{Relations}
@@ -305,7 +305,7 @@ The correctness part is captured by \emph{realisation} of a (partitioned) relati
   \[
     M \vDash R :=
     \forall t~k~q~t'.~M(t) \terminates^k (q, t') \rightarrow
-    R~t~(\MS{part}_M~q)~t'
+    R~t~(\MS{part}_M~q, t')
   \]
   Where $\MS{part}_M \from Q_M \to F$ is the partitioning function of $M$.
 \end{definition}
@@ -346,7 +346,7 @@ For machines that always terminate in a constant number of steps, it is useful t
     M \vDash^k R :=
     \forall t'.~
     \exists q~t'.~
-    M(t) \terminates^k(q, t') \land R~t~(\MS{part}~q)~t'
+    M(t) \terminates^k(q, t') \land R~t~(\MS{part}~q,~t')
   \]
 \end{definition}
 
@@ -397,24 +397,32 @@ in Chapter~\ref{chap:combining}.
   \end{align*}
 \end{definition}
 The correctness relation says exactly that the tapes don't change and that the machine terminates in $f$:
-\[
-  \MS{NopRel}~f := \lambda~t~y~t'.~ t' = t \land y = f.
-\]
 \begin{lemma}[Correctness of $\MS{Nop}$]
   \label{lem:Nop_Sem}
   ~
   \[
     \MS{Nop}~f \vDash^0 \MS{NopRel}~f.
   \]
+  with
+  \[
+    \MS{NopRel}~f := \lambda~t~(y,t').~ t' = t \land y = f.
+  \]
 \end{lemma}
 \begin{proof}
-  By execution.
+  By execution.  The machine terminates after zero steps in the start state.
 \end{proof}
+
+Note that the correctness relation of $\MS{Nop}$ can also be expressed using the identity relation $Id$ and the relational fix:
+\[
+  \MS{NopRel}~f \equiv Id \att f.
+\]
+However, we have the convention to define relations of concrete machine (classes) in $\lambda$-notation, i.e.\ not using relational operators.  Also
+note that the tape $t'$ is per convention always on the left side of the equality.
 
 \subsection{DoAct}
 \label{sec:DoAct}
 
-The next class of machines, $\MS{DoAct}~a~f : \TM_\Sigma^1(F)$, do only one action $a$ and terminates in $f$ after one step.
+Machines of the next class, $\MS{DoAct}~a~f : \TM_\Sigma^1(F)$, do only one action $a$ and terminate in $f$ after one step.
 \begin{definition}[$\MS{DoAct}~a~f$]
   \label{def:DoAct}
   Let $a:\MS{Act}$ and $f:F$.
@@ -427,17 +435,16 @@ The next class of machines, $\MS{DoAct}~a~f : \TM_\Sigma^1(F)$, do only one acti
   \end{align*}
 \end{definition}
 The semantics of $\MS{DoAct}$ is easily expressed using $\MS{doAct}$ (see Definition \ref{def:step}):
-\[
-  \MS{DoActRel}~a~f := \lambda~t~y~t'.~ t' = \MS{doAct}~t~a \land y = f.
-\]
-
 \begin{lemma}[Correctness of $\MS{DoAct}$]
   \label{lem:tam}
   ~
   \[
     \MS{DoAct}~a~f \vDash^1 \MS{DoActRel}~a~f.
   \]
-
+  with
+  \[
+    \MS{DoActRel}~a~f := \lambda~t~(y, t').~ t' = \MS{doAct}~t~a \land y = f.
+  \]
 \end{lemma}
 \begin{proof}
   By execution.
@@ -462,8 +469,9 @@ We define some abbreviations:
 \subsection{Read}
 \label{sec:basic_machines-Read}
 
-$Read : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of machines.  They have a state for each character of the alphabet.  They read one
-symbol and terminate in the state that corresponds to this symbol.  They have a distinct state for the case that the current symbol is $\None$.
+$Read : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of machines.  The machines of this class have one state for each character of the
+alphabet.  They read one symbol and terminate in the state that corresponds to this symbol.  They have a distinct state for the case that the current
+symbol is $\None$.
 
 
 \begin{definition}[$\MS{Read}$]
