@@ -172,7 +172,7 @@ Section LiftSigmaTau.
     loopM (M := liftM) i c1 = Some c2 ->
     loopM (M := projT1 pMSig) i (surjectConf c1) = Some (surjectConf c2).
   Proof.
-    unfold loopM in *. revert c2 c1. induction i; intros c2 c1 H; cbn in *.
+    unfold loopM, haltConf in *. revert c2 c1. induction i; intros c2 c1 H; cbn in *.
     - destruct (halt _) eqn:E; now inv H.
     - destruct (halt _) eqn:E; inv H; auto.
       rewrite sim_step with (c1 := c1) (c2 := step (M := liftM) c1); [ | reflexivity]. apply IHi. apply H1.
@@ -213,7 +213,7 @@ Section LiftSigmaTau.
     exists oconf' : mconfig tau (states liftM) n,
       loopM k iconf = Some oconf'.
   Proof.
-    revert iconf. unfold loopM. induction k as [ | k IH ]; intros iconf HLoop; cbn in *.
+    revert iconf. unfold loopM, haltConf. induction k as [ | k IH ]; intros iconf HLoop; cbn in *.
     - destruct (halt _); inv HLoop. unfold injectConf. cbn. eauto.
     - destruct (halt _) eqn:E1; eauto.
       replace (step (surjectConf iconf)) with (surjectConf (step (M := liftM) iconf)) in HLoop.

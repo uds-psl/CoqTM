@@ -677,13 +677,16 @@ Section Semantics.
 
   (** *** Machine execution *)
   
-  Definition step n (M:mTM n) (c:mconfig (states M) n) :=
-    let (news,actions) := trans (cstate c, current_chars  (ctapes c)) in 
-    mk_mconfig news (tape_move_multi (ctapes c) actions).
+  Definition step {n} (M:mTM n) : mconfig (states M) n -> mconfig (states M) n :=
+    fun c =>
+      let (news,actions) := trans (cstate c, current_chars  (ctapes c)) in 
+      mk_mconfig news (tape_move_multi (ctapes c) actions).
+
+  Definition haltConf {n} (M : mTM n) : mconfig (states M) n -> bool := fun c => halt (cstate c).
 
   (** Run the machine i steps until it halts *)
   Definition loopM n (M : mTM n) (i : nat) cin :=
-    loop i (@step n M) (fun c => halt (cstate c)) cin.
+    loop i (@step _ M) (@haltConf _ M) cin.
   
   (** Initial configuration *)  
   Definition initc n (M : mTM n) tapes :=

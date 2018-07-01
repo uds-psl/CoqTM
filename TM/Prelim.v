@@ -36,7 +36,7 @@ Proof.
       eauto.
 Qed.
   
-Lemma loop_fulfills_p A n f p (a : A) c : loop n f p a = Some c -> p c.
+Lemma loop_fulfills_p A n f p (a : A) c : loop n f p a = Some c -> p c = true.
 Proof.
   revert a; induction n; intros; inv H; destruct (p a) eqn:E; inv H1; eauto.
 Qed.
@@ -131,7 +131,7 @@ Lemma loop_unlift A B f p f' p' (unlift : B -> option A):
   unlift b = Some a -> 
   forall i x',
   loop i f' p' b = Some x' ->
-  exists x, loop i f p a = Some x /\ Some x = unlift x'.
+  exists x, loop i f p a = Some x /\ unlift x' = Some x.
 Proof.
   intros Hf Hp a b Ha i x'. revert a b Ha x'. induction i; intros a b Ha x' Hl; cbn in *.
   - destruct (p' b) eqn:E; rewrite (Hp _ _ Ha) in *; inv Hl. rewrite E. eauto.

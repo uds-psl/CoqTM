@@ -336,7 +336,7 @@ Section LiftNM.
     loopM (M := projT1 pM) i (mk_mconfig (cstate c1) (reorder I (ctapes c1))) =
     Some (mk_mconfig (cstate c2) (reorder I (ctapes c2))).
   Proof.
-    unfold loopM in *. revert c2 c1. induction i; intros c2 c1 H; cbn in *.
+    unfold loopM, haltConf in *. revert c2 c1. induction i; intros c2 c1 H; cbn in *.
     - destruct (halt _) eqn:E; now inv H.
     - destruct (halt _) eqn:E; inv H; auto.
       rewrite sim_step with (c1 := c1) (c2 := step (M := injectM) c1); [ | reflexivity]. apply IHi. apply H1.
