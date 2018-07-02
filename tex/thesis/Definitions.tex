@@ -5,8 +5,11 @@ In this chapter, we will formally define the notion of multi-tape Turing machine
 tapes from Asperti and Ricciotti \cite{asperti2015}.  We introduce notions for specifying the semantics of machines, which are also based on Asperti
 and Ricciotti \cite{asperti2015}.  We define basic machines and prove their correctness.
 
+\section{Prelimninary Definitions}
+\label{sec:prelim}
 
-\section{Notational Conventions}
+
+\subsection{Notational Conventions}
 \label{sec:notational-conventions}
 
 We use superscripts ($X^n$) to denote lists of fixed length (also called vectors).  Natural zero-based numbers are used as indexes for list and
@@ -16,7 +19,7 @@ and $\pi_2$.  We write $(a,b)$ for instances of sigma types. For tuples $A = (a,
 usually leave subscripts out if they are clear from the context.  We use the symbols $\None$ and $\Some x$ as instances of the type $\Option(X)$.
 
 
-\section{Relations}
+\subsection{Relations}
 \label{sec:relations}
 
 We define the semantics of concrete Turing machines in terms of relations.  We use the notation $R \subseteq A \times B$ to declare relations
@@ -69,6 +72,90 @@ Similarly, we can define an operator that takes a binary relation and yields a p
     R \att y := \lam{x~(y', z)}{R~x~z \land y'=y}
   \]
 \end{definition}
+
+
+\subsection{Retracts}
+\label{sec:retracts}
+
+Retracts are a natural way to formalise injections $f$ together with a partial inversion function $f^{-1}$.
+
+\begin{definition}[Retract]
+  \label{def:retract}
+  Let $A$ and $B$ be types.  A pair of functions $f : A \to B$, $f^{-1} : B \to \Option(A)$ is called a retract if
+
+  \begin{enumerate}
+  \item $\forall x.~f^{-1}(f(x)) = \Some x$ and
+  \item $\forall x~y.~f^{-1}(y) = \Some x \rightarrow y = f(x)$.
+  \end{enumerate}
+\end{definition}
+
+The point \ref{def:retract} (1) means that $f^{-1}$ inverses $f$.  It is equivialent to the following commutative diagram:
+\[
+  \begin{tikzcd}
+    A \arrow[r, "f"] \arrow[d, "\Some \cdot", swap] & B \arrow[ld, "g"] \\
+    \Option(A) &
+  \end{tikzcd}
+\]
+The second point of \ref{def:retract} means that $f^{-1}$ only maps values back that are in the image of $f$.  This property is sometimes called
+\emph{tightness}.
+
+We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is a retract.
+
+
+\begin{lemma}[Basic properties of retracts]
+  \label{lem:retracts-basic}
+  Let $f : A \hookrightarrow B$.
+  \begin{enumerate}
+  \item $f : A \to B$ is injective, i.e.\ $\forall x~y.~f(x)=f(y) \rightarrow x=y$.
+  \item $\forall (x~y:A).~f^{-1}(f(x)) = \Some y \rightarrow x=y$.
+  \item $\forall (y:B).~f^{-1}(y) = \None \rightarrow \forall (x:A).~f(x) \neq y$.
+  \end{enumerate}
+\end{lemma}
+
+\begin{proof}
+  Claim (2) follows by claim (1) and \ref{def:retract} (2).  Claim (3) is a direct cosequence of \ref{def:retract} (2).
+
+  Proof of claim (1).  Let $x, y: A$ and $f(x)=f(y)$.  We have to show $x=y$.  It is enough to show $\Some x = \Some y$.  By \ref{def:retract} (1), we
+  know $\Some x = f^{-1}(f(x))$ and $\Some y = f^{-1}(f(y))$, therefore it is enough to show that $f^{-1}(f(x)) = f^{-1}(f(y))$.  This is trivial
+  because we assumed $f(x)=f(y)$.
+\end{proof}
+
+\begin{definition}[Basic retracts]
+  \label{def:retracts-basic}
+  Let $A$ and $B$ be types.  We define the retracts $RetrId : A \hookrightarrow A$, $RetrLft : A \hookrightarrow A+B$, $RetrRgt : B \hookrightarrow A+B$:
+  \begin{alignat*}{2}
+    RetrId(x)  &:= x      &\qquad\qquad RetrId ^{-1} (x) &:= \Some x \\
+    RetrLft(x) &:= \inl x &             RetrLft^{-1} (z) &:=
+    \begin{cases}
+      \Some x & z = \inl x \\
+      \None   & z = \inr y
+    \end{cases} \\
+    RetrRgt(y) &:= \inl y & RetrRgt^{-1} (z) &:=
+    \begin{cases}
+      \None   & z = \inl x \\
+      \Some y & z = \inr y
+    \end{cases}
+  \end{alignat*}
+\end{definition}
+
+\begin{definition}[Composition of retracts]
+  \label{def:retract-compose}
+  Let $f : A \hookrightarrow B$ and $g : B \hookrightarrow C$.  Then $f \circ g : A \hookrightarrow C$ defined as followed is a retract.
+  \begin{alignat*}{2}
+    & (f \circ g)      & (a) &:= g(f(a)) \\
+    & (f \circ g)^{-1} & (c) &:=
+                          \begin{cases}
+                            \Some a & g^{-1}(c) = \Some b \land f^{-1}(b) = \Some a \\
+                            \None   & \text{else}
+                          \end{cases}
+  \end{alignat*}
+\end{definition}
+
+
+
+% TODO: Basic retracts
+% TODO: Compose retracts
+
 
 
 
