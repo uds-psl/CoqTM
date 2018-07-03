@@ -145,7 +145,7 @@ Section LoopMerge.
     exists k1 c2 k2,
       loop k1 f h  c1 = Some c2 /\
       loop k2 f h' c2 = Some c3 /\
-      k <= k1 + k2.
+      k1 + k2 <= k.
   Proof.
     revert c1 c3. revert k; refine (size_recursion id _); intros k IH. intros c1 c3 HLoop. cbv [id] in *.
     destruct k as [ | k']; cbn in *.

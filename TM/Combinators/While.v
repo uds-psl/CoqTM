@@ -13,7 +13,7 @@ Section While.
   (** Parameter [None] indicates continueing, [Some f] means breaking out of the loop and terminating in the partition [f]. *)
   Variable pM : { M : mTM sig n & states M -> option F }.
 
-  Definition while_trans :
+  Definition While_trans :
     (TM.states (projT1 pM)) * Vector.t (option sig) n ->
     (TM.states (projT1 pM)) * Vector.t (option sig * move) n :=
     fun '(q,s) =>
@@ -25,7 +25,7 @@ Section While.
       else trans (q,s).
 
   Definition While : mTM sig n :=
-    Build_mTM while_trans (start (projT1 pM))
+    Build_mTM While_trans (start (projT1 pM))
               (fun q => halt q && match projT2 pM q with
                                | Some _ => true
                                | None => false
@@ -44,117 +44,135 @@ Section While.
   Local Arguments halt {_ _} _ _.
   Local Arguments step {_ _} _ _.
 
-
-  Definition unlift_1 : mconfig sig (states While) n -> option (mconfig sig (states (projT1 pM)) n).
+  Lemma step_comp (c : mconfig sig (states (projT1 pM)) n) :
+    haltConf c = false ->
+    step (projT1 pM) c = step While c.
   Proof.
-    intros s. exact (if (halt (projT1 pM) (cstate s)) then Some s else None).
-  Defined.
-
-  Lemma While_split i res c:
-    loopM While i c = Some res ->
-    exists i1 x1 i2,
-      loopM (projT1 pM) i1 c = Some x1 /\
-      loopM While i2 x1 = Some res /\ i = i1 + i2.
-  Proof.
-    intros.
-    unfold loopM, haltConf in H.
-    eapply loop_split with (p := fun c=> halt (projT1 pM) (cstate c)) in H.
-    destruct H as (i1 & x1 & i2 & H1 & H2 & ->).
-    - exists i1,x1,i2. split;[ |split;[exact H2|reflexivity]].
-      eapply loop_lift with (lift:=id) in H1.
-      + exact H1.
-      + reflexivity.
-      + unfold id.  intros. destruct x. unfold step. cbn in *. now rewrite H.
-    - intros b. unfold halt at 2. cbn. now intros ->.
+    intros HHalt. unfold haltConf in HHalt.
+    destruct c as [q t]. cbn in *.
+    cbv [step]. cbn. rewrite HHalt. reflexivity.
   Qed.
 
-  Lemma While_true_split i (x : mconfig _ (states While) _) oenc :
-    halt (projT1 pM) (cstate x) = true -> projT2 pM (cstate x) = None ->
-    loopM While i x = Some oenc ->
-    exists i', i = 1+i' /\ loopM While i' (initc While (ctapes x)) = Some oenc.
+  Lemma halt_comp (c : mconfig sig (states (projT1 pM)) n) :
+    haltConf (M := projT1 pM) c = false ->
+    haltConf (M := While)     c = false.
   Proof.
-    intros hx px Eq.
-    destruct i as [ |i'];cbn in Eq;cbn in Eq; change (states (projT1 pM)) with (states While) in Eq; rewrite hx,px in Eq;cbn in Eq; inv Eq.
-    exists i'. split;[omega| ].
-    destruct x. cbn in *. rewrite <- H0. unfold loopM. f_equal.
-    unfold step. cbn -[tape_move_multi null_action].
-    rewrite hx,px. cbn -[tape_move_multi null_action]. now rewrite tape_move_null_action.
+    intros HHalt. cbn in *.
+    destruct c as [q t]. cbn in *.
+    apply andb_false_iff. now left.
   Qed.
 
-  Lemma While_true_merge i1 i2 (t x1 : mconfig _ (states While) _) oenc :
-    loopM (projT1 pM) i1 t = Some x1 ->
-    loopM While i2 (initc While (ctapes x1)) = Some oenc ->
-    (projT2 pM) (cstate x1) = None ->
-    loopM While (i1+(1+i2)) t = Some oenc.
+  Lemma While_trans_repeat (c : mconfig sig (states While) n) :
+    haltConf (M := projT1 pM) c = true ->
+    projT2 pM (cstate c) = None ->
+    step While c = initc (While) (ctapes c).
   Proof.
-    intros Eq1 Eq2 px1.
-    eapply loop_merge with
-    (p:= fun c => halt (projT1 pM) (cstate c)) (a2:=x1).
-    {unfold While. cbn. intros. now destruct halt. }
-    {change (states While) with (states (projT1 pM)) in *.
-     eapply loop_lift with (g:= step While) in Eq1;[exact Eq1|reflexivity| ].
-     intros. unfold step,While,while_trans. cbn. unfold haltConf in H. now rewrite H.
-    }
-    cbn. assert (hx1:halt (projT1 pM) (cstate x1)=true) by now apply loop_fulfills_p in Eq1.
-    change (states While) with (states (projT1 pM)) in *.
-    rewrite hx1;cbn.
-    -rewrite <- Eq2. unfold loopM. cbn. f_equal. unfold step. cbn -[tape_move_multi null_action].
-     rewrite hx1,px1;cbn -[tape_move_multi null_action]. now rewrite tape_move_null_action.
+    intros HHalt HRepeat. unfold haltConf in HHalt.
+    destruct c as [q t]; cbn in *.
+    unfold step. cbn -[tape_move_multi] in *. rewrite HHalt, HRepeat. unfold initc. f_equal. apply tape_move_null_action.
   Qed.
 
-   Lemma While_false_merge i1 (t : mconfig _ (states While) _) oenc (f : F) :
-    loopM (projT1 pM) i1 t = Some oenc ->
-    projT2 pM (cstate oenc) = Some f ->
-    loopM While i1 t = Some oenc.
+  Lemma While_split k (c1 c3 : mconfig sig (states (projT1 pM)) n) :
+    loopM While k c1 = Some c3 ->
+    exists k1 k2 c2,
+      loopM (projT1 pM) k1 c1 = Some c2 /\
+      loopM While k2 c2 = Some c3 /\
+      k1 + k2 <= k.
   Proof.
-    intros Eq px1.
-    eapply (loop_unlift (unlift := fun (x:mconfig sig (states While) n) => Some x))
-      in Eq. destruct Eq as (?&H'&H1). inv H1.
-    Focus 3. intros ? ? H. inv H. reflexivity.
-    replace i1 with (i1+0) by omega.
-    eapply (loop_merge (p:= fun c => halt (projT1 pM) (cstate c))). cbn.
-    now intros ? ->. exact H'.
-    apply loop_fulfills_p_0. unfold halt. cbv [haltConf]. cbn. rewrite px1.
-    apply loop_fulfills_p in H'. unfold haltConf in H'. rewrite H'. auto.
-    intros ? ? H ?. inv H. all: auto.
-    cbn in H0. f_equal. unfold step at 2;cbn. unfold haltConf in H0. now rewrite H0.
+    unfold loopM. intros HLoop.
+    apply loop_split with (h := haltConf (M := projT1 pM)) in HLoop as (k1&c2&k2&HLoop&HLoop'&Hk).
+    - exists k1, k2, c2. repeat split; eauto.
+      apply loop_lift with (lift := id) (f' := step (projT1 pM)) (h' := haltConf (M := projT1 pM)) in HLoop.
+      + apply HLoop.
+      + auto.
+      + apply step_comp.
+    - apply halt_comp.
   Qed.
 
+  Lemma While_split_repeat k (c1 c2 : mconfig sig (states While) n) :
+    loopM While k c1 = Some c2 ->
+    haltConf (M := projT1 pM) c1 = true ->
+    projT2 pM (cstate c1) = None ->
+    exists k' : nat,
+      k = S k' /\
+      loopM While k' (initc While (ctapes c1)) = Some c2.
+  Proof.
+    intros HLoop HHalt HRepeat. unfold haltConf in HHalt.
+    destruct k as [ | k']; cbn in *.
+    - rewrite HHalt, HRepeat in HLoop. cbn in HLoop. inv HLoop.
+    - rewrite HHalt, HRepeat in HLoop. cbn in HLoop. exists k'. split. reflexivity.
+      now rewrite While_trans_repeat in HLoop by auto.
+  Qed.
+
+  Lemma While_split_term k (c1 c2 : mconfig sig (states While) n) (f : F) :
+    loopM While k c1 = Some c2 ->
+    haltConf (M := projT1 pM) c1 = true ->
+    projT2 pM (cstate c1) = Some f ->
+    c2 = c1.
+  Proof.
+    intros HLoop HHalt HTerm. unfold haltConf in *.
+    destruct k as [ | k']; cbn in *.
+    - rewrite HHalt, HTerm in HLoop. cbn in HLoop. now inv HLoop.
+    - rewrite HHalt, HTerm in HLoop. cbn in HLoop. now inv HLoop.
+  Qed.
+
+  Lemma While_merge_repeat k1 k2 (c1 c2 c3 : mconfig sig (states While) n) :
+    loopM (projT1 pM) k1 c1 = Some c2 ->
+    (projT2 pM) (cstate c2) = None ->
+    loopM While k2 (initc While (ctapes c2)) = Some c3 ->
+    loopM While (k1+(1+k2)) c1 = Some c3.
+  Proof.
+    intros HLoop1 HRepeat HLoop2.
+    eapply loop_lift with (lift := id) (f' := step (While)) (h' := haltConf (M := projT1 pM)) in HLoop1; cbv [id] in *; cbn; auto; cycle 1.
+    { intros. symmetry. now apply step_comp. }
+    apply loop_merge with (h := haltConf (M := projT1 pM)) (c2 := c2).
+    - apply halt_comp.
+    - apply HLoop1.
+    - cbn [loop plus]. rewrite While_trans_repeat; auto. 2: apply (loop_fulfills_p HLoop1).
+      cbn in *. setoid_rewrite (loop_fulfills_p HLoop1). now rewrite HRepeat.
+  Qed.
+
+  Lemma While_merge_term k1 (c1 c2 : mconfig sig (states While) n) (f : F) :
+    loopM (projT1 pM) k1 c1 = Some c2 ->
+    (projT2 pM) (cstate c2) = Some f ->
+    loopM While k1 c1 = Some c2.
+  Proof.
+    intros HLoop HTerm.
+    eapply loop_lift with (lift := id) (f' := step (While)) (h' := haltConf (M := projT1 pM)) in HLoop; cbv [id] in *; cbn; auto; cycle 1.
+    { intros. symmetry. now apply step_comp. }
+    unfold loopM.
+    replace k1 with (k1 + 0) by omega.
+    apply loop_merge with (h := haltConf (M := projT1 pM)) (c2 := c2).
+    - apply halt_comp.
+    - apply HLoop.
+    - cbn in *. setoid_rewrite (loop_fulfills_p HLoop). rewrite HTerm. cbn. reflexivity.
+  Qed.
+  
 
   Variable R : pRel sig (option F) n.
 
-  Definition While_Rel : pRel sig F n := star (R |_ None) ∘ (fun (t : tapes sig n) '(y,t') => R t (Some y,t')).
-
+  Inductive While_Rel : pRel sig F n :=
+  | While_Rel''_one :
+      forall tin yout tout, R tin (Some yout, tout) -> While_Rel tin (yout, tout)
+  | While_Rel''_loop :
+      forall tin tmid yout tout,
+        R tin (None, tmid) ->
+        While_Rel tmid (yout, tout) ->
+        While_Rel tin (yout, tout).
 
   Lemma While_Realise :
     pM ⊨ R -> WHILE ⊨ While_Rel.
   Proof.
-    unfold While_Rel.
-    intros HR t1 i1 oenc2 eq. unfold initc in eq.
-    revert t1 eq; apply complete_induction with (x := i1); clear i1; intros i1 IH t1 eq.
-    eapply While_split in eq as (i2&x0&i3&Eq1&Eq2&->).
-    assert (halt (projT1 pM) (cstate x0) = true) as hx0.
-    {
-      eapply loop_fulfills_p in Eq1. unfold haltConf in Eq1. destruct halt; auto.
-    }
-    assert (halt While (cstate oenc2) = true) as Hoenc2.
-    {
-      eapply loop_fulfills_p in Eq2. destruct halt; auto.
-    }
-    apply andb_true_iff in Hoenc2 as (Hoenc2&Hoenc2').
-    destruct (projT2 pM (cstate oenc2)) as [ f | ] eqn:Eoenc2; inv Hoenc2'.
-    destruct (projT2 pM (cstate x0)) as [ fx0 | ] eqn:px0.
-    - hnf. exists t1. split; [now apply starR | ]. hnf.
-      unfold  loopM in Eq2. rewrite loop_fulfills_p_0 in Eq2; [ | cbn; now rewrite px0, hx0]. inv Eq2.
-      apply HR in Eq1. cbn in Eq1. cbn. rewrite px0. cbn. auto. rewrite px0 in Eq1. auto.
-    - eapply While_true_split in Eq2 as (i' & -> & Eq2); eauto.
-      apply IH in Eq2; [ | omega]. hnf in Eq2.
-      destruct Eq2 as (y&Eq2&Eq2'). hnf in Eq2, Eq2'.
-      eapply use_subrel.
-      rewrite <- star_rcomp_idem. rewrite rcomp_assoc. reflexivity.
-      hnf. exists (ctapes x0). split.
-      + apply R_in_star. apply HR in Eq1. cbn in *. rewrite px0 in Eq1. rewrite Eoenc2 in Eq2'. eauto.
-      + repeat (econstructor; hnf; eauto).
+    intros HRel. hnf in HRel; hnf. intros t k; revert t. apply complete_induction with (x := k); clear k; intros k IH; intros tout c3 HLoop.
+    apply While_split in HLoop as (k1&k2&c2&HLoop1&HLoop2&Hk).
+    destruct (projT2 pM (cstate c2)) as [ f | ] eqn:E; cbn in *; [ clear IH | ].
+    - apply While_split_term with (f := f) in HLoop2 as ->; auto. 2: apply (loop_fulfills_p HLoop1). rewrite E.
+      constructor 1. specialize HRel with (1 := HLoop1). now rewrite E in HRel.
+    - apply While_split_repeat in HLoop2 as (k2'&->&HLoop2); auto. 2: apply (loop_fulfills_p HLoop1).
+      specialize IH with (2 := HLoop2); spec_assert IH by omega.
+      econstructor 2.
+      + specialize HRel with (1 := HLoop1). rewrite E in HRel. eassumption.
+      + apply IH.
   Qed.
 
 
@@ -183,11 +201,11 @@ Section While.
       specialize (HT2 (projT2 pM (cstate oconf)) (ctapes oconf) Realise_M).
       destruct (projT2 pM (cstate oconf)) as [ ymid | ] eqn:E1.
       - exists oconf. eapply loop_ge with (k1 := i1); eauto.
-        eapply While_false_merge; eauto.
+        eapply While_merge_term; eauto.
       - destruct HT2 as (i2&HT2&Hi).
         specialize (IH i2 ltac:(omega) _ HT2) as (oconf2&Hloop2).
         exists oconf2. apply loop_ge with (k1 := i1 + (1 + i2)). omega.
-        eapply While_true_merge; eauto.
+        eapply While_merge_repeat; eauto.
     Qed.
 
   End While_terminatesIn.
@@ -195,7 +213,6 @@ Section While.
 End While.
 (* Arguments While {n} {sig} M _. *)
 
-Arguments While_Rel {n sig F} R x y/.
 Arguments WHILE : simpl never.
 Arguments WHILE {n sig F} pM {defF}.
 
@@ -212,64 +229,40 @@ Section WhileInduction.
     (forall tin tmid tout yout
        (HStar : (R1 |_None) tin tmid) (HLastStep : R2 tmid (yout, tout)), R2 tin (yout, tout)) ->
     While_Rel R1 <<=2 R2.
-  Proof.
-    unfold While_Rel.
-    intros H1 H2. intros tin (yout, tout) H.  cbn in H. destruct H as (tmid&HStar&HLastStep).
-    induction HStar as [ tin | tin tmid tmid2 HS1 HS2 IH].
-    - apply H1. cbn. apply HLastStep.
-    - cbn in HS1. eauto.
-  Qed.
-
+  Proof. intros H1 H2. intros tin tout. induction 1; eauto. Qed.
 
 End WhileInduction.
 
 
+(** Alternative definition of [While_Rel] *)
 Section OtherWhileRel.
 
   Variable (sig : finType) (n : nat) (F : finType).
 
   Variable R : Rel (tapes sig n) (option F * tapes sig n).
-  
+
   Definition While_Rel' : pRel sig F n :=
-    ⋃_y ((star (R |_ None) ∘ R|_(Some y)) ||_ y).
+    (star (R |_ None)) ∘ ⋃_y (R |_(Some y)) ||_y.
 
   Goal While_Rel R =2 While_Rel'.
   Proof.
     unfold While_Rel'. split.
-    - apply WhileInduction; intros; cbn in *.
-      + eexists. split. reflexivity. eexists. split; eauto. constructor.
-      + eexists. split. reflexivity. destruct HLastStep as (?&<-&(y&HLastStep1&HLastStep2)).
-        eexists. split; eauto. econstructor; cbn; eauto.
-    - intros tin (yout, tout) H. destruct H as (?&H); cbn in *. destruct H as (<-&(tmid&H&H1)).
-      revert tout H1. induction H; intros.
-      + eexists. split; eauto. constructor.
-      + apply IHstar in H1 as (tmid&H2&H3).
-        eexists. split; eauto. econstructor; cbn; eauto.
-  Qed.
-
-  Inductive While_Rel'' : pRel sig F n :=
-  | While_Rel''_one :
-      forall tin yout tout, R tin (Some yout, tout) -> While_Rel'' tin (yout, tout)
-  | While_Rel''_loop :
-      forall tin tmid yout tout,
-        R tin (None, tmid) ->
-        While_Rel'' tmid (yout, tout) ->
-        While_Rel'' tin (yout, tout).
-
-  Goal While_Rel R =2 While_Rel''.
-  Proof.
-    split.
-    - apply WhileInduction; intros; cbn in *.
-      + now constructor 1.
-      + now econstructor 2; eauto.
-    - intros tin yout H. induction H; cbn.
-      + eexists. split; eauto. constructor.
-      + cbn in IHWhile_Rel''. destruct IHWhile_Rel'' as (tmid'&IH1&IH2).
+    {
+      apply WhileInduction; intros; cbn in *.
+      - eexists. split. constructor. exists yout. auto.
+      - destruct HLastStep as (y&IH1&?&<-&IH2); cbn in *.
         eexists. split; eauto. econstructor; eauto.
+    }
+    {
+      intros tin (yout, tout) H.  cbn in H. destruct H as (tmid&HStar&HLastStep).
+      induction HStar as [ tin | tin tmid tmid2 HS1 HS2 IH].
+      - destruct HLastStep as (?&<-&H). now constructor.
+      - spec_assert IH by assumption.
+        destruct HLastStep as (?&<-&H).
+        econstructor 2.
+        + apply HS1.
+        + apply IH.
+    }
   Qed.
-
-
-  Check While_Rel''_ind.
-  
 
 End OtherWhileRel.
