@@ -195,9 +195,9 @@ i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state 
 \end{proof}
 
 
-Back to the verification of $\Match~M~M'$.  In the following, we simply write $\Match$.  The executions of $\Match$ are essentially a sequence of a
-lifted execution of $M$, a ``nop'' step, and steps of some machine $M'~y$.  We give the concrete lifting functions from $M$ to $\Match$ and from $M~y$
-to $\Match$:
+Back to the verification of $\Match~M~M'$.  In the following, we simply write $\Match$.  The execution steps of $\Match$ are essentially a sequence of
+first, the lifted steps of execution of $M$, second, a ``nop'' transition, and third, the lifted steps of the execution of $M'~y$.  We give the
+concrete lifting functions from $M$ to $\Match$ and from $M~y$ to $\Match$:
 \begin{definition}[Liftings of $\Match$]
   We define the functions \\$liftL : \Conf_M \to \Conf_\Match$ and $liftR_y : \Conf_{M'~y} \to \Conf_\Match$:
   \begin{alignat*}{2}
@@ -238,12 +238,26 @@ Using Lemma \ref{lem:loop_merge} and \ref{lem:loop_lift}, we can show the lemma 
     This follows with Lemma~\ref{lem:loop_merge}.
   \end{enumerate}
 \end{proof}
+The runtime Lemma~\ref{lem:Match_Terminates} follows directly from Lemma~\ref{lem:Match_merge}.
 
-The runtime Lemma~\ref{lem:Match_Terminates} follows from Lemma~\ref{lem:Match_merge}.
+\begin{lemma}[Splitting execution of $\Match$]
+  \label{lem:Match_split}
+  Let $t : \Tape_\Sigma^n$, $k : \Nat$, $c : \Conf_\Match$.
+  \begin{align*}
+    & \Match(t) \terminates^k outc \rightarrow \\
+    & \exists (k_1~k_2 : \Nat)~(c_1 = (q', t') : \Conf_M)~(c_2 : \Conf_{M'(part_M~q')}). \\
+    & \quad M(t) \terminates^{k_1} c_1 ~\land~ \\
+    & \quad \bigl( M' (part_M~q') \bigr) (t') \terminates^{k_2} c_2 ~\land~ \\
+    & \quad c = liftR(c_2).
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  Analog to the proof of Lemma~\ref{lem:Match_merge}, using Lemma~\ref{lem:loop_split} and Lemma~\ref{lem:loop_unlift}.
+\end{proof}
+The correctness Lemma~\ref{lem:Match_Realise} follows directly from Lemma~\ref{lem:Match_split}.
 
 
-
-
+Asperti and Ricciotti~\cite{asperti2015} have a version of Lemma~\ref{lem:loop_lift} and Lemma~\ref{lem:loop_merge}.
 
 \subsection{While}
 \label{sec:While}
