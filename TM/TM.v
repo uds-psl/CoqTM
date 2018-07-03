@@ -766,7 +766,7 @@ Section Semantics.
   Proof.
     split; swap 1 2; [ intros H | intros (H1&H2)]; repeat intros ?. hnf; firstorder eauto.
     specialize (H1 input) as (outc &H1&H1'). specialize (H2 input) as (outc2&H2&H2').
-    pose proof loop_functional H1 H2 as <-. exists outc. split; hnf; eauto.
+    pose proof loop_injective H1 H2 as <-. exists outc. split; hnf; eauto.
   Qed.
   
   Fact Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
@@ -780,7 +780,7 @@ Section Semantics.
         destruct (H t) as (? & ? & ?).
         cutrewrite (cout = x).
         eassumption.
-        eapply loop_functional; eauto.
+        eapply loop_injective; eauto.
       + intros t i Hi.
         edestruct (H t) as (? & ? & ?). 
         exists x. eapply loop_ge; eauto.
@@ -823,7 +823,7 @@ Section Semantics.
     Lemma R_canonical_functional : functional R_canonical.
     Proof.
       hnf. intros x (y1&z1) (y2&z2) (c1&k1&H1&<-&H1') (c2&k2&H2&<-&H2').
-      pose proof loop_functional H1 H2 as ->. congruence.
+      pose proof loop_injective H1 H2 as ->. congruence.
     Qed.
 
   End CanonicalRelation1.

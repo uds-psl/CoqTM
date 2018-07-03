@@ -25,7 +25,7 @@ Fixpoint loop (A:Type) n (f:A -> A) (p : A -> bool) a {struct n}:=
     | S m => loop m f p (f a)
     end.
 
-Lemma loop_functional A n1 n2 f p (a : A) c1 c2 : loop n1 f p a = Some c1 -> loop n2 f p a = Some c2 -> c1 = c2.
+Lemma loop_injective A n1 n2 f p (a : A) c1 c2 : loop n1 f p a = Some c1 -> loop n2 f p a = Some c2 -> c1 = c2.
 Proof.
   revert n2 c1 c2 a. induction n1; intros; cbn in *.
   - destruct (p a) eqn:E; inv H.
@@ -84,15 +84,9 @@ Qed.
 Section LoopLift.
 
   Variable A B : Type. (* Abstract states *)
-  (* Variable I : Retract A B. (* Lifting between states *) *)
   Variable lift : A -> B.
   Variable (f : A -> A) (f' : B -> B). (* Abstract steps *)
   Variable (h : A -> bool) (h' : B -> bool). (* Abstract halting states *)
-
-  (*
-  Notation lift := (Retr_f (Retract := I)).
-  Notation unlift := (Retr_g (Retract := I)).
-   *)
 
   Hypothesis halt_lift_comp : forall x:A, h' (lift x) = h x.
   Hypothesis step_lift_comp : forall x:A, h x = false -> f' (lift x) = lift (f x).
@@ -107,8 +101,6 @@ Section LoopLift.
       + now inv H.
       + rewrite step_lift_comp by auto. now apply IHk'.
   Qed.
-
-
 
   Lemma loop_unlift (k : nat) (a : A) (b' : B) :
     loop k f' h' (lift a) = Some b' ->
@@ -135,7 +127,7 @@ Section LoopMerge.
 
   (** Every halting state w.r.t. [h] is also a halting state w.r.t. [h'] *)
   Hypothesis halt_comp : forall a, h a = false -> h' a = false.
-    
+
   Lemma loop_merge (k1 k2 : nat) (c1 c2 c3 : A) :
     loop k1 f h  c1 = Some c2 ->
     loop k2 f h' c2 = Some c3 ->
