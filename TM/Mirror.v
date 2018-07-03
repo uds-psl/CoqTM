@@ -130,7 +130,7 @@ Section MirrorTM.
     intros H. intros t i outc H2. specialize (H (mirror_tapes t) i (mlift outc)).
     assert (loopM i (initc (projT1 pM) (mirror_tapes t)) = Some (mlift outc)) as L.
     {
-      eapply (loop_lift (lift := fun x => x) (hlift := mhlift) (g := step (M := projT1 Mirror))) in H2; intros; auto.
+      eapply (loop_lift (lift := fun x => x) (h' := mhlift) (f' := step (M := projT1 Mirror))) in H2; intros; auto.
       {
         unfold loopM. cbn.
         replace (initc (projT1 pM) (mirror_tapes t)) with (mlift (initc (projT1 pM) t)) by reflexivity.
