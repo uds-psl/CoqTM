@@ -19,9 +19,9 @@ Global Open Scope vector_scope.
 (* Definition graph_enum := fun (A B : finType) => fun (f : A -> B) => filter (fun (p : A * B) => Dec (f (fst p) = snd p)) (elem (A (x) B)). *)
 
 Fixpoint loop (A:Type) n (f:A -> A) (p : A -> bool) a {struct n}:=
-  if p a then Some a  else
+  if p a then Some a else
     match n with
-      O => None
+    | O => None
     | S m => loop m f p (f a)
     end.
 
@@ -35,7 +35,7 @@ Proof.
     + destruct n2; cbn in H0; rewrite E in H0; try now inv H0.
       eauto.
 Qed.
-  
+
 Lemma loop_fulfills_p A n f p (a : A) c : loop n f p a = Some c -> p c = true.
 Proof.
   revert a; induction n; intros; inv H; destruct (p a) eqn:E; inv H1; eauto.
@@ -81,64 +81,97 @@ Proof.
 Qed.
 
 
-Lemma loop_lift A B k lift f g h hlift (c1 c2 : A):
-  (forall x , hlift (lift x) = h x) ->
-  (forall x, h x = false -> lift (f x) = g (lift x)) ->
-  loop k f h c1 = Some c2 ->
-  loop (A := B) k g hlift (lift c1) = Some (lift c2).
-Proof.
-  revert c1; induction k; intros; cbn in *; rewrite H; destruct h eqn:E; inv H1; rewrite <- ?H0; eauto.
-Qed.
+Section LoopLift.
 
-Lemma loop_merge A f p q k1 k2 (a1 a2 a3 : A):
-  (forall b, p b = false -> q b = false) ->
-  loop k1 f p a1 = Some a2 ->
-  loop k2 f q a2 = Some a3 ->
-  loop (k1+k2) f q a1 = Some a3.
-Proof.
-  revert a1 a2 a3 k2. induction k1; intros; cbn in *.
-  - now destruct p eqn:E; inv H0.
-  - destruct (p a1) eqn:E.
-    + inv H0. eapply (loop_ge (k2 := S (k1 + k2))) in H1. now rewrite <- H1. omega.
-    + destruct (q a1) eqn:E1; try firstorder congruence. erewrite IHk1; eauto.
-Qed.
+  Variable A B : Type. (* Abstract states *)
+  (* Variable I : Retract A B. (* Lifting between states *) *)
+  Variable lift : A -> B.
+  Variable (f : A -> A) (f' : B -> B). (* Abstract steps *)
+  Variable (h : A -> bool) (h' : B -> bool). (* Abstract halting states *)
 
-Lemma loop_split A f p q k (a1 a3 : A):
-  (forall b, p b = false -> q b = false) ->
-  loop k f q a1 = Some a3 -> 
-  exists k1 a2 k2, loop k1 f p a1 = Some a2 /\
-              loop k2 f q a2 = Some a3 /\ k=k1+k2.  
-Proof.
-  intros weakens. revert a1. apply complete_induction with (x:=k);clear k; intros k IH a1 E.
-  destruct k.
-  -simpl in *.
-   eexists 0,a1,0. cbn. destruct q eqn:Eq; inv E.
-   destruct (p a3) eqn:E1.
-   +auto.
-   +apply weakens in E1. congruence.
-  -cbn in E. destruct (p a1) eqn:Eq.
-   +exists 0 ,a1,(1+k). now rewrite loop_fulfills_p_0.
-   +rewrite (weakens _ Eq) in E.
-    eapply IH in E as (k1&a2&k2&Eq1&Eq2&->);[ |omega].
-    exists (1+k1), a2, k2; intuition.
-    cbn. now rewrite Eq.
-Qed.
+  (*
+  Notation lift := (Retr_f (Retract := I)).
+  Notation unlift := (Retr_g (Retract := I)).
+   *)
 
-Lemma loop_unlift A B f p f' p' (unlift : B -> option A):
-  (forall a b, unlift b = Some a -> p a = false -> unlift (f' b) = Some (f a)) ->
-  (forall a b, unlift b = Some a -> p a = p' b) ->
-  forall a b,
-  unlift b = Some a -> 
-  forall i x',
-  loop i f' p' b = Some x' ->
-  exists x, loop i f p a = Some x /\ unlift x' = Some x.
-Proof.
-  intros Hf Hp a b Ha i x'. revert a b Ha x'. induction i; intros a b Ha x' Hl; cbn in *.
-  - destruct (p' b) eqn:E; rewrite (Hp _ _ Ha) in *; inv Hl. rewrite E. eauto.
-  - destruct (p' b) eqn:E; rewrite (Hp _ _ Ha) in *; inv Hl.
-    + rewrite E. eauto.
-    + rewrite E. eapply IHi; eauto.
-Qed.
+  Hypothesis halt_lift_comp : forall x:A, h' (lift x) = h x.
+  Hypothesis step_lift_comp : forall x:A, h x = false -> f' (lift x) = lift (f x).
+
+  Lemma loop_lift (k : nat) (c1 c2 : A) :
+    loop (A := A) k f  h  c1        = Some c2 ->
+    loop (A := B) k f' h' (lift c1) = Some (lift c2).
+  Proof.
+    revert c1. induction k as [ | k']; intros; cbn in *.
+    - rewrite halt_lift_comp. destruct (h c1); now inv H.
+    - rewrite halt_lift_comp. destruct (h c1) eqn:E.
+      + now inv H.
+      + rewrite step_lift_comp by auto. now apply IHk'.
+  Qed.
+
+
+
+  Lemma loop_unlift (k : nat) (a : A) (b' : B) :
+    loop k f' h' (lift a) = Some b' ->
+    exists b : A, loop k f h a = Some b /\ b' = lift b.
+  Proof.
+    revert a b'. induction k as [ | k']; intros; cbn in *.
+    - rewrite halt_lift_comp in H.
+      exists a. destruct (h a) eqn:E; now inv H.
+    - rewrite halt_lift_comp in H.
+      destruct (h a) eqn:E.
+      + exists a. now inv H.
+      + rewrite step_lift_comp in H by assumption.
+        specialize IHk' with (1 := H) as (x&IH&->). now exists x.
+  Qed.
+    
+End LoopLift.
+
+
+Section LoopMerge.
+
+  Variable A : Type. (** abstract states *)
+  Variable f : A -> A. (** abstract step function *)
+  Variable (h h' : A -> bool). (** abstract halting functions *)
+
+  (** Every halting state w.r.t. [h] is also a halting state w.r.t. [h'] *)
+  Hypothesis halt_comp : forall a, h a = false -> h' a = false.
+    
+  Lemma loop_merge (k1 k2 : nat) (c1 c2 c3 : A) :
+    loop k1 f h  c1 = Some c2 ->
+    loop k2 f h' c2 = Some c3 ->
+    loop (k1+k2) f h' c1 = Some c3.
+  Proof.
+    revert c1 c2 c3. induction k1 as [ | k1' IH]; intros c1 c2 c3 HLoop1 HLoop2; cbn in HLoop1.
+    - now destruct (h c1); inv HLoop1.
+    - destruct (h c1) eqn:E.
+      + inv HLoop1. eapply loop_ge. 2: eauto. omega.
+      + cbn. rewrite (halt_comp E). eapply IH; eauto.
+  Qed.
+
+  Lemma loop_split (k : nat) (c1 c3 : A) :
+    loop k f h' c1 = Some c3 ->
+    exists k1 c2 k2,
+      loop k1 f h  c1 = Some c2 /\
+      loop k2 f h' c2 = Some c3 /\
+      k <= k1 + k2.
+  Proof.
+    revert c1 c3. revert k; refine (size_recursion id _); intros k IH. intros c1 c3 HLoop. cbv [id] in *.
+    destruct k as [ | k']; cbn in *.
+    - destruct (h' c1) eqn:E; inv HLoop.
+      exists 0, c3, 0. cbn. rewrite E.
+      destruct (h c3) eqn:E'.
+      + auto.
+      + apply halt_comp in E'. congruence.
+    - destruct (h c1) eqn:E.
+      + exists 0, c1, (S k'). cbn. rewrite E. auto.
+      + rewrite (halt_comp E) in HLoop.
+        apply IH in HLoop as (k1&c2&k2&IH1&IH2&IH3); [ | omega].
+        exists (S k1), c2, k2. cbn. rewrite E. repeat split; auto. omega.
+  Qed.
+  
+End LoopMerge.
+
+
 
 Section Fix_X.
 
@@ -195,7 +228,7 @@ Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 >>
 in runtime proofs. However, if we then use [Fin.R], this can brake proofs, since the [plus] in the type of [Fin.R] doesn't simplify with [cbn] any more. To avoid this problem, we simply have a copy of [Fin.R] and [plus], that isn't affected by these commands.
-*)
+ *)
 Fixpoint plus' (n m : nat) { struct n } : nat :=
   match n with
   | 0 => m
