@@ -85,7 +85,7 @@ Section Match.
   Definition halt_liftL (c : mconfig sig (states (Match)) n) :=
     match cstate c with
     | inl q => halt (m := M1) q
-    | inr q => halt (m := Mf (projT1 q)) (projT2 q)
+    | inr q => false
     end.
 
 
