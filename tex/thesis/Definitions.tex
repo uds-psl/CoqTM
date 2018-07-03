@@ -14,9 +14,10 @@ and Ricciotti \cite{asperti2015}.  We define basic machines and prove their corr
 
 We use superscripts ($X^n$) to denote lists of fixed length (also called vectors).  Natural zero-based numbers are used as indexes for list and
 vector-access ($x[i]$).  We also use standard list notations for vectors.  The symbols $\Unit$, $\Bool$, $\Type$, $\Prop$, $\Nat$, $\Option(X)$,
-$X+Y$, and $\List(X)$ stand for the well-known standard types.  $\sum_{a:A} B$ denote sigma types, i.e.\ dependet pairs, with the projections $\pi_1$
-and $\pi_2$.  We write $(a,b)$ for instances of sigma types. For tuples $A = (a, b, c, \cdots)$, we use subscripts ($a_M$) for the projections.  We
-usually leave subscripts out if they are clear from the context.  We use the symbols $\None$ and $\Some x$ as instances of the type $\Option(X)$.
+$X \times Y$, $X + Y$, and $\List(X)$ stand for the well-known standard types.  $\sum_{a:A} B$ denote sigma types, i.e.\ dependet pairs, with the
+projections $\pi_1$ and $\pi_2$.  We write $(a,b)$ for instances of sigma types. For tuples $A = (a, b, c, \cdots)$, we use subscripts ($a_M$) for the
+projections.  We usually leave subscripts out if they are clear from the context.  We use the symbols $\None$ and $\Some x$ as instances of the type
+$\Option(X)$.
 
 
 \subsection{Relations}
@@ -233,7 +234,8 @@ As usual, we leave the subscript $\Sigma$ out, if it is clear from the context.
 Now we can define the \emph{configuration} of a multi-tape Turing machine.  It is captured by the current state and the vector of the $n$ tapes:
 \begin{definition}[Configuration]
   \label{def:config}
-  A \emph{configuration} of $M: \TM_\Sigma^n$ is a tuple $c = (q, t)$, where $q: Q_M$ and $t: \Tape_\Sigma^n$.
+  A \emph{configuration} of $M: \TM_\Sigma^n$ is a tuple $c = (q, t)$, where $q: Q_M$ and $t: \Tape_\Sigma^n$.  We write
+  $\Conf_M := Q_M \times \Tape_\Sigma^n$ for the type of configurations of $M$.
 \end{definition}
 
 % \begin{alignat*}{2}
@@ -291,9 +293,9 @@ the middle.
   \end{alignat*}
 \end{definition}
 
-To define the function $\MS{step} \from \MS{Conf} \to \MS{Conf}$, we need to know the symbols on the tapes.
-Therefore we define a function $\MS{current} \from Tape \to \Option(\Sigma)$.
-It returns $\None$ if the pointer is not under a symbol, and $\Some a$ if the pointer is under the symbol $a$.
+To define the function $\MS{step} \from \Conf \to \Conf$, we need to know the symbols on the tapes.  Therefore we define a function
+$\MS{current} \from Tape \to \Option(\Sigma)$.  It returns $\None$ if the pointer is not under a symbol, and $\Some a$ if the pointer is under the
+symbol $a$.
 
 \begin{definition}[$\MS{current}$]
   \begin{alignat*}{2}
@@ -318,9 +320,9 @@ We can state a correctness Lemma of the function $\MS{wr}$:
   All claims follow by case analysis over $t$.
 \end{proof}
 
-We can now define the function $\MS{step} \from \MS{Conf} \to \MS{Conf}$.  First, the machine reads all the currents symbols from the tapes.  It
-inserts this vector and the current state into the transition function $\delta$.  Then, each tape writes the symbol and moves its head into the
-direction which $\delta$ yielded for it.  The machine ends up in a new step $q'$.
+We can now define the function $\MS{step} \from \Conf \to \Conf$.  First, the machine reads all the currents symbols from the tapes.  It inserts this
+vector and the current state into the transition function $\delta$.  Then, each tape writes the symbol and moves its head into the direction which
+$\delta$ yielded for it.  The machine ends up in a new step $q'$.
 
 \begin{definition}[$\MS{step}$]
   \label{def:step}
@@ -350,10 +352,14 @@ We can show some basic facts about $\MS{loop}$.
   \label{lem:loop}
   Let $f \from A \to A$, $h \from A \to \Bool$, $s:A$, and $k, l:\Nat$.  Then:
   \begin{enumerate}
-  \item If $k \le l$ and $\MS{loop}~k~f~h~s = \Some x$, then $\MS{loop}~l~f~h~s = \Some x$.
-  \item If $\MS{loop}~k~f~h~s = \Some x$ and $\MS{loop}~l~f~h~s = \Some y$, then $x = y$.
-  \item If $\MS{loop}~k~f~h~s = \Some{x}$, then $h(x) = \true$.
-  \item If $h~s = \true$, then $\MS{loop}~l~f~h~s = \Some{s}$.
+  \item \label{lem:loop_ge}
+    If $k \le l$ and $\MS{loop}~k~f~h~s = \Some x$, then $\MS{loop}~l~f~h~s = \Some x$.
+  \item \label{lem:loop_injective}
+    If $\MS{loop}~k~f~h~s = \Some x$ and $\MS{loop}~l~f~h~s = \Some y$, then $x = y$.
+  \item \label{lem:loop_fulfills_p}
+    If $\MS{loop}~k~f~h~s = \Some{x}$, then $h(x) = \true$.
+  \item \label{lem:loop_fulfills_p_0}
+    If $h~s = \true$, then $\MS{loop}~l~f~h~s = \Some{s}$.
   \end{enumerate}
 \end{lemma}
 \begin{proof}
@@ -361,7 +367,7 @@ We can show some basic facts about $\MS{loop}$.
 \end{proof}
 
 
-We instanciate the abstract $\MS{loop}$ function and get a function $\MS{exec} \from \Tape^n \to \Nat \to \Option(\MS{Conf})$ that executes $k$ steps
+We instanciate the abstract $\MS{loop}$ function and get a function $\MS{exec} \from \Tape^n \to \Nat \to \Option(\Conf)$ that executes $k$ steps
 of the machine, given initial tapes $t: \Tape_\Sigma^n$:
 
 \begin{definition}[Machine execution]
@@ -433,7 +439,7 @@ For machines that always terminate in a constant number of steps, it is useful t
     M \vDash^k R :=
     \forall t'.~
     \exists q~t'.~
-    M(t) \terminates^k(q, t') \land R~t~(\MS{part}~q,~t')
+    M(t) \terminates^k(q, t') \land R~t~(part_M~q,~t')
   \]
 \end{definition}
 

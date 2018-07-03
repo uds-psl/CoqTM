@@ -17,26 +17,27 @@ Asperti and Ricciotti~\cite{asperti2015} also define the control flow operators 
 conditional they have to give one explicit ``else'' state.  Giving an explicit state is very tedious for complex machines.  That is why we use the
 generalised notion of partioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  If $M_1$
 terminated in a ``positive'' state (i.e. a state beloning to the partition $\true$), $M_2$ is executed after $M_1$.  Else it executes $M_3$ after
-$M_1$.  We observe that sequential composition and conditional can be defined as instances of a more general operator we call $\MS{Match}$.
+$M_1$.  We observe that sequential composition and conditional can be defined as instances of a more general operator we call $\MS{Match}$.  We give
+proof scratches for the correctness and runtime in Subsection~\ref{sec:match-proofs}.
 
-Let $M : \TM_\Sigma^n(F)$ and $f \from F \to \TM_\Sigma^n(F')$ be a function from partitions to machines.  We define
-$\MS{Match}~M~f : \TM_\Sigma^n(F')$.
+Let $M : \TM_\Sigma^n(F)$ and $M' \from F \to \TM_\Sigma^n(F')$ be a function from partitions to machines.  We define
+$\MS{Match}~M~M' : \TM_\Sigma^n(F')$.
 
-\begin{definition}[$\MS{Match}~M~f$]
+\begin{definition}[$\MS{Match}~M~M'$]
   \label{def:Match}
   \begin{alignat*}{3}
-    & Q                  &~:=~& Q_M +  \sum_{y:F} Q_{f(y)} \\
+    & Q                  &~:=~& Q_M +  \sum_{y:F} Q_{M'(y)} \\
     & start              &~:=~& \inl start_M \\
     \delta ~&(\inl q, s) &~:=~&
     \begin{cases}
-      \bigl(\inr (part_M~q, start_{f (part_M~q)}), (\None, N)^n \bigr) & halt_M(q) \\
+      \bigl(\inr (part_M~q, start_{M' (part_M~q)}), (\None, N)^n \bigr) & halt_M(q) \\
       \Let{(q', a) := \delta_M(q, s)}{\left(\inl q', a \right)} & \lnot halt_M(q)
     \end{cases} \\
-    \delta ~&(\inr q, s) &~:=~& \Let{(q', a) := \delta_{f(\pi_1 q)} (\pi_2 q, s)}{\bigl( \inr (\pi_1 q, q'), a \bigr)} \\
+    \delta ~&(\inr q, s) &~:=~& \Let{(q', a) := \delta_{M'(\pi_1 q)} (\pi_2 q, s)}{\bigl( \inr (\pi_1 q, q'), a \bigr)} \\
     halt   ~&(\inl  q)   &~:=~& \false \\
-    halt   ~&(\inr  q)   &~:=~& halt_{f(\pi_1~q)} (\pi_2~q) \\
+    halt   ~&(\inr  q)   &~:=~& halt_{M'(\pi_1~q)} (\pi_2~q) \\
     part   ~&(\inl  q)   &~:=~& \_ \\
-    part   ~&(\inr  q)   &~:=~& part_{f(\pi_1~q)} (\pi_2~q)
+    part   ~&(\inr  q)   &~:=~& part_{M'(\pi_1~q)} (\pi_2~q)
   \end{alignat*}
 \end{definition}
 
@@ -53,20 +54,17 @@ canonical value.
   \label{fig:match}
 \end{figure}
 
-\subsubsection{Correctness of Match}
-\label{sec:Match-correct}
 
+$\MS{Match}~M~M'$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``$\MS{Nop}$'' action (i.e.\ $(\None,N)^n$) and
+changes to to the injection of the start state of the machine $M'(part~q)$.  When $\MS{Match}~M~M'$ reaches a state that is the injection of a final
+state of a machine $M'~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
 
-$\MS{Match}~M~f$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``$\MS{Nop}$'' action and changes to to the
-injection of the start state of the machine $f(part~q)$.  When $\MS{Match}~M~f$ reaches a state that is the injection of a final state of a machine
-$M'$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
-
-\begin{lemma}[Correctness of $\MS{Match}~M~f$]
+\begin{lemma}[Correctness of $\MS{Match}~M~M'$]
   \label{lem:Match_Realise}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$ and $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$ for all $y:F$.
-  If $M \vDash R$ and $f~y \vDash R'~y$ for all $y:F$, then
+  If $M \vDash R$ and $M'~y \vDash R'~y$ for all $y:F$, then
   \[
-    \MS{Match}~M~f \vDash \MS{MatchRel}~R~R'
+    \MS{Match}~M~M' \vDash \MS{MatchRel}~R~R'
   \]
   with
   \[
@@ -75,37 +73,22 @@ $M'$, it terminates.  The correctness part of the semantics can be expressed usi
 \end{lemma}
 
 Note that in the relation $\MS{MatchRel}$, we compose the unpartioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the partioned
-relation $R'~y \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$.
+relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.
 
-To prove Lemma~\ref{lem:Match_Realise}, we use the same technique Asperti and Ricciotti use to verify their sequential composition and conditional.
-We show abstract lemmas about $loop$.
+To specify the runtime of $\MS{Match}~M~M'$, we need to know the relation that $M$ realises, the runtime relation in that $M$ terminates, and for each
+$y:F$ the runtime of $M'~y$.
 
-
-\todo{Proof scratch}
-
-
-\subsubsection{Runtime of Match}
-\label{sec:match-runtime}
-
-To specify the runtime of $\MS{Match}~M~f$, we need to know: first, the relation that $M$ realises, second, the runtime relation in that $M$
-terminates, and third, for each $y:F$ the runtime of $f~y$.
-
-
-\begin{lemma}[Runtime of $\MS{Match}~M~f$]
+\begin{lemma}[Runtime of $\MS{Match}~M~M'$]
+  \label{lem:Match_Terminates}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, $T \subseteq \Tape_\Sigma^n \times \Nat$, and
-  $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \vDash R$, $M \downarrow T$, and $f~y \downarrow T'~y$ for all $y:F$, then
-  $\MS{Match}~M~f \downarrow \MS{MatchT}~R~T~T'$, where
+  $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \vDash R$, $M \downarrow T$, and $M'~y \downarrow T'~y$ for all $y:F$, then
+  $\MS{Match}~M~M' \downarrow \MS{MatchT}~R~T~T'$, where
   \[
     \MS{MatchT}~R~T~T' :=
     \lambda~t~i.~ \exists~i_1~i_2.~T~t~i_1 \land 1+i_1+i_2 \le i \land
       \forall~y~t'.~ R~t~y~t' \rightarrow T'~y~t'~i_2
   \]
-  % (fun tin i => exists i1 i2, T1 tin i1 /\ 1 + i1 + i2 <= i /\ forall tout yout, R1 tin (yout, tout) -> T2 yout tout i2)
-
 \end{lemma}
-
-
-\todo{Proof scratch}
 
 
 \subsubsection{Derived Operators}
@@ -119,20 +102,146 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
   \label{def:If}
   Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F')$.
   \[
-    \If{M_1}{M_2}{M_3} := \MS{Match}~M_1~
-    \left(\lam{b}{\cond{b}{M_1}{M_2} \right})
+    \If{M_1}{M_2}{M_3} := \Match~M_1~
+    \left(\lam{b}{\cond{b}{M_2}{M_3} \right})
   \]
 \end{definition}
 
 \begin{definition}[Sequencial composition]
   Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
   \[
-    M_1 \Seq M_2 := \MS{Match}~M_1~
+    M_1 \Seq M_2 := \Match~M_1~
     \bigl(
     \lambda~\_.~M_2
     \bigr)
   \]
 \end{definition}
+
+
+\subsection{Proof of $\MS{Match}$}
+\label{sec:match-proofs}
+
+\todo{Did Asperti and Ricciotti do the same proof?}
+
+The idea of the proofs of Lemma~\ref{lem:Match_Realise} and Lemma~\ref{lem:Match_Terminates} is to abstract two features of the machine: lifting of
+configurations from one abstract machine to another abstract machines and sequence of two loops.  We formalise these two concepts for abstract
+machines, i.e.\ we argue on the abstract $loop$ function.
+
+For the first feature, \emph{lifting}, we assume two types $A$, $B$ for abstract configurations, an injective function $lift : A \to B$, two step
+functions $f : A \to A$, $f' : B \to B$, and two halting function $h : A \to \Bool$, $h' : B \to \Bool$.  We assume that the step functions $f$ and
+$f'$ is compatible with $lift$ in non-halting states of $A$.  Formally, this means
+\[ \forall a:A.~\lnot h~x \rightarrow f' (lift~x) = lift (f~x). \]
+The second assumptions is that $h'$ is compatible with $h$, w.r.t.\ $lift$, formally:
+\[ \forall a:A.~h'(lift~x)=h~x. \]
+Under these two assumptions we can show two lemmas that essentially say that the second abstract machine $B$ simulates the first machine $A$.
+\begin{lemma}[Loop lifting]
+  \label{lem:loop_lift}
+  Under the two assumptions above:
+  \begin{alignat*}{1}
+    & \forall (k:\Nat)~(c_1~c_2 : A). \\
+    & \quad loop~k~f ~h ~c_1 = \Some{c_2} \rightarrow \\
+    & \quad loop~k~f'~h'~(lift~c_1) = \Some {lift~c_2}
+  \end{alignat*}
+\end{lemma}
+\begin{proof}
+  By induction over $k:\Nat$.
+\end{proof}
+\begin{lemma}[Loop unlifting]
+  \label{lem:loop_unlift}
+  Under the two assumptions above:
+  \begin{alignat*}{1}
+    & \forall (k:\Nat)~(a:A)~(b':B). \\
+    & \quad loop~k~f'~h'~(lift~a) = \Some{b'} \rightarrow \\
+    & \quad \exists (b:B).~loop~k~f~h~a = \Some b \land b'=lift~b
+  \end{alignat*}
+\end{lemma}
+\begin{proof}
+  By induction over $k:\Nat$.
+\end{proof}
+
+For the second feature, \emph{sequencing}, we assume a type $A$ with the step function $f \from A \to A$ and two halting functions
+$h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume
+\[
+  \forall(a:A).~h~a = \false \rightarrow h'~a = \false,
+\]
+i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state w.r.t.\ $h$.
+\begin{lemma}[Loop merging]
+  \label{lem:loop_merge}
+  Under the above assumption:
+  \begin{align*}
+    & \forall (k_1~k_2:\Nat)~(c_1~c_2~c_3 : A).\\
+    & \quad loop~k_1~f~h ~c_1 = \Some{c_2} \rightarrow\\
+    & \quad loop~k_2~f~h'~c_2 = \Some{c_3} \rightarrow\\
+    & \quad loop (k_1+k_2)~f~h'~c_1 = \Some{c_3}.
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  By induction over $k1:\Nat$, using Lemm~\ref{lem:loop}~(\ref{lem:loop_ge}).
+\end{proof}
+\begin{lemma}[Loop splitting]
+  \label{lem:loop_split}
+  Under the above assumption:
+  \begin{align*}
+    & \forall (k:\Nat)~(c_1~c_3 : A).\\
+    & \quad loop~f~h'~c_1 = \Some{c_3} \rightarrow \\
+    & \quad \exists (k_1~k_2:\Nat)~(c_2:A).\\
+    & \quad \quad loop~f~h~c_1 = \Some{c_2} \land\\
+    & \quad \quad loop~f~h~c_2 = \Some{c_3} \land\\
+    & \quad \quad k \leq k_1 + k_2.
+  \end{align*}
+\end{lemma}
+\begin{proof}
+  By complete induction over $k:\Nat$.
+\end{proof}
+
+
+Back to the verification of $\Match~M~M'$.  In the following, we simply write $\Match$.  The executions of $\Match$ are essentially a sequence of a
+lifted execution of $M$, a ``nop'' step, and steps of some machine $M'~y$.  We give the concrete lifting functions from $M$ to $\Match$ and from $M~y$
+to $\Match$:
+\begin{definition}[Liftings of $\Match$]
+  We define the functions \\$liftL : \Conf_M \to \Conf_\Match$ and $liftR_y : \Conf_{M'~y} \to \Conf_\Match$:
+  \begin{alignat*}{2}
+    & liftL   & (q, t) &:= (\inl q,      t) \\
+    & liftR_y & (q, t) &:= (\inr (y, q), t).
+  \end{alignat*}
+\end{definition}
+
+For the sequential part, we also have to define the lifted halting function of \\$haltConfL : \Conf_\Match \to \Bool$:
+\begin{definition}[Lifted halting function]
+  \begin{alignat*}{2}
+    & haltConfL & (\inl~q, t) &:= halt_M(q) \\
+    & haltConfL & (\inr~q, t) &:= \true
+  \end{alignat*}
+\end{definition}
+
+Using Lemma \ref{lem:loop_merge} and \ref{lem:loop_lift}, we can show the lemma we need for runtime:
+\begin{lemma}[Merging parts of executions of $\Match$]
+  \label{lem:Match_merge}
+  Let $t : \Tape_\Sigma^n$, $k_1, k_2:\Nat$, $c_1=(q', t') : \Conf_M$ and $c_2=(q'', t'') : \Conf_{M'~y}$.
+  \begin{itemize}
+  \item If $M(t) \terminates^{k_1} c_1$ and
+  \item $\bigl( M'~(part_M~q') \bigr) (t_1) \terminates^{k_2} c_2$, then
+  \item $\Match(t) \terminates^{1+k_1+k_2} liftR(c_2)$.
+  \end{itemize}
+\end{lemma}
+\begin{proof}
+  We apply \ref{lem:loop_merge} and have to show:
+  \begin{enumerate}
+  \item $\forall a:\Conf_\Match.~ \lnot haltConfL~a \rightarrow \lnot \MS{haltConf}~a$.  This holds trivially by definition.
+  \item $loop~k_1~step_\Match~haltConfL~(\MS{initConf}_\Match~t) =
+    \Some{liftL~c1}$.  By definition, we have $\MS{initConf}_\Match~t=liftL(\MS{initConf}_M t)$.  The claim follows with Lemma~\ref{lem:loop_lift}.
+  \item $loop~(1+k_2)~step_\Match~haltConf_\Match~(liftL~c1) =
+    \Some{liftR(c_2)}$.  By definition, we know that the first step must be a ``nop'' transition from
+    $liftL~c_1$ to $liftR~\bigl(\MS{initConf}_{M'(part_M~q')}~t' \bigr)$.
+    It remains to show that
+    $$ loop~k_2~step_\Match~haltConf_\Match~liftR \bigl(\MS{initConf}_{M'(part_M~q')}~t' \bigr) = liftR(c_2).$$
+    This follows with Lemma~\ref{lem:loop_merge}.
+  \end{enumerate}
+\end{proof}
+
+The runtime Lemma~\ref{lem:Match_Terminates} follows from Lemma~\ref{lem:Match_merge}.
+
+
 
 
 
@@ -234,9 +343,9 @@ terms of $R$ and $t$:
     \forall~t~i.~
     T'~t~i \rightarrow
     \exists~i_1.~
-    \forall~y~t'.~ \\
+    \forall~t'.~ \\
     \bigl(
-    R~t~(\Some y, t') \rightarrow i_1 \le i
+    \forall~y.~ R~t~(\Some y, t') \rightarrow i_1 \le i
     \bigl) \quad\land\quad
     \bigl(
     R~t~(\None, t') \rightarrow
