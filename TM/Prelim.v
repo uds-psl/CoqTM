@@ -10,75 +10,70 @@ Require Export smpl.Smpl.
 Global Open Scope vector_scope.
 
 
-(* Instance fin_eq_dec (A: finType) : eq_dec A. *)
-(* Proof. *)
-(*   now destruct A, type.  *)
-(* Qed. *)
+Section Loop.
+  Variable (A : Type) (f : A -> A) (p : A -> bool).
 
-(* Definition graph_of := fun A B => fun (f:A -> B) => { p: A * B & f (fst p) = snd p}. *)
-(* Definition graph_enum := fun (A B : finType) => fun (f : A -> B) => filter (fun (p : A * B) => Dec (f (fst p) = snd p)) (elem (A (x) B)). *)
+  Fixpoint loop (k : nat) (a : A) {struct k} :=
+    if p a then Some a else
+      match k with
+      | O => None
+      | S k' => loop k' (f a)
+      end.
 
-Fixpoint loop (A:Type) n (f:A -> A) (p : A -> bool) a {struct n}:=
-  if p a then Some a else
-    match n with
-    | O => None
-    | S m => loop m f p (f a)
-    end.
+  Lemma loop_step k a :
+    p a = false ->
+    loop (S k) a = loop k (f a).
+  Proof. intros HHalt. destruct k; cbn; rewrite HHalt; auto. Qed.
 
-Lemma loop_injective A n1 n2 f p (a : A) c1 c2 : loop n1 f p a = Some c1 -> loop n2 f p a = Some c2 -> c1 = c2.
-Proof.
-  revert n2 c1 c2 a. induction n1; intros; cbn in *.
-  - destruct (p a) eqn:E; inv H.
-    destruct n2; cbn in H0; rewrite E in H0; now inv H0.
-  - destruct (p a) eqn:E.
-    + inv H. destruct n2; cbn in H0; rewrite E in H0; now inv H0.
-    + destruct n2; cbn in H0; rewrite E in H0; try now inv H0.
-      eauto.
-Qed.
+  Lemma loop_injective k1 k2 a c1 c2 :
+    loop k1 a = Some c1 ->
+    loop k2 a = Some c2 ->
+    c1 = c2.
+  Proof.
+    revert k2 c1 c2 a. induction k1; intros; cbn in *.
+    - destruct (p a) eqn:E; inv H.
+      destruct k2; cbn in H0; rewrite E in H0; now inv H0.
+    - destruct (p a) eqn:E.
+      + inv H. destruct k2; cbn in H0; rewrite E in H0; now inv H0.
+      + destruct k2; cbn in H0; rewrite E in H0; try now inv H0.
+        eauto.
+  Qed.
 
-Lemma loop_fulfills_p A n f p (a : A) c : loop n f p a = Some c -> p c = true.
-Proof.
-  revert a; induction n; intros; inv H; destruct (p a) eqn:E; inv H1; eauto.
-Qed.
+  Lemma loop_fulfills k a c :
+    loop k a = Some c ->
+    p c = true.
+  Proof.
+    revert a; induction k; intros; cbn in *.
+    - now destruct (p a) eqn:E; inv H.
+    - destruct (p a) eqn:E.
+      + now inv H.
+      + eapply IHk; eauto.
+  Qed.
 
-Lemma loop_fulfills_p_0 A n f p (a : A) : p a = true -> loop n f p a = Some a.
-Proof.
-  intros. destruct n; cbn; now rewrite H.
-Qed.
+  Lemma loop_0 k a :
+    p a = true ->
+    loop k a = Some a.
+  Proof. intros. destruct k; cbn; now rewrite H. Qed.
 
-Fixpoint loop_informative (A : Type) (n : nat) (f : A -> A) (p : A -> bool) a : A + A :=
-  if p a then inr a else
-    match n with
-    | 0 => inl a
-    | S n => loop_informative n f p (f a)
-    end.
+  Lemma loop_eq_0 k a c :
+    p a = true ->
+    loop k a = Some c ->
+    c = a.
+  Proof. intros H1 H2. eapply (loop_0 k) in H1. congruence. Qed.
 
-Lemma loop_informative_spec A n f p (a : A) r : loop_informative n f p a = inr r <-> loop n f p a = Some r.
-Proof.
-  revert a r. induction n; intros; cbn in *.
-  - destruct (p a) eqn:E; firstorder congruence.
-  - destruct (p a) eqn:E.
-    + firstorder congruence.
-    + now rewrite IHn.
-Qed.
+  
+  Lemma loop_monotone (k1 k2 : nat) (a c : A) : loop k1 a = Some c -> k1 <= k2 -> loop k2 a = Some c.
+  Proof.
+    revert a k2; induction k1 as [ | k1' IH]; intros a k2 HLoop Hk; cbn in *.
+    - destruct k2; cbn; destruct (p a); now inv HLoop.
+    - destruct (p a) eqn:E.
+      + inv HLoop. now apply loop_0.
+      + destruct k2 as [ | k2']; cbn in *; rewrite E.
+        * exfalso. omega.
+        * apply IH. assumption. omega.
+  Qed.
 
-Lemma loop_ext A f f' p p' (a : A) k :
-  (forall a, p a = false -> f a = f' a) ->
-  (forall a, p a = p' a) ->
-  loop k f p a = loop k f' p a.
-Proof.
-  intros H. revert a. induction k; intros a; cbn; auto. destruct (p a) eqn:E; auto. rewrite H; auto.
-Qed.
-
-Lemma loop_ge A f p (a c : A) k1 k2 : k2 >= k1 -> loop k1 f p a = Some c -> loop k2 f p a = Some c.
-Proof.
-  revert a k2; induction k1; intros; cbn in *.
-  - destruct k2; cbn; destruct (p a); now inv H0.
-  - destruct (p a) eqn:E; inv H0.
-    + destruct k2; cbn; rewrite E; reflexivity.
-    + rewrite H2. destruct k2; [omega | ].
-      cbn. rewrite E. rewrite IHk1; eauto. omega.
-Qed.
+End Loop.
 
 
 Section LoopLift.
@@ -92,8 +87,8 @@ Section LoopLift.
   Hypothesis step_lift_comp : forall x:A, h x = false -> f' (lift x) = lift (f x).
 
   Lemma loop_lift (k : nat) (c1 c2 : A) :
-    loop (A := A) k f  h  c1        = Some c2 ->
-    loop (A := B) k f' h' (lift c1) = Some (lift c2).
+    loop (A := A) f  h  k c1        = Some c2 ->
+    loop (A := B) f' h' k (lift c1) = Some (lift c2).
   Proof.
     revert c1. induction k as [ | k']; intros; cbn in *.
     - rewrite halt_lift_comp. destruct (h c1); now inv H.
@@ -103,8 +98,8 @@ Section LoopLift.
   Qed.
 
   Lemma loop_unlift (k : nat) (a : A) (b' : B) :
-    loop k f' h' (lift a) = Some b' ->
-    exists b : A, loop k f h a = Some b /\ b' = lift b.
+    loop f' h' k (lift a) = Some b' ->
+    exists b : A, loop f h k a = Some b /\ b' = lift b.
   Proof.
     revert a b'. induction k as [ | k']; intros; cbn in *.
     - rewrite halt_lift_comp in H.
@@ -129,22 +124,22 @@ Section LoopMerge.
   Hypothesis halt_comp : forall a, h a = false -> h' a = false.
 
   Lemma loop_merge (k1 k2 : nat) (c1 c2 c3 : A) :
-    loop k1 f h  c1 = Some c2 ->
-    loop k2 f h' c2 = Some c3 ->
-    loop (k1+k2) f h' c1 = Some c3.
+    loop f h  k1 c1 = Some c2 ->
+    loop f h' k2 c2 = Some c3 ->
+    loop f h' (k1+k2) c1 = Some c3.
   Proof.
     revert c1 c2 c3. induction k1 as [ | k1' IH]; intros c1 c2 c3 HLoop1 HLoop2; cbn in HLoop1.
     - now destruct (h c1); inv HLoop1.
     - destruct (h c1) eqn:E.
-      + inv HLoop1. eapply loop_ge. 2: eauto. omega.
+      + inv HLoop1. eapply loop_monotone; eauto. omega.
       + cbn. rewrite (halt_comp E). eapply IH; eauto.
   Qed.
 
   Lemma loop_split (k : nat) (c1 c3 : A) :
-    loop k f h' c1 = Some c3 ->
+    loop f h' k c1 = Some c3 ->
     exists k1 c2 k2,
-      loop k1 f h  c1 = Some c2 /\
-      loop k2 f h' c2 = Some c3 /\
+      loop f h  k1 c1 = Some c2 /\
+      loop f h' k2 c2 = Some c3 /\
       k1 + k2 <= k.
   Proof.
     revert c1 c3. revert k; refine (size_recursion id _); intros k IH. intros c1 c3 HLoop. cbv [id] in *.
@@ -162,26 +157,6 @@ Section LoopMerge.
   Qed.
   
 End LoopMerge.
-
-
-
-Section Fix_X.
-
-  Variable X : Type.
-  Fixpoint inb eqb (x:X) (A: list X) :=
-    match A with
-      List.nil => false
-    | a::A' => orb (eqb a x) (inb eqb x A')
-    end.
-
-  Lemma inb_spec eqb: (forall (x y:X), Bool.reflect (x=y) (eqb x y)) -> forall x A, Bool.reflect (List.In x A) (inb eqb x A).
-  Proof.
-    intros R x A. induction A; firstorder; cbn.
-    destruct (R a x); inv IHA; cbn; firstorder.
-    constructor; tauto.
-  Qed.
-
-End Fix_X.
 
 
 (* Apply functions in typles, options, etc. *)

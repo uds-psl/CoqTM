@@ -202,8 +202,8 @@ Section Loop_Propagate.
   Hypothesis (step_comp : forall b, sur (g b) = f (sur b)).
 
   Lemma loop_propagate (k : nat) (b0 : B) (a__k : A) :
-      loop k f ha (sur b0) = Some a__k ->
-      { b__k | loop k g hb b0 = Some (inj a__k b__k) }.
+      loop f ha k (sur b0) = Some a__k ->
+      { b__k | loop g hb k b0 = Some (inj a__k b__k) }.
   Proof.
     revert b0 a__k. induction k as [ |k IH]; intros b0 a__k Sim; cbn in *.
     - exists b0. rewrite <- !(Hb b0) in Sim. destruct (hb b0) eqn:E; inv Sim. now rewrite inj_sur.

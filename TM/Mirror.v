@@ -77,8 +77,8 @@ Section MirrorTM.
   Qed.
 
   Lemma mirror_loop i ic oc :
-    loop i (step (M := projT1 Mirror)) mhlift ic         = Some oc ->
-    loop i (step (M := projT1 pM    )) mhlift (mlift ic) = Some (mlift oc).
+    loop (step (M := projT1 Mirror)) mhlift i ic         = Some oc ->
+    loop (step (M := projT1 pM    )) mhlift i (mlift ic) = Some (mlift oc).
   Proof.
     unfold loopM. revert ic. induction i; intros ic H.
     {
@@ -95,8 +95,8 @@ Section MirrorTM.
   Qed.
 
   Lemma mirror_loop' i ic oc :
-    loop i (step (M := projT1     pM)) mhlift (mlift ic) = Some (mlift oc) ->
-    loop i (step (M := projT1 Mirror)) mhlift (      ic) = Some (      oc).
+    loop (step (M := projT1     pM)) mhlift i (mlift ic) = Some (mlift oc) ->
+    loop (step (M := projT1 Mirror)) mhlift i (      ic) = Some (      oc).
   Proof.
     unfold loopM. revert ic. induction i; intros ic H.
     {
@@ -128,6 +128,7 @@ Section MirrorTM.
     pM ⊨ R -> Mirror ⊨ Mirror_R R.
   Proof.
     intros H. intros t i outc H2. specialize (H (mirror_tapes t) i (mlift outc)).
+    unfold loopM in *.
     assert (loopM i (initc (projT1 pM) (mirror_tapes t)) = Some (mlift outc)) as L.
     {
       eapply (loop_lift (lift := fun x => x) (h' := mhlift) (f' := step (M := projT1 Mirror))) in H2; intros; auto.

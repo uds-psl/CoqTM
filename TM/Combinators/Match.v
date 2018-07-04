@@ -132,9 +132,8 @@ Section Match.
       + apply step_comp_liftL.
       + apply HLoop1.
     - (* execute one step *)
-      change (loop (1 + k2) (step (M:=Match)) (haltConf (M:=Match)) (lift_confL c1))
-        with (loop k2 (step (M:=Match)) (haltConf (M:=Match)) (step (lift_confL c1))).
-      rewrite step_nop_transition by apply (loop_fulfills_p HLoop1).
+      rewrite loop_step by auto.
+      rewrite step_nop_transition by apply (loop_fulfills HLoop1).
       eapply loop_lift with (lift := lift_confR (f := p1 (cstate c1))) (f' := step (M := Match)) (h' := haltConf (M := Match)) in HLoop2.
       + apply HLoop2.
       + intros. cbn. now destruct x.
@@ -145,7 +144,7 @@ Section Match.
   (** The [Match] machine must take the "nop" action if it is in a final state of [M1]. *)
   Lemma step_nop_split (k2 : nat) (c2 : mconfig sig (states M1) n) (outc : mconfig sig (states Match) n) :
     haltConf c2 = true ->
-    loop k2 (step (M:=Match)) (haltConf (M:=Match)) (lift_confL c2) = Some outc ->
+    loopM (M := Match) k2 (lift_confL c2) = Some outc ->
     exists k2' c2',
       k2 = S k2' /\
       loopM (M := Mf (p1 (cstate c2))) k2' (initc _ (ctapes c2)) = Some c2' /\
@@ -177,7 +176,7 @@ Section Match.
     apply loop_split with (h := halt_liftL) in H as (k1&c1&k2&HLoop1&HLoop2&_).
     - rewrite lift_initc in HLoop1.
       apply loop_unlift with (lift := lift_confL) (f := step (M := M1)) (h := haltConf (M := M1)) in HLoop1 as (c1'&HLoop1&->).
-      + apply step_nop_split in HLoop2 as (k2'&c2'&_&HLoop2&->). 2: now apply (loop_fulfills_p HLoop1).
+      + apply step_nop_split in HLoop2 as (k2'&c2'&_&HLoop2&->). 2: now apply (loop_fulfills HLoop1).
         exists k1, c1', k2', c2'. auto.
       + intros. cbn. reflexivity.
       + intros. now apply step_comp_liftL.
@@ -212,7 +211,7 @@ Section Match.
     specialize H with (1 := HRel1).
     specialize (HTerm2 _ _ _ H) as (c2&HLoop2).
     pose proof Match_merge HLoop1 HLoop2 as HLoop.
-    exists (lift_confR c2). eapply loop_ge. 2: apply HLoop. omega.
+    exists (lift_confR c2). eapply loop_monotone; eauto. omega.
   Qed.
 
 

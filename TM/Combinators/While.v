@@ -109,10 +109,8 @@ Section While.
     projT2 pM (cstate c1) = Some f ->
     c2 = c1.
   Proof.
-    intros HLoop HHalt HTerm. unfold haltConf in *.
-    destruct k as [ | k']; cbn in *.
-    - rewrite HHalt, HTerm in HLoop. cbn in HLoop. now inv HLoop.
-    - rewrite HHalt, HTerm in HLoop. cbn in HLoop. now inv HLoop.
+    intros HLoop HHalt HTerm. unfold loopM in *.
+    eapply loop_eq_0. 2: apply HLoop. unfold haltConf in *. cbn in *. now rewrite HHalt, HTerm.
   Qed.
 
   Lemma While_merge_repeat k1 k2 (c1 c2 c3 : mconfig sig (states While) n) :
@@ -121,14 +119,14 @@ Section While.
     loopM While k2 (initc While (ctapes c2)) = Some c3 ->
     loopM While (k1+(1+k2)) c1 = Some c3.
   Proof.
-    intros HLoop1 HRepeat HLoop2.
+    intros HLoop1 HRepeat HLoop2. unfold loopM in *.
     eapply loop_lift with (lift := id) (f' := step (While)) (h' := haltConf (M := projT1 pM)) in HLoop1; cbv [id] in *; cbn; auto; cycle 1.
     { intros. symmetry. now apply step_comp. }
     apply loop_merge with (h := haltConf (M := projT1 pM)) (c2 := c2).
     - apply halt_comp.
     - apply HLoop1.
-    - cbn [loop plus]. rewrite While_trans_repeat; auto. 2: apply (loop_fulfills_p HLoop1).
-      cbn in *. setoid_rewrite (loop_fulfills_p HLoop1). now rewrite HRepeat.
+    - cbn [loop plus]. rewrite While_trans_repeat; auto. 2: apply (loop_fulfills HLoop1).
+      cbn in *. setoid_rewrite (loop_fulfills HLoop1). now rewrite HRepeat.
   Qed.
 
   Lemma While_merge_term k1 (c1 c2 : mconfig sig (states While) n) (f : F) :
@@ -136,7 +134,7 @@ Section While.
     (projT2 pM) (cstate c2) = Some f ->
     loopM While k1 c1 = Some c2.
   Proof.
-    intros HLoop HTerm.
+    intros HLoop HTerm. unfold loopM in *.
     eapply loop_lift with (lift := id) (f' := step (While)) (h' := haltConf (M := projT1 pM)) in HLoop; cbv [id] in *; cbn; auto; cycle 1.
     { intros. symmetry. now apply step_comp. }
     unfold loopM.
@@ -144,7 +142,7 @@ Section While.
     apply loop_merge with (h := haltConf (M := projT1 pM)) (c2 := c2).
     - apply halt_comp.
     - apply HLoop.
-    - cbn in *. setoid_rewrite (loop_fulfills_p HLoop). rewrite HTerm. cbn. reflexivity.
+    - cbn in *. setoid_rewrite (loop_fulfills HLoop). rewrite HTerm. cbn. reflexivity.
   Qed.
   
 
@@ -165,9 +163,9 @@ Section While.
     intros HRel. hnf in HRel; hnf. intros t k; revert t. apply complete_induction with (x := k); clear k; intros k IH; intros tout c3 HLoop.
     apply While_split in HLoop as (k1&k2&c2&HLoop1&HLoop2&Hk).
     destruct (projT2 pM (cstate c2)) as [ f | ] eqn:E; cbn in *; [ clear IH | ].
-    - apply While_split_term with (f := f) in HLoop2 as ->; auto. 2: apply (loop_fulfills_p HLoop1). rewrite E.
+    - apply While_split_term with (f := f) in HLoop2 as ->; auto. 2: apply (loop_fulfills HLoop1). rewrite E.
       constructor 1. specialize HRel with (1 := HLoop1). now rewrite E in HRel.
-    - apply While_split_repeat in HLoop2 as (k2'&->&HLoop2); auto. 2: apply (loop_fulfills_p HLoop1).
+    - apply While_split_repeat in HLoop2 as (k2'&->&HLoop2); auto. 2: apply (loop_fulfills HLoop1).
       specialize IH with (2 := HLoop2); spec_assert IH by omega.
       econstructor 2.
       + specialize HRel with (1 := HLoop1). rewrite E in HRel. eassumption.
@@ -199,11 +197,10 @@ Section While.
       specialize (Realise_M _ _ _ Hloop).
       specialize (HT2 (projT2 pM (cstate oconf)) (ctapes oconf) Realise_M).
       destruct (projT2 pM (cstate oconf)) as [ ymid | ] eqn:E1.
-      - exists oconf. eapply loop_ge with (k1 := i1); eauto.
-        eapply While_merge_term; eauto.
+      - exists oconf. eapply loop_monotone; eauto. eapply While_merge_term; eauto.
       - destruct HT2 as (i2&HT2&Hi).
         specialize (IH i2 ltac:(omega) _ HT2) as (oconf2&Hloop2).
-        exists oconf2. apply loop_ge with (k1 := i1 + (1 + i2)). omega.
+        exists oconf2. apply loop_monotone with (k1 := i1 + (1 + i2)). 2: omega.
         eapply While_merge_repeat; eauto.
     Qed.
 

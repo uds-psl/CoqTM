@@ -685,8 +685,7 @@ Section Semantics.
   Definition haltConf {n} (M : mTM n) : mconfig (states M) n -> bool := fun c => halt (cstate c).
 
   (** Run the machine i steps until it halts *)
-  Definition loopM n (M : mTM n) (i : nat) cin :=
-    loop i (@step _ M) (@haltConf _ M) cin.
+  Definition loopM n (M : mTM n) := loop (@step _ M) (@haltConf _ M).
   
   (** Initial configuration *)  
   Definition initc n (M : mTM n) tapes :=
@@ -736,7 +735,7 @@ Section Semantics.
     intros H1 H2. hnf. intros tin k1 Hk.
     specialize (H2 tin k1 Hk) as (k3&Hk3&Hk3').
     hnf in H1. specialize (H1 tin k3 Hk3') as (oconf&HLoop).
-    exists oconf. eapply loop_ge; eauto.
+    exists oconf. eapply loop_monotone; eauto.
   Qed.
 
 
@@ -751,7 +750,7 @@ Section Semantics.
     unfold RealiseIn. intros H1 H2 H3 input.
     specialize (H1 input) as (outc & H1). exists outc.
     split.
-    - unfold loopM. eapply loop_ge; eauto. intuition.
+    - unfold loopM. eapply loop_monotone; eauto. intuition.
     - intuition.
   Qed.
 
@@ -780,10 +779,11 @@ Section Semantics.
         destruct (H t) as (? & ? & ?).
         cutrewrite (cout = x).
         eassumption.
+        unfold loopM in *.
         eapply loop_injective; eauto.
       + intros t i Hi.
         edestruct (H t) as (? & ? & ?). 
-        exists x. eapply loop_ge; eauto.
+        exists x. eapply loop_monotone; eauto.
   Qed.
 
   Fact RealiseIn_Realise n (F : finType) (pM : pTM F n) R k :
@@ -794,7 +794,7 @@ Section Semantics.
     pM ⊨c(k) R -> projT1 pM ↓ (fun tin l => k <= l). 
   Proof.
     intros HRel. hnf. intros tin l HSteps. hnf in HRel. specialize (HRel tin) as (outc&HLoop&Rloop).
-    exists outc. eapply loop_ge; eauto.
+    exists outc. eapply loop_monotone; eauto.
   Qed.
   
   Fact Realise_strengthen n (F : finType) (pM : pTM F n) R1 R2 :
