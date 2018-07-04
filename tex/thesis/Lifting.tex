@@ -1,0 +1,50 @@
+\chapter{Lifting Machine}
+\label{chap:lifting}
+
+We observe that whenever we want to combine machines, the numbers of tapes and alphabets of all involved machines have to match.
+
+For example, assume that we have a one-tape machine that moves the head to the right.  If we need a two-tape machine that moves both tapes to the
+rigth, we would like to use sequencial composition and move one tape after the other tape to right.  But we would need two two-tape machines: one that
+moves the first tape to the right and one that moves the second tape to the right.  There are multiple ways to solve this problem.  For example, we
+could define a class of $n$-tape machines that move the $i$th tape to the right and leave all other tapes unchanged.  However, it is in general easier
+to build and prove correctness of small machines that operate on a minimal amount of tapes.  Asperti and Ricciotti~\cite{asperti2015} defined an
+\emph{injecting} operator that translates an one-tape machine into a $1+n$-tape machine.  We generalised this approach and implemented an operator
+that takes an $m$-tape machine and yields an $n$-tape machine, where $m \le n$.
+
+The second part of this problem is how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that sums
+(encodings of) natural numbers, we could want to build a machine $\MS{Sum}$ that sums numbers in a list of numbers.  Consider an alphabet
+$\Sigma_\Nat$ where we could ``encode'' natural numbers on, and an alphabet $\Sigma_{\List(\Nat)}$ to ``encode'' lists of natural numbers.  If the
+alphabet $\Sigma_\Nat$ is ``included'' in $\Sigma_{\List(\Nat)}$, we would like to ``lift'' $\MS{Add}$ to the alphabet $\Sigma_{\List(\Nat)}$, to
+define $\MS{Sum}$.
+
+Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem.  They consider a fixed alphabet to ``encode'' all needed data on, to implement a
+universal Turing machine.  However, this approach does not scale.  When the alphabet has to be changed, for example because we have to add a new
+``data type'', they also must change the definitions of the involved ``smaller'' machines.  That is why we also introduce an operator that
+\emph{lifts} a machine to a bigger alphabet.
+
+\section{$n$-Lift}
+\label{sec:n-Lift}
+
+The $n$-Lift takes a machine $M:\TM_\Sigma^n(F)$.
+
+\todo{}
+
+
+\section{$\Sigma$-Lift}
+\label{sec:sigma-Lift}
+
+
+\todo{}
+
+
+
+
+\section{Examples}
+\label{sec:combining-examples}
+
+\todo{}
+
+
+%%% Local Variables:
+%%% TeX-master: "thesis"
+%%% End:
