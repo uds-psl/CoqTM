@@ -131,7 +131,7 @@ We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is
       \Some x & z = \inl x \\
       \None   & z = \inr y
     \end{cases} \\
-    RetrRgt(y) &:= \inl y & RetrRgt^{-1} (z) &:=
+    RetrRgt(y) &:= \inr y & RetrRgt^{-1} (z) &:=
     \begin{cases}
       \None   & z = \inl x \\
       \Some y & z = \inr y
@@ -334,54 +334,56 @@ $\delta$ yielded for it.  The machine ends up in a new step $q'$.
 \end{definition}
 
 To define the execution of a machine, we first define an abstract recursive \emph{loop} function of the type
-$\MS{loop} \from \Nat \to (A \to A) \to (A \to \Bool) \to A \to \Option(A)$, for every $A:\Type$:
+$\Loop \from (A \to A) \to (A \to \Bool) \to \Nat \to A \to \Option(A)$, for every $A:\Type$:
 
-\begin{definition}[$\MS{loop}$]
+\begin{definition}[$\Loop$]
   \begin{align*}
-    \MS{loop}~n~f~h~s :=
+    \Loop~f~h~k~s :=
     \begin{cases}
       \Some{s}                   & h(s) \\
-      \None                      & \lnot h(s) \land n = 0 \\
-      \MS{loop}~(n-1)~f~h~(f~s)  & \lnot h(s) \land n > 0
+      \None                      & \lnot h(s) \land k = 0 \\
+      \Loop~f~h~(k-1)~(f~s)  & \lnot h(s) \land k > 0
     \end{cases}
   \end{align*}
 \end{definition}
 
-We can show some basic facts about $\MS{loop}$.
-\begin{lemma}[Basic facts about $\MS{loop}$]
+We can show some basic facts about $\Loop$.
+\begin{lemma}[Basic facts about $\Loop$]
   \label{lem:loop}
-  Let $f \from A \to A$, $h \from A \to \Bool$, $s:A$, and $k, l:\Nat$.  Then:
+  Let $k,l : \Nat$ and $x,s:A$.
   \begin{enumerate}
-  \item \label{lem:loop_ge}
-    If $k \le l$ and $\MS{loop}~k~f~h~s = \Some x$, then $\MS{loop}~l~f~h~s = \Some x$.
+  \item \label{lem:loop_monotone}
+    If $k \le l$ and $\Loop~f~h~k~s = \Some x$, then $\Loop~f~h~l~s = \Some x$.
   \item \label{lem:loop_injective}
-    If $\MS{loop}~k~f~h~s = \Some x$ and $\MS{loop}~l~f~h~s = \Some y$, then $x = y$.
-  \item \label{lem:loop_fulfills_p}
-    If $\MS{loop}~k~f~h~s = \Some{x}$, then $h(x) = \true$.
-  \item \label{lem:loop_fulfills_p_0}
-    If $h~s = \true$, then $\MS{loop}~l~f~h~s = \Some{s}$.
+    If $\Loop~f~h~k~s = \Some x$ and $\Loop~l~f~k~s = \Some y$, then $x = y$.
+  \item \label{lem:loop_fulfills}
+    If $\Loop~f~h~k~s = \Some{x}$, then $h(x) = \true$.
+  \item \label{lem:loop_0}
+    If $h~x = \true$, then $\Loop~f~h~k~s = \Some{s}$.
+  \item \label{lem:loop_eq_0}
+    If $h~s = \true$ and $\Loop~f~h~k~a = \Some{x}$, then $x=s$.
   \end{enumerate}
 \end{lemma}
 \begin{proof}
-  Claims 1-3 follow by induction on $k:\Nat$.  Claim 4 follows by Definition.
+  Claims~\ref{lem:loop_monotone},~\ref{lem:loop_injective}, and~\ref{lem:loop_fulfills} follow by induction on $k : \Nat$.  Claim \ref{lem:loop_0}
+  follows by Definition.  Claim \ref{lem:loop_eq_0} is a direct consequence of claim \ref{lem:loop_0}.
 \end{proof}
 
 
-We instanciate the abstract $\MS{loop}$ function and get a function $\MS{exec} \from \Tape^n \to \Nat \to \Option(\Conf)$ that executes $k$ steps
-of the machine, given initial tapes $t: \Tape_\Sigma^n$:
+We instanciate the abstract $\Loop$ function and get a function $\MS{exec} \from \Tape^n \to \Nat \to \Option(\Conf)$ that executes $k$ steps
+of the machine, given initial tapes $t: \Tape^n$:
 
 \begin{definition}[Machine execution]
   \begin{alignat*}{3}
-    \MS{initConf}   &~t               &&:= (t, start) \\
-    \MS{haltConf}   &~(t, q)          &&:= halt(q) \\
-    \MS{loopM}      &~\MS{initc}~k    &&:= \MS{loop}~k~\MS{step}~\MS{haltConf}~\MS{initc} \\
-    \MS{exec}       &~\MS{t}~k        &&:= \MS{loopM}~(\MS{initConf}~t)~k
+    \MS{initConf}   &~t         &&:= (t, start) \\
+    \MS{haltConf}   &~(t, q)    &&:= halt(q) \\
+    \MS{loopM}      &~c~k       &&:= \Loop~\MS{step}~\MS{haltConf}~k~c
   \end{alignat*}
 \end{definition}
 
-We write $M(t) \terminates^k c$ for $\MS{exec}~t~k = \Some{c}$.
+We write $M(c) \terminates^k c'$ for $\MS{loopM}~k~c = \Some {c'}$ and $M(t) \terminates^k c$ for $M(\MS{initConf}~t) \terminates^k c$.
 
-All definitions, except partioned machines are from Asperti and Ricciotti \cite{asperti2015}, with similiar names.  However, the $\MS{loop}$ function
+All definitions, except partioned machines are from Asperti and Ricciotti \cite{asperti2015}, with similiar names.  However, the $\Loop$ function
 was slightly changed for convenience, so that it needs zero steps when the (abstract) state is a halting state.
 
 \section{Specification of Semantics}

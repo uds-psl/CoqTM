@@ -118,14 +118,12 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
 \end{definition}
 
 
-\subsection{Proof of $\MS{Match}$}
+\subsection{Proof of $\Match$}
 \label{sec:match-proofs}
-
-\todo{Did Asperti and Ricciotti do the same proof?}
 
 The idea of the proofs of Lemma~\ref{lem:Match_Realise} and Lemma~\ref{lem:Match_Terminates} is to abstract two features of the machine: lifting of
 configurations from one abstract machine to another abstract machines and sequence of two loops.  We formalise these two concepts for abstract
-machines, i.e.\ we argue on the abstract $loop$ function.
+machines, i.e.\ we argue on the abstract $\Loop$ function.
 
 For the first feature, \emph{lifting}, we assume two types $A$, $B$ for abstract configurations, an injective function $lift : A \to B$, two step
 functions $f : A \to A$, $f' : B \to B$, and two halting function $h : A \to \Bool$, $h' : B \to \Bool$.  We assume that the step functions $f$ and
@@ -139,8 +137,8 @@ Under these two assumptions we can show two lemmas that essentially say that the
   Under the two assumptions above:
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(c_1~c_2 : A). \\
-    & \quad loop~k~f ~h ~c_1 = \Some{c_2} \rightarrow \\
-    & \quad loop~k~f'~h'~(lift~c_1) = \Some {lift~c_2}
+    & \quad \Loop~f ~h ~k~c_1 = \Some{c_2} \rightarrow \\
+    & \quad \Loop~f'~h'~k~(lift~c_1) = \Some {lift~c_2}
   \end{alignat*}
 \end{lemma}
 \begin{proof}
@@ -151,8 +149,8 @@ Under these two assumptions we can show two lemmas that essentially say that the
   Under the two assumptions above:
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(a:A)~(b':B). \\
-    & \quad loop~k~f'~h'~(lift~a) = \Some{b'} \rightarrow \\
-    & \quad \exists (b:B).~loop~k~f~h~a = \Some b \land b'=lift~b
+    & \quad \Loop~f'~h'~k~(lift~a) = \Some{b'} \rightarrow \\
+    & \quad \exists (b:B).~\Loop~f~h~k~a = \Some b \land b'=lift~b
   \end{alignat*}
 \end{lemma}
 \begin{proof}
@@ -170,24 +168,24 @@ i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state 
   Under the above assumption:
   \begin{align*}
     & \forall (k_1~k_2:\Nat)~(c_1~c_2~c_3 : A).\\
-    & \quad loop~k_1~f~h ~c_1 = \Some{c_2} \rightarrow\\
-    & \quad loop~k_2~f~h'~c_2 = \Some{c_3} \rightarrow\\
-    & \quad loop (k_1+k_2)~f~h'~c_1 = \Some{c_3}.
+    & \quad \Loop~f~h ~k_1      ~c_1 = \Some{c_2} \rightarrow\\
+    & \quad \Loop~f~h'~k_2      ~c_2 = \Some{c_3} \rightarrow\\
+    & \quad \Loop~f~h'~(k_1+k_2)~c_1 = \Some{c_3}.
   \end{align*}
 \end{lemma}
 \begin{proof}
-  By induction over $k1:\Nat$, using Lemm~\ref{lem:loop}~(\ref{lem:loop_ge}).
+  By induction over $k1:\Nat$, using Lemm~\ref{lem:loop}~(\ref{lem:loop_monotone}).
 \end{proof}
 \begin{lemma}[Loop splitting]
   \label{lem:loop_split}
   Under the above assumption:
   \begin{align*}
     & \forall (k:\Nat)~(c_1~c_3 : A).\\
-    & \quad loop~f~h'~c_1 = \Some{c_3} \rightarrow \\
+    & \quad \Loop~f~h'~k~c_1 = \Some{c_3} \rightarrow \\
     & \quad \exists (k_1~k_2:\Nat)~(c_2:A).\\
-    & \quad \quad loop~f~h~c_1 = \Some{c_2} \land\\
-    & \quad \quad loop~f~h~c_2 = \Some{c_3} \land\\
-    & \quad \quad k \leq k_1 + k_2.
+    & \quad \quad \Loop~f~h~k_1~c_1 = \Some{c_2} \land\\
+    & \quad \quad \Loop~f~h~k_2~c_2 = \Some{c_3} \land\\
+    & \quad \quad k_1 + k_2 \leq k.
   \end{align*}
 \end{lemma}
 \begin{proof}
@@ -290,14 +288,19 @@ in $\Some{y}$, the loop brakes and $\While M$ terminates in $y$.  When $M : \TM_
   \end{alignat*}
 \end{definition}
 
-In Definition~\ref{def:While}, we have to assume that $F$ is inhabited.  However, the choice of $def:F$ is semantically irrelevant, because $\While M$
+\begin{figure}
+  \center
+  \input{fig-WhileExample}
+  \caption{Example for $\While~M$ with $M:\TM_\Sigma^n(\Option(\Bool))$.  When the $M$ reaches the state $q_1$, the loop is continued, because $q_1$
+    is in the partition $\None$ of $M$.  $q_2$ and $q_3$ are in the partition $\Some{\true}$ and $\Some{\false}$.  Therefore $\While~M$ terminates in
+    its partition $\true$ or $\false$, when $M$ terminated in $q_2$ or $q_3$.}
+  \label{fig:while-example}
+\end{figure}
+
+In Definition~\ref{def:While}, we have to assume that $F$ is inhabited.  However, the choice of $def:F$ is semantically irrelevant, because $\While~M$
 only halts in states where $part_M(q)$ has a $\Some{.}$ value.
 
-\subsubsection{Correctness of While}
-\label{sec:While-correct}
-
 The correctness of $\MS{While}$ can be easily expressed using the following relation:
-
 
 \begin{definition}[$\MS{WhileRel}$]
   \label{def:While_Rel}
@@ -310,21 +313,9 @@ The correctness of $\MS{While}$ can be easily expressed using the following rela
   \]
 \end{definition}
 
-
-\begin{figure}
-  \center
-  \input{fig-WhileExample}
-  \caption{Example for $\While M$ with $M:\TM_\Sigma^n(\Option(\Bool))$.  When the $M$ reaches the state $q_1$, the loop is continued, because $q_1$
-    is in the partition $\None$ of $M$.  $q_2$ and $q_3$ are in the partition $\Some{\true}$ and $\Some{\false}$, therefore $\While M$ terminates in
-    its partition $\true$ or $\false$, when the copy of $M$ terminated in $q_2$ or $q_3$.}
-  \label{fig:while-example}
-\end{figure}
-
-
-
 We can also express this relation using the Kleene star:
 
-\begin{lemma}[Alternative specification of $\While M$]
+\begin{lemma}[Alternative specification of $\While~M$]
   ~
   \[
     \MS{WhileRel}~R \equiv (R \at \None)^* \circ \Bigl( \bigcup_{y:F} \bigl( R \at {\Some y} \bigr) \att y \Bigr)
@@ -337,22 +328,18 @@ the inductive definition is more practical when we prove correctness of concrete
 inductive predicate.
 
 \begin{lemma}[Correctness of $\MS{While}$]
-  If $M \vDash R$, then $\While M \vDash \MS{WhileRel}~M$.
+  \label{lem:While_Realise}
+  If $M \vDash R$, then $\While~M \vDash \MS{WhileRel}~M$.
 \end{lemma}
 
 
-\todo{Proof scratch}
-
-
-\subsubsection{Runtime of While}
-\label{sec:While-runtime}
-
-We can not simply give a runtime relation in that $\While M$ terminates, because we do not know the number of iterations in general.  However if we
-know that $M$ realises $R$ and terminates in $T$, we can show $\While M \downarrow T'$ for another runtime relation $T'$, if $T'$ ``decreases'' in
+We can not simply give a runtime relation in that $\While~M$ terminates, because we do not know the number of iterations in general.  However if we
+know that $M$ realises $R$ and terminates in $T$, we can show $\While~M \downarrow T'$ for another runtime relation $T'$, if $T'$ ``decreases'' in
 terms of $R$ and $t$:
 
-\begin{lemma}[Runtime of $\While M$]
-  If $M \vDash R$, $M \downarrow T$.  We can show $\While M \downarrow T'$ under the following assumption:
+\begin{lemma}[Runtime of $\While~M$]
+  \label{lem:While_TerminatesIn}
+  If $M \vDash R$, $M \downarrow T$.  We can show $\While~M \downarrow T'$ under the following assumption:
   \begin{multline*}
     \forall~t~i.~
     T'~t~i \rightarrow
@@ -360,7 +347,7 @@ terms of $R$ and $t$:
     \forall~t'.~ \\
     \bigl(
     \forall~y.~ R~t~(\Some y, t') \rightarrow i_1 \le i
-    \bigl) \quad\land\quad
+    \bigl) ~\land~
     \bigl(
     R~t~(\None, t') \rightarrow
     \exists~i_2.~
@@ -368,21 +355,79 @@ terms of $R$ and $t$:
     1 + i_1 + i_2 \le i
     \bigr)
   \end{multline*}
-  % (forall (tin : tapes sig n) (i : nat),
-  %        T' tin i ->
-  %        exists i1,
-  %          T tin i1 /\
-  %          forall (ymid : option F) tmid,
-  %            R tin (ymid, tmid) ->
-  %            match ymid with
-  %            | Some _ => i1 <= i
-  %            | None => exists i2, T' tmid i2 /\ 1 + i1 + i2 <= i
-  %            end)
 \end{lemma}
 
 
 
-\todo{Proof scratch}
+\subsection{Proof of $\While$}
+\label{sec:while-proofs}
+
+The runtime and correctness proofs are similiar to the proofs of $\Match$, as explained in Section~\ref{sec:match-proofs}.  However, the
+configurations of $\Match$ are exactly the configurations of $M$, so the lifting function is the identity function.  The fundamental difference
+between $\Match$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction over step-numbers,
+in addition to the loop-splitting and loop-merging lemmas.  We present the key lemmas here and the most important parts of the proofs.
+
+We simply write $\While$ instead of $\While$ in this section.  Since we have $\Conf_M = \Conf_\While$, we also only write $\Conf$.
+
+The first lemma says that an execution of $\While$ consists of an execution of $M$ and a (possibly empty) continuation of $\While$:
+\begin{lemma}[Splitting the execution of $\While$]
+  \label{lem:While_split}
+  Let $c_1, c_3 : \Conf$ and $k:\Nat$.  Then
+  \begin{alignat*}{1}
+    & \While(c_1) \terminates^k c_3 \rightarrow \\
+    & \exists (k_1~k_2 : \Nat)~c_2. \\
+    & \quad M(c_1) \terminates^{k_1} c_2 ~\land~ \\
+    & \quad \While(c_2) \terminates^{k_2} c_3 ~\land~\\
+    & \quad k_1 + k_2 \leq k.
+  \end{alignat*}
+\end{lemma}
+\begin{proof}
+  Follows with Lemma~\ref{lem:loop_split} and Lemma~\ref{lem:loop_lift}.
+\end{proof}
+
+We have two more splitting lemmas, for that case that $\While$ terminated immediately, and for that case that $\While$ continued the loop.
+\begin{lemma}[Splitting, break case]
+  \label{lem:While_split_term}
+  Let $c_1 = (q, t)$, $c_2 : \Conf$, $k:\Nat$, and $y:F$.
+  \begin{alignat*}{1}
+    & \While(c_1) \terminates^k c_2 \rightarrow \\
+    & haltConf_M~c_1 \rightarrow \\
+    & part_M(q) = \Some y \rightarrow \\
+    & c_2 = c_1.
+  \end{alignat*}
+\end{lemma}
+\begin{proof}
+  By Lemma \ref{lem:loop} (\ref{lem:loop_eq_0}), because $c_1$ is a halting state of $\While$.
+\end{proof}
+\begin{lemma}[Splitting, continue case]
+  \label{lem:While_split_repeat}
+  Let $c_1 = (q, t)$, $c_2 : \Conf$, $k:\Nat$.
+  \begin{alignat*}{1}
+    & \While(c_1) \terminates^k c_2 \rightarrow \\
+    & haltConf_M~c_1 \rightarrow \\
+    & part_M(q) = \None \rightarrow \\
+    & \exists k'.~k = 1+k' ~\land~ \While(t) \terminates^{k'} c_2.
+  \end{alignat*}
+\end{lemma}
+\begin{proof}
+  $\While$ must have done the ``nop''-transition from $c_1=(q,t)$ to $initConf~t$.
+\end{proof}
+
+We now can prove the correctness Lemma~\ref{lem:While_Realise} of $\While$.
+\begin{proof}
+  We assume $\While(t_1) \terminates^k c_3=(q_3, t_3)$ and have to show $WhileRel~t_1~(y, t_3)$.  We use complete induction on $k:\Nat$.  By
+  Lemma~\ref{lem:While_split}, we know $M(t_1) \terminates^{k_1} c_2=(q_2, t_2)$ and $\While(c_2) \terminates^{k_2} c_3$, for $k_1+k_2 \leq k$.  Case
+  analysis.
+  \begin{enumerate}
+  \item $part_M(q_2) = \Some{y}$.  Then we know by Lemma~\ref{lem:While_split_term}, that $c_2=c_3$.  It remains to show $WhileRel~t_1~(y, t_2)$.  By
+    applying the second constructor, it is enough to show $R~t_1~(\Some{y}, t_2)$.  This follows from the realisation of $M$.
+  \item $part_M(q_2) = \None$.  By Lemma~\ref{lem:While_split_repeat}, we know that $\While(t_2) \terminates^{k'_2} c_3$ for $k_2 = 1 + k'_2$.  The
+    inductive hypothesis gives $WhileRel~t_2~(part_\While~q_3, t_3$.  The goal follows by applying the first constructor and the realisation of $M$.
+  \end{enumerate}
+\end{proof}
+
+
+
 
 
 
@@ -406,13 +451,15 @@ $\Sigma_\Nat$ where we could ``encode'' natural numbers on, and an alphabet $\Si
 alphabet $\Sigma_\Nat$ is ``included'' in $\Sigma_{\List(\Nat)}$, we would like to ``lift'' $\MS{Add}$ to the alphabet $\Sigma_{\List(\Nat)}$, to
 define $\MS{Sum}$.
 
-Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem.  They consider a fixed alphabet to ``encode'' all needed data on, to implement an
-universal Turing machine.  However, this approach does not scale.  When the you need to change the alphabet, for example because you have to add a new
-``data type'', they must change the definitions of the involved smaller machines (which are combined using the injecting operation).  That is why we
-also introduce an operator that \emph{lifts} a machine to a bigger alphabet.
+Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem.  They consider a fixed alphabet to ``encode'' all needed data on, to implement a
+universal Turing machine.  However, this approach does not scale.  When the alphabet has to be changed, for example because we have to add a new
+``data type'', they also must change the definitions of the involved ``smaller'' machines.  That is why we also introduce an operator that
+\emph{lifts} a machine to a bigger alphabet.
 
 \subsection{$n$-Lift}
 \label{sec:n-Lift}
+
+The $n$-Lift takes a machine $M:\TM_\Sigma^n(F)$.
 
 \todo{}
 
