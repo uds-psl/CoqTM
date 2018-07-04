@@ -19,11 +19,11 @@ Section lift_sigma_tau.
   Variable n : nat.
   Variable sig tau : Type.
   Variable g : tau -> option sig.
-  Variable def : Vector.t sig n.
+  Variable def : sig.
   Variable F : Type.
 
   Definition surjectTapes : tapes tau n -> tapes sig n :=
-     Vector.map2 (fun d t => surjectTape g d t) def.
+    Vector.map (surjectTape g def).
   
   Definition lift_sigma_tau_Rel (R : Rel (tapes sig n) (F * tapes sig n)) :
     Rel (tapes tau n) (F * tapes tau n) :=
@@ -33,7 +33,14 @@ Section lift_sigma_tau.
     Rel (Vector.t (tape tau) n) nat :=
     fun tin k => T (surjectTapes tin) k.
 
+  Lemma surjectTapes_nth t i :
+    (surjectTapes t)[@i] = surjectTape g def t[@i].
+  Proof. unfold surjectTapes. now simpl_vector. Qed.
+
 End lift_sigma_tau.
+
+Arguments surjectTapes {n sig tau} (g) def !t.
+Hint Rewrite surjectTapes_nth : tape.
 
 
 Arguments lift_sigma_tau_Rel {n sig tau} (g def) {F} (R) x y /.
@@ -99,11 +106,10 @@ Section LiftSigmaTau.
 
   Variable Inj : Retract sig  tau.
 
-  Variable def : Vector.t sig n.
+  Variable def : sig.
 
   Definition surjectReadSymbols : Vector.t (option tau) n -> Vector.t (option sig) n :=
-    fun sym =>
-      Vector.map2 (fun d => map_opt (surject Retr_g d)) def sym.
+    Vector.map (map_opt (surject Retr_g def)).
 
   Definition lift_trans :=
     fun '(q, sym) =>
@@ -156,16 +162,14 @@ Section LiftSigmaTau.
     {
       inv X. f_equal.
       unfold surjectTapes, mapTapes. apply Vector.eq_nth_iff. intros p ? <-.
-      erewrite !Vector.nth_map2, !Vector.nth_map; eauto.
-      apply surject_step.
+      simpl_vector. apply surject_step.
     }
     rewrite <- E3, <- E4. do 2 f_equal.
 
     unfold surjectReadSymbols, current_chars.
     apply Vector.eq_nth_iff; intros p ? <-.
     unfold surjectTapes, mapTapes, surject. autounfold with tape.
-    erewrite !Vector.nth_map2, !Vector.nth_map; eauto. cbn.
-    simpl_tape. destruct (tapes1[@p]) eqn:E5; cbn; auto.
+    simpl_vector. destruct (tapes1[@p]) eqn:E5; cbn; auto.
   Qed.
 
   Lemma sim_loop (c1 c2 : mconfig tau (states liftM) n) (i : nat) :

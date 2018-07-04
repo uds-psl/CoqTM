@@ -215,7 +215,7 @@ Section ChangeAlphabet.
   Variable (retr : Retract sig tau).
 
   Definition ChangeAlphabet : {M : mTM tau^+ n & states M -> F} :=
-    Lift pM (Retract_plus retr) (Vector.const (inl UNKNOWN) n).
+    Lift pM (Retract_plus retr) (inl UNKNOWN).
 
 End ChangeAlphabet.
 
