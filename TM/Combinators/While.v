@@ -1,4 +1,3 @@
-(* FIXME: TM.Basic.Nop is deprecated *)
 Require Export TM.TM TM.Basic.Nop.
 Require Import Shared.FiniteTypes.DepPairs EqdepFacts.
 
