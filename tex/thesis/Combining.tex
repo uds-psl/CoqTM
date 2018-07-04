@@ -410,25 +410,44 @@ We have two more splitting lemmas, for that case that $\While$ terminated immedi
   \end{alignat*}
 \end{lemma}
 \begin{proof}
-  $\While$ must have done the ``nop''-transition from $c_1=(q,t)$ to $initConf~t$.
+  $\While$ must have taken the ``nop''-transition from $c_1$ to $initConf~t$.
 \end{proof}
 
 We now can prove the correctness Lemma~\ref{lem:While_Realise} of $\While$.
 \begin{proof}
-  We assume $\While(t_1) \terminates^k c_3=(q_3, t_3)$ and have to show $WhileRel~t_1~(y, t_3)$.  We use complete induction on $k:\Nat$.  By
-  Lemma~\ref{lem:While_split}, we know $M(t_1) \terminates^{k_1} c_2=(q_2, t_2)$ and $\While(c_2) \terminates^{k_2} c_3$, for $k_1+k_2 \leq k$.  Case
+  We assume $\While(t_1) \terminates^k c_3$ and have to show $WhileRel~t_1~(y, t_3)$.  We use complete induction on $k:\Nat$.  By
+  Lemma~\ref{lem:While_split}, we have $M(t_1) \terminates^{k_1} c_2$ and\\ $\While(c_2) \terminates^{k_2} c_3$, for $k_1+k_2 \leq k$.  Case
   analysis.
   \begin{enumerate}
   \item $part_M(q_2) = \Some{y}$.  Then we know by Lemma~\ref{lem:While_split_term}, that $c_2=c_3$.  It remains to show $WhileRel~t_1~(y, t_2)$.  By
     applying the second constructor, it is enough to show $R~t_1~(\Some{y}, t_2)$.  This follows from the realisation of $M$.
   \item $part_M(q_2) = \None$.  By Lemma~\ref{lem:While_split_repeat}, we know that $\While(t_2) \terminates^{k'_2} c_3$ for $k_2 = 1 + k'_2$.  The
-    inductive hypothesis gives $WhileRel~t_2~(part_\While~q_3, t_3$.  The goal follows by applying the first constructor and the realisation of $M$.
+    inductive hypothesis gives $WhileRel~t_2~(part_\While~q_3, t_3)$.  The goal follows by applying the first constructor and the realisation of $M$.
   \end{enumerate}
 \end{proof}
 
 
+For the runtime proofs, we again have lemmas that ``merge'' steps together.
 
+\begin{lemma}[Merging, break case]
+  Let $k : \Nat$, $c_1, c_2 : \Conf$, and $y:F$.
+  \begin{alignat*}{1}
+    & M(c_1) \terminates^k c_2 \rightarrow \\
+    & part_M(q_2) = \Some{y} \rightarrow \\
+    & \While(c_1) \terminates^k c_2.
+  \end{alignat*}
+\end{lemma}
+\begin{lemma}[Merging, continue case]
+  Let $k_1, k_2 : \Nat$, $c_1, c_2, c_3 : \Conf$.
+  \begin{alignat*}{1}
+    & M(c_1) \terminates^{k_1} c_2 \rightarrow \\
+    & part_M(q_2) = \None \rightarrow \\
+    & \While(t_2) \terminates^{k_2} c_3 \rightarrow \\
+    & \While(c_1) \terminates^{1+k_1+k_2} c_3.
+  \end{alignat*}
+\end{lemma}
 
+The runtime Lemma~\ref{lem:While_TerminatesIn} follows similarly, by complete induction over $k:\Nat$.
 
 
 
