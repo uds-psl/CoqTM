@@ -446,6 +446,88 @@ For the runtime proofs, we again have lemmas that ``merge'' steps together.
 The runtime Lemma~\ref{lem:While_TerminatesIn} follows similarly, by complete induction over $k:\Nat$.
 
 
+
+\section{$\MS{Mirror}$}
+\label{sec:mirror}
+
+We can define a machine operator that ``mirrors'' a machine $M$.  Whenever $M$ makes a transition with a move to $L$, $\MS{Mirror}~M$ moves the head
+to the right instead.  For example, we define a machine $MoveToSymbol$ below, that moves the head of the tape right, until it reads a certain symbol.
+Using this operator, we get a machine ``for free'' that moves the head to the left instead.  Of course, the machine could be parametrised over the
+direction.  However, in the correctness and termination proofs, we had to make case-distinctions over this direction parameter.  Essentially, this
+repeats the proof.  However, we still have to copy or parametrise the correctness and runtime relations.
+
+Using the proving techniques developed in the previous sections, verifying this $Mirror$ operator is very easy.
+
+\begin{definition}[Mirror tape]
+  \label{def:mirror_tape}
+  Let $t : \Tape_\Sigma$.
+  \begin{alignat*}{2}
+    & \MS{mirror}~(\MS{niltape})         &&~:=~ \MS{niltape} \\
+    & \MS{mirror}~(\MS{leftof}~l~ls)     &&~:=~ \MS{rightof}~l~ls \\
+    & \MS{mirror}~(\MS{rightof}~l~ls)    &&~:=~ \MS{leftof}~l~ls \\
+    & \MS{mirror}~(\MS{midtape}~ls~m~rs) &&~:=~ \MS{midtape}~rs~m~ls
+  \end{alignat*}
+\end{definition}
+\begin{lemma}[Correctness of $\MS{mirror}$]
+  \label{lem:mirror}
+  Let $t,t':\Tape_\Sigma$.
+  \begin{enumerate}
+  \item \label{lem:mirror_tape_injective}
+    $\MS{mirror}$ is injective, i.e.\ if $\MS{mirror}(t)=\MS{mirror}(t')$, then $t=t'$,
+  \item \label{lem:mirror_tape_involution}
+    $\MS{mirror}$ is an involution, i.e.\ $\MS{mirror}(\MS{mirror}(t))=t$,
+  \item \label{lem:mirror_left}
+    $\MS{left}(\MS{mirror}(t)) = \MS{right}(\MS{mirror}(t))$,
+  \item \label{lem:mirror_right}
+    $\MS{right}(\MS{mirror}(t)) = \MS{left}(\MS{mirror}(t))$,
+  \item \label{lem:mirror_current}
+    $\MS{current}(\MS{mirror}(t)) = \MS{current}(t)$.
+  \end{enumerate}
+\end{lemma}
+\begin{proof}
+  By case analysis over the tape(s).
+\end{proof}
+
+\todo{Show that it is easy}
+
+\section{Partition Operators}
+\label{sec:partition-op}
+
+The operators of the above sections of this Chapter modified the behaviour of the machine.  However, we can also define simple operators that simply
+modify the partitioning function $part : Q \to F$.  This is for example useful, if we want some (partitioned) machine to terminate in one particular
+partition.
+
+\begin{definition}[$\MS{ChangePartition}$]
+  Let $M:\TM_\Sigma^n(F)$ and $g : F \to F'$.
+  \[ \MS{ChangePartition}~M~g := (M, param_M \circ g). \]
+\end{definition}
+
+\begin{definition}[Fix partition]
+  Let $M:\TM_\Sigma^n(F)$ and $y:F$.
+  \[ \MS{Return~M~y} := \MS{ChangePartition}~M~(\lambda \_.~y). \]
+\end{definition}
+
+The correctness for these simple operators is obvious.  We do not even need lemmas for runtime, because the Definition~\ref{def:TerminatesIn} of
+runtime is defined over bare machine without partitioning function.
+\begin{lemma}[Correctness of $\MS{ChangePartition}$ and $\MS{Return}$]
+  If $M \vDash R$, then
+  \begin{alignat*}{1}
+    \MS{ChangePartition}~M~g & \vDash \bigcup_{y:F} (R \at y) \att {g(y)} \\
+    \MS{Return}~M~y          & \vDash \Bigl( \bigcup_{y':F} R \at y' \Bigr) \att y
+  \end{alignat*}
+\end{lemma}
+\begin{proof}
+  By definition.
+\end{proof}
+
+
+\section{Examples}
+\label{sec:combining-examples}
+
+
+
+
+
 %%% Local Variables:
 %%% TeX-master: "thesis"
 %%% End:
