@@ -42,7 +42,8 @@ We use the following standard relational operators:
 Note that if we compose a binary relation $R \subseteq A \times A$ with a partioned relation $S \subseteq A \times B \times A$, we get a partioned
 relation $R \circ S \subseteq A \times B \times A$.
 
-We can also define the reflexive transitive closure of binary relations, also known as relational Kleene star:
+We use $\bigcup_{c:A} R$ as a notation for $\lambda a~b.~\exists c.~R~a~b$, i.e.\ we use $c$ as binder in $R$ here.  We can also define the reflexive
+transitive closure of binary relations, also known as relational Kleene star:
 
 \begin{definition}[Kleene star]
   \label{def:Kleene}
