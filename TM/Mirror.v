@@ -19,8 +19,8 @@ Section MirrorTM.
     unfold mirror_acts. apply Vector.eq_nth_iff. intros ? ? ->.
     erewrite !Vector.nth_map; eauto. apply mirror_act_involution.
   Qed.
-    
-  
+
+
   Variable F : finType.
   Variable pM : { M : mTM sig n & states M -> F }.
 
@@ -50,59 +50,58 @@ Section MirrorTM.
     destruct s. unfold mirrorConf. cbn. f_equal. apply mirror_tapes_involution.
   Qed.
 
-  Lemma mirror_step c1 c2 :
-    step (M := projT1 Mirror) (mirrorConf c1) = mirrorConf c2 ->
-    step (M := projT1 pM    ) (      c1) =       c2.
+  Lemma current_chars_mirror_tapes (t : tapes sig n) :
+    current_chars (mirror_tapes t) = current_chars t.
+  Proof. apply Vector.eq_nth_iff; intros i ? <-. autounfold with tape. now simpl_tape. Qed.
+
+  Lemma tape_move_mono_mirror_act (t : tape sig) (act : option sig * move) :
+    tape_move_mono (mirror_tape t) act = mirror_tape (tape_move_mono t (mirror_act act)).
+  Proof. now destruct act as [ [ s | ] [ | | ]]; cbn; simpl_tape. Qed.
+
+  Lemma tape_move_multi_mirror_acts (t : tapes sig n) (acts : Vector.t (option sig * move) n) :
+    tape_move_multi (mirror_tapes t) acts = mirror_tapes (tape_move_multi t (mirror_acts acts)).
   Proof.
-    intros H. unfold step in *. cbn in *. unfold Mirror_trans in *.
-    destruct (trans (cstate c1, current_chars (ctapes c1))) as (q'&act') eqn:E.
-    destruct (trans (cstate c1, current_chars (mirror_tapes (ctapes c1)))) as (q''&act'') eqn:E2.
-    unfold mirrorConf in *. destruct c1 as (qi,ti), c2 as (qo, to). cbn in *. inv H.
-    replace (current_chars (mirror_tapes ti)) with (current_chars ti) in E2.
-    rewrite E2 in E. inv E. f_equal. 
-    - apply Vector.eq_nth_iff. intros ? k ->. erewrite !Vector.nth_map2; eauto.
-      eapply Vector.eq_nth_iff with (p1 := k) in H2; eauto. unfold tape_move_mono, mirror_tapes, mirror_acts in *.
-      erewrite !Vector.nth_map2, !Vector.nth_map in H2; eauto. destruct (act'[@k]) eqn:E3. cbn in *.
-      replace (tape_move (tape_write (mirror_tape ti[@k]) o) (mirror_move m)) with
-          (mirror_tape ((tape_move (tape_write ti[@k] o)) m)) in H2.
-      + now apply mirror_tape_injective in H2.
-      + generalize (ti[@k]) as t. intros t. destruct o, m, t; cbn; auto; destruct l; cbn; auto; now destruct l0.
-    - apply Vector.eq_nth_iff; intros ? k ->. autounfold with tape. now simpl_tape.
+    apply Vector.eq_nth_iff; intros i ? <-. unfold tape_move_multi, mirror_acts, mirror_tapes. simpl_tape. apply tape_move_mono_mirror_act.
   Qed.
-                                     
-  Lemma mirror_step' c1 c2 :
-    step (M := projT1 Mirror) (      c1) =       c2 ->
+
+  Lemma mirror_step c1 c2 :
+    step (M := projT1 Mirror) (           c1) =            c2 ->
     step (M := projT1 pM    ) (mirrorConf c1) = mirrorConf c2.
   Proof.
-    intros H. rewrite <- (mirrorConf_involution c1), <- (mirrorConf_involution c2). eapply mirror_step. now rewrite !mirrorConf_involution.
+    intros H. unfold step in *; cbn -[tape_move_multi] in *. unfold Mirror_trans in *; cbn -[tape_move_multi] in *.
+    destruct c1 as [q1 t1], c2 as [q2 t2]; cbn -[tape_move_multi] in *.
+    rewrite current_chars_mirror_tapes in *.
+    destruct (trans (q1, current_chars t1)) as [q' acts].
+    rewrite <- H. unfold mirrorConf; cbn. f_equal.
+    apply tape_move_multi_mirror_acts.
   Qed.
 
   Lemma mirror_loop k c1 c2 :
-    loopM (M := projT1 Mirror) k c1         = Some c2 ->
+    loopM (M := projT1 Mirror) k             c1  = Some             c2 ->
     loopM (M := projT1 pM    ) k (mirrorConf c1) = Some (mirrorConf c2).
   Proof.
     unfold loopM, haltConf. revert c1. induction k; intros c1 H; cbn in *.
     - cbn in *. unfold haltConf. cbn. destruct (halt (cstate c1)); now inv H.
     - cbn in *. destruct (halt (cstate c1)) eqn:E.
       + congruence.
-      + erewrite mirror_step'; eauto. 
+      + erewrite mirror_step; eauto.
   Qed.
 
   Lemma mirror_loop' k c1 c2 :
     loopM (M := projT1     pM) k (mirrorConf c1) = Some (mirrorConf c2) ->
-    loopM (M := projT1 Mirror) k (      c1) = Some (      c2).
+    loopM (M := projT1 Mirror) k (           c1) = Some (           c2).
   Proof.
     unfold loopM, haltConf. destruct c2 as [q2 t2]. revert c1. induction k as [ | k' IH]; intros [q1 t1] H; cbn in *.
     - destruct (halt q1); inv H. f_equal. f_equal. now apply mirror_tapes_injective in H2.
     - destruct (halt q1) eqn:E; cbn in *.
       + inv H. f_equal. f_equal. now apply mirror_tapes_injective in H2.
-      + erewrite mirror_step' in H; eauto.
+      + erewrite mirror_step in H; eauto.
   Qed.
-  
+
 
   Definition Mirror_Rel (R : pRel sig F n) : pRel sig F n :=
     fun t '(f, t') => R (mirror_tapes t) (f, mirror_tapes t').
-  
+
   Lemma Mirror_Realise R :
     pM ⊨ R -> Mirror ⊨ Mirror_Rel R.
   Proof.
@@ -120,7 +119,7 @@ Section MirrorTM.
     intros HTerm. hnf. intros t1 k H1. hnf in HTerm. specialize (HTerm (mirror_tapes t1) k H1) as (outc&H).
     exists (mirrorConf outc). apply mirror_loop'. cbn. now rewrite mirrorConf_involution.
   Qed.
-  
+
   Lemma Mirror_RealiseIn R (k : nat) :
     pM ⊨c(k) R -> Mirror ⊨c(k) Mirror_Rel R.
   Proof.
