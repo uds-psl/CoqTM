@@ -1,8 +1,6 @@
 Require Export TM.TM TM.Basic.Nop.
 Require Import Shared.FiniteTypes.DepPairs EqdepFacts.
 
-Require Import Wellfounded.
-
 Section While.
 
   Variable n : nat.
@@ -160,7 +158,7 @@ Section While.
   Lemma While_Realise :
     pM ⊨ R -> WHILE ⊨ While_Rel.
   Proof.
-    intros HRel. hnf in HRel; hnf. intros t k; revert t. apply complete_induction with (x := k); clear k; intros k IH; intros tout c3 HLoop.
+    intros HRel. hnf in HRel; hnf. intros t k; revert t. apply complete_induction with (x := k); clear k; intros k IH. intros tin c3 HLoop.
     apply While_split in HLoop as (k1&k2&c2&HLoop1&HLoop2&Hk).
     destruct (projT2 pM (cstate c2)) as [ f | ] eqn:E; cbn in *; [ clear IH | ].
     - apply While_split_term with (f := f) in HLoop2 as ->; auto. 2: apply (loop_fulfills HLoop1). rewrite E.
