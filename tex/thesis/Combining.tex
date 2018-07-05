@@ -4,15 +4,15 @@
 In Chapter \ref{chap:definitions}, we have defined the notion of multi-tape Turing machines and basic machines.  In this chapter, we want to construct
 more complex machines, for example a single-tape machine that moves the head to the right or to a certain symbol.
 We define control flow operators, like ``match'', ``if then else'', ``sequential composition'', and ``while''.
-As a result, we get a shallow-embeded language for programming multi-tape Turing machines in an imperative way.
+As a result, we get a shallow-embed-ed language for programming multi-tape Turing machines in an imperative way.
 
 \section{Match}
 \label{sec:match}
 
 Asperti and Ricciotti~\cite{asperti2015} also define the control flow operators sequential composition, conditional, and while.  However, for the
 conditional they have to give one explicit ``else'' state.  Giving an explicit state is very tedious for complex machines.  That is why we use the
-generalised notion of partioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  If $M_1$
-terminated in a ``positive'' state (i.e. a state beloning to the partition $\true$), $M_2$ is executed after $M_1$.  Else it executes $M_3$ after
+generalised notion of partitioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  If $M_1$
+terminated in a ``positive'' state (i.e. a state belonging to the partition $\true$), $M_2$ is executed after $M_1$.  Else it executes $M_3$ after
 $M_1$.  We observe that sequential composition and conditional can be defined as instances of a more general operator we call $\MS{Match}$.  We give
 proof scratches for the correctness and runtime in Subsection~\ref{sec:match-proofs}.
 
@@ -68,7 +68,7 @@ state of a machine $M'~y$, it terminates.  The correctness part of the semantics
   \]
 \end{lemma}
 
-Note that in the relation $\MS{MatchRel}$, we compose the unpartioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the partioned
+Note that in the relation $\MS{MatchRel}$, we compose the unpartitioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the partitioned
 relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.
 
 To specify the runtime of $\MS{Match}~M~M'$, we need to know the relation that $M$ realises, the runtime relation in that $M$ terminates, and for each
@@ -170,7 +170,7 @@ i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state 
   \end{align*}
 \end{lemma}
 \begin{proof}
-  By induction over $k1:\Nat$, using Lemm~\ref{lem:loop}~(\ref{lem:loop_monotone}).
+  By induction over $k1:\Nat$, using Lemma~\ref{lem:loop}~(\ref{lem:loop_monotone}).
 \end{proof}
 \begin{lemma}[Loop splitting]
   \label{lem:loop_split}
@@ -258,7 +258,7 @@ Asperti and Ricciotti~\cite{asperti2015} have a version of Lemma~\ref{lem:loop_l
 
 
 The machine $\While M$ essentially behaves like a ``do-while'' loop in imperative languages like C.  At the end of the execution of the loop body $M$,
-$M$ decides either to continue or break out of the loop.  If $M$ terminated in the partiton $\None$, then the loop is continued, and if $M$ terminated
+$M$ decides either to continue or break out of the loop.  If $M$ terminated in the partition $\None$, then the loop is continued, and if $M$ terminated
 in $\Some{y}$, the loop brakes and $\While M$ terminates in $y$.  When $M : \TM_\Sigma^n(\Option(F))$, then $\While M : \TM_\Sigma^n(F)$.
 
 
@@ -358,7 +358,7 @@ terms of $R$ and $t$:
 \subsection{Proof of $\While$}
 \label{sec:while-proofs}
 
-The runtime and correctness proofs are similiar to the proofs of $\Match$, as explained in Section~\ref{sec:match-proofs}.  However, the
+The runtime and correctness proofs are similar to the proofs of $\Match$, as explained in Section~\ref{sec:match-proofs}.  However, the
 configurations of $\Match$ are exactly the configurations of $M$, so the lifting function is the identity function.  The fundamental difference
 between $\Match$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction over step-numbers,
 in addition to the loop-splitting and loop-merging lemmas.  We present the key lemmas here and the most important parts of the proofs.
@@ -565,7 +565,7 @@ partition.
 
 \begin{definition}[$\MS{ChangePartition}$]
   Let $M:\TM_\Sigma^n(F)$ and $g : F \to F'$.
-  \[ \MS{ChangePartition}~M~g := (M, param_M \circ g). \]
+  \[ \MS{ChangePartition}~M~g := (M, part_M \circ g). \]
 \end{definition}
 
 \begin{definition}[Fix partition]

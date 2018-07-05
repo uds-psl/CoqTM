@@ -1,32 +1,32 @@
 \chapter{Definitions}
 \label{chap:definitions}
 
-In this chapter, we will formally define the notion of multi-tape Turing machines.  We take the Definitions of multi-tape Turing machines and their
-tapes from Asperti and Ricciotti \cite{asperti2015}.  We introduce notions for specifying the semantics of machines, which are also based on Asperti
-and Ricciotti \cite{asperti2015}.  We define basic machines and prove their correctness.
+In this chapter, we formally define the notion of multi-tape Turing machines.  We take the definition of multi-tape Turing machines and their tapes
+from Asperti and Ricciotti \cite{asperti2015}.  We introduce notions for specifying the semantics of machines, which are also based on Asperti and
+Ricciotti \cite{asperti2015}.  We define basic machines and prove their correctness.
 
-\section{Prelimninary Definitions}
+\section{Preliminary Definitions}
 \label{sec:prelim}
 
 
 \subsection{Notational Conventions}
 \label{sec:notational-conventions}
 
-We use superscripts ($X^n$) to denote lists of fixed length (also called vectors).  Natural zero-based numbers are used as indexes for list and
-vector-access ($x[i]$).  We also use standard list notations for vectors.  The symbols $\Unit$, $\Bool$, $\Type$, $\Prop$, $\Nat$, $\Option(X)$,
-$X \times Y$, $X + Y$, and $\List(X)$ stand for the well-known standard types.  $\sum_{a:A} B$ denote sigma types, i.e.\ dependet pairs, with the
-projections $\pi_1$ and $\pi_2$.  We write $(a,b)$ for instances of sigma types. For tuples $A = (a, b, c, \cdots)$, we use subscripts ($a_M$) for the
-projections.  We usually leave subscripts out if they are clear from the context.  We use the symbols $\None$ and $\Some x$ as instances of the type
-$\Option(X)$.
+The symbols $\Unit$, $\Bool$, $\Nat$, $X \times Y$, $X + Y$, $\Option(X)$, and $\List(X)$ stand for the well-known standard types.  $\Type$ stands for
+the type of types and $\Prop$ for the type of propositions.  The unit element $\unit$ is the only element of $\Unit$.  $\sum_{a:A} B$ denote sigma
+types, i.e.\ depended pairs, with the projections $\pi_1$ and $\pi_2$.  We write $(a,b)$ for elements of sigma types.  For tuples
+$A = (a, b, c, \cdots)$, we use subscripts ($a_A$) for the projections.  We use the symbols $\None$ and $\Some x$ as elements of the type
+$\Option(X)$.  $\Fin_n := \setOf{0, \dots, n-1}$ is the type with $k$ elements.  We use indices $i:\Fin_n$ for vector-access $x[i]$ with $x:X^n$,
+where $X^n$ denotes the type of vectors over $X$ of size $n$.  We usually leave subscripts out if they are clear from the context.
 
 
 \subsection{Relations}
 \label{sec:relations}
 
-We define the semantics of concrete Turing machines in terms of relations.  We use the notation $R \subseteq A \times B$ to declare relations
-$R : A \to B \to Prop$.  We call relations of the form $R \subseteq A \times B \times A$ \emph{partitioned relations}, that means
-$R : A \to B \times A \to \Prop$.  We use lambda-notation, i.e.\ $\lambda a~b.~\cdots$, to define relations.  We write unit-partioned relations
-$R \subseteq A \times \Unit \times A$ simply as relations $R \subseteq A \times A$.
+We define the semantics of concrete Turing machines in terms of relations.  We use write $R \subseteq A \times B$ as a notation for
+$R : A \to B \to \Prop$.  We call relations of the form $R \subseteq A \times (B \times A)$ \emph{partitioned relations} and write
+$R \subseteq A \times B \times C$.  We use lambda-notation to define relations.  We identify unit-partitioned relations
+$R \subseteq A \times \Unit \times A$ with binary relations $R \subseteq A \times A$.
 
 We use the following standard relational operators:
 
@@ -39,11 +39,11 @@ We use the following standard relational operators:
   \end{align*}
 \end{definition}
 
-Note that if we compose a binary relation $R \subseteq A \times A$ with a partioned relation $S \subseteq A \times B \times A$, we get a partioned
+Note that if we compose a binary relation $R \subseteq A \times A$ with a partitioned relation $S \subseteq A \times B \times A$, we get a partitioned
 relation $R \circ S \subseteq A \times B \times A$.
 
-We use $\bigcup_{c:A} R$ as a notation for $\lambda a~b.~\exists c.~R~a~b$, i.e.\ we use $c$ as binder in $R$ here.  We can also define the reflexive
-transitive closure of binary relations, also known as relational Kleene star:
+We use $\bigcup_{c:A} R(c)$ as a notation for $\lambda a~b.~\exists c.~R(c)~a~b$.  We also define the reflexive transitive closure of binary
+relations, also known as relational Kleene star:
 
 \begin{definition}[Kleene star]
   \label{def:Kleene}
@@ -55,17 +55,16 @@ transitive closure of binary relations, also known as relational Kleene star:
   \]
 \end{definition}
 
-We also have an operator that restricts the partition $B$ of a partitioned relation and yields a binary relation:
-
+We have an operator that restricts the partition $B$ of a partitioned relation and yields a binary relation:
 \begin{definition}[Relational restriction]
   \label{def:rel-restrict}
   Let $R \subseteq A \times B \times A$ and $y:B$.
   \[
-    R \at y := \lam{x~y}{R~x~y~z}
+    R \at y := \lam{x~z}{R~x~(y,z)}
   \]
 \end{definition}
 
-Similarly, we can define an operator that takes a binary relation and yields a partioned relation where we fix the parameter.
+Similarly, we can define an operator that takes a binary relation and yields a partitioned relation where we fix the parameter.
 
 \begin{definition}[Relational fix]
   \label{def:rel-fix}
@@ -76,55 +75,59 @@ Similarly, we can define an operator that takes a binary relation and yields a p
 \end{definition}
 
 
-\subsection{Retracts}
+\subsection{Retractions}
 \label{sec:retracts}
 
-Retracts are a natural way to formalise injections $f$ together with a partial inversion function $f^{-1}$.
+Retractions are a natural way to formalise injections $f$ together with a partial inversion function $f^{-1}$.
 
 \begin{definition}[Retract]
   \label{def:retract}
-  Let $A$ and $B$ be types.  A pair of functions $f : A \to B$, $f^{-1} : B \to \Option(A)$ is called a retract if
-
-  \begin{enumerate}
-  \item $\forall x.~f^{-1}(f(x)) = \Some x$ and
-  \item $\forall x~y.~f^{-1}(y) = \Some x \rightarrow y = f(x)$.
-  \end{enumerate}
+  Let $A$ and $B$ be types.  A pair of functions $f : A \to B$, $f^{-1} : B \to \Option(A)$ is called a retraction between $A$ and $B$, if
+  $ \forall x~y.~f^{-1}(y) = \Some x \iff y = f(x). $
 \end{definition}
 
-The point \ref{def:retract} (1) means that $f^{-1}$ inverses $f$.  It is equivialent to the following commutative diagram:
+The direction from right to left of Definition~\ref{def:retract} means that $f^{-1}$ inverses $f$.  It is equivalent to the following commutative
+diagram:
 \[
   \begin{tikzcd}
     A \arrow[r, "f"] \arrow[d, "\Some \cdot", swap] & B \arrow[ld, "g"] \\
     \Option(A) &
   \end{tikzcd}
 \]
-The second point of \ref{def:retract} means that $f^{-1}$ only maps values back that are in the image of $f$.  This property is sometimes called
-\emph{tightness}.
+The direction from left to right of Definition~\ref{def:retract} means that $f^{-1}$ only maps values back that are in the image of $f$.  This
+property is sometimes called \emph{tightness}.
 
-We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is a retract.
+We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is a retraction.
 
 
-\begin{lemma}[Basic properties of retracts]
+\begin{lemma}[Basic properties of retractions]
   \label{lem:retracts-basic}
   Let $f : A \hookrightarrow B$.
   \begin{enumerate}
-  \item $f : A \to B$ is injective, i.e.\ $\forall x~y.~f(x)=f(y) \rightarrow x=y$.
-  \item $\forall (x~y:A).~f^{-1}(f(x)) = \Some y \rightarrow x=y$.
-  \item $\forall (y:B).~f^{-1}(y) = \None \rightarrow \forall (x:A).~f(x) \neq y$.
+  \item \label{lem:retract_g_adjoint}
+    $\forall (x:A).~f^{-1}(f(x)) = \Some{x}$
+  \item \label{lem:retract_g_None}
+    $\forall (y:B).~f^{-1}(y) = \None \rightarrow \forall (x:A).~f(x) \neq y$
+  \item \label{lem:retract_f_injective}
+    $f : A \to B$ is injective, i.e.\ $\forall x~y.~f(x)=f(y) \rightarrow x=y$
+  \item \label{lem:retract_g_Some}
+    $\forall (x~y:A).~f^{-1}(f(x)) = \Some y \rightarrow x=y$
   \end{enumerate}
 \end{lemma}
 
 \begin{proof}
-  Claim (2) follows by claim (1) and \ref{def:retract} (2).  Claim (3) is a direct cosequence of \ref{def:retract} (2).
+  Claim~\ref{lem:retract_g_adjoint} and ~\ref{lem:retract_g_None} are direct consequences of Definition~\ref{def:retract}.
+  Claim~\ref{lem:retract_g_Some} follows by Claim~\ref{lem:retract_f_injective}.
 
-  Proof of claim (1).  Let $x, y: A$ and $f(x)=f(y)$.  We have to show $x=y$.  It is enough to show $\Some x = \Some y$.  By \ref{def:retract} (1), we
-  know $\Some x = f^{-1}(f(x))$ and $\Some y = f^{-1}(f(y))$, therefore it is enough to show that $f^{-1}(f(x)) = f^{-1}(f(y))$.  This is trivial
-  because we assumed $f(x)=f(y)$.
+  Proof of Claim~\ref{lem:retract_f_injective}.  Let $x, y: A$ and $f(x)=f(y)$.  We have to show $x=y$.  It is enough to show $\Some x = \Some y$.  By
+  Claim~\ref{lem:retract_g_adjoint}, we know $\Some x = f^{-1}(f(x))$ and $\Some y = f^{-1}(f(y))$, therefore it is enough to show that
+  $f^{-1}(f(x)) = f^{-1}(f(y))$.  This is trivial because we assumed $f(x)=f(y)$.
 \end{proof}
 
-\begin{definition}[Basic retracts]
+\begin{definition}[Basic retractions]
   \label{def:retracts-basic}
-  Let $A$ and $B$ be types.  We define the retracts $RetrId : A \hookrightarrow A$, $RetrLft : A \hookrightarrow A+B$, $RetrRgt : B \hookrightarrow A+B$:
+  Let $A$ and $B$ be types.  We define the retractions\\
+  $RetrId : A \hookrightarrow A$, $RetrLft : A \hookrightarrow A+B$, and $RetrRgt : B \hookrightarrow A+B$:
   \begin{alignat*}{2}
     RetrId(x)  &:= x      &\qquad\qquad RetrId ^{-1} (x) &:= \Some x \\
     RetrLft(x) &:= \inl x &             RetrLft^{-1} (z) &:=
@@ -140,16 +143,16 @@ We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is
   \end{alignat*}
 \end{definition}
 
-\begin{definition}[Composition of retracts]
+\begin{definition}[Composition of retractions]
   \label{def:retract-compose}
-  Let $f : A \hookrightarrow B$ and $g : B \hookrightarrow C$.  Then $f \circ g : A \hookrightarrow C$ defined as followed is a retract.
+  Let $f : A \hookrightarrow B$ and $g : B \hookrightarrow C$.  Then $f \circ g : A \hookrightarrow C$ defined as followed is a retraction.
   \begin{alignat*}{2}
     & (f \circ g)      & (a) &:= g(f(a)) \\
     & (f \circ g)^{-1} & (c) &:=
-                          \begin{cases}
-                            \Some a & g^{-1}(c) = \Some b \land f^{-1}(b) = \Some a \\
-                            \None   & \text{else}
-                          \end{cases}
+    \begin{cases}
+      \Some a & g^{-1}(c) = \Some b \land f^{-1}(b) = \Some a \\
+      \None   & \text{else}
+    \end{cases}
   \end{alignat*}
 \end{definition}
 
@@ -184,15 +187,15 @@ While we parametrised Definition~\ref{def:mTM} over the alphabet $\Sigma$ and th
 The transition function $\delta$ yields for every state and vector of $n$ read symbols the new state and a vector of $n$ (optional) symbols to write,
 and a direction to move.  The read symbols are optional, since it can be the case that there is no symbol under the head of a tape.  $start$ is the
 start state of the machine and $halt$ represents the subset of halting states.  Tuples of the type $\Option(\Sigma) \times \Move$ are called
-\emph{actions}.  They are refered to with the symbol $\MS{Act}_\Sigma$ or $\MS{Act}$ if $\Sigma$ is clear.  Our machines behave deterministically,
+\emph{actions}.  They are referred to with the symbol $\MS{Act}_\Sigma$ or $\MS{Act}$ if $\Sigma$ is clear.  Our machines behave deterministically,
 because $\delta$ is a function.
 
 When we want to verify complex machines, we do not want to reason about internal states.  We rather want to reason about partitions of states, e.g.\
 positive or negative states.  In general, if $F$ is a finite type, then $M = (M', part)$ is a \emph{partitioned} machine, where $M'$ is an
-unpartitioned machine and $part \from Q_M \to F$ the partitioning function.  We write $\MS{TM}_\Sigma^n(F)$ for the type of partioned machines over
+unpartitioned machine and $part \from Q_M \to F$ the partitioning function.  We write $\MS{TM}_\Sigma^n(F)$ for the type of partitioned machines over
 $F$\footnote{Formally, it could be defined as a sigma type: $\MS{TM}_\Sigma^n(F) := \sum_{M:\MS{TM}_\Sigma^n}\bigl(Q_M \to F\bigr)$}.  For brevity, we
-will make no distinction between unit-partioned machines $\TM_\Sigma^n(\Unit)$ and unpartioned machines $\TM_\Sigma^n$.  We use the symbol $M$ for
-both partioned and unpartitioned machines $\TM_\Sigma^n$.  It should however be always clear from the context, whether $M$ is a partitioned or
+will make no distinction between unit-partitioned machines $\TM_\Sigma^n(\Unit)$ and unpartitioned machines $\TM_\Sigma^n$.  We use the symbol $M$ for
+both partitioned and unpartitioned machines $\TM_\Sigma^n$.  It should however be always clear from the context, whether $M$ is a partitioned or
 unpartitioned machine.
 
 On a \emph{tape}, arbitrary much memory can be allocated.  However every tape has only finitely many symbols, i.e.\ there is a left-most and a
@@ -205,7 +208,7 @@ non-empty tape.  Formally, tapes are defined inductively:
 
 \begin{definition}[Tape]
   \label{def:tape}
-  Let $\Sigma$ be a finite alphabet.  Then $\Tape_\Sigma$ is defined as the inductive type:
+  Let $\Sigma : \Type$.  Then $\Tape_\Sigma$ is defined as the inductive type:
   \begin{align*}
     & \Tape_\Sigma := \\
     & \quad | \quad \MS{niltape} \\
@@ -299,7 +302,7 @@ symbol $a$.
   \end{alignat*}
 \end{definition}
 
-We can state a correctness Lemma of the function $\MS{wr}$:
+We can state a correctness lemma of the function $\MS{wr}$:
 
 \begin{lemma}[Correctness of $\MS{wr}$]
   \label{lem:write}
@@ -365,7 +368,7 @@ We can show some basic facts about $\Loop$.
 \end{proof}
 
 
-We instanciate the abstract $\Loop$ function and get a function $\MS{exec} \from \Tape^n \to \Nat \to \Option(\Conf)$ that executes $k$ steps
+We instantiate the abstract $\Loop$ function and get a function $\MS{exec} \from \Tape^n \to \Nat \to \Option(\Conf)$ that executes $k$ steps
 of the machine, given initial tapes $t: \Tape^n$:
 
 \begin{definition}[Machine execution]
@@ -378,13 +381,13 @@ of the machine, given initial tapes $t: \Tape^n$:
 
 We write $M(c) \terminates^k c'$ for $\MS{loopM}~k~c = \Some {c'}$ and $M(t) \terminates^k c$ for $M(\MS{initConf}~t) \terminates^k c$.
 
-All definitions, except partioned machines are from Asperti and Ricciotti \cite{asperti2015}, with similiar names.  However, the $\Loop$ function
+All definitions, except partitioned machines are from Asperti and Ricciotti \cite{asperti2015}, with similar names.  However, the $\Loop$ function
 was slightly changed for convenience, so that it needs zero steps when the (abstract) state is a halting state.
 
 \section{Specification of Semantics}
 \label{sec:spec_semantics}
 
-We have defined big-step semantics for (partitioned) mulit-tape Turing machines.  Now we want to define predicates to specify the semantics of a
+We have defined big-step semantics for (partitioned) multi-tape Turing machines.  Now we want to define predicates to specify the semantics of a
 concrete (partitioned) machine $M: \TM_\Sigma^n(F)$.  It consists consists of two parts: \emph{correctness} and \emph{runtime}.
 
 The correctness part is captured by \emph{realisation} of a (partitioned) relation $R$:
@@ -457,7 +460,7 @@ For machines that always terminate in a constant number of steps, it is useful t
 \end{lemma}
 
 Asperti and Ricciotti \cite{asperti2015} make a distinction between weak and strong realisation, where the strong version implies termination for
-every imput.  We use their weak realisation extended with the finite partition $F$.  They also have no notition of runtime.
+every input.  We use their weak realisation extended with the finite partition $F$.  They also have no notion of runtime.
 
 
 \section{Basic Machines}
