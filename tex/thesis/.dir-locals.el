@@ -1,5 +1,5 @@
 (
  (nil . ((fill-column . 150)
 	 (TeX-master . "thesis")
-	 (IsepllDict . british)))
+	 (ispell-dictionary . "british")))
 )
