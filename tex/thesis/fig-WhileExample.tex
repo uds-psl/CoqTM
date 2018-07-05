@@ -1,0 +1,32 @@
+\documentclass{standalone}
+
+\input{mypreamble}
+
+\begin{document}
+
+  \begin{tikzpicture}[->,>=stealth',shorten >=1pt,auto,node distance=2.8cm,bend angle=45]
+    \begin{scope}
+      % Machine M
+      \node[state]          (M init)                                    {$q_0$};
+      \node[state]          (M exit 1)  [right of=M init,yshift= 1.5cm] {$q_1$};
+      \node[state, double]  (M exit 2)  [right of=M init,yshift= 0.0cm] {$q_2$};
+      \node[state, double]  (M exit 3)  [right of=M init,yshift=-1.5cm] {$q_3$};
+      \path (M init)
+      edge[dotted]          (M exit 1)
+      edge[dotted]  (M exit 2)
+      edge[dotted]  (M exit 3);
+      \path (M init) ++(-1.0,0) edge (M init);
+      \path (M exit 1) edge[bend right] node[anchor=south,yshift=0.2em] {$(\None, N)$} (M init);
+    \end{scope}
+
+    \begin{pgfonlayer}{background}
+      \filldraw [line width=4mm,join=round,blue!10]
+      (M   exit 1.north -| M   init.west) rectangle (M   exit 3.south -| M   exit 3.east);
+    \end{pgfonlayer}
+  \end{tikzpicture}
+
+\end{document}
+
+%%% Local Variables:
+%%% TeX-master: t
+%%% End:
