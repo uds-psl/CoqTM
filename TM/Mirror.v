@@ -65,16 +65,13 @@ Section MirrorTM.
     apply Vector.eq_nth_iff; intros i ? <-. unfold tape_move_multi, mirror_acts, mirror_tapes. simpl_tape. apply tape_move_mono_mirror_act.
   Qed.
 
-  Lemma mirror_step c1 c2 :
-    step (M := projT1 Mirror) (           c1) =            c2 ->
-    step (M := projT1 pM    ) (mirrorConf c1) = mirrorConf c2.
+  Lemma mirror_step c :
+    step (M := projT1 pM) (mirrorConf c) = mirrorConf (step (M := projT1 Mirror) c).
   Proof.
-    intros H. unfold step in *; cbn -[tape_move_multi] in *. unfold Mirror_trans in *; cbn -[tape_move_multi] in *.
-    destruct c1 as [q1 t1], c2 as [q2 t2]; cbn -[tape_move_multi] in *.
-    rewrite current_chars_mirror_tapes in *.
-    destruct (trans (q1, current_chars t1)) as [q' acts].
-    rewrite <- H. unfold mirrorConf; cbn. f_equal.
-    apply tape_move_multi_mirror_acts.
+    unfold step; cbn -[tape_move_multi]. unfold Mirror_trans. cbn.
+    destruct c as [q t]; cbn. rewrite current_chars_mirror_tapes.
+    destruct (trans (q, current_chars t)) as [q' acts].
+    unfold mirrorConf; cbn. f_equal. apply tape_move_multi_mirror_acts.
   Qed.
 
   Lemma mirror_split k c1 c2 :
