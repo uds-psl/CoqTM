@@ -488,7 +488,73 @@ Using the proving techniques developed in the previous sections, verifying this 
   By case analysis over the tape(s).
 \end{proof}
 
-\todo{Show that it is easy}
+
+To define $\MS{Mirror}~M$, we assume an injective and involutive function $swap:\MS{Move} \to \MS{Move}$ that simply swaps $L$ and $R$.
+
+\begin{definition}[$\MS{Mirror}~M$]
+  \label{def:Mirror}
+  Let $M:\TM_\Sigma^n(F)$.
+  \begin{alignat*}{3}
+    & Q                  &~:=~& Q_M \\
+    & start              &~:=~& start_M \\
+    \delta~&(q, s)       &~:=~& \Let{(q', a) := \delta_M(q,s)}{\bigl(q', \map{(\lambda(w, m).~(w, swap(m)))}{a} \bigr)} \\
+    & halt               &~:=~& halt_M \\
+    & part               &~:=~& part_M
+  \end{alignat*}
+\end{definition}
+
+The correctness and termination proofs are similar to the proofs of $\MS{Match}$ and $\MS{While}$.  The ``lifting'' between configurations of $M$ and
+$\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \Conf$ that simply mirrors the tapes.
+
+\begin{definition}[Mirror configuration]
+  \label{def:mirrorConf}
+  Let $c : \Conf$.
+  \[ mirrorConf(q,t) := (q, \map{mirror}{t}). \]
+\end{definition}
+
+
+\begin{lemma}[Mirroring steps]
+  \label{lem:mirror_step}
+  Let $c_1 : \Conf$.  Then
+  \[ step_M~(mirrorConf~c_1) = mirrorConf~(step_{\MS{Mirror}}~c_1) \]
+\end{lemma}
+
+\begin{lemma}[Mirroring executions]
+  \label{lem:mirror_loop}
+  Let $c_1, c_2 : \Conf$.
+  \begin{enumerate}
+  \item \label{lem:mirror_split}
+    $ \MS{Mirror} (c_1) \terminates^k c_2 \rightarrow M (mirrorConf~c_1) \terminates^k (mirrorConf~c_2) $
+  \item \label{lem:mirror_merge}
+    $ M (mirrorConf~c_1) \terminates^k (mirrorConf~c_2) \rightarrow \MS{Mirror} (c_1) \terminates^k c_2 $
+  \end{enumerate}
+\end{lemma}
+\begin{proof}
+  Claim~\ref{lem:mirror_split} follows with Lemma~\ref{lem:loop_unlift} and Lemma~\ref{lem:mirror_step}.  Claim~\ref{lem:mirror_merge} follows with
+  Lemma~\ref{lem:loop_lift} and Lemma~\ref{lem:mirror_step}.
+\end{proof}
+
+\begin{lemma}[Correctness of $\MS{Mirror}$]
+  Let $M \vDash R$.  Then $\MS{Mirror}~M \vDash MirrorRel~R$ with
+  \[
+    MirrorRel~R := \lambda t~(y, t').~ R~(mirror~t)~(y, mirror~t').
+  \]
+\end{lemma}
+\begin{proof}
+  Follows from Lemma~\ref{lem:mirror_loop}~(\ref{lem:mirror_split}).
+\end{proof}
+\begin{lemma}[Runtime of $\MS{Mirror}$]
+  Let $M \vDash T$.  Then $\MS{Mirror}~M \downarrow MirrorT~T$ with
+  \[
+    MirrorT~T := \lambda t~k.~ T~(mirror~t)~k.
+  \]
+\end{lemma}
+\begin{proof}
+  Follows from Lemma~\ref{lem:mirror_loop}~(\ref{lem:mirror_merge}).
+\end{proof}
+
+
+
 
 \section{Partition Operators}
 \label{sec:partition-op}
