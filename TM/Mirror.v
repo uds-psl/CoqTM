@@ -45,10 +45,11 @@ Section MirrorTM.
   Definition mirrorConf : mconfig sig (states (projT1 pM)) n -> mconfig sig (states (projT1 pM)) n :=
     fun c => mk_mconfig (cstate c) (mirror_tapes (ctapes c)).
 
-  Lemma mirrorConf_involution s : mirrorConf (mirrorConf s) = s.
-  Proof.
-    destruct s. unfold mirrorConf. cbn. f_equal. apply mirror_tapes_involution.
-  Qed.
+  Lemma mirrorConf_involution c : mirrorConf (mirrorConf c) = c.
+  Proof. destruct c as [q t]. unfold mirrorConf. cbn. f_equal. apply mirror_tapes_involution. Qed.
+
+  Lemma mirrorConf_injective c1 c2 : mirrorConf c1 = mirrorConf c2 -> c1 = c2.
+  Proof. destruct c1 as [q1 t1], c2 as [q2 t2]. unfold mirrorConf. cbn. intros H; inv H. f_equal. now apply mirror_tapes_injective. Qed.
 
   Lemma current_chars_mirror_tapes (t : tapes sig n) :
     current_chars (mirror_tapes t) = current_chars t.
@@ -80,22 +81,19 @@ Section MirrorTM.
     loopM (M := projT1 Mirror) k             c1  = Some             c2 ->
     loopM (M := projT1 pM    ) k (mirrorConf c1) = Some (mirrorConf c2).
   Proof.
-    unfold loopM, haltConf. revert c1. induction k; intros c1 H; cbn in *.
-    - cbn in *. unfold haltConf. cbn. destruct (halt (cstate c1)); now inv H.
-    - cbn in *. destruct (halt (cstate c1)) eqn:E.
-      + congruence.
-      + erewrite mirror_step; eauto.
+    unfold loopM. intros HLoop.
+    apply loop_lift with (lift := mirrorConf) (f' := step (M:=projT1 pM)) (h' := haltConf (M:=projT1 pM)) in HLoop; auto.
+    - intros ? _. now apply mirror_step.
   Qed.
 
   Lemma mirror_loop' k c1 c2 :
     loopM (M := projT1     pM) k (mirrorConf c1) = Some (mirrorConf c2) ->
     loopM (M := projT1 Mirror) k (           c1) = Some (           c2).
   Proof.
-    unfold loopM, haltConf. destruct c2 as [q2 t2]. revert c1. induction k as [ | k' IH]; intros [q1 t1] H; cbn in *.
-    - destruct (halt q1); inv H. f_equal. f_equal. now apply mirror_tapes_injective in H2.
-    - destruct (halt q1) eqn:E; cbn in *.
-      + inv H. f_equal. f_equal. now apply mirror_tapes_injective in H2.
-      + erewrite mirror_step in H; eauto.
+    unfold loopM. intros HLoop.
+    apply loop_unlift with (lift := mirrorConf) (f := step (M:=MirrorTM)) (h := haltConf (M:=MirrorTM)) in HLoop
+      as (? & HLoop & <- % mirrorConf_injective); auto.
+    - intros ? _. now apply mirror_step.
   Qed.
 
 
