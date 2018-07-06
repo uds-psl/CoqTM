@@ -60,7 +60,7 @@ Ltac smpl_TM_WriteValue :=
   match goal with
   | [ |- WriteValue _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply WriteValue_Sem
   | [ |- WriteValue _ _ ⊨c(_) _ ] => apply WriteValue_Sem
-  | [ |- projT1 (WriteValue _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply WriteValue_Sem
+  | [ |- projT1 (WriteValue _ _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply WriteValue_Sem
   end.
 
 Smpl Add smpl_TM_WriteValue : TM_Correct.

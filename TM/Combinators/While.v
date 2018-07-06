@@ -171,7 +171,7 @@ Section While.
   Qed.
 
 
-  Section While_terminatesIn.
+  Section While_TerminatesIn.
     Variable (T T' : Rel (tapes sig n) nat).
 
     Lemma While_TerminatesIn :
@@ -202,7 +202,7 @@ Section While.
         eapply While_merge_repeat; eauto.
     Qed.
 
-  End While_terminatesIn.
+  End While_TerminatesIn.
 
 End While.
 (* Arguments While {n} {sig} M _. *)

@@ -225,7 +225,7 @@ Lemma Add_Loop_Terminates :
 Proof.
   unfold Add_Loop, Add_Loop_steps. repeat TM_Correct.
   { eapply RealiseIn_Realise. apply Add_Step_Sem. }
-  { eapply RealiseIn_terminatesIn. apply Add_Step_Sem. }
+  { eapply RealiseIn_TerminatesIn. apply Add_Step_Sem. }
   {
     intros tin i (a&b&HEncA&HEncB&Hi).
     destruct b.

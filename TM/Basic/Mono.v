@@ -162,19 +162,19 @@ Ltac smpl_TM_Mono :=
   match goal with
   | [ |- DoAct _ ⊨ _] => eapply RealiseIn_Realise; eapply DoAct_Sem
   | [ |- DoAct _ ⊨c(_) _] => eapply DoAct_Sem
-  | [ |- projT1 (DoAct _) ↓ _] => eapply RealiseIn_terminatesIn; eapply DoAct_Sem
+  | [ |- projT1 (DoAct _) ↓ _] => eapply RealiseIn_TerminatesIn; eapply DoAct_Sem
   | [ |- Write _ ⊨ _] => eapply RealiseIn_Realise; eapply Write_Sem
   | [ |- Write _ ⊨c(_) _] => eapply Write_Sem
-  | [ |- projT1 (Write _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Write_Sem
+  | [ |- projT1 (Write _) ↓ _] => eapply RealiseIn_TerminatesIn; eapply Write_Sem
   | [ |- Move _ ⊨ _] => eapply RealiseIn_Realise; eapply Move_Sem
   | [ |- Move _ ⊨c(_) _] => eapply Move_Sem
-  | [ |- projT1 (Move _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Move_Sem
+  | [ |- projT1 (Move _) ↓ _] => eapply RealiseIn_TerminatesIn; eapply Move_Sem
   | [ |- WriteMove _ _ ⊨ _] => eapply RealiseIn_Realise; eapply WriteMove_Sem
   | [ |- WriteMove _ _ ⊨c(_) _] => eapply WriteMove_Sem
-  | [ |- projT1 (WriteMove _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply WriteMove_Sem
+  | [ |- projT1 (WriteMove _ _) ↓ _] => eapply RealiseIn_TerminatesIn; eapply WriteMove_Sem
   | [ |- ReadChar ⊨ _] => eapply RealiseIn_Realise; eapply ReadChar_Sem
   | [ |- ReadChar ⊨c(_) _] => eapply ReadChar_Sem
-  | [ |- projT1 (ReadChar) ↓ _] => eapply RealiseIn_terminatesIn; eapply ReadChar_Sem
+  | [ |- projT1 (ReadChar) ↓ _] => eapply RealiseIn_TerminatesIn; eapply ReadChar_Sem
   end.
 
 Smpl Add smpl_TM_Mono : TM_Correct.

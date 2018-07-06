@@ -818,7 +818,7 @@ Section Semantics.
     pM ⊨c(k) R -> pM ⊨ R.
   Proof. now intros (?&?) % Realise_total. Qed.
 
-  Fact RealiseIn_terminatesIn n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
+  Fact RealiseIn_TerminatesIn n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
     pM ⊨c(k) R -> projT1 pM ↓ (fun tin l => k <= l). 
   Proof.
     intros HRel. hnf. intros tin l HSteps. hnf in HRel. specialize (HRel tin) as (outc&HLoop&Rloop).

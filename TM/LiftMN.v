@@ -350,7 +350,7 @@ Section LiftNM.
     - symmetry. now apply sim_step.
   Qed.
 
-  Lemma Inject_RealisesIn R i :
+  Lemma Inject_RealiseIn R i :
     pM ⊨c(i) R ->
     Inject ⊨c(i) lift_gen_eq_p I R.
   Proof.
@@ -473,7 +473,7 @@ Ltac smpl_dupfree :=
 Ltac smpl_TM_LiftN :=
   match goal with
   | [ |- Inject _ _ ⊨ _] => apply Inject_Realise; [ smpl_dupfree | ]
-  | [ |- Inject _ _ ⊨c(_) _] => apply Inject_RealisesIn; [ smpl_dupfree | ]
+  | [ |- Inject _ _ ⊨c(_) _] => apply Inject_RealiseIn; [ smpl_dupfree | ]
   | [ |- projT1 (Inject _ _) ↓ _] => apply Inject_Terminates; [ smpl_dupfree | ]
   end.
 Smpl Add smpl_TM_LiftN : TM_Correct.

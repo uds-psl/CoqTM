@@ -453,11 +453,11 @@ Ltac smpl_TM_MatchList :=
 
   | [ |- IsNil _ ⊨ _ ] => eapply RealiseIn_Realise; apply IsNil_Sem
   | [ |- IsNil _ ⊨c(_) _ ] => apply IsNil_Sem
-  | [ |- projT1 (IsNil _ ) ↓ _ ] => eapply RealiseIn_terminatesIn; apply IsNil_Sem
+  | [ |- projT1 (IsNil _ ) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply IsNil_Sem
                                   
   | [ |- Constr_nil _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_nil_Sem
   | [ |- Constr_nil _ ⊨c(_) _ ] => apply Constr_nil_Sem
-  | [ |- projT1 (Constr_nil _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Constr_nil_Sem
+  | [ |- projT1 (Constr_nil _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Constr_nil_Sem
 
   | [ |- Constr_cons _ ⊨ _ ] => apply Constr_cons_Realise
   | [ |- projT1 (Constr_cons _) ↓ _ ] => apply Constr_cons_Terminates

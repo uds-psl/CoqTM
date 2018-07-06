@@ -84,12 +84,12 @@ End Test.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold M1. eapply Match_RealiseIn. cbn. eapply Inject_RealisesIn; [vector_dupfree| eapply ReadChar_Sem].
+      unfold M1. eapply Match_RealiseIn. cbn. eapply Inject_RealiseIn; [vector_dupfree| eapply ReadChar_Sem].
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e); swap 1 2.
-        + eapply Seq_RealiseIn. eapply Inject_RealisesIn; [vector_dupfree | eapply Write_Sem]. apply Return_RealiseIn. eapply MovePar_Sem.
-        + cbn. eapply Inject_RealisesIn; [vector_dupfree | eapply Return_RealiseIn, Write_Sem].
+        + eapply Seq_RealiseIn. eapply Inject_RealiseIn; [vector_dupfree | eapply Write_Sem]. apply Return_RealiseIn. eapply MovePar_Sem.
+        + cbn. eapply Inject_RealiseIn; [vector_dupfree | eapply Return_RealiseIn, Write_Sem].
       - cbn. eapply RealiseIn_monotone'. apply Return_RealiseIn. eapply Nop_Sem. omega.
     }
     {

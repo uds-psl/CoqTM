@@ -903,7 +903,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
     eapply TerminatesIn_monotone.
     { unfold Step. repeat TM_Correct.
       - eapply RealiseIn_Realise. apply MatchTok_Sem.
-      - eapply RealiseIn_terminatesIn. apply MatchTok_Sem.
+      - eapply RealiseIn_TerminatesIn. apply MatchTok_Sem.
       - apply Step_lam_Terminates.
       - apply Step_app_Terminates.
       - apply Step_var_Terminates.

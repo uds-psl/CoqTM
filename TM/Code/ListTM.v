@@ -949,7 +949,7 @@ Section Lenght.
       - apply CopyValue_Terminates with (X := list X).
       - apply Length_Loop_Realise.
       - apply Length_Loop_Terminates.
-      - eapply RealiseIn_terminatesIn. apply ResetEmpty1_Sem.
+      - eapply RealiseIn_TerminatesIn. apply ResetEmpty1_Sem.
     }
     {
       intros tin k (xs&HEncXs&HRight1&HRight2&HRigth3&Hk). unfold Length_steps in *.

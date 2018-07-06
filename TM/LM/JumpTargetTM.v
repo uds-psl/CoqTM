@@ -335,12 +335,12 @@ Proof.
   eapply TerminatesIn_monotone.
   { unfold JumpTarget_Step. repeat TM_Correct.
     - eapply RealiseIn_Realise. apply MatchTok_Sem.
-    - eapply RealiseIn_terminatesIn. apply MatchTok_Sem.
+    - eapply RealiseIn_TerminatesIn. apply MatchTok_Sem.
     - apply App_ATok_Terminates.
     - apply App_ATok_Terminates.
     - apply App_ATok_Terminates.
     - eapply RealiseIn_Realise. apply Constr_varT_Sem.
-    - eapply RealiseIn_terminatesIn. apply Constr_varT_Sem.
+    - eapply RealiseIn_TerminatesIn. apply Constr_varT_Sem.
     - apply App_Tok_Terminates.
   }
   {

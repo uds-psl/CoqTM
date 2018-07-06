@@ -31,7 +31,7 @@ Ltac smpl_TM_Null :=
   match goal with
   | [ |- Null ⊨ _] => eapply RealiseIn_Realise; eapply Null_Sem
   | [ |- Null ⊨c(_) _] => eapply Null_Sem
-  | [ |- projT1 (Null) ↓ _] => eapply RealiseIn_terminatesIn; eapply Null_Sem
+  | [ |- projT1 (Null) ↓ _] => eapply RealiseIn_TerminatesIn; eapply Null_Sem
   end.
 
 Smpl Add smpl_TM_Null : TM_Correct.

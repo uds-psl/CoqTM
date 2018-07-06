@@ -95,10 +95,10 @@ Section Copy.
     eapply RealiseIn_monotone.
     {
       unfold CopyChar. eapply Match_RealiseIn; cbn.
-      - apply Inject_RealisesIn. vector_dupfree. apply ReadChar_Sem.
+      - apply Inject_RealiseIn. vector_dupfree. apply ReadChar_Sem.
       - instantiate (2 := fun o : option sig => match o with Some s => _ | None => _ end).
         intros [ s | ]; cbn.
-        + eapply Inject_RealisesIn. vector_dupfree. apply Write_Sem.
+        + eapply Inject_RealiseIn. vector_dupfree. apply Write_Sem.
         + eapply RealiseIn_monotone'. apply Nop_Sem. omega.
     }
     { omega. }
@@ -155,19 +155,19 @@ Ltac smpl_TM_Multi :=
   match goal with
   | [ |- Nop ⊨ _ ] => eapply RealiseIn_Realise; apply Nop_Sem
   | [ |- Nop ⊨c(_) _ ] => eapply Nop_Sem
-  | [ |- projT1 (Nop) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Nop_Sem
+  | [ |- projT1 (Nop) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Nop_Sem
 
   | [ |- MovePar _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply MovePar_Sem
   | [ |- MovePar _ _ ⊨c(_) _ ] => eapply MovePar_Sem
-  | [ |- projT1 (MovePar _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply MovePar_Sem
+  | [ |- projT1 (MovePar _ _) ↓ _ ] => eapply RealiseIn_TerminatesIn; eapply MovePar_Sem
 
   | [ |- CopyChar _ ⊨ _ ] => eapply RealiseIn_Realise; eapply CopyChar_Sem
   | [ |- CopyChar _ ⊨c(_) _ ] => eapply CopyChar_Sem
-  | [ |- projT1 (CopyChar _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply CopyChar_Sem
+  | [ |- projT1 (CopyChar _) ↓ _ ] => eapply RealiseIn_TerminatesIn; eapply CopyChar_Sem
 
   | [ |- ReadChar_at _ ⊨ _ ] => eapply RealiseIn_Realise; eapply ReadChar_at_Sem
   | [ |- ReadChar_at _ ⊨c(_) _ ] => eapply ReadChar_at_Sem
-  | [ |- projT1 (ReadChar_at _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply ReadChar_at_Sem
+  | [ |- projT1 (ReadChar_at _) ↓ _ ] => eapply RealiseIn_TerminatesIn; eapply ReadChar_at_Sem
   end.
 
 Smpl Add smpl_TM_Multi : TM_Correct.

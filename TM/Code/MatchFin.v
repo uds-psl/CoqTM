@@ -47,7 +47,7 @@ Ltac smpl_TM_MatchFin :=
   match goal with
   | [ |- MatchFin _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchFin_Sem
   | [ |- MatchFin _ ⊨c(_) _ ] => apply MatchFin_Sem
-  | [ |- projT1 (MatchFin _) ↓ _ ] => eapply RealiseIn_terminatesIn; apply MatchFin_Sem
+  | [ |- projT1 (MatchFin _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply MatchFin_Sem
   end.
 
 Smpl Add smpl_TM_MatchFin : TM_Correct.

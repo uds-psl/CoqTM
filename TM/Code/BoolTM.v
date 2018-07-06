@@ -213,7 +213,7 @@ Section DeMorgan.
       unfold OR. eapply Seq_RealiseIn; [ | eapply Seq_RealiseIn].
       - apply NOT2_Computes.
       - apply AND_Computes.
-      - apply Inject_RealisesIn. vector_dupfree. apply NOT_Computes.
+      - apply Inject_RealiseIn. vector_dupfree. apply NOT_Computes.
     }
     {
       cbn. omega.
@@ -238,7 +238,7 @@ Section AndComm.
          Computes2_Rel (F := FinType (EqType unit)) Fin.F1 (Fin.FS Fin.F1) Fin.F1 _ _ _  andb.
   Proof.
     eapply RealiseIn_monotone.
-    - unfold AND'. eapply Inject_RealisesIn. vector_dupfree. eapply AND_Computes.
+    - unfold AND'. eapply Inject_RealiseIn. vector_dupfree. eapply AND_Computes.
     - omega.
     - intros tin (yout&tout) H; hnf in *.
       destruct H as ((H1&H2)&_); hnf in *. destruct_tapes; cbn in *. split; cbn in *.
