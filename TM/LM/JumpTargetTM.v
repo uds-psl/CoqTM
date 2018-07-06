@@ -185,7 +185,7 @@ Definition JumpTarget_Step : pTM sigPro^+ (option bool) 5 :=
                 | Some retAT =>
                   If (MatchNat ⇑ retr_nat_prog @ [|Fin2|])
                      (Return (App_ATok retAT @ [|Fin1; Fin4|]) None) (* continue *)
-                     (Nop (Some true)) (* return true *)
+                     (Return Nop (Some true)) (* return true *)
                 | Some lamAT =>
                   Return (Constr_S ⇑ retr_nat_prog @ [|Fin2|];;
                           App_ATok lamAT @ [|Fin1; Fin4|])
@@ -198,7 +198,7 @@ Definition JumpTarget_Step : pTM sigPro^+ (option bool) 5 :=
                           App_Tok @ [|Fin1; Fin3; Fin4|])
                          None (* continue *)
                 end))
-     (Nop (Some false)) (* return false *)
+     (Return Nop (Some false)) (* return false *)
 .
 
 
@@ -510,7 +510,7 @@ Definition JumpTarget : pTM sigPro^+ bool 5 :=
   WriteValue _ 0 @ [|Fin2|];;
   If (JumpTarget_Loop)
      (Return (Reset _ @ [|Fin2|]) true)
-     (Nop false)
+     (Return Nop false)
 .
 
 

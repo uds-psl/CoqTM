@@ -21,28 +21,28 @@ Section MatchList.
   
 
   Definition Skip_cons : { M : mTM (sigList sigX)^+ 1 & states M -> unit } :=
-    Move R tt;;
-    Return (MoveToSymbol stop id) tt.
+    Move R;;
+    MoveToSymbol stop id.
 
 
   Definition M1 : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
     Inject Skip_cons [|Fin0|];;
-    Inject (Write (inl STOP) tt) [|Fin1|];;
-    MovePar L L tt;;
+    Inject (Write (inl STOP)) [|Fin1|];;
+    MovePar L L;;
     CopySymbols_L stop id;;
-    Inject (Write (inl START) tt) [|Fin1|].
+    Inject (Write (inl START)) [|Fin1|].
 
   Definition MatchList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
-    Inject (Move R tt) [|Fin0|];;
+    Inject (Move R) [|Fin0|];;
     MATCH (Inject (ReadChar) [|Fin0|])
           (fun s => match s with
                  | Some (inr sigList_nil) => (* nil *)
-                   Inject (Move L false) [|Fin0|]
+                   Return (Inject (Move L) [|Fin0|]) false 
                  | Some (inr sigList_cons) => (* cons *)
                    M1;; 
                    Inject Skip_cons [|Fin0|];;
-                   Inject (Move L tt;; Write (inl START) true) [|Fin0|]
-                 | _ => Nop true (* invalid input *)
+                   Return (Inject (Move L;; Write (inl START)) [|Fin0|]) true
+                 | _ => Return Nop true (* invalid input *)
                  end).
 
 
@@ -77,7 +77,7 @@ Section MatchList.
     eapply Realise_monotone.
     { unfold Skip_cons. repeat TM_Correct. }
     {
-      intros tin ((), tout) H. intros ls rs x l HTin. TMSimp. clear_trivial_eqs. clear HTin H1 H2.
+      intros tin ((), tout) H. intros ls rs x l HTin. TMSimp. clear_trivial_eqs.
       destruct l as [ | x' l']; cbn.
       - rewrite MoveToSymbol_correct_moveright; cbn; auto.
         + now rewrite map_id.
@@ -106,7 +106,7 @@ Section MatchList.
     { unfold M1. repeat TM_Correct. eapply Skip_cons_Realise. }
     {
       intros tin ((), tout) H. intros ls rs x l HRight HTin0. TMSimp; clear_trivial_eqs.
-      rename H3 into HCopy.
+      rename H2 into HCopy.
       destruct HRight as (r1&r2&HRight). TMSimp. clear HRight.
 
       specialize H with (1 := eq_refl).
@@ -147,19 +147,16 @@ Section MatchList.
     { unfold MatchList. repeat TM_Correct. eapply M1_Realise. eapply Skip_cons_Realise. }
     {
       intros tin (yout, tout) H. intros l HEncL HRight.
-      destruct HEncL as (ls&HEncL). destruct HRight as (ls'&rs'&HRight). TMSimp; clear_trivial_eqs.
+      destruct HEncL as (ls&HEncL). pose proof HRight as (ls'&rs'&HRight'). TMSimp; clear_trivial_eqs.
       destruct l as [ | x l'] in *; cbn in *; TMSimp; clear_trivial_eqs.
       { (* nil *)
         split; auto.
         - repeat econstructor; cbn; simpl_tape.
-        - repeat econstructor.
       }
       { (* cons *)
-        rewrite map_app, <- app_assoc in H0. symmetry in H0.
-        TMSimp.
-        rewrite map_app, <- app_assoc in H.
-        specialize H with (1 := ltac:(now repeat econstructor) : isRight _) (2 := eq_refl).
-        TMSimp. symmetry in H0. specialize H2 with (1 := H0).
+        rewrite map_app, <- app_assoc in *.
+        specialize H1 with (1 :=HRight) (2 := eq_refl).
+        TMSimp. symmetry in H0. specialize H2 with (1 := eq_refl).
         destruct l' as [ | x' l'']; TMSimp.
         - repeat split; auto. repeat econstructor. f_equal. simpl_tape. cbn. reflexivity.
         - repeat split; auto. repeat econstructor. f_equal. simpl_tape. cbn. now rewrite map_app, <- app_assoc.
@@ -187,7 +184,7 @@ Section MatchList.
     {
       intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
       exists 1, (4 + 4 * size cX x). repeat split. 1-2: omega.
-      intros tmid () (_&H). TMSimp. clear H.
+      intros tmid () H. TMSimp. clear H.
       destruct l as [ | x' l]; cbn.
       - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. now rewrite !map_length.
       - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. now rewrite !map_length.
@@ -213,14 +210,14 @@ Section MatchList.
       1-2: exists 1, (14 + 8 * size cX x); repeat split; try omega.
       - intros tmid2 (). intros (_&HInj2); TMSimp.
         exists 3, (10 + 8 * size cX x). repeat split; try omega.
-        intros tmid3 (). intros (_&H3&H3'); TMSimp.
+        intros tmid3 (). intros (H3&H3'); TMSimp.
         exists (8+8*size cX x), 1. repeat split; cbn; try omega.
         + rewrite CopySymbols_L_TermTime_moveleft; auto.
           now rewrite rev_length, !map_length.
         + intros tmid4 () _. omega.
       - intros tmid2 (). intros (_&HInj2); TMSimp.
         exists 3, (10 + 8 * size cX x). repeat split; try omega.
-        intros tmid3 (). intros (_&H3&H3'); TMSimp.
+        intros tmid3 (). intros (H3&H3'); TMSimp.
         exists (8+8*size cX x), 1. repeat split; cbn; try omega.
         + rewrite CopySymbols_L_TermTime_moveleft; auto.
           now rewrite rev_length, !map_length.
@@ -259,14 +256,14 @@ Section MatchList.
       destruct l as [ | x l']; cbn.
       {
         exists 1, 3. repeat split; try omega.
-        intros tmid (). intros ((_&H1)&HInj1); TMSimp.
+        intros tmid (). intros (H1&HInj1); TMSimp.
         exists 1, 1. repeat split; try omega.
         intros tmid2 ymid2 ((H2&H2')&HInj2). apply Vector.cons_inj in H2' as (H2'&_). TMSimp.
         omega.
       }
       {
         exists 1, (40 + 16 * size cX x). repeat split; try omega.
-        intros tmid (). intros ((_&H1)&HInj1); TMSimp.
+        intros tmid (). intros (H1&HInj1); TMSimp.
         exists 1, (38 + 16 * size cX x). repeat split; try omega.
         intros tmid2 ymid2 ((H2&H2')&HInj2). apply Vector.cons_inj in H2' as (H2'&_). TMSimp.
         exists (23 + 12 * size cX x), (14 + 4 * size cX x). repeat split; try omega.
@@ -287,13 +284,13 @@ Section MatchList.
   (** *** [IsNil] *)
 
   Definition IsNil : pTM (sigList sigX)^+ bool 1 :=
-    Move R tt;;
+    Move R;;
     MATCH ReadChar
     (fun s =>
        match s with
        | Some (inr sigList_nil) =>
-         Move L true
-       | _ => Move L false
+         Return (Move L) true
+       | _ => Return (Move L) false
        end).
   
   Definition IsNil_Rel : pRel (sigList sigX)^+ bool 1 :=
@@ -331,7 +328,7 @@ Section MatchList.
   (** *** [nil] *)
   
   Definition Constr_nil : { M : mTM (sigList sigX)^+ 1 & states M -> unit } :=
-    WriteMove (inl STOP) L tt;; WriteMove (inr sigList_nil) L tt;; Write (inl START) tt.
+    WriteMove (inl STOP) L;; WriteMove (inr sigList_nil) L;; Write (inl START).
 
 
   Definition Constr_nil_Rel : Rel (tapes (sigList sigX)^+ 1) (unit * tapes (sigList sigX)^+ 1) :=
@@ -357,9 +354,9 @@ Section MatchList.
   
 
   Definition Constr_cons : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
-    Inject (MoveRight _;; Move L tt) [|Fin1|];;
+    Inject (MoveRight _;; Move L) [|Fin1|];;
     Inject (CopySymbols_L stop id) [|Fin1;Fin0|];;
-    Inject (WriteMove (inr sigList_cons) L tt;; Write (inl START) tt) [|Fin0|].
+    Inject (WriteMove (inr sigList_cons) L;; Write (inl START)) [|Fin0|].
 
   Definition Constr_cons_Rel : Rel (tapes (sigList sigX)^+ 2) (unit * tapes (sigList sigX)^+ 2) :=
     ignoreParam (

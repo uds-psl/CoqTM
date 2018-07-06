@@ -65,7 +65,7 @@ Qed.
 Definition Add_Step : { M : mTM _ 2 & states M -> option unit } :=
   If (Inject MatchNat [|Fin1|])
      (Return (Inject Constr_S [|Fin0|]) None)
-     (Nop (Some tt)).
+     (Return Nop (Some tt)).
 
 
 Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := WHILE Add_Step.
@@ -366,7 +366,7 @@ Definition Mult_Step : { M : mTM _ 5 & states M -> option unit } :=
           Inject (CopyValue _) [|Fin3; Fin2|];; (* c := c' *)
           Inject (Reset _) [|Fin3|] (* Reset c' *)
         ) (None)) (* continue *)
-     (Nop (Some tt)). (* break *)
+     (Return Nop (Some tt)). (* break *)
 
 
 Definition Mult_Loop : { M : mTM _ 5 & states M -> unit } := WHILE Mult_Step.

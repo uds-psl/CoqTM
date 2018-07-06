@@ -41,10 +41,10 @@ Section MatchPair.
       ).
 
   Definition MatchPair : { M : mTM sigPair^+ 2 & states M -> unit } :=
-    Inject (WriteMove (inl STOP) L tt) [|Fin1|];;
-    Inject (MoveToSymbol stopAfterFirst id;; Move L tt) [|Fin0|];;
+    Inject (WriteMove (inl STOP) L) [|Fin1|];;
+    Inject (MoveToSymbol stopAfterFirst id;; Move L) [|Fin0|];;
     CopySymbols_L stopAtStart id;;
-    Inject (MoveToSymbol stopAfterFirst id;; Move L tt;; Write (inl START) tt) [|Fin0|].
+    Inject (MoveToSymbol stopAfterFirst id;; Move L;; Write (inl START)) [|Fin0|].
 
   Lemma MatchPair_Realise : MatchPair ⊨ MatchPair_Rel.
   Proof.
@@ -54,7 +54,7 @@ Section MatchPair.
       intros tin ((), tout) H.
       intros (x,y) HEncXY HRight.
       destruct HEncXY as (ls&HEncXY).
-      TMSimp; clear_trivial_eqs. rename H2 into HCopy.
+      TMSimp; clear_trivial_eqs. rename H1 into HCopy.
       rewrite map_app, <- app_assoc in HCopy.
       (* We need a case distinction, whether the encoding of [y] is empty, because [MoveToSymbol] either stops in a symbol of [cY y] or on [inl STOP]. However, both parts of the proof have identical proof scripts. *)
       destruct (cY y) eqn:EY; cbn in *.
@@ -156,7 +156,7 @@ Section MatchPair.
 
 
   Definition Constr_pair : { M : mTM sigPair^+ 2 & states M -> unit } :=
-    Inject (MoveRight _;; Move L tt) [|Fin0|];;
+    Inject (MoveRight _;; Move L) [|Fin0|];;
     CopySymbols_L stopAtStart id.
 
 
@@ -214,8 +214,8 @@ Section MatchPair.
 
   Definition Snd : { M : mTM sigPair^+ 1 & states M -> unit } :=
     MoveToSymbol stopAfterFirst id;;
-    Move L tt;;
-    Write (inl START) tt.
+    Move L;;
+    Write (inl START).
 
 
   Lemma Snd_Realise : Snd ⊨ Snd_Rel.

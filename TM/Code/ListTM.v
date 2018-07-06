@@ -256,7 +256,7 @@ Section Nth'.
     If (Inject (ChangeAlphabet MatchNat _) [|Fin1|])
        (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) (* n = S n' *)
            (Return (Inject (Reset _) [|Fin2|]) None) (* l = x :: l'; continue *)
-           (Nop (Some false))) (* l = nil; return false *)
+           (Return Nop (Some false))) (* l = nil; return false *)
        (ChangePartition (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) Some) (* n = 0 *)
   .
 
@@ -629,7 +629,7 @@ Section Append.
 
 
   Definition App' : { M : mTM sigList^+ 2 & states M -> unit } :=
-    Inject (MoveRight _;; Move L tt;; Move L tt) [|Fin0|];;
+    Inject (MoveRight _;; Move L;; Move L) [|Fin0|];;
     CopySymbols_L stop id.
   Lemma App'_Realise : App' ⊨ App'_Rel.
   Proof.
@@ -777,7 +777,7 @@ Section Lenght.
        (Return (Inject (Reset _) [|Fin2|];;
                 Inject (ChangeAlphabet (Constr_S) _) [|Fin1|])
                (None)) (* continue *)
-       (Nop (Some tt)) (* break *)
+       (Return Nop (Some tt)) (* break *)
   .
 
   Definition Length_Step_Rel : pRel sig^+ (option unit) 3 :=

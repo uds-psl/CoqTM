@@ -25,15 +25,11 @@ Section Nop.
       halt := fun _ => true
     |}.
 
-  Variable F : finType.
-  Variable f : F.
+  Definition Nop : pTM sig unit n := (Nop_TM; fun _ => tt).
 
-  Definition Nop := (Nop_TM; fun _ => f).
-
-  Definition Nop_Rel : pRel sig F n :=
-    fun tin '(yout, tout) =>
-      yout = f /\
-      tout = tin.
+  Definition Nop_Rel : pRel sig unit n :=
+    ignoreParam (fun tin tout =>
+                   tout = tin).
 
   Definition Nop_Sem : Nop ⊨c(0) Nop_Rel.
   Proof. hnf. intros t. exists (mk_mconfig tt t). cbn. auto. Qed.
@@ -41,16 +37,16 @@ Section Nop.
 End Nop.
 
 Arguments null_action {_ _}.
-Arguments Nop {n sig F} f.
+Arguments Nop {n sig}.
 Arguments Nop : simpl never.
 
-Arguments Nop_Rel {n sig F} (f) x y/.
+Arguments Nop_Rel {n sig} x y/.
 
 Ltac smpl_TM_Nop :=
   match goal with
-  | [ |- Nop _ ⊨ _] => eapply RealiseIn_Realise; apply Nop_Sem
-  | [ |- Nop _ ⊨c(_) _] => apply Nop_Sem
-  | [ |- projT1 (Nop _) ↓ _] => eapply RealiseIn_terminatesIn, Nop_Sem
+  | [ |- Nop ⊨ _] => eapply RealiseIn_Realise; apply Nop_Sem
+  | [ |- Nop ⊨c(_) _] => apply Nop_Sem
+  | [ |- projT1 (Nop) ↓ _] => eapply RealiseIn_terminatesIn, Nop_Sem
   end.
 
 Smpl Add smpl_TM_Nop : TM_Correct.

@@ -2,8 +2,6 @@ Require Import TM.TM TM.Basic.Mono TM.Combinators.Combinators.
 Require Import List.
 Require Import TMTac.
 
-Require Coq.derive.Derive.
-
 (* Useful for runtime stuff *)
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
@@ -15,10 +13,10 @@ Section Write_String.
   Variable sig : finType.
   Variable D : move.
 
-  Fixpoint WriteString (l : list sig) : {M : mTM sig 1 & states M -> unit} :=
+  Fixpoint WriteString (l : list sig) : pTM sig unit 1 :=
     match l with
-    | [] => mono_Nop tt
-    | x :: xs => WriteMove x D tt ;; WriteString xs
+    | [] => mono_Nop
+    | x :: xs => WriteMove x D ;; WriteString xs
     end.
 
   Fixpoint WriteString_Fun (sig' : Type) (t : tape sig') (str : list sig') :=
@@ -31,11 +29,11 @@ Section Write_String.
     WriteString_Fun t nil = t.
   Proof. destruct t; cbn; auto. Qed.
 
-  Fixpoint WriteString_sem_fix (str : list sig) : Rel (tapes sig 1) (unit * tapes sig 1) :=
+  Fixpoint WriteString_sem_fix (str : list sig) : pRel sig unit 1 :=
     match str with
-    | nil => mono_Nop_R tt
+    | nil => mono_Nop_R
     | s :: str' =>
-      WriteMove_Rel s D tt |_tt ∘ WriteString_sem_fix str'
+      WriteMove_Rel s D |_tt ∘ WriteString_sem_fix str'
     end.
     
   Lemma WriteString_fix_Sem (str : list sig) :

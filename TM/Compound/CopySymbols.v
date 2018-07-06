@@ -29,11 +29,11 @@ Section CopySymbols.
                (* First write the read symbol to tape 1 *)
                if f x
                then (* found the symbol: write it to tape 1; break and return *)
-                 Inject (Write (g x) (Some tt)) [|Fin.FS Fin.F1|]
+                 Inject (Return (Write (g x)) (Some tt)) [|Fin.FS Fin.F1|]
                else (* wrong symbol: write it to tape 1 and move both tapes right and continue *)
-                 Inject (Write (g x) tt) [|Fin.FS Fin.F1|];;
-                 MovePar R R (None)
-             | _ => Nop (Some tt) (* there is no such symbol, break and return *)
+                 Inject (Return (Write (g x)) tt) [|Fin.FS Fin.F1|];;
+                 Return (MovePar R R) (None)
+             | _ => Return Nop (Some tt) (* there is no such symbol, break and return *)
              end).
 
   Definition M1_Fun : tape sig * tape sig -> tape sig * tape sig :=
@@ -88,9 +88,9 @@ End Test.
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e); swap 1 2.
-        + eapply Seq_RealiseIn. eapply Inject_RealisesIn; [vector_dupfree | eapply Write_Sem]. eapply MovePar_Sem.
-        + cbn. eapply Inject_RealisesIn; [vector_dupfree | eapply Write_Sem].
-      - cbn. eapply RealiseIn_monotone'. eapply Nop_Sem. omega.
+        + eapply Seq_RealiseIn. eapply Inject_RealisesIn; [vector_dupfree | eapply Write_Sem]. apply Return_RealiseIn. eapply MovePar_Sem.
+        + cbn. eapply Inject_RealisesIn; [vector_dupfree | eapply Return_RealiseIn, Write_Sem].
+      - cbn. eapply RealiseIn_monotone'. apply Return_RealiseIn. eapply Nop_Sem. omega.
     }
     {
       (cbn; omega).

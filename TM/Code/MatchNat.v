@@ -21,12 +21,12 @@ Section MatchNat.
            end).
 
   Definition MatchNat : { M : mTM sigNat^+ 1 & states M -> bool } :=
-    Move R tt;;
+    Move R;;
     MATCH (ReadChar)
           (fun o => match o with
-                 | Some (inr sigNat_S)  => Write (inl START) true (* S *)
-                 | Some (inr sigNat_O) => Move L false (* O *)
-                 | _ => mono_Nop true (* invalid input *)
+                 | Some (inr sigNat_S) => Return (Write (inl START)) true (* S *)
+                 | Some (inr sigNat_O) => Return (Move L) false (* O *)
+                 | _ => Return (mono_Nop) true (* invalid input *)
                  end).
 
   Definition MatchNat_steps := 5.
@@ -53,7 +53,7 @@ Section MatchNat.
       Mk_R_p (ignoreParam (fun tin tout => forall n : nat, tin ≃ n -> tout ≃ S n)).
 
     Definition Constr_S : { M : mTM sigNat^+ 1 & states M -> unit } :=
-      WriteMove (inr sigNat_S) L tt;; Write (inl START) tt.
+      WriteMove (inr sigNat_S) L;; Write (inl START).
 
 
     Definition Constr_S_steps := 3.
@@ -76,9 +76,9 @@ Section MatchNat.
       Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ O)).
 
     Definition Constr_O : { M : mTM sigNat^+ 1 & states M -> unit } :=
-      WriteMove (inl STOP) L tt;;
-      WriteMove (inr sigNat_O) L tt;;
-      Write (inl START) tt.
+      WriteMove (inl STOP) L;;
+      WriteMove (inr sigNat_O) L;;
+      Write (inl START).
 
     Definition Constr_O_steps := 5.
 

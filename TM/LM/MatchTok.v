@@ -4,7 +4,7 @@ Require Import TM.LM.Semantics TM.LM.Alphabets.
 
 Definition MatchTok : { M : mTM sigTok^+ 1 & states M -> option ATok } :=
   If (MatchSum _ _)
-     (mono_Nop None)
+     (Return Nop None)
      (ChangePartition (ChangeAlphabet (MatchFin (FinType(EqType(ATok))) ) _) Some)
 .
      

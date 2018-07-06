@@ -235,7 +235,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
        (Return (TailRec @ [|Fin0; Fin3; Fin4|];;
                 ConsClos @ [|Fin1; Fin4; Fin6|])
                true)
-       (Nop false).
+       (Return Nop false).
   
 
   Lemma Step_lam_Realise : Step_lam ⊨ Step_lam_Rel.
@@ -514,8 +514,8 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
                     Put @ [|Fin2; Fin5; Fin7; Fin8; Fin9; Fin10|];;
                     ConsClos @ [|Fin0; Fin8; Fin6|])
                    (true))
-           (Nop false))
-       (Nop false)
+           (Return Nop false))
+       (Return Nop false)
   .
 
 
@@ -658,7 +658,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
        (Return (Constr_cons sigHClos_fin ⇑ _ @ [|Fin1; Fin6|];;
                 Reset _ @ [|Fin6|])
                (true))
-       (Nop false).
+       (Return Nop false).
 
   Local Definition retr_closure_step : Retract sigHClos sigStep := ComposeRetract _ retr_closures_step.
 
@@ -757,12 +757,12 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
                         | Some appAT =>
                           Step_app
                         | Some retAT =>
-                          Nop false
+                          Return Nop false
                         | None (* Variable *) =>
                           Step_var @ [|Fin0; Fin1; Fin2; Fin3; Fin4; Fin5; Fin6; Fin7|]
                         end))
-              (Nop false))
-          (Nop false)
+              (Return Nop false))
+          (Return Nop false)
         ) bool2optunit.
 
 

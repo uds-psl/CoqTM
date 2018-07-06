@@ -447,9 +447,9 @@ Section Move.
     projT1 Reset ↓ (fun tin k => exists x, tin[@Fin0] ≃ x /\ Reset_steps x <= k).
   Proof. exact MoveRight_Terminates. Qed.
 
-  Definition ResetEmpty : pTM sig^+ (FinType(EqType unit)) 1 := Move R tt.
+  Definition ResetEmpty : pTM sig^+ unit 1 := Move R.
 
-  Definition ResetEmpty_Rel : pRel sig^+ (FinType(EqType unit)) 1 :=
+  Definition ResetEmpty_Rel : pRel sig^+ unit 1 :=
     ignoreParam (
         fun tin tout =>
           forall (x : X),
@@ -470,7 +470,7 @@ Section Move.
     }
   Qed.
 
-  Definition ResetEmpty1 : pTM sig^+ (FinType(EqType unit)) 1 := Move R tt;; Move R tt.
+  Definition ResetEmpty1 : pTM sig^+ (FinType(EqType unit)) 1 := Move R;; Move R.
 
   Definition ResetEmpty1_Rel : pRel sig^+ (FinType(EqType unit)) 1 :=
     ignoreParam (
@@ -489,7 +489,7 @@ Section Move.
     {
       intros tin ((), tout) H. cbn. intros x HEncX HCod.
       destruct HEncX as (ls&HEncX). unfold size in *. TMSimp; clear_trivial_eqs.
-      destruct (cX x); cbn in *; inv HCod. destruct l; inv H0.
+      destruct (cX x); cbn in *; inv HCod. destruct l; inv H2.
       cbn. repeat econstructor.
     }
   Qed.

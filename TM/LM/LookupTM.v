@@ -87,8 +87,8 @@ t4: internal tape
                         Reset _ @ [|Fin2|];;
                         Translate retr_clos_lookup_heap retr_clos_lookup @ [|Fin3|])
                        (Some true))) (* return true *)
-           (Nop (Some false))) (* return false *)
-       (Nop (Some false)) (* return false *)
+           (Return Nop (Some false))) (* return false *)
+       (Return Nop (Some false)) (* return false *)
   .
 
   Definition Lookup_Step_Rel : pRel sigLookup^+ (option bool) 5 :=

@@ -8,11 +8,11 @@ Section MatchFin.
   Hypothesis defSig : inhabitedC sig.
 
   Definition MatchFin : pTM sig^+ sig 1 :=
-    Move R tt;;
+    Move R;;
     MATCH (ReadChar)
     (fun s => match s with
-           | Some (inr x) => Move R x
-           | _ => mono_Nop default
+           | Some (inr x) => Return (Move R) x
+           | _ => Return (mono_Nop) default
            end).
 
   Local Existing Instance Encode_Finite.

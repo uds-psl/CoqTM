@@ -19,7 +19,7 @@ Section WriteValue.
   Variable (sig: finType) (X: Type) (cX: codable sig X).
 
   Definition WriteValue (x:X) : { M : mTM sig^+ 1 & states M -> unit } :=
-    WriteString L (inl STOP :: rev (encode x));; Write (inl START) tt.
+    WriteString L (inl STOP :: rev (encode x));; Write (inl START).
 
   Definition WriteValue_Rel (x : X) : Rel (tapes sig^+ 1) (unit * tapes sig^+ 1) :=
     Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ x)).

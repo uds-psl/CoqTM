@@ -2,9 +2,6 @@ Require Import TM.TM.
 
 Open Scope vector_scope.
 
-Definition threeStates := FinType (EqType (Fin.t 3)).
-Definition fourStates := FinType (EqType (Fin.t 4)).
-
 Section Mk_Mono.
   Variable (sig states : finType).
   Variable mono_trans : states -> option sig -> states * (option sig * move).
@@ -37,8 +34,6 @@ Section DoAct.
 
   Variable act : option sig * move.
 
-  Variable (F : finType) (f : F).
-
   Definition DoAct_TM :=
     {|
       trans := fun '(q, sym) => (true, [| act |]);
@@ -46,10 +41,10 @@ Section DoAct.
       halt x := x;
     |}.
 
-  Definition DoAct := (DoAct_TM; fun _ => f).
+  Definition DoAct : pTM sig unit 1 := (DoAct_TM; fun _ => tt).
 
-  Definition DoAct_Rel :=
-    Mk_R_p (fun t '(y, t') => y = f /\ t' = tape_move_mono t act).
+  Definition DoAct_Rel : pRel sig unit 1 :=
+    Mk_R_p (ignoreParam (fun t t' => t' = tape_move_mono t act)).
 
   Lemma DoAct_Sem : DoAct ⊨c(1) DoAct_Rel.
   Proof. intros t. destruct_tapes. cbn. unfold initc; cbn. eexists (mk_mconfig _ _); cbn; eauto. Qed.
@@ -57,7 +52,7 @@ Section DoAct.
 End DoAct.
 
 Arguments DoAct : simpl never.
-Arguments DoAct_Rel { sig } act { F } f x y /.
+Arguments DoAct_Rel { sig } act x y /.
 
 
 Section Write.
@@ -65,12 +60,11 @@ Section Write.
   Variable sig : finType.
   Variable c : sig. (* for Write *)
   Variable (D : move). (* for Move *)
-  Variable (F : finType) (f : F).
 
-  Definition Write : pTM sig F 1 := DoAct (Some c, N) f.
+  Definition Write : pTM sig unit 1 := DoAct (Some c, N).
 
-  Definition Write_Rel :=
-    Mk_R_p (fun t '(y, t') => y = f /\ t' = midtape (left t) c (right t)).
+  Definition Write_Rel : pRel sig unit 1 :=
+    Mk_R_p (ignoreParam (fun t t' => t' = midtape (left t) c (right t))).
 
   Lemma Write_Sem :
     Write ⊨c(1) Write_Rel.
@@ -82,11 +76,10 @@ Section Write.
   Qed.
 
 
-  Definition Move : pTM sig F 1 := DoAct (None, D) f.
+  Definition Move : pTM sig unit 1 := DoAct (None, D).
 
-  Definition Move_Rel :=
-    Mk_R_p (F := F)
-           (fun t '(y, t') => y = f /\ t' = tape_move (sig := sig) t D).
+  Definition Move_Rel : pRel sig unit 1 :=
+    Mk_R_p (ignoreParam (fun t t' => t' = tape_move (sig := sig) t D)).
 
   Lemma Move_Sem :
     Move ⊨c(1) Move_Rel.
@@ -97,10 +90,10 @@ Section Write.
     - hnf. firstorder.
   Qed.
 
-  Definition WriteMove := DoAct (Some c, D) f.
+  Definition WriteMove : pTM sig unit 1 := DoAct (Some c, D).
 
-  Definition WriteMove_Rel :=
-    Mk_R_p (fun t '(y, t') => y = f /\ t' = tape_move (tape_write t (Some c)) D).
+  Definition WriteMove_Rel : pRel sig unit 1 :=
+    Mk_R_p (ignoreParam (fun t t' => t' = tape_move (tape_write t (Some c)) D)).
 
   Lemma WriteMove_Sem :
     WriteMove ⊨c(1) WriteMove_Rel.
@@ -114,20 +107,19 @@ Section Write.
 End Write.
 
 Arguments Write : simpl never.
-Arguments Write_Rel { sig } c { F } p x y / : rename.
+Arguments Write_Rel { sig } c x y / : rename.
 
 Arguments Move : simpl never.
-Arguments Move { sig } D { F } f.
-Arguments Move_Rel { sig } ( D ) { F } ( f ) x y /.
+Arguments Move { sig } D.
+Arguments Move_Rel { sig } ( D ) x y /.
 
 Arguments WriteMove : simpl never.
-Arguments WriteMove_Rel { sig } (w D) { F } p x y / : rename.
+Arguments WriteMove_Rel { sig } (w D) x y / : rename.
 
 
 Section ReadChar.
 
   Variable sig : finType.
-  Definition rc_states : finType := FinType (EqType ((bool + sig)%type)).
 
   Definition ReadChar_TM : mTM sig 1 :=
     {|
@@ -174,12 +166,10 @@ Section Mono_Nop.
 
   Definition mono_nop : mTM sig 1 := Mk_Mono_TM mono_nop_trans tt (fun _ => true).
 
-  Variable F : finType.
-  Variable f : F.
+  Definition mono_Nop : pTM sig unit 1 := (mono_nop; fun _ => tt).
 
-  Definition mono_Nop := (mono_nop; fun _ => f).
-
-  Definition mono_Nop_R := (fun (t : tapes sig 1) '(y, t') => y = f /\ t = t').
+  Definition mono_Nop_R : pRel sig unit 1 :=
+    ignoreParam (fun t t' => t = t').
 
   Lemma mono_Nop_Sem: mono_Nop ⊨c(0) mono_Nop_R.
   Proof. intros t. cbn. unfold initc; cbn. eexists (mk_mconfig _ _); cbn; eauto. Qed.
@@ -187,30 +177,30 @@ Section Mono_Nop.
 End Mono_Nop.
 
 Arguments mono_Nop : simpl never.
-Arguments mono_Nop {sig F} f.
-Arguments mono_Nop_R { sig F } ( p ) x y / : rename.
+Arguments mono_Nop {sig}.
+Arguments mono_Nop_R { sig } x y / : rename.
 
 
 Ltac smpl_TM_Mono :=
   match goal with
-  | [ |- DoAct _ _ ⊨ _] => eapply RealiseIn_Realise; eapply DoAct_Sem
-  | [ |- DoAct _ _ ⊨c(_) _] => eapply DoAct_Sem
-  | [ |- projT1 (DoAct _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply DoAct_Sem
-  | [ |- Write _ _ ⊨ _] => eapply RealiseIn_Realise; eapply Write_Sem
-  | [ |- Write _ _ ⊨c(_) _] => eapply Write_Sem
-  | [ |- projT1 (Write _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Write_Sem
-  | [ |- Move _ _ ⊨ _] => eapply RealiseIn_Realise; eapply Move_Sem
-  | [ |- Move _ _ ⊨c(_) _] => eapply Move_Sem
-  | [ |- projT1 (Move _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Move_Sem
-  | [ |- WriteMove _ _ _ ⊨ _] => eapply RealiseIn_Realise; eapply WriteMove_Sem
-  | [ |- WriteMove _ _ _ ⊨c(_) _] => eapply WriteMove_Sem
-  | [ |- projT1 (WriteMove _ _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply WriteMove_Sem
+  | [ |- DoAct _ ⊨ _] => eapply RealiseIn_Realise; eapply DoAct_Sem
+  | [ |- DoAct _ ⊨c(_) _] => eapply DoAct_Sem
+  | [ |- projT1 (DoAct _) ↓ _] => eapply RealiseIn_terminatesIn; eapply DoAct_Sem
+  | [ |- Write _ ⊨ _] => eapply RealiseIn_Realise; eapply Write_Sem
+  | [ |- Write _ ⊨c(_) _] => eapply Write_Sem
+  | [ |- projT1 (Write _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Write_Sem
+  | [ |- Move _ ⊨ _] => eapply RealiseIn_Realise; eapply Move_Sem
+  | [ |- Move _ ⊨c(_) _] => eapply Move_Sem
+  | [ |- projT1 (Move _) ↓ _] => eapply RealiseIn_terminatesIn; eapply Move_Sem
+  | [ |- WriteMove _ _ ⊨ _] => eapply RealiseIn_Realise; eapply WriteMove_Sem
+  | [ |- WriteMove _ _ ⊨c(_) _] => eapply WriteMove_Sem
+  | [ |- projT1 (WriteMove _ _) ↓ _] => eapply RealiseIn_terminatesIn; eapply WriteMove_Sem
   | [ |- ReadChar ⊨ _] => eapply RealiseIn_Realise; eapply ReadChar_Sem
   | [ |- ReadChar ⊨c(_) _] => eapply ReadChar_Sem
   | [ |- projT1 (ReadChar) ↓ _] => eapply RealiseIn_terminatesIn; eapply ReadChar_Sem
-  | [ |- mono_Nop _ ⊨ _] => eapply RealiseIn_Realise; eapply mono_Nop_Sem
-  | [ |- mono_Nop _ ⊨c(_) _] => eapply mono_Nop_Sem
-  | [ |- projT1 (mono_Nop _) ↓ _] => eapply RealiseIn_terminatesIn; eapply mono_Nop_Sem
+  | [ |- mono_Nop ⊨ _] => eapply RealiseIn_Realise; eapply mono_Nop_Sem
+  | [ |- mono_Nop ⊨c(_) _] => eapply mono_Nop_Sem
+  | [ |- projT1 (mono_Nop) ↓ _] => eapply RealiseIn_terminatesIn; eapply mono_Nop_Sem
   end.
 
 Smpl Add smpl_TM_Mono : TM_Correct.

@@ -14,14 +14,14 @@ Require Import TM.Compound.TMTac.
 Section MovePar.
   Variable sig : finType.
   Variable (D1 D2 : move).
-  Variable (F : finType) (def : F).
 
-  Definition MovePar_R : Rel (tapes sig 2) (F * tapes sig 2) :=
-    (fun (t t' : tapes sig 2) => t'[@Fin.F1] = tape_move t[@Fin.F1] D1 /\
-                              t'[@Fin.FS Fin.F1] = tape_move t[@Fin.FS Fin.F1] D2) ||_ def.
+  Definition MovePar_R : pRel sig unit 2 :=
+    ignoreParam(fun (t t' : tapes sig 2) =>
+                  t'[@Fin.F1] = tape_move t[@Fin.F1] D1 /\
+                  t'[@Fin.FS Fin.F1] = tape_move t[@Fin.FS Fin.F1] D2).
 
-  Definition MovePar : { M : mTM sig 2 & states M -> F} :=
-    Inject (Move D1 tt) [|Fin.F1|];; Inject (Move D2 def) [|Fin.FS Fin.F1|].
+  Definition MovePar : pTM sig unit 2 :=
+    Inject (Move D1) [|Fin.F1|];; Inject (Move D2) [|Fin.FS Fin.F1|].
 
   Lemma MovePar_Sem : MovePar ⊨c(3) MovePar_R.
   Proof.
@@ -41,8 +41,8 @@ Section MovePar.
   
 End MovePar.
 
-Arguments MovePar_R { sig } ( D1 D2 ) { F } ( def ) x y /.
-Arguments MovePar {sig} (D1 D2) {F} def.
+Arguments MovePar_R { sig } ( D1 D2 ) x y /.
+Arguments MovePar {sig} (D1 D2).
 Arguments MovePar : simpl never.
 
 
@@ -56,8 +56,8 @@ Section Copy.
     MATCH (Inject ReadChar [|Fin.F1|])
           (fun s : option sig =>
              match s with
-             | None =>  Nop tt
-             | Some s => Inject (Write (f s) tt) [|Fin1|]
+             | None =>  Nop
+             | Some s => Inject (Write (f s)) [|Fin1|]
              end).
 
   Definition CopyChar_Rel : pRel sig unit 2 :=
@@ -98,16 +98,16 @@ Section ReadChar.
   Variable sig : finType.
   Variable (n : nat) (k : Fin.t n).
 
-  Definition ReadChar_at : { M : mTM sig n & states M -> option sig} :=
+  Definition ReadChar_at : pTM sig (option sig) n :=
     Inject ReadChar [|k|].
 
-  Definition ReadChar_at_R  : Rel (tapes sig n) (option sig * tapes sig n) :=
+  Definition ReadChar_at_Rel : pRel sig (option sig) n :=
     fun tin '(yout, tout) =>
       yout = current tin[@k] /\
       tout = tin.
 
   Lemma ReadChar_at_Sem :
-    ReadChar_at ⊨c(1) ReadChar_at_R.
+    ReadChar_at ⊨c(1) ReadChar_at_Rel.
   Proof.
     eapply RealiseIn_monotone.
     { unfold ReadChar_at. repeat TM_Correct. }
@@ -125,14 +125,14 @@ End ReadChar.
 
 Arguments ReadChar_at : simpl never.
 Arguments ReadChar_at {sig n} k.
-Arguments ReadChar_at_R { sig n } ( k ) x y /.
+Arguments ReadChar_at_Rel { sig n } ( k ) x y /.
 
 
 Ltac smpl_TM_Multi :=
   match goal with
-  | [ |- MovePar _ _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply MovePar_Sem
-  | [ |- MovePar _ _ _ ⊨c(_) _ ] => eapply MovePar_Sem
-  | [ |- projT1 (MovePar _ _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply MovePar_Sem
+  | [ |- MovePar _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply MovePar_Sem
+  | [ |- MovePar _ _ ⊨c(_) _ ] => eapply MovePar_Sem
+  | [ |- projT1 (MovePar _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply MovePar_Sem
   | [ |- CopyChar _ ⊨ _ ] => eapply RealiseIn_Realise; eapply CopyChar_Sem
   | [ |- CopyChar _ ⊨c(_) _ ] => eapply CopyChar_Sem
   | [ |- projT1 (CopyChar _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply CopyChar_Sem
