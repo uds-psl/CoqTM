@@ -1,13 +1,41 @@
 Require Import TM.Prelim.
 Require Import TM.TM.
-Require Import TM.Basic.Mono.
+Require Import TM.Basic.Basic.
 Require Import TM.LiftMN.
-Require Import TM.Combinators.SequentialComposition TM.Combinators.Match.
+Require Import TM.Combinators.Combinators.
 
 Require Import TM.Compound.TMTac.
 
+(** * Simple compound multi-tape Machines *)
 
-(* Simple 2-tape Turing machines *)
+
+(* n-tape Machine that does nothing *)
+Section Nop.
+  Variable sig : finType.
+  Variable n : nat.
+
+  Definition Nop : pTM sig unit n := Inject Null (Vector.nil _).
+
+  Definition Nop_Rel : pRel sig unit n :=
+    ignoreParam (fun t t' => t' = t).
+
+  Lemma Nop_Sem : Nop ⊨c(0) Nop_Rel.
+  Proof.
+    eapply RealiseIn_monotone.
+    { unfold Nop. repeat TM_Correct. }
+    { reflexivity. }
+    {
+      intros tin ((), tout) (_&HInj). cbn in *.
+      apply Vector.eq_nth_iff; intros i ? <-. apply HInj. vector_not_in.
+    }
+  Qed.
+  
+End Nop.
+
+Arguments Nop_Rel {sig n} x y/.
+Arguments Nop {sig n}.
+Arguments Nop : simpl never.
+
 
 
 (* Let both tapes move *)
@@ -26,13 +54,8 @@ Section MovePar.
   Lemma MovePar_Sem : MovePar ⊨c(3) MovePar_R.
   Proof.
     eapply RealiseIn_monotone.
-    {
-      unfold MovePar.
-      eapply Seq_RealiseIn; (eapply Inject_RealisesIn; [vector_dupfree | eapply Move_Sem ]).
-    }
-    {
-      omega.
-    }
+    { unfold MovePar. repeat TM_Correct. }
+    { reflexivity. }
     {
       hnf in *. intros tin (yout&tout) H. destruct_tapes. cbn -[Vector.nth] in *.
       TMSimp; clear_trivial_eqs. auto.
@@ -130,12 +153,18 @@ Arguments ReadChar_at_Rel { sig n } ( k ) x y /.
 
 Ltac smpl_TM_Multi :=
   match goal with
+  | [ |- Nop ⊨ _ ] => eapply RealiseIn_Realise; apply Nop_Sem
+  | [ |- Nop ⊨c(_) _ ] => eapply Nop_Sem
+  | [ |- projT1 (Nop) ↓ _ ] => eapply RealiseIn_terminatesIn; apply Nop_Sem
+
   | [ |- MovePar _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply MovePar_Sem
   | [ |- MovePar _ _ ⊨c(_) _ ] => eapply MovePar_Sem
   | [ |- projT1 (MovePar _ _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply MovePar_Sem
+
   | [ |- CopyChar _ ⊨ _ ] => eapply RealiseIn_Realise; eapply CopyChar_Sem
   | [ |- CopyChar _ ⊨c(_) _ ] => eapply CopyChar_Sem
   | [ |- projT1 (CopyChar _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply CopyChar_Sem
+
   | [ |- ReadChar_at _ ⊨ _ ] => eapply RealiseIn_Realise; eapply ReadChar_at_Sem
   | [ |- ReadChar_at _ ⊨c(_) _ ] => eapply ReadChar_at_Sem
   | [ |- projT1 (ReadChar_at _) ↓ _ ] => eapply RealiseIn_terminatesIn; eapply ReadChar_at_Sem

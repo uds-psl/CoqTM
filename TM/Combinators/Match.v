@@ -1,4 +1,4 @@
-Require Export TM Nop.
+Require Export TM.TM.
 Require Import Shared.FiniteTypes.DepPairs EqdepFacts.
 
 Section Match.

@@ -3,6 +3,7 @@ Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Combinators.
 Require Import TM.Mirror.
 Require Import TM.Compound.TMTac.
+Require Import TM.Compound.Multi.
 
 Require Import FunInd.
 Require Import Recdef.
@@ -30,9 +31,9 @@ Section move_to_symbol.
           (fun b : option sig =>
              match b with
              | Some x => if f x
-                        then Return (mono_Nop) (Some tt) (* found the symbol, break *)
+                        then Return (Nop) (Some tt) (* found the symbol, break *)
                         else Return (WriteMove (g x) R) (None) (* wrong symbol, move right and continue *)
-             | _ => Return (mono_Nop) (Some tt) (* there is no such symbol, break *)
+             | _ => Return (Nop) (Some tt) (* there is no such symbol, break *)
              end).
 
   Definition M1_Fun : tape sig -> tape sig :=
@@ -63,9 +64,9 @@ Section move_to_symbol.
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e). 
-        + instantiate (1 := 1). apply Return_RealiseIn. eapply mono_Nop_Sem.
+        + instantiate (1 := 1). apply Return_RealiseIn. eapply Nop_Sem.
         + apply Return_RealiseIn. eapply WriteMove_Sem.
-      - apply Return_RealiseIn. eapply mono_Nop_Sem.
+      - apply Return_RealiseIn. eapply Nop_Sem.
     }
     {
       (cbn; omega).

@@ -157,29 +157,6 @@ Arguments ReadChar {sig}.
 Arguments ReadChar_Rel sig x y /.
 
 
-Section Mono_Nop.
-
-  Variable sig : finType.
-
-  Definition mono_nop_trans : unit -> option sig -> unit * (option sig * move) :=
-    fun u s => (u, (None, N)).
-
-  Definition mono_nop : mTM sig 1 := Mk_Mono_TM mono_nop_trans tt (fun _ => true).
-
-  Definition mono_Nop : pTM sig unit 1 := (mono_nop; fun _ => tt).
-
-  Definition mono_Nop_R : pRel sig unit 1 :=
-    ignoreParam (fun t t' => t = t').
-
-  Lemma mono_Nop_Sem: mono_Nop ⊨c(0) mono_Nop_R.
-  Proof. intros t. cbn. unfold initc; cbn. eexists (mk_mconfig _ _); cbn; eauto. Qed.
-
-End Mono_Nop.
-
-Arguments mono_Nop : simpl never.
-Arguments mono_Nop {sig}.
-Arguments mono_Nop_R { sig } x y / : rename.
-
 
 Ltac smpl_TM_Mono :=
   match goal with
@@ -198,9 +175,6 @@ Ltac smpl_TM_Mono :=
   | [ |- ReadChar ⊨ _] => eapply RealiseIn_Realise; eapply ReadChar_Sem
   | [ |- ReadChar ⊨c(_) _] => eapply ReadChar_Sem
   | [ |- projT1 (ReadChar) ↓ _] => eapply RealiseIn_terminatesIn; eapply ReadChar_Sem
-  | [ |- mono_Nop ⊨ _] => eapply RealiseIn_Realise; eapply mono_Nop_Sem
-  | [ |- mono_Nop ⊨c(_) _] => eapply mono_Nop_Sem
-  | [ |- projT1 (mono_Nop) ↓ _] => eapply RealiseIn_terminatesIn; eapply mono_Nop_Sem
   end.
 
 Smpl Add smpl_TM_Mono : TM_Correct.

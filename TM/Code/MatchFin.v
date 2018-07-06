@@ -12,7 +12,7 @@ Section MatchFin.
     MATCH (ReadChar)
     (fun s => match s with
            | Some (inr x) => Return (Move R) x
-           | _ => Return (mono_Nop) default
+           | _ => Return (Nop) default
            end).
 
   Local Existing Instance Encode_Finite.

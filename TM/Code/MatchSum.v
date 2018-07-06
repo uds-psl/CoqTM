@@ -51,7 +51,7 @@ Ltac destruct_shelve e :=
           (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding partition *)
                  | Some (inr sigSum_inl) => Return (Write (inl START)) true  (* inl *)
                  | Some (inr sigSum_inr) => Return (Write (inl START)) false (* inr *)
-                 | _ => Return (mono_Nop) true (* invalid input *)
+                 | _ => Return (Nop) true (* invalid input *)
                  end).
 
   Definition MatchSum_steps := 5.

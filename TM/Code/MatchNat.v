@@ -1,9 +1,4 @@
-Require Import TM.Code.CodeTM.
-Require Import TM.Basic.Mono TM.Basic.Nop TM.Compound.Multi.
-Require Import TM.Combinators.Combinators.
-Require Import TM.LiftMN TM.LiftSigmaTau.
-Require Import TM.Compound.TMTac.
-
+Require Import TM.Code.ProgrammingTools.
 
 
 (* Basic pattern matching *)
@@ -26,7 +21,7 @@ Section MatchNat.
           (fun o => match o with
                  | Some (inr sigNat_S) => Return (Write (inl START)) true (* S *)
                  | Some (inr sigNat_O) => Return (Move L) false (* O *)
-                 | _ => Return (mono_Nop) true (* invalid input *)
+                 | _ => Return (Nop) true (* invalid input *)
                  end).
 
   Definition MatchNat_steps := 5.

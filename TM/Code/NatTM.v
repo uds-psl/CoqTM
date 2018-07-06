@@ -1,14 +1,5 @@
-Require Import TM.Code.CodeTM TM.Code.MatchNat.
-Require Import TM.Basic.Mono Basic.Nop Combinators.Combinators.
-Require Import TM.LiftMN TM.LiftSigmaTau.
-Require Import TM.Compound.TMTac.
-Require Import TM.Code.Copy.
-
-(* Require Import Lia. *)
-(* Require Import Coq.Init.Nat. *)
-
-(* This is good *)
-Local Arguments finType_CS (X) {_ _}.
+Require Import TM.Code.ProgrammingTools.
+Require Import TM.Code.MatchNat.
 
 
 (** * Machines that compte natural functions *)

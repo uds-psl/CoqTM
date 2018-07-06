@@ -242,6 +242,34 @@ Arguments tapes (sig % type) (n % nat).
 
 
 
+
+(** (∅, N)^n *)
+Section Null_Action.
+  Variable n : nat.
+  Variable sig : finType.
+
+  Definition null_action := Vector.const (@None sig, N) n.
+
+  Lemma tape_move_null_action tapes :
+    tape_move_multi tapes null_action = tapes.
+  Proof.
+    unfold null_action, tape_move_multi.
+    apply Vector.eq_nth_iff; intros ? i <-.
+    erewrite Vector.nth_map2; eauto.
+    rewrite Vector.const_nth.
+    cbn. reflexivity.
+  Qed.
+
+End Null_Action.
+
+Arguments null_action {_ _}.
+
+
+
+
+
+
+
 Section MirrorTape.
   Variable (n : nat) (sig : Type).
 

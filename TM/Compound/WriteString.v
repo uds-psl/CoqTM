@@ -1,4 +1,4 @@
-Require Import TM.TM TM.Basic.Mono TM.Combinators.Combinators.
+Require Import TM.TM TM.Basic.Mono TM.Combinators.Combinators TM.Compound.Multi.
 Require Import List.
 Require Import TMTac.
 
@@ -15,7 +15,7 @@ Section Write_String.
 
   Fixpoint WriteString (l : list sig) : pTM sig unit 1 :=
     match l with
-    | [] => mono_Nop
+    | [] => Nop
     | x :: xs => WriteMove x D ;; WriteString xs
     end.
 
@@ -31,7 +31,7 @@ Section Write_String.
 
   Fixpoint WriteString_sem_fix (str : list sig) : pRel sig unit 1 :=
     match str with
-    | nil => mono_Nop_R
+    | nil => Nop_Rel
     | s :: str' =>
       WriteMove_Rel s D |_tt ∘ WriteString_sem_fix str'
     end.
