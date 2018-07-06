@@ -814,7 +814,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
           modpon HMatchList'. destruct P as [ | t P']; auto; modpon HMatchList'.
           modpon HMatchTok. destruct ymid0 as [ [ | | ] | ], t; auto; simpl_surject; cbn in *.
           { (* retT *)
-            destruct HCase as (->&->); cbn. split; auto. hnf. intros s HStep. inv HStep.
+            destruct HCase as (->&(?&->)); cbn. split; auto. hnf. intros s HStep. inv HStep.
           }
           { (* lamT *)
             rename HCase into HStepLam. modpon HStepLam; TMSimp_goal; eauto; try contains_ext.
