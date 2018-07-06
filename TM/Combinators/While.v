@@ -30,12 +30,15 @@ Section While.
 
   Hypothesis (defF : inhabitedC F).
 
+  Definition While_param : states (projT1 pM) -> F :=
+    fun q =>
+      match projT2 pM q with
+      | Some y => y
+      | None => default
+      end.
+
   Definition WHILE : pTM sig F n :=
-    (While; fun q =>
-              match projT2 pM q with
-              | Some y => y
-              | None => default
-              end).
+    (While; While_param).
 
   Local Arguments loopM {_ _} _ _ _.
   Local Arguments halt {_ _} _ _.
@@ -161,7 +164,7 @@ Section While.
     intros HRel. hnf in HRel; hnf. intros t k; revert t. apply complete_induction with (x := k); clear k; intros k IH. intros tin c3 HLoop.
     apply While_split in HLoop as (k1&k2&c2&HLoop1&HLoop2&Hk).
     destruct (projT2 pM (cstate c2)) as [ f | ] eqn:E; cbn in *; [ clear IH | ].
-    - apply While_split_term with (f := f) in HLoop2 as ->; auto. 2: apply (loop_fulfills HLoop1). rewrite E.
+    - apply While_split_term with (f := f) in HLoop2 as ->; auto. 2: apply (loop_fulfills HLoop1). unfold While_param. rewrite E.
       constructor 1. specialize HRel with (1 := HLoop1). now rewrite E in HRel.
     - apply While_split_repeat in HLoop2 as (k2'&->&HLoop2); auto. 2: apply (loop_fulfills HLoop1).
       specialize IH with (2 := HLoop2); spec_assert IH by omega.
@@ -201,6 +204,92 @@ Section While.
         exists oconf2. apply loop_monotone with (k1 := i1 + (1 + i2)). 2: omega.
         eapply While_merge_repeat; eauto.
     Qed.
+
+
+    Inductive While_T : tRel sig n :=
+    | While_T1 tin k k' :
+        T tin k ->
+        (forall (yout : option F) tout,
+            R tin (yout, tout) ->
+            exists y' : F, yout = Some y') ->
+        k <= k' ->
+        While_T tin k'
+    | While_T2 tin k1 k2 k' :
+        T tin k1 ->
+        (forall ymid tmid,
+            R tin (ymid, tmid) ->
+            ymid = None) ->
+        (forall ymid tmid,
+            R tin (ymid, tmid) ->
+            While_T tmid k2) ->
+        1 + k1 + k2 <= k' ->
+        While_T tin k'.
+
+    Lemma While_TerminatesIn' :
+      pM ⊨ R ->
+      projT1 pM ↓ T ->
+      While ↓ While_T.
+    Proof.
+      intros HRel HTerm. hnf in HRel, HTerm.
+      hnf. intros tin k HT. induction HT as [ tin k k' HT HR Hk' | tin k1 k2 k' HT HR1 HR2 IH Hk'].
+      - specialize HTerm with (1 := HT) as (oconf&HTerm).
+        specialize HRel with (1 := HTerm). cbn in *.
+        specialize HR with (1 := HRel) as (y&HR).
+        exists oconf. eapply loop_monotone. eapply While_merge_term; eauto. omega.
+      - specialize HTerm with (1 := HT) as (midconf&HLoopM).
+        specialize HRel with (1 := HLoopM).
+        specialize HR1 with (1 := HRel).
+        specialize HR2 with (1 := HRel).
+        specialize IH with (1 := HRel) as (oconf&IH).
+        exists oconf. eapply loop_monotone. eapply While_merge_repeat; eauto. omega.
+    Qed.
+    
+    (*
+    (* Ursprüngliche Lemma *)
+    Reset While_TerminatesIn.
+    Lemma While_TerminatesIn :
+      pM ⊨ R ->
+      projT1 pM ↓ T ->
+      (forall (tin : tapes sig n) (i : nat),
+          T' tin i ->
+          exists i1,
+            T tin i1 /\
+            forall (ymid : option F) tmid,
+              R tin (ymid, tmid) ->
+              match ymid with
+              | Some _ => i1 <= i
+              | None => exists i2, T' tmid i2 /\ 1 + i1 + i2 <= i
+              end) ->
+      While ↓T'.
+    Proof.
+      intros HRel HTerm HCond.
+      eapply TerminatesIn_monotone.
+      { eapply TerminatesIn_extend. now apply While_TerminatesIn'. }
+      {
+        hnf in HRel, HTerm.
+        intros tin k HT'.
+        revert HT'. revert tin. apply complete_induction with (x := k); clear k; intros k IH. intros.
+        
+        specialize HCond with (1 := HT') as (k1&HT1&HCond).
+        specialize HTerm with (1 := HT1) as (midconf&HTerm).
+        specialize HRel with (1 := HTerm).
+        specialize HCond with (1 := HRel).
+        destruct (projT2 pM (cstate midconf)) eqn:E.
+        + exists k1. split; eauto. constructor 1; eauto.
+          intros. eauto. admit.
+        + destruct HCond as (k2&HT''&Hk).
+          specialize IH with (2 := HT'') as (k'&Hk'&IH); [ omega | ].
+          eexists. split.
+          2:{ econstructor 2; eauto.
+          exists (1+k1+k2). split; auto.
+          constructor 2; eauto.
+      }
+    Qed.
+    *)
+        
+        
+    
+    
 
   End While_terminatesIn.
 

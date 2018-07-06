@@ -250,7 +250,26 @@ Proof.
         * do 2 eexists. repeat split; eauto. omega.
         * omega.
   }
+Restart.
+  idtac.
+  unfold Add_Loop, Add_Loop_steps.
+  eapply TerminatesIn_monotone.
+  { eapply While_TerminatesIn'.
+    - eapply RealiseIn_Realise. apply Add_Step_Sem.
+    - eapply RealiseIn_terminatesIn. apply Add_Step_Sem.
+  }
+  {
+    intros tin k (a&b&HEncA&HEncB&Hk).
+    destruct b.
+    - econstructor 1. omega.
+      intros yout tout H. cbn in *.
+      specialize H with (1 := HEncA) (2 := HEncB). cbn in *.
+      destruct yout; eauto.
+    - econstructor 2.
+  }
 Qed.
+
+
 
 
 Definition Add_Main_steps m n := 87 + 12 * n + 24 * m.
