@@ -172,7 +172,9 @@ We use the definition of \emph{multi-tape Turing machines} and their semantics f
 
 \begin{definition}[Multi-tape Turing machine]
   \label{def:mTM}
-  An \emph{$n$-tape Turing machine} over a finite alphabet $\Sigma$ is a tuple $M = (Q, \delta, start, halt)$ where
+  An \emph{$n$-tape Turing machine} \footnote{Asperti and Ricciotti~\cite{asperti2015} restrict this definition to machines with $n>0$.  We do not
+    have this restriction.  We actually define a $0$-tape machine $\MS{Null}$, see~\ref{sec:Null}.}  over a finite alphabet $\Sigma$ is a tuple
+  $M = (Q, \delta, start, halt)$ where
   \begin{itemize}
   \item $Q$ is a finite type
   \item $\delta \from Q \times (\Option~\Sigma)^n \to Q \times (\Option~\Sigma \times \MS{Move})^n$
@@ -425,11 +427,10 @@ steps the machine needs for the computation.
   If $M \vDash R$ and $R \subseteq R'$, then $M \vDash R'$.
 \end{lemma}
 
-\begin{lemma}[Monotonicity of $M \downarrow T$]
+\begin{lemma}[Anti-monotonicity of $M \downarrow T$]
   \label{lem:TerminatesIn_monotone}
   If $M \downarrow T$ and $T' \subseteq T$, then $M \downarrow T'$.
 \end{lemma}
-
 
 For machines that always terminate in a constant number of steps, it is useful to combine both predicates:
 \begin{definition}[Realisation in constant time]
@@ -468,75 +469,76 @@ every input.  We use their weak realisation extended with the finite partition $
 
 
 We define several classes of \emph{basic} one-tape machines.  All complex machines we will build later, will be based on these basic machines.  In the
-next chapter, I will show how to combine these basic machines and build complex machines.
+next chapter, we will show how to combine these basic machines and build complex machines.
 
 
-\subsection{Nop}
-\label{sec:basic_machines-Nop}
+\subsection{Null}
+\label{sec:Null}
 
-A very simple class of (partitioned) machine is the one-tape $\MS{Nop}$ machine.  It terminates immediately, i.e.\ after 0 steps.  For convenience, We
-define $\MS{Nop}$ over a partition $f:F$, i.e.\ all states of $\MS{Nop}$ are mapped into the same partition.  We do this for all basic machines, except
-$\MS{Read}$, but there is no real need to do this, since we will introduce a simple operator on partitioned machines that simply changes the partition
-in Chapter~\ref{chap:combining}.
-\begin{definition}[Nop]
-  \label{def:Nop}
-  Let $f:F$ be a partition.  $\MS{Nop}~f: \TM_\Sigma^1(F)$ is defined as follows:
+A very simple class of machine is the zero-tape $\MS{Null}$ machine.  The class $\MS{Null}_\Sigma$ is parametrised over the alphabet, however,
+$\Sigma$ is always clear in the context, so we leave the index out.  We fix an alphabet $\Sigma$.  $\MS{Null}$ terminates immediately, i.e.\ after $0$
+steps.
+
+\begin{definition}[Null]
+  \label{def:Null}
+  $\MS{Nop}~f: \TM_\Sigma^{\mkern+3mu 0}$ is defined as follows:
   \begin{align*}
     Q          &:= \Unit \\
     start      &:= \unit \\
-    \delta ~\_ &:= (\unit, \Vector{(\None, N)}) \\
+    \delta ~\_ &:= (\unit, \nil) \\
     halt   ~\_ &:= \true \\
-    part   ~\_ &:= f
   \end{align*}
 \end{definition}
-The correctness relation says exactly that the tapes don't change and that the machine terminates in $f$:
-\begin{lemma}[Correctness of $\MS{Nop}$]
+Note that if we have an unpartitioned machine $M:\TM_\Sigma^n$, we implicitly partition it over $\Unit$ with $part(q)=\unit$.
+
+% The correctness relation says exactly that the tapes don't change:
+The correctness relation is the (unit-partitioned) universal relation, because empty vectors do not have information.
+\begin{lemma}[Correctness of $\MS{Null}$]
   \label{lem:Nop_Sem}
   ~
   \[
-    \MS{Nop}~f \vDash^0 \MS{NopRel}~f.
+    \MS{Null} \vDash^0 \MS{NullRel}.
   \]
   with
   \[
-    \MS{NopRel}~f := \lambda~t~(y,t').~ t' = t \land y = f.
+    \MS{NullRel} := \lambda~t~t'.~ \True.
   \]
 \end{lemma}
 \begin{proof}
   By execution.  The machine terminates after zero steps in the start state.
 \end{proof}
 
-Note that the correctness relation of $\MS{Nop}$ can also be expressed using the identity relation $Id$ and the relational fix:
-\[
-  \MS{NopRel}~f \equiv Id \att f.
-\]
-However, we have the convention to define relations of concrete machine (classes) in $\lambda$-notation, i.e.\ not using relational operators.  Also
-note that the tape $t'$ is per convention always on the left side of the equality.
+% Note that the correctness relation of $\MS{Nop}$ can also be expressed using the identity relation $Id$ and the relational fix:
+% \[
+%   \MS{NopRel}~f \equiv Id \att f.
+% \]
+% However, we have the convention to define relations of concrete machine (classes) in $\lambda$-notation, i.e.\ not using relational operators.  Also
+% note that the tape $t'$ is per convention always on the left side of the equality.
 
 \subsection{DoAct}
 \label{sec:DoAct}
 
-Machines of the next class, $\MS{DoAct}~a~f : \TM_\Sigma^1(F)$, do only one action $a$ and terminate in $f$ after one step.
-\begin{definition}[$\MS{DoAct}~a~f$]
+Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action $a$ and terminate after one step.
+\begin{definition}[$\MS{DoAct}~a$]
   \label{def:DoAct}
-  Let $a:\MS{Act}$ and $f:F$.
+  Let $a:\MS{Act}$.
   \begin{align*}
     Q          &:= \Bool \\
     start      &:= \false \\
     \delta ~\_ &:= (\true, \Vector{a}) \\
     halt   ~ b &:= b \\
-    part   ~\_ &:= f
   \end{align*}
 \end{definition}
-The semantics of $\MS{DoAct}$ is easily expressed using $\MS{doAct}$ (see Definition \ref{def:step}):
+The semantics of $\MS{DoAct}$ is easily expressed using $\MS{doAct}$ (see Definition~\ref{def:step}):
 \begin{lemma}[Correctness of $\MS{DoAct}$]
   \label{lem:tam}
   ~
   \[
-    \MS{DoAct}~a~f \vDash^1 \MS{DoActRel}~a~f.
+    \MS{DoAct}~a \vDash^1 \MS{DoActRel}~a.
   \]
   with
   \[
-    \MS{DoActRel}~a~f := \lambda~t~(y, t').~ t' = \MS{doAct}~t~a \land y = f.
+    \MS{DoActRel}~a := \lambda~t~t'.~ t' = \MS{doAct}~t~a.
   \]
 \end{lemma}
 \begin{proof}
@@ -562,9 +564,9 @@ We define some abbreviations:
 \subsection{Read}
 \label{sec:basic_machines-Read}
 
-$Read : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of machines.  The machines of this class have one state for each character of the
-alphabet.  They read one symbol and terminate in the state that corresponds to this symbol.  They have a distinct state for the case that the current
-symbol is $\None$.
+$Read : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of partitioned machines.  The machines of this class have one state for each character
+of the alphabet.  They read a symbol and terminate in the state that corresponds to this symbol.  They have a distinct state for the case that the
+current symbol is $\None$.
 
 
 \begin{definition}[$\MS{Read}$]
