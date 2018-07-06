@@ -25,12 +25,6 @@ Section Loop.
     loop (S k) a = loop k (f a).
   Proof. intros HHalt. destruct k; cbn; rewrite HHalt; auto. Qed.
 
-  Lemma loop_step_eq k a c :
-    p a = false ->
-    loop k a = Some c ->
-    loop k (f a) = Some c.
-  Admitted.
-
   Lemma loop_injective k1 k2 a c1 c2 :
     loop k1 a = Some c1 ->
     loop k2 a = Some c2 ->
@@ -67,27 +61,16 @@ Section Loop.
     c = a.
   Proof. intros H1 H2. eapply (loop_0 k) in H1. congruence. Qed.
 
-  Lemma loop_S k a :
-    p a = false ->
-    p (f a) = true ->
-    loop (S k) a = Some (f a).
-  Proof. intros H1 H2. rewrite loop_step by assumption. now apply loop_0. Qed.
-
-  Lemma loop_eq_S k a c :
-    p a = false ->
-    p (f a) = true ->
-    loop k a = Some c ->
-    c = f a.
-  Proof. intros H1 H2 H3. apply loop_step_eq in H3; auto. apply loop_eq_0 in H3; auto. Qed.
-    
+  
   Lemma loop_monotone (k1 k2 : nat) (a c : A) : loop k1 a = Some c -> k1 <= k2 -> loop k2 a = Some c.
   Proof.
-    intros HLoop Hle. revert a c HLoop. 
-    induction Hle; intros; cbn in *.
-    - assumption.
+    revert a k2; induction k1 as [ | k1' IH]; intros a k2 HLoop Hk; cbn in *.
+    - destruct k2; cbn; destruct (p a); now inv HLoop.
     - destruct (p a) eqn:E.
-      + f_equal. symmetry. eapply loop_eq_0; eauto.
-      + apply IHHle. now apply loop_step_eq.
+      + inv HLoop. now apply loop_0.
+      + destruct k2 as [ | k2']; cbn in *; rewrite E.
+        * exfalso. omega.
+        * apply IH. assumption. omega.
   Qed.
 
 End Loop.
