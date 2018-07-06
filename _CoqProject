@@ -24,7 +24,8 @@ TM/LiftSigmaTau.v
 TM/Mirror.v
 
 # Basic Machines
-TM/Basic/Nop.v
+TM/Basic/Basic.v
+TM/Basic/Null.v
 TM/Basic/Mono.v
 
 # Compound Machines
