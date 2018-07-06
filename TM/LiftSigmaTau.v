@@ -1,6 +1,5 @@
 Require Import TM.Prelim TM.Relations TM.TM.
 
-
 Section SujectTape.
   Variable sig tau : Type.
   Variable g : tau -> option sig.
@@ -131,9 +130,7 @@ Section LiftSigmaTau.
     fun c => mk_mconfig (cstate c) (injectTapes Retr_f (ctapes c)).
 
 
-  (* End definition *)
-
-  Lemma surject_step :
+  Lemma tape_move_mono_surject :
     forall (tape : tape tau) (act : option sig * move) (d : sig),
       tape_move_mono (surjectTape Retr_g d tape) act =
       surjectTape Retr_g d (tape_move_mono tape (map_act Retr_f act)).
@@ -147,41 +144,30 @@ Section LiftSigmaTau.
     - destruct l0; cbn; f_equal; now retract_adjoint.
   Qed.
 
-
-  Lemma sim_step (c1 c2 : mconfig tau (states (projT1 pMSig)) n) :
-    step (M := liftM) c1 = c2 ->
-    step (M := projT1 pMSig) (surjectConf c1) = surjectConf c2.
+  Lemma current_chars_surjectTapes (t : tapes tau n) :
+    current_chars (surjectTapes Retr_g def t) = surjectReadSymbols (current_chars t).
   Proof.
-    unfold surjectConf. intros H. cbn. 
-    destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2.
-    cbv [step] in *. cbn -[map step] in *.
-    destruct (trans (state1, surjectReadSymbols (current_chars tapes1))) as (q, act) eqn:E3.
-    inv H.
-    destruct (trans (state1, current_chars _)) as (q', act') eqn:E4.
-    enough ((state2, act) = (q', act')) as X.
-    {
-      inv X. f_equal.
-      unfold surjectTapes, mapTapes. apply Vector.eq_nth_iff. intros p ? <-.
-      simpl_vector. apply surject_step.
-    }
-    rewrite <- E3, <- E4. do 2 f_equal.
+    unfold current_chars, surjectTapes, surjectReadSymbols. apply Vector.eq_nth_iff; intros i ? <-. simpl_tape.
+    unfold surjectTape, surject. now simpl_tape.
+  Qed.
 
-    unfold surjectReadSymbols, current_chars.
-    apply Vector.eq_nth_iff; intros p ? <-.
-    unfold surjectTapes, mapTapes, surject. autounfold with tape.
-    simpl_vector. destruct (tapes1[@p]) eqn:E5; cbn; auto.
+  Lemma sim_step (c : mconfig tau (states (projT1 pMSig)) n) :
+    step (M := projT1 pMSig) (surjectConf c) = surjectConf (step (M := liftM) c).
+  Proof.
+    unfold surjectConf. destruct c as [q t]. cbn in *.
+    unfold step. cbn -[tape_move_multi].
+    rewrite current_chars_surjectTapes.
+    destruct (trans (q, surjectReadSymbols (current_chars t))) eqn:E. cbn.
+    f_equal. unfold tape_move_multi, surjectTapes. apply Vector.eq_nth_iff; intros i ? <-. simpl_tape. apply tape_move_mono_surject.
   Qed.
 
   Lemma sim_loop (c1 c2 : mconfig tau (states liftM) n) (i : nat) :
     loopM (M := liftM) i c1 = Some c2 ->
     loopM (M := projT1 pMSig) i (surjectConf c1) = Some (surjectConf c2).
   Proof.
-    unfold loopM, haltConf in *. revert c2 c1. induction i; intros c2 c1 H; cbn in *.
-    - destruct (halt _) eqn:E; now inv H.
-    - destruct (halt _) eqn:E; inv H; auto.
-      rewrite sim_step with (c1 := c1) (c2 := step (M := liftM) c1); [ | reflexivity]. apply IHi. apply H1.
+    unfold loopM. intros H. eapply loop_lift. 3: apply H. auto.
+    - intros ? _. apply sim_step.
   Qed.
-
 
   Lemma Lift_Realise (R : Rel (tapes sig n) (F * tapes sig n)) :
     pMSig ⊨ R ->
@@ -193,36 +179,14 @@ Section LiftSigmaTau.
     now apply (@sim_loop (initc liftM t) outc i).
   Qed.
 
-
-  Lemma propagate_step (conf : (mconfig tau (states (projT1 pMSig)) n)) :
-    surjectConf (step (M := liftM) conf) = step (surjectConf conf).
-  Proof.
-    cbv [surjectConf]. cbv [step]. cbn.
-    replace (surjectReadSymbols (current_chars (ctapes conf))) with
-        (current_chars (surjectTapes Retr_g def (ctapes conf))).
-    - destruct (trans (cstate conf, current_chars (surjectTapes Retr_g def (ctapes conf)))) eqn:E1; cbn.
-      f_equal. unfold surjectTapes, mapTapes. apply Vector.eq_nth_iff. intros ? ? <-.
-      unfold tape_move_multi.
-      repeat first [erewrite !Vector.nth_map2; eauto | erewrite !Vector.nth_map; eauto].
-      cbv [surject]. cbn.
-      destruct (t[@p1]) eqn:E2; cbn. generalize ((ctapes conf)[@p1]) as t1. intros t1. cbn.
-      symmetry. apply surject_step.
-    - eapply Vector.eq_nth_iff. intros ? ? <-.
-      unfold current_chars, surjectTapes, mapTapes, surjectReadSymbols, surjectTape.
-      now repeat simpl_tape.
-  Qed.
-
   Lemma propagate_loop (k : nat) iconf (oconf : mconfig sig (states (projT1 pMSig)) n) :
     loopM k (surjectConf iconf) = Some oconf ->
     exists oconf' : mconfig tau (states liftM) n,
       loopM k iconf = Some oconf'.
   Proof.
-    revert iconf. unfold loopM, haltConf. induction k as [ | k IH ]; intros iconf HLoop; cbn in *.
-    - destruct (halt _); inv HLoop. unfold injectConf. cbn. eauto.
-    - destruct (halt _) eqn:E1; eauto.
-      replace (step (surjectConf iconf)) with (surjectConf (step (M := liftM) iconf)) in HLoop.
-      + specialize (IH _ HLoop) as (oconf'&IH). eauto.
-      + apply propagate_step.
+    intros HLoop. unfold loopM in *.
+    apply loop_unlift with (f := step(M:=liftM)) (h:=haltConf(M:=liftM)) in HLoop as (c'&HLoop&->); eauto.
+    - intros ? _. now apply sim_step.
   Qed.
 
   Lemma Lift_TerminatesIn (T : Rel (tapes sig n) nat) :
