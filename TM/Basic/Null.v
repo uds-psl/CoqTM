@@ -16,7 +16,7 @@ Section Mono_Nop.
   Definition Null : pTM sig unit 0 := (NullTM; fun _ => tt).
 
   Definition Null_Rel : pRel sig unit 0 :=
-    ignoreParam (fun t t' => t = t').
+    ignoreParam (fun t t' => True).
 
   Lemma Null_Sem: Null ⊨c(0) Null_Rel.
   Proof. intros t. cbn. unfold initc; cbn. eexists (mk_mconfig _ _); cbn; eauto. Qed.
