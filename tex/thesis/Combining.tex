@@ -50,10 +50,12 @@ canonical value.
   \label{fig:match}
 \end{figure}
 
+\todo{Maybe use parenthesises, e.g.\ $\Match(M,M')$ and $MS{MatchRel}(R,R')$ for better readability}
 
-$\MS{Match}~M~M'$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``$\MS{Nop}$'' action (i.e.\ $(\None,N)^n$) and
-changes to to the injection of the start state of the machine $M'(part~q)$.  When $\MS{Match}~M~M'$ reaches a state that is the injection of a final
-state of a machine $M'~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
+
+$\MS{Match}~M~M'$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
+to to the injection of the start state of the machine $M'(part~q)$.  When $\MS{Match}~M~M'$ reaches a state that is the injection of a final state of
+a machine $M'~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
 
 \begin{lemma}[Correctness of $\MS{Match}~M~M'$]
   \label{lem:Match_Realise}
@@ -68,11 +70,12 @@ state of a machine $M'~y$, it terminates.  The correctness part of the semantics
   \]
 \end{lemma}
 
-Note that in the relation $\MS{MatchRel}$, we compose the unpartitioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the partitioned
-relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.
+Note that in the relation $\MS{MatchRel}$, we compose the unpartitioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the
+partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~M'$ ``discards'' the partition of the
+final state of $M$ and terminates in the partition of $M'~y$.
 
-To specify the runtime of $\MS{Match}~M~M'$, we need to know the relation that $M$ realises, the runtime relation in that $M$ terminates, and for each
-$y:F$ the runtime of $M'~y$.
+To specify the runtime of $\MS{Match}~M~M'$, we need to know the runtime relation in that $M$ terminates, and for each $y:F$ the runtime of $M'~y$.
+We also need to know the correctness of $M$, because the runtime of $M'~y$ depends on the output of $M$, which is the input of $M~y$.
 
 \begin{lemma}[Runtime of $\MS{Match}~M~M'$]
   \label{lem:Match_Terminates}
@@ -123,14 +126,22 @@ machines, i.e.\ we argue on the abstract $\Loop$ function.
 
 For the first feature, \emph{lifting}, we assume two types $A$, $B$ for abstract configurations, an injective function $lift : A \to B$, two step
 functions $f : A \to A$, $f' : B \to B$, and two halting function $h : A \to \Bool$, $h' : B \to \Bool$.  We assume that the step functions $f$ and
-$f'$ is compatible with $lift$ in non-halting states of $A$.  Formally, this means
-\[ \forall a:A.~\lnot h~x \rightarrow f' (lift~x) = lift (f~x). \]
+$f'$, which are compatible with $lift$ in non-halting states of $A$.  Formally, this means
+\begin{equation}
+  \label{eq:loop_lift_assumption1}
+  \forall a:A.~\lnot h~x \rightarrow f' (lift~x) = lift (f~x).
+\end{equation}
+
 The second assumptions is that $h'$ is compatible with $h$, w.r.t.\ $lift$, formally:
-\[ \forall a:A.~h'(lift~x)=h~x. \]
+\begin{equation}
+  \label{eq:loop_lift_assumption2}
+  \forall a:A.~h'(lift~x)=h~x.
+\end{equation}
+
 Under these two assumptions we can show two lemmas that essentially say that the second abstract machine $B$ simulates the first machine $A$.
 \begin{lemma}[Loop lifting]
   \label{lem:loop_lift}
-  Under the two assumptions above:
+  Under the assumptions~\ref{eq:loop_lift_assumption1} and~\ref{eq:loop_lift_assumption2}:
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(c_1~c_2 : A). \\
     & \quad \Loop~f ~h ~k~c_1 = \Some{c_2} \rightarrow \\
@@ -142,7 +153,7 @@ Under these two assumptions we can show two lemmas that essentially say that the
 \end{proof}
 \begin{lemma}[Loop unlifting]
   \label{lem:loop_unlift}
-  Under the two assumptions above:
+  Under the assumptions~\ref{eq:loop_lift_assumption1} and~\ref{eq:loop_lift_assumption2}:
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(a:A)~(b':B). \\
     & \quad \Loop~f'~h'~k~(lift~a) = \Some{b'} \rightarrow \\
@@ -155,13 +166,14 @@ Under these two assumptions we can show two lemmas that essentially say that the
 
 For the second feature, \emph{sequencing}, we assume a type $A$ with the step function $f \from A \to A$ and two halting functions
 $h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume
-\[
+\begin{equation}
+  \label{eq:loop_merge_assumption}
   \forall(a:A).~h~a = \false \rightarrow h'~a = \false,
-\]
+\end{equation}
 i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state w.r.t.\ $h$.
 \begin{lemma}[Loop merging]
   \label{lem:loop_merge}
-  Under the above assumption:
+  Under assumption~\ref{eq:loop_merge_assumption}:
   \begin{align*}
     & \forall (k_1~k_2:\Nat)~(c_1~c_2~c_3 : A).\\
     & \quad \Loop~f~h ~k_1      ~c_1 = \Some{c_2} \rightarrow\\
@@ -170,7 +182,7 @@ i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state 
   \end{align*}
 \end{lemma}
 \begin{proof}
-  By induction over $k1:\Nat$, using Lemma~\ref{lem:loop}~(\ref{lem:loop_monotone}).
+  By induction over $k_1:\Nat$, using Lemma~\ref{lem:loop}~(\ref{lem:loop_monotone}).
 \end{proof}
 \begin{lemma}[Loop splitting]
   \label{lem:loop_split}
@@ -212,11 +224,11 @@ Using Lemma \ref{lem:loop_merge} and \ref{lem:loop_lift}, we can show the lemma 
 \begin{lemma}[Merging parts of executions of $\Match$]
   \label{lem:Match_merge}
   Let $t : \Tape_\Sigma^n$, $k_1, k_2:\Nat$, $c_1=(q', t') : \Conf_M$ and $c_2=(q'', t'') : \Conf_{M'~y}$.
-  \begin{itemize}
-  \item If $M(t) \terminates^{k_1} c_1$ and
-  \item $\bigl( M'~(part_M~q') \bigr) (t_1) \terminates^{k_2} c_2$, then
-  \item $\Match(t) \terminates^{1+k_1+k_2} liftR(c_2)$.
-  \end{itemize}
+  \begin{alignat*}{1}
+    & M(t) \terminates^{k_1} c_1 \rightarrow\\
+    & \bigl( M'~(part_M~q') \bigr) (t_1) \terminates^{k_2} c_2 rightarrow\\
+    & \Match(t) \terminates^{1+k_1+k_2} liftR(c_2).
+  \end{alignat*}
 \end{lemma}
 \begin{proof}
   We apply \ref{lem:loop_merge} and have to show:
@@ -246,7 +258,7 @@ The runtime Lemma~\ref{lem:Match_Terminates} follows directly from Lemma~\ref{le
   \end{align*}
 \end{lemma}
 \begin{proof}
-  Analog to the proof of Lemma~\ref{lem:Match_merge}, using Lemma~\ref{lem:loop_split} and Lemma~\ref{lem:loop_unlift}.
+  Analogous to the proof of Lemma~\ref{lem:Match_merge}, using Lemma~\ref{lem:loop_split} and Lemma~\ref{lem:loop_unlift}.
 \end{proof}
 The correctness Lemma~\ref{lem:Match_Realise} follows directly from Lemma~\ref{lem:Match_split}.
 
@@ -260,7 +272,6 @@ Asperti and Ricciotti~\cite{asperti2015} have a version of Lemma~\ref{lem:loop_l
 The machine $\While M$ essentially behaves like a ``do-while'' loop in imperative languages like C.  At the end of the execution of the loop body $M$,
 $M$ decides either to continue or break out of the loop.  If $M$ terminated in the partition $\None$, then the loop is continued, and if $M$ terminated
 in $\Some{y}$, the loop brakes and $\While M$ terminates in $y$.  When $M : \TM_\Sigma^n(\Option(F))$, then $\While M : \TM_\Sigma^n(F)$.
-
 
 \begin{definition}[$\MS{While}~M$]
   \label{def:While}
@@ -303,9 +314,9 @@ The correctness of $\MS{While}$ can be easily expressed using the following rela
   Let $R \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.  $\MS{WhileRel}~R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$
   is defined inductively by the following two rules:
   \[
-    \inferrule{R~t~(\None, t') \and \MS{WhileRel}~t'~(y, t'')}{\MS{WhileRel}~t~(y, t'')}
+    \inferrule{R~t~(\None, t') \and \MS{WhileRel}~R~t'~(y, t'')}{\MS{WhileRel}~R~t~(y, t'')}
     \quad
-    \inferrule{R~t~(\Some y, t')}{\MS{WhileRel}~t~(y, t')}
+    \inferrule{R~t~(\Some y, t')}{\MS{WhileRel}~R~t~(y, t')}
   \]
 \end{definition}
 
@@ -316,12 +327,12 @@ We can also express this relation using the Kleene star:
   \[
     \MS{WhileRel}~R \equiv (R \at \None)^* \circ \Bigl( \bigcup_{y:F} \bigl( R \at {\Some y} \bigr) \att y \Bigr)
   \]
+  (Where $\equiv$ means relational equivalence.)
 \end{lemma}
 
-Both definitions of $\MS{WhileRel}$ should really make clear what $\While~M$ does: It repeats the execution of $M$ as long as it terminated in
-$\None$, and after it terminated in $\Some y$, it terminates in the partition $y$.  This is visualised in Figure~\ref{fig:while-example}.  However,
-the inductive definition is more practical when we prove correctness of concrete $\MS{While}$ machines, because we can just do induction on the
-inductive predicate.
+Both definitions of $\MS{WhileRel}$ should make clear what $\While~M$ does: It repeats the execution of $M$ as long as it terminated in $\None$, and
+after it terminated in $\Some y$, it terminates in the partition $y$.  This is visualised in Figure~\ref{fig:while-example}.  However, the inductive
+definition is more practical when we prove correctness of concrete $\MS{While}$ machines, because we can just do induction on the inductive predicate.
 
 \begin{lemma}[Correctness of $\MS{While}$]
   \label{lem:While_Realise}
@@ -329,7 +340,7 @@ inductive predicate.
 \end{lemma}
 
 
-We can not simply give a runtime relation in that $\While~M$ terminates, because we do not know the number of iterations in general.  However if we
+We can not simply give a runtime relation in which $\While~M$ terminates, because we do not know the number of iterations in general.  However if we
 know that $M$ realises $R$ and terminates in $T$, we can show $\While~M \downarrow T'$ for another runtime relation $T'$, if $T'$ ``decreases'' in
 terms of $R$ and $t$:
 
@@ -363,7 +374,7 @@ configurations of $\Match$ are exactly the configurations of $M$, so the lifting
 between $\Match$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction over step-numbers,
 in addition to the loop-splitting and loop-merging lemmas.  We present the key lemmas here and the most important parts of the proofs.
 
-We simply write $\While$ instead of $\While$ in this section.  Since we have $\Conf_M = \Conf_\While$, we also only write $\Conf$.
+We simply write $\While$ instead of $\While~M$ in this section.  Since we have $\Conf_M = \Conf_\While$, we also only write $\Conf$.
 
 The first lemma says that an execution of $\While$ consists of an execution of $M$ and a (possibly empty) continuation of $\While$:
 \begin{lemma}[Splitting the execution of $\While$]
