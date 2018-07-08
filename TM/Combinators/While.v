@@ -206,48 +206,40 @@ Section While.
     Qed.
 
 
+    Hypothesis functionalOn : forall tin yout1 yout2 tout1 tout2, R tin (yout1, tout1) -> R tin (yout2, tout2) -> yout1 = yout2 /\ tout1 = tout2.
+
     Inductive While_T : tRel sig n :=
-    | While_T1 tin k k' :
+    | While_T1 tin yout tout k k' :
         T tin k ->
-        (forall (yout : option F) tout,
-            R tin (yout, tout) ->
-            exists y' : F, yout = Some y') ->
+        R tin (Some yout, tout) ->
         k <= k' ->
         While_T tin k'
-    | While_T2 tin k1 k2 k' :
+    | While_T2 tin tmid k1 k2 k' :
         T tin k1 ->
-        (forall ymid tmid,
-            R tin (ymid, tmid) ->
-            ymid = None) ->
-        (forall ymid tmid,
-            R tin (ymid, tmid) ->
-            While_T tmid k2) ->
+        R tin (None, tmid) ->
+        While_T tmid k2 ->
         1 + k1 + k2 <= k' ->
         While_T tin k'.
 
-    Lemma While_TerminatesIn' :
+    Lemma While_TerminatesIn_T :
       pM ⊨ R ->
       projT1 pM ↓ T ->
       While ↓ While_T.
     Proof.
       intros HRel HTerm. hnf in HRel, HTerm.
-      hnf. intros tin k HT. induction HT as [ tin k k' HT HR Hk' | tin k1 k2 k' HT HR1 HR2 IH Hk'].
-      - specialize HTerm with (1 := HT) as (oconf&HTerm).
-        specialize HRel with (1 := HTerm). cbn in *.
-        specialize HR with (1 := HRel) as (y&HR).
+      hnf. intros tin k HT. induction HT as [ tin k k' yout tout HT HR Hk' | tin tout k1 k2 k' HT HR1 HR2 IH Hk'].
+      - apply HTerm in HT as (oconf&HT).
+        pose proof HRel _ _ _ HT as HT'.
+        pose proof functionalOn HT' HR as (FF&<-).
         exists oconf. eapply loop_monotone. eapply While_merge_term; eauto. omega.
-      - specialize HTerm with (1 := HT) as (midconf&HLoopM).
-        specialize HRel with (1 := HLoopM).
-        specialize HR1 with (1 := HRel).
-        specialize HR2 with (1 := HRel).
-        specialize IH with (1 := HRel) as (oconf&IH).
+      - apply HTerm in HT as (midconf&HT).
+        pose proof HRel _ _ _ HT as HT'.
+        pose proof functionalOn HT' HR1 as (FF&<-).
+        destruct IH as (oconf&IH).
         exists oconf. eapply loop_monotone. eapply While_merge_repeat; eauto. omega.
     Qed.
     
-    (*
-    (* Ursprüngliche Lemma *)
-    Reset While_TerminatesIn.
-    Lemma While_TerminatesIn :
+    Lemma While_TerminatesIn' :
       pM ⊨ R ->
       projT1 pM ↓ T ->
       (forall (tin : tapes sig n) (i : nat),
@@ -264,7 +256,7 @@ Section While.
     Proof.
       intros HRel HTerm HCond.
       eapply TerminatesIn_monotone.
-      { eapply TerminatesIn_extend. now apply While_TerminatesIn'. }
+      { eapply TerminatesIn_extend. now apply While_TerminatesIn_T. }
       {
         hnf in HRel, HTerm.
         intros tin k HT'.
@@ -275,21 +267,13 @@ Section While.
         specialize HRel with (1 := HTerm).
         specialize HCond with (1 := HRel).
         destruct (projT2 pM (cstate midconf)) eqn:E.
-        + exists k1. split; eauto. constructor 1; eauto.
-          intros. eauto. admit.
+        + exists k1. split; eauto. econstructor 1; eauto.
         + destruct HCond as (k2&HT''&Hk).
           specialize IH with (2 := HT'') as (k'&Hk'&IH); [ omega | ].
-          eexists. split.
-          2:{ econstructor 2; eauto.
-          exists (1+k1+k2). split; auto.
-          constructor 2; eauto.
+          eexists. split. eauto.
+          econstructor 2; eauto. omega.
       }
     Qed.
-    *)
-        
-        
-    
-    
 
   End While_terminatesIn.
 
