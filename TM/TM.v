@@ -757,15 +757,15 @@ Section Semantics.
     intros H1 H2. firstorder.
   Qed.
 
-  Lemma TerminatesIn_extend {n : nat} (M : mTM n) (T1 T2 : tRel n) :
-    M ↓ T1 -> (forall tin k1, T2 tin k1 -> exists k2, k2 <= k1 /\ T1 tin k2) -> M ↓ T2.
+  Lemma TerminatesIn_extend {n : nat} (M : mTM n) (T : tRel n) :
+    M ↓ T ->
+    M ↓ (fun tin k => exists k', k' <= k /\ T tin k').
   Proof.
-    intros H1 H2. hnf. intros tin k1 Hk.
-    specialize (H2 tin k1 Hk) as (k3&Hk3&Hk3').
-    hnf in H1. specialize (H1 tin k3 Hk3') as (oconf&HLoop).
+    intros HTerm. hnf in *. intros tin k. intros (k'&Hk'&HT).
+    specialize HTerm with (1 := HT) as (oconf&HLoop).
     exists oconf. eapply loop_monotone; eauto.
   Qed.
-
+  
 
   (** Realisation and termination in constant time *)
   Definition RealiseIn n (F : finType) (pM : pTM F n) (R : pRel F n) (k : nat) :=
