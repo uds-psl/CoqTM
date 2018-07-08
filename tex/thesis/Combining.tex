@@ -364,6 +364,28 @@ terms of $R$ and $t$:
   \end{multline*}
 \end{lemma}
 
+Note that we defined concrete correctness and termination relations for all combinators, but there is no known ``direct'' runtime Relation for
+$\While$.  The best we could hope would be something like this relation:
+
+\begin{definition}[Direct runtime relation for $\While$?]
+  ~
+  \[
+    \inferrule{T~t~k \and R~t~(\Some y, t')}{WhileT~R~T~t~k}
+    \quad
+    \inferrule{T~t~k_1 \and R~t~(\None, t') \and WhileT~R~T~t'~k_2}{WhileT~R~T~t~(1+k_1+k_2)}
+  \]
+\end{definition}
+
+However, when we try to prove $\While~M \downarrow WhileT~R~T$, we come to a goal where we have $R~t~(\Some y, t')$ and $R~t~(part_M(q''), t'')$, for
+another final configuration $(q'',t'')$.  Thus, we can only prove $\While~M \downarrow WhileT~R~T$, if we assume that $R$ is functional:
+
+\begin{lemma}[Direct runtime relation for $\While$]
+  If $M \vDash R$, $M \downarrow T$, and $R$ is functional, then $\While~M \downarrow WhileT~R~T$.
+\end{lemma}
+
+However, our correctness relations are not functional in practice.  We encode preconditions in the relations, and if the precondition is not satisfied
+for $t$, the value of $R~t~(y,t')$ simply is $\True$.  Therefore, we always use Lemma~\ref{lem:While_TerminatesIn} in practice.
+
 
 
 \subsection{Proof of $\While$}
