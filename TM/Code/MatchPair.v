@@ -41,10 +41,10 @@ Section MatchPair.
       ).
 
   Definition MatchPair : { M : mTM sigPair^+ 2 & states M -> unit } :=
-    Inject (WriteMove (inl STOP) L) [|Fin1|];;
-    Inject (MoveToSymbol stopAfterFirst id;; Move L) [|Fin0|];;
+    LiftTapes (WriteMove (inl STOP) L) [|Fin1|];;
+    LiftTapes (MoveToSymbol stopAfterFirst id;; Move L) [|Fin0|];;
     CopySymbols_L stopAtStart id;;
-    Inject (MoveToSymbol stopAfterFirst id;; Move L;; Write (inl START)) [|Fin0|].
+    LiftTapes (MoveToSymbol stopAfterFirst id;; Move L;; Write (inl START)) [|Fin0|].
 
   Lemma MatchPair_Realise : MatchPair ⊨ MatchPair_Rel.
   Proof.
@@ -156,7 +156,7 @@ Section MatchPair.
 
 
   Definition Constr_pair : { M : mTM sigPair^+ 2 & states M -> unit } :=
-    Inject (MoveRight _;; Move L) [|Fin0|];;
+    LiftTapes (MoveRight _;; Move L) [|Fin0|];;
     CopySymbols_L stopAtStart id.
 
 

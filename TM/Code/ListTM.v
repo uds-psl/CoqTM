@@ -82,14 +82,14 @@ Section Nth.
 
 
   Definition Nth_Step : { M : mTM sig^+ 3 & states M -> option unit } :=
-    If (Inject (ChangeAlphabet MatchNat _) [|Fin1|])
-       (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
-           (Return (Inject (Reset _) [|Fin2|]) (None))
-           (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (Some tt)))
-       (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
-           (Return (Inject (Translate retr_X_list retr_X_opt;;
+    If (LiftTapes (ChangeAlphabet MatchNat _) [|Fin1|])
+       (If (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
+           (Return (LiftTapes (Reset _) [|Fin2|]) (None))
+           (Return (LiftTapes (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (Some tt)))
+       (If (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
+           (Return (LiftTapes (Translate retr_X_list retr_X_opt;;
                             ChangeAlphabet (Constr_Some sigX) _) [|Fin2|]) (Some tt))
-           (Return (Inject (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (Some tt)))
+           (Return (LiftTapes (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (Some tt)))
   .
 
   Lemma Nth_Step_Realise : Nth_Step ⊨ Nth_Step_Rel.
@@ -178,11 +178,11 @@ Section Nth.
 
 
   Definition Nth : { M : mTM sig^+ 5 & states M -> unit } :=
-    Inject (CopyValue _) [|Fin0; Fin3|];; (* Save l (on t0) to t3 and n (on t1) to t4 *)
-    Inject (CopyValue _) [|Fin1; Fin4|];;
-    Inject (Nth_Loop) [|Fin3; Fin4; Fin2|];; (* Execute the loop with the copy of n and l *)
-    Inject (Reset _) [|Fin3|];; (* Reset the copies *)
-    Inject (Reset _) [|Fin4|]
+    LiftTapes (CopyValue _) [|Fin0; Fin3|];; (* Save l (on t0) to t3 and n (on t1) to t4 *)
+    LiftTapes (CopyValue _) [|Fin1; Fin4|];;
+    LiftTapes (Nth_Loop) [|Fin3; Fin4; Fin2|];; (* Execute the loop with the copy of n and l *)
+    LiftTapes (Reset _) [|Fin3|];; (* Reset the copies *)
+    LiftTapes (Reset _) [|Fin4|]
   .
 
 
@@ -253,11 +253,11 @@ Section Nth'.
 
 
   Definition Nth'_Step : { M : mTM sig^+ 3 & states M -> option bool } :=
-    If (Inject (ChangeAlphabet MatchNat _) [|Fin1|])
-       (If (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) (* n = S n' *)
-           (Return (Inject (Reset _) [|Fin2|]) None) (* l = x :: l'; continue *)
+    If (LiftTapes (ChangeAlphabet MatchNat _) [|Fin1|])
+       (If (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) (* n = S n' *)
+           (Return (LiftTapes (Reset _) [|Fin2|]) None) (* l = x :: l'; continue *)
            (Return Nop (Some false))) (* l = nil; return false *)
-       (ChangePartition (Inject (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) Some) (* n = 0 *)
+       (ChangePartition (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) Some) (* n = 0 *)
   .
 
   Lemma Nth'_Step_Realise : Nth'_Step ⊨ Nth'_Step_Rel.
@@ -434,13 +434,13 @@ Section Nth'.
 
   (** We don't want to save, but reset, [n]. *)
   Definition Nth' : { M : mTM sig^+ 4 & states M -> bool } :=
-    Inject (CopyValue _) [|Fin0; Fin3|];; (* Save l (on t0) to t3 *)
-    If (Inject (Nth'_Loop) [|Fin3; Fin1; Fin2|]) (* Execute the loop with the copy of l *)
-       (Return (Inject (Reset _) [|Fin3|];; (* Reset the copy of [l] *)
-                Inject (Reset _) [|Fin1|] (* Reset [n] *)
+    LiftTapes (CopyValue _) [|Fin0; Fin3|];; (* Save l (on t0) to t3 *)
+    If (LiftTapes (Nth'_Loop) [|Fin3; Fin1; Fin2|]) (* Execute the loop with the copy of l *)
+       (Return (LiftTapes (Reset _) [|Fin3|];; (* Reset the copy of [l] *)
+                LiftTapes (Reset _) [|Fin1|] (* Reset [n] *)
                ) true)
-       (Return (Inject (Reset _) [|Fin3|];; (* Reset the copy of [l] *)
-                Inject (Reset _) [|Fin1|] (* Reset [n] *)
+       (Return (LiftTapes (Reset _) [|Fin3|];; (* Reset the copy of [l] *)
+                LiftTapes (Reset _) [|Fin1|] (* Reset [n] *)
                ) false)
   .
 
@@ -629,7 +629,7 @@ Section Append.
 
 
   Definition App' : { M : mTM sigList^+ 2 & states M -> unit } :=
-    Inject (MoveRight _;; Move L;; Move L) [|Fin0|];;
+    LiftTapes (MoveRight _;; Move L;; Move L) [|Fin0|];;
     CopySymbols_L stop id.
   Lemma App'_Realise : App' ⊨ App'_Rel.
   Proof.
@@ -712,8 +712,8 @@ Section Append.
     
     
   Definition App : { M : mTM sigList^+ 3 & states M -> unit } :=
-    Inject (CopyValue _) [|Fin1; Fin2|];;
-    Inject (App') [|Fin0; Fin2|].
+    LiftTapes (CopyValue _) [|Fin1; Fin2|];;
+    LiftTapes (App') [|Fin0; Fin2|].
 
 
   Lemma App_Computes : App ⊨ Computes2_Rel (@app X).
@@ -773,9 +773,9 @@ Section Lenght.
 
 
   Definition Length_Step : pTM sig^+ (option unit) 3 :=
-    If (Inject (ChangeAlphabet (MatchList _) _) [|Fin0; Fin2|])
-       (Return (Inject (Reset _) [|Fin2|];;
-                Inject (ChangeAlphabet (Constr_S) _) [|Fin1|])
+    If (LiftTapes (ChangeAlphabet (MatchList _) _) [|Fin0; Fin2|])
+       (Return (LiftTapes (Reset _) [|Fin2|];;
+                LiftTapes (ChangeAlphabet (Constr_S) _) [|Fin1|])
                (None)) (* continue *)
        (Return Nop (Some tt)) (* break *)
   .
@@ -914,10 +914,10 @@ Section Lenght.
   
 
   Definition Length : pTM sig^+ unit 4 :=
-    Inject (CopyValue _) [|Fin0; Fin3|];;
-    Inject (ChangeAlphabet Constr_O _) [|Fin1|];;
-    Inject (Length_Loop) [|Fin3; Fin1; Fin2|];;
-    Inject (ResetEmpty1 _) [|Fin3|].
+    LiftTapes (CopyValue _) [|Fin0; Fin3|];;
+    LiftTapes (ChangeAlphabet Constr_O _) [|Fin1|];;
+    LiftTapes (Length_Loop) [|Fin3; Fin1; Fin2|];;
+    LiftTapes (ResetEmpty1 _) [|Fin3|].
 
 
   Lemma Length_Computes : Length ⊨ Computes_Rel (@length X).

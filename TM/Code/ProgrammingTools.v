@@ -64,5 +64,5 @@ Ltac clear_tape_eqs :=
 
 (** Machine Notations *)
 
-Notation "pM @ ts" := (Inject pM ts) (at level 41, only parsing).
+Notation "pM @ ts" := (LiftTapes pM ts) (at level 41, only parsing).
 Notation "pM ⇑ R" := (ChangeAlphabet pM R) (at level 40, only parsing).

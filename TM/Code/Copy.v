@@ -8,8 +8,7 @@ Require Export TM.Compound.CopySymbols TM.Compound.MoveToSymbol.
 Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Combinators.
 Require Import TM.Compound.TMTac TM.Compound.Multi.
-Require Import TM.Mirror.
-Require Import TM.LiftMN.
+Require Import TM.Lifting.LiftAlphabet.
 
 
 Generalizable All Variables.
@@ -523,7 +522,7 @@ Section CopyValue.
   Variable (sig: finType) (X:Type) (cX : codable sig X).
 
   Definition CopyValue :=
-    Inject (MoveRight _) [|Fin0|];; CopySymbols_L (@isStart sig) id.
+    LiftTapes (MoveRight _) [|Fin0|];; CopySymbols_L (@isStart sig) id.
 
   Definition CopyValue_Rel : Rel (tapes (sig^+) 2) (unit * tapes (sig^+) 2) :=
     ignoreParam (
@@ -592,9 +591,9 @@ Section MoveValue.
   Variable (X Y : Type) (cX : codable sig X) (cY : codable sig Y).
 
   Definition MoveValue : pTM sig^+ unit 2 :=
-    Inject (Reset _) [|Fin1|];;
+    LiftTapes (Reset _) [|Fin1|];;
     CopyValue _;;
-    Inject (Reset _) [|Fin0|].
+    LiftTapes (Reset _) [|Fin0|].
 
   Definition MoveValue_Rel : pRel sig^+ unit 2 :=
     ignoreParam (

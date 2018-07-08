@@ -1,5 +1,5 @@
 Require Import TM.Prelim TM.Code.CodeTM.
-Require Import TM.LiftSigmaTau.
+Require Import TM.Lifting.LiftAlphabet.
 
 
 Generalizable All Variables.
@@ -92,7 +92,7 @@ Section MapCode.
   Lemma surjectTape_injectTape t :
     surjectTape (injectTape t) = t.
   Proof.
-    unfold LiftSigmaTau.surjectTape. unfold surject. simpl_tape.
+    unfold surjectTape. unfold surject. simpl_tape.
     erewrite mapTape_ext. apply mapTape_id. intros a. retract_adjoint. reflexivity.
   Qed.
 
@@ -190,11 +190,11 @@ Section MapCode.
 
   Lemma surjectTape_isRight (t : tape (tau^+)) :
     isRight t -> isRight (surjectTape t).
-  Proof. unfold surjectTape, LiftSigmaTau.surjectTape. apply mapTape_isRight. Qed.
+  Proof. unfold surjectTape. apply mapTape_isRight. Qed.
 
   Lemma surjectTape_isRight' (t : tape (tau^+)) :
     isRight (surjectTape t) -> isRight t.
-  Proof. unfold surjectTape, LiftSigmaTau.surjectTape. apply mapTape_isRight. Qed.
+  Proof. unfold surjectTape. apply mapTape_isRight. Qed.
 
 End MapCode.
 
@@ -223,7 +223,7 @@ End ChangeAlphabet.
 
 (** This tactic removes [surjectTape] in hypothesises and in the goal *)
 Ltac simpl_surject_step :=
-  match goal with
+  lazymatch goal with
   (* encoding *)
   | [ |- surjectTape _ _ ?t ≃ _ ] => apply contains_translate_tau1
   | [ H : surjectTape _ _ ?t ≃ _ |- _ ] => apply contains_translate_tau2 in H

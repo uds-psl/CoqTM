@@ -1,5 +1,5 @@
 Require Export TM.Prelim TM.TM TM.Code.Code.
-Require Export TM.LiftSigmaTau TM.LiftMN.
+Require Export TM.Lifting.Lifting.
 Require Export TM.Combinators.Combinators.
 
 

@@ -1,7 +1,6 @@
 Require Import TM.Prelim.
 Require Import TM.Basic.Mono.
 Require Import TM.Combinators.Combinators.
-Require Import TM.Mirror.
 Require Import TM.Compound.TMTac.
 Require Import TM.Compound.Multi.
 

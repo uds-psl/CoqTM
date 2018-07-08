@@ -122,19 +122,6 @@ Proof.
 Qed.
 
 
-Definition restrictFst X P1 P2 Z (R : Rel X ((P1 * P2) * Z)) (p1 : P1) : Rel X (P2*Z) := fun x '(p2, z) => R x ((p1, p2), z).
-Notation "R '|_fst=' p1" := (restrictFst R p1) (at level 30, format "R '|_fst=' p1").
-Arguments restrictFst { X P1 P2 Z } R p1 x y /.
-
-
-Definition restrictSnd X P1 P2 Z (R : Rel X ((P1 * P2) * Z)) (p2 : P2) : Rel X (P1*Z) := fun x '(p1, z) => R x ((p1, p2), z).
-Notation "R '|_snd=' p1" := (restrictSnd R p1) (at level 30, format "R '|_snd=' p1").
-Arguments restrictSnd { X P1 P2 Z } R p2 x y /.
-
-
-Definition pow X R n : Rel X X := it (rcomp R) n eq.
-
-(** Reflexive transitive closure *)
 
 (** * Relations over Vectors *)
 
@@ -162,6 +149,12 @@ End Fix_X2.
 Arguments Eq_in { X n } P x y / : rename.
 
 
+
+
+
+Definition pow X R n : Rel X X := it (rcomp R) n eq.
+
+(** Reflexive transitive closure *)
 
 Inductive star X (R: Rel X X) : Rel X X :=
 | starR x : star R x x

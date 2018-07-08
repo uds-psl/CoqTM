@@ -1,5 +1,5 @@
 Require Import TM.Prelim TM.TM.
-Require Import TM.LiftMN. (* for [simpl_not_in] *)
+Require Import TM.Lifting.LiftTapes. (* for [simpl_not_in] *)
 
 Ltac dec_pos P := let H := fresh in destruct (Dec P) as [_ | H]; [ | now contradiction H].
 Ltac dec_neg P := let H := fresh in destruct (Dec P) as [H | _]; [now contradiction H | ].

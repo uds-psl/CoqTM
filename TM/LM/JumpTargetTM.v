@@ -178,8 +178,8 @@ Qed.
 
 
 Definition JumpTarget_Step : pTM sigPro^+ (option bool) 5 :=
-  If (Inject (MatchList sigTok_fin) [|Fin0; Fin3|])
-     (MATCH (Inject (ChangeAlphabet MatchTok _) [|Fin3|])
+  If (MatchList sigTok_fin @ [|Fin0; Fin3|])
+     (MATCH (ChangeAlphabet MatchTok _ @ [|Fin3|])
              (fun t : option ATok =>
                 match t with
                 | Some retAT =>

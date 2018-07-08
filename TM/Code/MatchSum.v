@@ -142,8 +142,6 @@ Smpl Add smpl_TM_MatchSum : TM_Correct.
 
 (** ** Reductions *)
 
-Require Import ChangeAlphabet LiftSigmaTau.
-
 Section MatchOption.
 
   (* Matching of option reduces to matching of sums with [Empty_set] *)

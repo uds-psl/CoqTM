@@ -54,8 +54,8 @@ Qed.
  * t1: b
  *)
 Definition Add_Step : { M : mTM _ 2 & states M -> option unit } :=
-  If (Inject MatchNat [|Fin1|])
-     (Return (Inject Constr_S [|Fin0|]) None)
+  If (LiftTapes MatchNat [|Fin1|])
+     (Return (LiftTapes Constr_S [|Fin0|]) None)
      (Return Nop (Some tt)).
 
 
@@ -78,9 +78,9 @@ Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := WHILE Add_Step.
  *)
 (* Everything, but not reset *)
 Definition Add_Main : { M : mTM sigNat^+ 4 & states M -> unit } :=
-  Inject (CopyValue _) [|Fin1; Fin2|];; (* copy n to a *)
-  Inject (CopyValue _) [|Fin0; Fin3|];; (* copy m to b *)
-  Inject Add_Loop [|Fin2; Fin3|]. (* Main loop *)
+  LiftTapes (CopyValue _) [|Fin1; Fin2|];; (* copy n to a *)
+  LiftTapes (CopyValue _) [|Fin0; Fin3|];; (* copy m to b *)
+  LiftTapes Add_Loop [|Fin2; Fin3|]. (* Main loop *)
 
 
 (*
@@ -90,7 +90,7 @@ Definition Add_Main : { M : mTM sigNat^+ 4 & states M -> unit } :=
  *)
 Definition Add :=
   Add_Main;; (* Initialisation and main loop *)
-  Inject (Reset _) [|Fin3|]. (* Reset b *)
+  LiftTapes (Reset _) [|Fin3|]. (* Reset b *)
 
 
 (** ** Correctness of [Add] *)
@@ -350,12 +350,12 @@ Qed.
  * }
  *)
 Definition Mult_Step : { M : mTM _ 5 & states M -> option unit } :=
-  If (Inject MatchNat [|Fin0|])
+  If (LiftTapes MatchNat [|Fin0|])
      (Return (
-          Inject Add [|Fin1; Fin2; Fin3; Fin4|];; (* Add(n, c, c') *)
-          Inject (Reset _) [|Fin2|];;
-          Inject (CopyValue _) [|Fin3; Fin2|];; (* c := c' *)
-          Inject (Reset _) [|Fin3|] (* Reset c' *)
+          LiftTapes Add [|Fin1; Fin2; Fin3; Fin4|];; (* Add(n, c, c') *)
+          LiftTapes (Reset _) [|Fin2|];;
+          LiftTapes (CopyValue _) [|Fin3; Fin2|];; (* c := c' *)
+          LiftTapes (Reset _) [|Fin3|] (* Reset c' *)
         ) (None)) (* continue *)
      (Return Nop (Some tt)). (* break *)
 
@@ -372,14 +372,14 @@ Definition Mult_Loop : { M : mTM _ 5 & states M -> unit } := WHILE Mult_Step.
  * INT t5: m' (for Mult_Loop: t0)
  *)
 Definition Mult_Main : { M : mTM _ 6 & states M -> unit } :=
-  Inject (CopyValue _) [|Fin0; Fin5|];; (* m' := m *)
-  Inject (Constr_O) [|Fin2|];; (* c := 0 *)
-  Inject Mult_Loop [|Fin5; Fin1; Fin2; Fin3; Fin4|]. (* Main loop *)
+  LiftTapes (CopyValue _) [|Fin0; Fin5|];; (* m' := m *)
+  LiftTapes (Constr_O) [|Fin2|];; (* c := 0 *)
+  LiftTapes Mult_Loop [|Fin5; Fin1; Fin2; Fin3; Fin4|]. (* Main loop *)
 
 
 Definition Mult : { M : mTM _ 6 & states M -> unit } :=
   Mult_Main;;
-  Inject (Reset _) [|Fin5|]. (* Reset m' *)
+  LiftTapes (Reset _) [|Fin5|]. (* Reset m' *)
 
 
 (** ** Correctness of [Mult] *)

@@ -1,8 +1,8 @@
 Require Import TM.Prelim.
 Require Import TM.TM.
 Require Import TM.Basic.Basic.
-Require Import TM.LiftMN.
 Require Import TM.Combinators.Combinators.
+Require Import TM.Lifting.Lifting.
 
 Require Import TM.Compound.TMTac.
 
@@ -14,7 +14,7 @@ Section Nop.
   Variable sig : finType.
   Variable n : nat.
 
-  Definition Nop : pTM sig unit n := Inject Null (Vector.nil _).
+  Definition Nop : pTM sig unit n := LiftTapes Null (Vector.nil _).
 
   Definition Nop_Rel : pRel sig unit n :=
     ignoreParam (fun t t' => t' = t).
@@ -49,7 +49,7 @@ Section MovePar.
                   t'[@Fin.FS Fin.F1] = tape_move t[@Fin.FS Fin.F1] D2).
 
   Definition MovePar : pTM sig unit 2 :=
-    Inject (Move D1) [|Fin.F1|];; Inject (Move D2) [|Fin.FS Fin.F1|].
+    LiftTapes (Move D1) [|Fin.F1|];; LiftTapes (Move D2) [|Fin.FS Fin.F1|].
 
   Lemma MovePar_Sem : MovePar ⊨c(3) MovePar_R.
   Proof.
@@ -76,11 +76,11 @@ Section Copy.
   Variable f : sig -> sig.
 
   Definition CopyChar : pTM sig unit 2 :=
-    MATCH (Inject ReadChar [|Fin.F1|])
+    MATCH (LiftTapes ReadChar [|Fin.F1|])
           (fun s : option sig =>
              match s with
              | None =>  Nop
-             | Some s => Inject (Write (f s)) [|Fin1|]
+             | Some s => LiftTapes (Write (f s)) [|Fin1|]
              end).
 
   Definition CopyChar_Rel : pRel sig unit 2 :=
@@ -95,10 +95,10 @@ Section Copy.
     eapply RealiseIn_monotone.
     {
       unfold CopyChar. eapply Match_RealiseIn; cbn.
-      - apply Inject_RealiseIn. vector_dupfree. apply ReadChar_Sem.
+      - apply LiftTapes_RealiseIn. vector_dupfree. apply ReadChar_Sem.
       - instantiate (2 := fun o : option sig => match o with Some s => _ | None => _ end).
         intros [ s | ]; cbn.
-        + eapply Inject_RealiseIn. vector_dupfree. apply Write_Sem.
+        + eapply LiftTapes_RealiseIn. vector_dupfree. apply Write_Sem.
         + eapply RealiseIn_monotone'. apply Nop_Sem. omega.
     }
     { omega. }
@@ -122,7 +122,7 @@ Section ReadChar.
   Variable (n : nat) (k : Fin.t n).
 
   Definition ReadChar_at : pTM sig (option sig) n :=
-    Inject ReadChar [|k|].
+    LiftTapes ReadChar [|k|].
 
   Definition ReadChar_at_Rel : pRel sig (option sig) n :=
     fun tin '(yout, tout) =>

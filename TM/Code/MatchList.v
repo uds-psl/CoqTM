@@ -26,22 +26,22 @@ Section MatchList.
 
 
   Definition M1 : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
-    Inject Skip_cons [|Fin0|];;
-    Inject (Write (inl STOP)) [|Fin1|];;
+    LiftTapes Skip_cons [|Fin0|];;
+    LiftTapes (Write (inl STOP)) [|Fin1|];;
     MovePar L L;;
     CopySymbols_L stop id;;
-    Inject (Write (inl START)) [|Fin1|].
+    LiftTapes (Write (inl START)) [|Fin1|].
 
   Definition MatchList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
-    Inject (Move R) [|Fin0|];;
-    MATCH (Inject (ReadChar) [|Fin0|])
+    LiftTapes (Move R) [|Fin0|];;
+    MATCH (LiftTapes (ReadChar) [|Fin0|])
           (fun s => match s with
                  | Some (inr sigList_nil) => (* nil *)
-                   Return (Inject (Move L) [|Fin0|]) false 
+                   Return (LiftTapes (Move L) [|Fin0|]) false 
                  | Some (inr sigList_cons) => (* cons *)
                    M1;; 
-                   Inject Skip_cons [|Fin0|];;
-                   Return (Inject (Move L;; Write (inl START)) [|Fin0|]) true
+                   LiftTapes Skip_cons [|Fin0|];;
+                   Return (LiftTapes (Move L;; Write (inl START)) [|Fin0|]) true
                  | _ => Return Nop true (* invalid input *)
                  end).
 
@@ -354,9 +354,9 @@ Section MatchList.
   
 
   Definition Constr_cons : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
-    Inject (MoveRight _;; Move L) [|Fin1|];;
-    Inject (CopySymbols_L stop id) [|Fin1;Fin0|];;
-    Inject (WriteMove (inr sigList_cons) L;; Write (inl START)) [|Fin0|].
+    LiftTapes (MoveRight _;; Move L) [|Fin1|];;
+    LiftTapes (CopySymbols_L stop id) [|Fin1;Fin0|];;
+    LiftTapes (WriteMove (inr sigList_cons) L;; Write (inl START)) [|Fin0|].
 
   Definition Constr_cons_Rel : Rel (tapes (sigList sigX)^+ 2) (unit * tapes (sigList sigX)^+ 2) :=
     ignoreParam (

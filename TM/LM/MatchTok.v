@@ -43,7 +43,7 @@ Proof.
       rename H into HMatchSum.
       simpl_tape in *; cbn in *.
       specialize (HMatchSum t HEncT).
-      destruct t; cbn in *; auto; modpon H1; subst; auto.
+      destruct t; cbn in *; eauto; modpon H1; subst; eauto.
     }
   }
 Qed.

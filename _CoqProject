@@ -11,22 +11,23 @@ TM/Prelim.v
 TM/Relations.v
 TM/TM.v
 
+# Basic Machines
+TM/Basic/Basic.v
+TM/Basic/Null.v
+TM/Basic/Mono.v
+
 # Programming combinators
 TM/Combinators/Combinators.v
 TM/Combinators/Match.v
 TM/Combinators/SequentialComposition.v
 TM/Combinators/If.v
 TM/Combinators/While.v
+TM/Combinators/Mirror.v
 
-# TM Transformations
-TM/LiftMN.v
-TM/LiftSigmaTau.v
-TM/Mirror.v
-
-# Basic Machines
-TM/Basic/Basic.v
-TM/Basic/Null.v
-TM/Basic/Mono.v
+# Machine Lifting
+TM/Lifting/Lifting.v
+TM/Lifting/LiftTapes.v
+TM/Lifting/LiftAlphabet.v
 
 # Compound Machines
 TM/Compound/TMTac.v
@@ -43,6 +44,7 @@ TM/Code/ChangeAlphabet.v
 TM/Code/Copy.v
 TM/Code/ProgrammingTools.v
 
+# Matches and constructors
 TM/Code/MatchNat.v
 TM/Code/MatchSum.v
 TM/Code/MatchList.v
