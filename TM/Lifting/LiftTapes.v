@@ -1,12 +1,13 @@
 Require Import TM.Prelim TM.Relations TM.TM.
 
-
 Definition select (m n: nat) (X: Type) (I : Vector.t (Fin.t n) m) (V : Vector.t X n) : Vector.t X m :=
   Vector.map (Vector.nth V) I.
 
-Lemma select_nth m n X (I : Vector.t (Fin.t n) m) (V : Vector.t X n) (k : Fin.t m) :
+(*
+Corollary select_nth m n X (I : Vector.t (Fin.t n) m) (V : Vector.t X n) (k : Fin.t m) :
   (select I V) [@ k] = V [@ (I [@ k])].
 Proof. now apply Vector.nth_map. Qed.
+*)
 
 
 Section LiftTapes_Rel.
@@ -73,13 +74,12 @@ Section Fill.
       + apply replace_nth.
   Qed.
 
-  Lemma select_fill I init V :
+  (* Not needed *)
+  (*
+  Corollary select_fill I init V :
     dupfree I ->
     select I (fill I init V) = V.
-  Proof.
-    intros H. unfold select. apply Vector.eq_nth_iff. intros p ? <-.
-    erewrite Vector.nth_map; eauto. erewrite fill_correct_nth; eauto.
-  Qed.
+  Proof. intros H. unfold select. apply Vector.eq_nth_iff. intros p ? <-. erewrite Vector.nth_map; eauto. erewrite fill_correct_nth; eauto. Qed.
 
   Lemma fill_select_nth I init (i : Fin.t n) :
     dupfree I ->
@@ -92,12 +92,13 @@ Section Fill.
       + rewrite <- IH. now rewrite replace_nth2.
   Qed.
 
-  Lemma fill_select I t :
+  Corollary fill_select I t :
     dupfree I ->
     fill I t (select I t) = t.
   Proof.
     intros H. apply Vector.eq_nth_iff. intros p ? <-. now apply fill_select_nth.
   Qed.
+   *)
 
   Lemma fill_not_index I init V (i : Fin.t n) :
     dupfree I ->
@@ -114,16 +115,14 @@ Section Fill.
         { intros ?. contradict H. now constructor. }
   Qed.
 
-  Definition fill_default I V (def : X) :=
+  Definition fill_default I (def : X) V :=
     fill I (Vector.const def n) V.
 
-  Lemma fill_default_not_index I V def i :
+  Corollary fill_default_not_index I V def i :
     dupfree I ->
     not_index I i ->
-    (fill_default I V def)[@i] = def.
-  Proof.
-    intros. unfold fill_default. rewrite fill_not_index; auto. apply Vector.const_nth.
-  Qed.
+    (fill_default I def V)[@i] = def.
+  Proof. intros. unfold fill_default. rewrite fill_not_index; auto. apply Vector.const_nth. Qed.
 
 End Fill.
 
@@ -160,14 +159,14 @@ Section LiftNM.
   Variable I : Vector.t ((Fin.t n)) m.
   Variable I_dupfree : dupfree I.
 
-  Definition trans_inj :=
+  Definition LiftTapes_trans :=
     fun '(q, sym ) =>
       let (q', act) := trans (m := projT1 pM) (q, select I sym) in
-      (q', fill_default I act (None, N)).
+      (q', fill_default I (None, N) act).
 
   Definition LiftTapes_TM : mTM sig n :=
     {|
-      trans := trans_inj;
+      trans := LiftTapes_trans;
       start := start (projT1 pM);
       halt := halt (m := projT1 pM);
     |}.
@@ -182,7 +181,7 @@ Section LiftNM.
   Proof. unfold current_chars, select. apply Vector.eq_nth_iff; intros i ? <-. now simpl_tape. Qed.
 
   Lemma tape_move_multi_select (t : tapes sig n) act :
-    tape_move_multi (select I t) act = select I (tape_move_multi t (fill_default I act (None, N))).
+    tape_move_multi (select I t) act = select I (tape_move_multi t (fill_default I (None, N) act)).
   Proof.
     unfold tape_move_multi, select. apply Vector.eq_nth_iff; intros i ? <-. simpl_tape.
     unfold fill_default. f_equal. symmetry. now apply fill_correct_nth.
@@ -242,30 +241,17 @@ Section LiftNM.
     - hnf. intros k HI. now apply (@LiftTapes_eq (initc LiftTapes_TM t) outc i k HI).
   Qed.
 
-
-  Definition fillConf (c1 : mconfig sig (states (projT1 pM)) n) (c2 : mconfig sig (states (LiftTapes_TM)) m) :
-    mconfig sig (states (LiftTapes_TM)) n :=
-    mk_mconfig (cstate c2) (fill I (ctapes c1) (ctapes c2)).
-
-  Lemma fillConf_selectConf (c1 : mconfig sig (states (projT1 pM)) n) :
-    fillConf c1 (selectConf c1) = c1.
-  Proof. destruct c1 as [q t]; cbn. unfold fillConf, selectConf. f_equal. cbn. now apply fill_select. Qed.
-
-  Lemma selectConf_fillConf (c1 : mconfig sig (states (projT1 pM)) n) (c2 : mconfig sig (states (LiftTapes_TM)) m) :
-    selectConf (fillConf c1 c2) = c2.
-  Proof. destruct c1 as [q1 t1], c2 as [q2 t2]; cbn. unfold fillConf, selectConf. f_equal. cbn. now apply select_fill. Qed.
-
   Lemma LiftTapes_unlift (k : nat)
         (c1 : mconfig sig (states (LiftTapes_TM)) n)
         (c2 : mconfig sig (states (LiftTapes_TM)) m) :
     loopM (M := projT1 pM) k (selectConf c1) = Some c2 ->
-    exists c' : mconfig sig (states (LiftTapes_TM)) n,
-      loopM (M := LiftTapes_TM) k c1 = Some (fillConf c' c2) /\
-      c2 = selectConf c'.
+    exists c2' : mconfig sig (states (LiftTapes_TM)) n,
+      loopM (M := LiftTapes_TM) k c1 = Some c2' /\
+      c2 = selectConf c2'.
   Proof.
     intros HLoop. unfold loopM in *. cbn in *.
     apply loop_unlift with (lift:=selectConf) (f:=step (M:=LiftTapes_TM)) (h:=haltConf (M:=LiftTapes_TM)) in HLoop as (c'&HLoop&->).
-    - exists c'. split; auto. now rewrite fillConf_selectConf.
+    - exists c'. split; auto.
     - auto.
     - intros ? _. apply LiftTapes_comp_step.
   Qed.
