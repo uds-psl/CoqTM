@@ -226,7 +226,7 @@ Section While.
       While ↓ While_T.
     Proof.
       intros HRel HTerm. hnf in HRel, HTerm.
-      hnf. intros tin k HT. induction HT as [ tin k k' yout tout HT HR Hk' | tin tout k1 k2 k' HT HR1 HR2 IH Hk'].
+      hnf. intros tin k HT. induction HT as [ tin yout tout k k' HT HR Hk' | tin tout k1 k2 k' HT HR1 HR2 IH Hk'].
       - apply HTerm in HT as (oconf&HT).
         pose proof HRel _ _ _ HT as HT'.
         pose proof functionalOn HT' HR as (FF&<-).
