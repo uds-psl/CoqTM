@@ -22,15 +22,104 @@ universal Turing machine.  However, this approach does not scale.  When the alph
 ``data type'', they also must change the definitions of the involved ``smaller'' machines.  That is why we also introduce an operator that
 \emph{lifts} a machine to a bigger alphabet.
 
-\section{$n$-Lift}
+\section{Tape-Lift}
 \label{sec:n-Lift}
 
-The $n$-Lift takes a machine $M:\TM_\Sigma^n(F)$.
+The tape-lift takes a machine $M:\TM_\Sigma^m(F)$ and a duplicate-free vector\footnote{ Note that instead of duplicate free index vectors
+  $I:\Fin_n^m$, we could also use injective functions $f: \Fin_m \to \Fin_n$.  However, we choose index-vectors, because they are easier to define in
+  Coq.}  $I: \Fin_n^m$, and yields a machine $\LiftTapes{M}{I} : \TM_\Sigma^n(F)$.  The tape of $\LiftTapes{M}{I}$ with the index $i = I[j]$ (with
+$i:\Fin_n$, $j:\Fin_m$), behaves exactly as the tape $j$ of $M$. All other tapes of $\LiftTapes{M}{I}$ that are not in $I$, do not change.
 
-\todo{}
+
+The transition function of $\LiftTapes{M}{I}$ gets the $n$ read symbols and selects the $m$ relevant symbols.  Then it applies the transition function
+$\delta_M$ with the selected symbols and the current state $q$.  $\delta_M$ yields an $m$-vector $act:\Act^m$ and the continuation state $q'$.  We to
+fill in ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
+
+\begin{definition}[Vector selecting]
+  \label{def:select}
+  Let $X:\Type$, $m,n:\Nat$, $I : \Fin_n^m$, and $V : X^n$.
+  \[ select~I~V := \map{\bigl(\lambda (j:\Fin_m).~V[j] \bigr)}{I}. \]
+\end{definition}
+\begin{lemma}[Correctness of $select$]
+  By definition, for $k:\Fin_m$, we have
+  \[
+    (select~I~V)[k]=V\bigl[I[k]\bigr].
+  \]
+\end{lemma}
+
+\begin{definition}[Vector filling]
+  Let $X:\Type$, $m,n:\Nat$,$I:\Fin_n^m$, $init:X^n$, and $V:X^m$:
+  \begin{alignat*}{3}
+    & fill~(\nil      )&& ~init~V &~:=~& init \\
+    & fill~(i \cons I')&& ~init~V &~:=~& \MS{replace}~(fill~I'~(\tl V))~i~(\hd V)
+  \end{alignat*}
+  Where $replace : X^n \to \Fin_n \to X \to X^n$ replaces the $i$th element of a vector.
+\end{definition}
+\begin{lemma}[Correctness of $fill$]
+  If $I$ is duplicate-free, then
+  \begin{enumerate}
+  \item \label{lem:fill_correct_nth}
+    If $I[j]=i$, then $(fill~I~init~V)[i] = V[j]$.
+  \item \label{lem:fill_not_index}
+    If $i \notin I$, then $(fill~I~init~V)[i] = init[@i]$.
+  \end{enumerate}
+\end{lemma}
+\begin{proof}
+  By induction on $I : \Fin_n^m$.
+\end{proof}
+
+\begin{definition}[$\LiftTapes{M}{I}$]
+  \label{def:LiftTapes}
+  Let $M:\TM_\Sigma^m(F)$.
+  \begin{alignat*}{2}
+    &\delta(q,s) &:=& \Let{(q', act) := \delta_M(q, select~I~sym)}{\\%
+    &            &  & (q', fill~I~(\None,N)^n~act)}
+  \end{alignat*}
+  (All other components of $\LiftTapes{M}{I}$ are the same as $M$.)
+\end{definition}
+
+\begin{lemma}[Correctness of $\LiftTapes{M}{I}$]
+  \label{lem:LiftTapes_Realise}
+  Let $M : \TM_\Sigma^m(F)$ and $I$ duplicate-free index-vector.  If $M \vDash R$, then $\LiftTapes{M}{I} \vDash \LiftTapes{M}{R}$ with
+  \[
+    \LiftTapes{M}{R} := \lambda t~(y,t').~ R~(select~I~t)~(y, select~I~t') \land \forall i:\Fin_n.~i \notin I \rightarrow t'[i]=t[i].
+  \]
+\end{lemma}
+
+\begin{lemma}[Runtime of $\LiftTapes{M}{I}$]
+  \label{lem:LiftTapes_TerminatesIn}
+  Let $M : \TM_\Sigma^m(F)$ and $I$ duplicate-free index-vector. If $M \downarrow T$, then $\LiftTapes{M}{R} \downarrow \LiftTapes{M}{T}$ with
+  $
+    \LiftTapes{M}{T} := \lambda t~k.~ T~(select~I~t)~k.
+  $
+\end{lemma}
+
+The proofs are similar to the former proofs, i.e.\ using Lemma~\ref{lem:loop_lift} and Lemma~\ref{lem:loop_unlift} with the following configuration
+lifting function:
+\[
+  selectConf(q,t) := (q, select~I~t).
+\]
+
+However, for the second part of the correctness, i.e.\ tapes that are not in $I$ do not change, we need another lemma about $loop$:
+
+\begin{lemma}[Mapping loops]
+  \label{lem:loop_map}
+  Let $A:\Type$, $f:A \to A$, $h:A \to\ Bool$.  Let $B:\Type$ and $g : A \to B$.  If $g(f~a)=g(a)$ for all $a:A$, then
+  \begin{alignat*}{1}
+    & \forall (k:\Nat)~(a_1~a_2 : A). \\
+    & \quad loop~f~h~k~a_1 = \Some{a_2} \rightarrow \\
+    & \quad g(a_1) = g(a_2).
+  \end{alignat*}
+\end{lemma}
+\begin{proof}
+  By induction on $k:\Nat$.
+\end{proof}
+
+We apply this lemma in the proof of Lemma~\ref{lem:LiftTapes_Realise} with $g := \lambda ((q,t):\Conf_M).~t[i]$.
 
 
-\section{$\Sigma$-Lift}
+
+\section{Alphabet Lift}
 \label{sec:sigma-Lift}
 
 

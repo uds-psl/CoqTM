@@ -132,10 +132,19 @@
 
 %% Vector
 \newcommand{\Vector}[1]{\left[ #1 \right]}
+\DeclareMathOperator{\hd}{\ensuremath{\MS{hd}}}
+\DeclareMathOperator{\tl}{\ensuremath{\MS{tl}}}
 
 
 %% Big-Step semantics
 \newcommand{\terminates}{\mathrel{\triangleright}}
+
+%% Lifts
+% #1 is the machine, #2 the lifting
+\newcommand{\LiftTapes}[2]{#1 \mathbin{@} #2}
+\newcommand{\LiftAlphabet}[2]{#1 \mathbin{\Uparrow} #2}
+% #1 is the machine, #2 the alphabet lifting, and #3 the tape-lifting
+\newcommand{\LiftBoth}[3]{#1 \mathbin{\Uparrow} #2 \mathbin{@} #3}
 
 
 %%% Local Variables:

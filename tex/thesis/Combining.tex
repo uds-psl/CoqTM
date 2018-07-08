@@ -527,13 +527,11 @@ To define $\MS{Mirror}~M$, we assume an injective and involutive function $swap:
 \begin{definition}[$\MS{Mirror}~M$]
   \label{def:Mirror}
   Let $M:\TM_\Sigma^n(F)$.
-  \begin{alignat*}{3}
-    & Q                  &~:=~& Q_M \\
-    & start              &~:=~& start_M \\
-    \delta~&(q, s)       &~:=~& \Let{(q', a) := \delta_M(q,s)}{\bigl(q', \map{(\lambda(w, m).~(w, swap(m)))}{a} \bigr)} \\
-    & halt               &~:=~& halt_M \\
-    & part               &~:=~& part_M
-  \end{alignat*}
+  \[
+    \delta(q, s) :=~
+    \Let{(q', a) := \delta_M(q,s)}{\bigl(q', \map{(\lambda(w, m).~(w, swap(m)))}{a} \bigr)}
+  \]
+  (All other components are the same as $M$.)
 \end{definition}
 
 The correctness and termination proofs are similar to the proofs of $\MS{Match}$ and $\MS{While}$.  The ``lifting'' between configurations of $M$ and
