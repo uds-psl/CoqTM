@@ -33,6 +33,7 @@ Makefile.coq
 *.glo
 *.ist
 *.tdo
+*.synctex.gz
 
 // TODO files
 TODO
