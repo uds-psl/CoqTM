@@ -16,7 +16,7 @@ Section Write_String.
   Fixpoint WriteString (l : list sig) : pTM sig unit 1 :=
     match l with
     | [] => Nop
-    | x :: xs => WriteMove x D ;; WriteString xs
+    | x :: xs => WriteMove x D;; WriteString xs
     end.
 
   Fixpoint WriteString_Fun (sig' : Type) (t : tape sig') (str : list sig') :=

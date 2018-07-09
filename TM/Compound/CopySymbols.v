@@ -20,7 +20,7 @@ Section CopySymbols.
   (* translation *)
   Variable g : sig -> sig.
 
-  Definition M1 : { M : mTM sig 2 & states M -> option unit} :=
+  Definition CopySymbols_Step : { M : mTM sig 2 & states M -> option unit} :=
     MATCH (ReadChar_at Fin.F1)
           (fun b : option sig =>
              match b with
@@ -28,14 +28,14 @@ Section CopySymbols.
                (* First write the read symbol to tape 1 *)
                if f x
                then (* found the symbol: write it to tape 1; break and return *)
-                 LiftTapes (Return (Write (g x)) (Some tt)) [|Fin.FS Fin.F1|]
+                 Return (LiftTapes (Write (g x)) [|Fin.FS Fin.F1|]) (Some tt)
                else (* wrong symbol: write it to tape 1 and move both tapes right and continue *)
-                 LiftTapes (Return (Write (g x)) tt) [|Fin.FS Fin.F1|];;
+                 LiftTapes (Write (g x)) [|Fin.FS Fin.F1|];;
                  Return (MovePar R R) (None)
              | _ => Return Nop (Some tt) (* there is no such symbol, break and return *)
              end).
 
-  Definition M1_Fun : tape sig * tape sig -> tape sig * tape sig :=
+  Definition CopySymbols_Step_Fun : tape sig * tape sig -> tape sig * tape sig :=
     fun '(t1, t2) =>
       match t1, t2 with
       | midtape ls x rs as t1, t2 =>
@@ -45,55 +45,30 @@ Section CopySymbols.
       | t1, t2 => (t1, t2)
       end.
 
-(*
-End CopySymbols.
-Section Test.
-  Let f := fun x => Dec (x = L) : bool.
-  Compute it (M1_Fun f) 0 (midtape [L; N; R] N [R; N; L; N], niltape _).
-  Compute it (M1_Fun f) 1 (midtape [L; N; R] N [R; N; L; N], niltape _).
-  Compute it (M1_Fun f) 2 (midtape [L; N; R] N [R; N; L; N], niltape _).
-  Compute it (M1_Fun f) 3 (midtape [L; N; R] N [R; N; L; N], niltape _).
-  Compute it (M1_Fun f) 4 (midtape [L; N; R] N [R; N; L; N], niltape _).
-  Compute it (M1_Fun f) 5 (midtape [L; N; R] N [R; N; L; N], niltape _).
+  Definition CopySymbols_Step_Rel : pRel sig (option unit) 2 :=
+    fun tin '(yout, tout) =>
+      (tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = CopySymbols_Step_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]) /\
+      match tin[@Fin0] with
+      | midtape _ m _ => yout = if f m
+                               then Some tt (* break *)
+                               else None (* continue *)
+      | _ => yout = Some tt (* break *)
+      end.
 
-  (* Actually simulating the machine... :-) *)
-  Let M' := projT1 (M1 f).
-  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [L; N; R] N [R; N; L; N]; niltape _|])).
-  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [N; L; N; R] R [N; L; N]; rightof N []|])).
-  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [R; N; L; N; R] N [L; N]; rightof R [N]|])).
-  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [N; R; N; L; N; R] L [N]; rightof N [R; N]|])).
-  Compute map_opt (@ctapes _ _ _) (loopM (M := M') 7 (initc M' [|midtape [N; R; N; L; N; R] L [N]; midtape [N; R; N] L []|])).
-
-End Test.
-*)
-
-  Definition M1_Rel : Rel (tapes sig 2) (option unit * tapes sig 2) :=
-    (fun tin '(yout, tout) =>
-       (tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = M1_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]) /\
-       match tin[@Fin0] with
-       | midtape _ m _ => yout = if f m
-                                then Some tt (* break *)
-                                else None (* continue *)
-       | _ => yout = Some tt (* break *)
-       end
-    ).
-
-  Lemma M1_RealiseIn :
-    M1 ⊨c(7) M1_Rel.
+  Lemma CopySymbols_Step_RealiseIn :
+    CopySymbols_Step ⊨c(7) CopySymbols_Step_Rel.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold M1. eapply Match_RealiseIn. cbn. eapply LiftTapes_RealiseIn; [vector_dupfree| eapply ReadChar_Sem].
+      unfold CopySymbols_Step. eapply Match_RealiseIn. cbn. eapply LiftTapes_RealiseIn; [vector_dupfree| eapply ReadChar_Sem].
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e); swap 1 2.
         + eapply Seq_RealiseIn. eapply LiftTapes_RealiseIn; [vector_dupfree | eapply Write_Sem]. apply Return_RealiseIn. eapply MovePar_Sem.
-        + cbn. eapply LiftTapes_RealiseIn; [vector_dupfree | eapply Return_RealiseIn, Write_Sem].
+        + cbn. eapply Return_RealiseIn, LiftTapes_RealiseIn; [vector_dupfree | eapply Write_Sem].
       - cbn. eapply RealiseIn_monotone'. apply Return_RealiseIn. eapply Nop_Sem. omega.
     }
-    {
-      (cbn; omega).
-    }
+    { cbn. reflexivity. }
     {
       intros tin (yout, tout) H. TMCrush destruct_tapes; TMSolve 6.
     }
@@ -101,9 +76,9 @@ End Test.
 
   (*
    * The main loop of the machine.
-   * Execute M1 in a loop until M1 returned [ None ] or [ Some true ]
+   * Execute CopySymbols_Step in a loop until CopySymbols_Step returned [ Some tt ]
    *)
-  Definition CopySymbols : { M : mTM sig 2 & states M -> unit } := WHILE M1.
+  Definition CopySymbols : pTM sig unit 2 := WHILE CopySymbols_Step.
   
   Definition rlength (t : tape sig) :=
     match t with
@@ -147,7 +122,7 @@ End Test.
   Proof.
     eapply Realise_monotone.
     {
-      unfold CopySymbols. eapply While_Realise. eapply RealiseIn_Realise. eapply M1_RealiseIn.
+      unfold CopySymbols. eapply While_Realise. eapply RealiseIn_Realise. eapply CopySymbols_Step_RealiseIn.
     }
     {
       apply WhileInduction; intros; TMSimp.
@@ -176,7 +151,7 @@ End Test.
     projT1 CopySymbols ↓ (fun tin k => CopySymbols_TermTime (tin[@Fin.F1]) <= k).
   Proof.
     eapply While_TerminatesIn.
-    1-2: eapply Realise_total; eapply M1_RealiseIn.
+    1-2: eapply Realise_total; eapply CopySymbols_Step_RealiseIn.
     {
       intros tin k Hk. destruct tin[@Fin0] eqn:E; rewrite CopySymbols_TermTime_equation in *; cbn in *; try rewrite E.
       - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.

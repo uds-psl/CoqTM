@@ -56,10 +56,7 @@ Section MovePar.
     eapply RealiseIn_monotone.
     { unfold MovePar. repeat TM_Correct. }
     { reflexivity. }
-    {
-      hnf in *. intros tin (yout&tout) H. destruct_tapes. cbn -[Vector.nth] in *.
-      TMSimp; clear_trivial_eqs. auto.
-    }
+    { hnf in *. intros tin (yout&tout) H. now TMSimp. }
   Qed.
   
 End MovePar.

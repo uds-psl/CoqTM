@@ -8,7 +8,7 @@ Section While.
 
   Variable F : finType.
   (** Parameter [None] indicates continueing, [Some f] means breaking out of the loop and terminating in the partition [f]. *)
-  Variable pM : { M : mTM sig n & states M -> option F }.
+  Variable pM : pTM sig (option F) n.
 
   Definition While_trans :
     (TM.states (projT1 pM)) * Vector.t (option sig) n ->
