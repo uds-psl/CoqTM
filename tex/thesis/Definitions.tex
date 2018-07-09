@@ -431,12 +431,12 @@ steps the machine needs for the computation.
 
 \begin{lemma}[Monotonicity of $M \vDash R$]
   \label{lem:Realise_monotone}
-  If $M \vDash R$ and $R \subseteq R'$, then $M \vDash R'$.
+  If $M \vDash R'$ and $R' \subseteq R$, then $M \vDash R$.
 \end{lemma}
 
 \begin{lemma}[Anti-monotonicity of $M \downarrow T$]
   \label{lem:TerminatesIn_monotone}
-  If $M \downarrow T$ and $T' \subseteq T$, then $M \downarrow T'$.
+  If $M \downarrow T'$ and $T \subseteq T'$, then $M \downarrow T$.
 \end{lemma}
 
 For machines that always terminate in a constant number of steps, it is useful to combine both predicates:
@@ -531,7 +531,7 @@ Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action
 \end{definition}
 The semantics of $\MS{DoAct}$ is easily expressed using $\MS{doAct}$ (see Definition~\ref{def:step}):
 \begin{lemma}[Correctness of $\MS{DoAct}$]
-  \label{lem:tam}
+  \label{lem:DoAct_Sem}
   ~
   \[
     \MS{DoAct}~a \vDash^1 \MS{DoActRel}~a.
