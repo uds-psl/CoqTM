@@ -1,0 +1,45 @@
+\chapter{Compound Machines}
+\label{cha:compound}
+
+In this chapter, we build complex machines, using the combinators developed in Chapter~\ref{chap:combining}, as well as the tapes-lift of
+Chapter~\ref{chap:lifting}.  However, we do not use the alphabet lift in this chapter.  We also prove correctness and runtime of these machines.
+
+\section{$\Nop$}
+\label{sec:Nop}
+
+Using the alphabet-lift (Definition~\ref{def:LiftAlphabet}) and $\MS{Null}$ (Definition~\ref{def:Null}), it is easy to define an $n$-tape machine
+$\Nop : \TM_\Sigma^n$ for every alphabet $\Sigma$ and number of tapes $n$:
+\begin{definition}[$\Nop$]
+  $Nop := \LiftTapes{\MS{Null}}{\nil}.$
+\end{definition}
+Note that because $\MS{Null}$ is a 0-tape machine and $\Nop$ is supposed to be an $n$-tape machine.  Therefore, the index-vector must be the vector
+$\nil : \Fin_n^0$.
+
+\begin{lemma}[Correctness of $\Nop$]
+  \label{lem:Nop_Sem}
+  $\Nop \vDash^0 NopRel$ with $NopRel := \lambda t~t'.~t'=t$.
+\end{lemma}
+\begin{proof}
+  By applying monotonicity of $\vDash^\cdot$ (Lemma~\ref{lem:RealiseIn_monotone}) and the correctness of $\MS{Null}$ (Lemma~\ref{lem:Null_Sem}), it
+  remains to show that $\LiftTapes{NullRel}{\nil} \subseteq NopRel$.  To show the equality $t'=t$ we show $t'[i]=t[i]$ for all $i:\Fin_n$.  The
+  equality follows with the equality part of the relation $\LiftTapes{NullRel}{\nil}$, because $i \notin \nil$.
+\end{proof}
+
+Note that the correctness relation of $\Nop$ can also be expressed using the identity relation $Id$:
+\[
+  \MS{NopRel} \equiv Id.
+\]
+However, we have the convention to define relations of concrete machine (classes) in $\lambda$-notation, i.e.\ not using relational operators.  Also
+note that the tape $t'$ is per convention always on the left side of the equality.  This convention makes rewriting of tapes uniform; therefore,
+rewriting of tapes can be automatised in Coq.
+
+\section{$\MS{WriteString}$}
+\label{sec:WriteString}
+
+
+
+
+
+%%% Local Variables:
+%%% TeX-master: "thesis"
+%%% End:

@@ -65,13 +65,20 @@ We have an operator that restricts the partition $B$ of a partitioned relation a
 \end{definition}
 
 Similarly, we can define an operator that takes a binary relation and yields a partitioned relation where we fix the parameter.
-
 \begin{definition}[Relational fix]
   \label{def:rel-fix}
   Let $R \subseteq A \times A$ and $y : B$.
   \[
     R \att y := \lam{x~(y', z)}{R~x~z \land y'=y}
   \]
+\end{definition}
+
+\begin{definition}[Relational inclusion and equivalence]
+  Let $R,S \subseteq A \times B$.
+  \begin{align*}
+    R \subseteq S &:= \forall x~y.~R~x~y \rightarrow S~x~y \\
+    R \equiv S    &:= R \subseteq S ~\land~ S \subseteq R
+  \end{align*}
 \end{definition}
 
 
@@ -494,26 +501,19 @@ Note that if we have an unpartitioned machine $M:\TM_\Sigma^n$, we implicitly pa
 % The correctness relation says exactly that the tapes don't change:
 The correctness relation is the (unit-partitioned) universal relation, because empty vectors do not have information.
 \begin{lemma}[Correctness of $\MS{Null}$]
-  \label{lem:Nop_Sem}
+  \label{lem:Null_Sem}
   ~
   \[
     \MS{Null} \vDash^0 \MS{NullRel}.
   \]
   with
   \[
-    \MS{NullRel} := \lambda~t~t'.~ \True.
+    NullRel := \lambda~t~t'.~ \True.
   \]
 \end{lemma}
 \begin{proof}
   By execution.  The machine terminates after zero steps in the start state.
 \end{proof}
-
-% Note that the correctness relation of $\MS{Nop}$ can also be expressed using the identity relation $Id$ and the relational fix:
-% \[
-%   \MS{NopRel}~f \equiv Id \att f.
-% \]
-% However, we have the convention to define relations of concrete machine (classes) in $\lambda$-notation, i.e.\ not using relational operators.  Also
-% note that the tape $t'$ is per convention always on the left side of the equality.
 
 \subsection{DoAct}
 \label{sec:DoAct}
