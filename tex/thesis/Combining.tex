@@ -568,7 +568,7 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
 \begin{lemma}[Correctness of $\MS{Mirror}$]
   Let $M \vDash R$.  Then $\MS{Mirror}~M \vDash MirrorRel~R$ with
   \[
-    MirrorRel~R := \lambda t~(y, t').~ R~(mirror~t)~(y, mirror~t').
+    MirrorRel~R := \lambda t~(y, t').~ R~(\map{mirror}{t})~(y, \map{mirror}{t'}).
   \]
 \end{lemma}
 \begin{proof}
@@ -577,7 +577,7 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
 \begin{lemma}[Runtime of $\MS{Mirror}$]
   Let $M \vDash T$.  Then $\MS{Mirror}~M \downarrow MirrorT~T$ with
   \[
-    MirrorT~T := \lambda t~k.~ T~(mirror~t)~k.
+    MirrorT~T := \lambda t~k.~ T~(\map{mirror}{t})~k.
   \]
 \end{lemma}
 \begin{proof}

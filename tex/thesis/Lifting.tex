@@ -61,7 +61,7 @@ fill in ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   \item \label{lem:fill_correct_nth}
     If $I[j]=i$, then $(fill~I~init~V)[i] = V[j]$.
   \item \label{lem:fill_not_index}
-    If $i \notin I$, then $(fill~I~init~V)[i] = init[@i]$.
+    If $i \notin I$, then $(fill~I~init~V)[i] = init[i]$.
   \end{enumerate}
 \end{lemma}
 \begin{proof}
@@ -119,11 +119,59 @@ We apply this lemma in the proof of Lemma~\ref{lem:LiftTapes_Realise} with $g :=
 
 
 
-\section{Alphabet Lift}
+\section{Alphabet-Lift}
 \label{sec:sigma-Lift}
 
+Let $M : \TM_\Sigma^n(F)$ be a machine over the alphabet $\Sigma$, and $f : \Sigma \hookrightarrow \Tau$ a retraction on another alphabet $\Tau$.
+Note that then $\Tau$ has at least as many symbols as $\Sigma$.  We also need a symbol $def:\Sigma$, however, the choice is semantically relevant (in
+contrast to $def:F$ we needed to define $\While$).  This means that $def$ should be a symbol that $M$ does not expect to read.  The alphabet-lift
+$\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n$ is a machine over the bigger alphabet $\Tau$.
 
-\todo{}
+The transition function of the lifted machine $\LiftAlphabet{M}{(f,def)}$ reads the symbols $s:(\Option(\Tape_\Tau))^n$.  It tries to translate these
+symbols to $s':(\Option(\Tape_\Sigma))^n$ using the partial inversion function $f^{-1} : \Tau \to \Option(\Sigma)$.  However, if the symbol
+$\tau:\Tau$ has no corresponding symbol in $\Sigma$, it must be translated to $def$ instead.  The transition function $\delta_M$ of $M$ yields the
+successor state $q'$ and a vector of actions $act: (\Option(\Sigma) \times \MS{Move})^n$, which is translated using $f:\Sigma\to\Tau$ to
+$act' : (\Option(\Tau) \times \MS{Move})^n$.
+
+\begin{definition}[$\LiftAlphabet{M}{(f,def)}$]
+  \label{def:LiftAlphabet}
+  \begin{alignat*}{2}
+    &\delta(q,s)    &~:=~& \Let{(q', act) := \delta_M(q, \map{(mapOpt~surject)}{s})}{\\%
+    &               &~  ~& (q', \map{(mapAct~f)}{act})} \\
+    & surject(\tau) &~:=~&
+    \begin{cases}
+      x   & f^{-1}(\tau) = \Some{x} \\
+      def & f^{-1}(\tau) = \None
+    \end{cases}
+  \end{alignat*}
+  with the canonical functions $mapOpt: \forall (X~Y:\Type).~ (X \to Y) \to \Option(X) \to \Option(Y)$ and
+  $mapAct : \forall (\Sigma~\Tau:\Type).~(\Sigma\to\Tau) \to \Act_\Sigma \to \Act_\Tau$.  All other components are the same as $M$.
+\end{definition}
+
+For the correctness and runtime lemmas, we also need the canonical function
+\[
+  mapTape:\forall (\Tau~\Sigma:\Type).~(\Tau\to\Sigma)\to\Tape_\Tau\to\Tape_\Sigma
+\]
+that maps every symbol on a tape.  We write $mapTapes$ for the respective tape-vector function.
+
+\begin{lemma}[Correctness of $\LiftAlphabet{M}{(f,def)}$]
+  \label{lem:LiftAlphabet_Realise}
+  If $M \vDash R$, then $\LiftAlphabet{M}{(f,def)} \vDash \LiftAlphabet{R}{(f,def)}$ with
+  \[
+    \LiftAlphabet{R}{(f,def)} := \lambda t~(y, t').~R~(mapTapes~surject~t)~(y, mapTapes~surject~t').
+  \]
+\end{lemma}
+
+\begin{lemma}[Runtime of $\LiftAlphabet{M}{(f,def)}$]
+  \label{lem:LiftAlphabet_TerminatesIn}
+  If $M \downarrow T$, then $\LiftAlphabet{M}{(f,def)} \downarrow \LiftAlphabet{T}{(f,def)}$ with
+  \[
+    \LiftAlphabet{T}{(f,def)} := \lambda t~k.~T~(mapTapes~surject~t)~k.
+  \]
+\end{lemma}
+
+The proofs are analogous to the former proofs.
+
 
 
 
