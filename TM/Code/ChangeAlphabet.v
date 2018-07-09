@@ -215,7 +215,7 @@ Section ChangeAlphabet.
   Variable (retr : Retract sig tau).
 
   Definition ChangeAlphabet : {M : mTM tau^+ n & states M -> F} :=
-    Lift pM (Retract_plus retr) (inl UNKNOWN).
+    LiftAlphabet pM (Retract_plus retr) (inl UNKNOWN).
 
 End ChangeAlphabet.
 
@@ -250,7 +250,7 @@ Section Computes_ChangeAlphabet.
   Variable (pM : {M : mTM (sig^+) (S (S n_tapes)) & states M -> F}).
 
   Variable retr : Retract sig tau.
-  (** Use this to say the [TM_Correct] tactic to apply [ChangeAlphabet_Computes] instead of only unfolding [ChangeAlphabet] and applying [Lift_Realise]. *)
+  (** Use this to say the [TM_Correct] tactic to apply [ChangeAlphabet_Computes] instead of only unfolding [ChangeAlphabet] and applying [LiftAlphabet_Realise]. *)
 
 
   Variable X Y : Type.
@@ -265,7 +265,7 @@ Section Computes_ChangeAlphabet.
   Proof.
     intros H. eapply Realise_monotone.
     {
-      eapply Lift_Realise; eauto.
+      eapply LiftAlphabet_Realise; eauto.
     }
     {
       hnf. intros tin (yout&tout) HComp.
@@ -322,7 +322,7 @@ Section Computes_ChangeAlphabet2.
   Proof.
     intros H. eapply Realise_monotone.
     {
-      unfold ChangeAlphabet. eapply Lift_Realise; eauto.
+      unfold ChangeAlphabet. eapply LiftAlphabet_Realise; eauto.
     }
     {
       hnf. intros tin (yout&tout) HComp.
@@ -365,8 +365,8 @@ End Computes_ChangeAlphabet2.
 
 Ltac smpl_TM_ChangeAlphabet :=
   match goal with
-  | [ |- ChangeAlphabet ?pM ?retr ⊨ _ ] => apply Lift_Realise
-  | [ |- projT1 (ChangeAlphabet ?pM ?retr) ↓ _ ] => apply Lift_TerminatesIn
+  | [ |- ChangeAlphabet ?pM ?retr ⊨ _ ] => apply LiftAlphabet_Realise
+  | [ |- projT1 (ChangeAlphabet ?pM ?retr) ↓ _ ] => apply LiftAlphabet_TerminatesIn
   end.
 
 

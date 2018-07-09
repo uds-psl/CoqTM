@@ -28,9 +28,9 @@ Lemma MatchTok_Sem : MatchTok ⊨c(MatchTok_steps) MatchTok_Rel.
 Proof.
   unfold MatchTok_steps. eapply RealiseIn_monotone.
   { unfold MatchTok. repeat TM_Correct.
-    - apply Lift_RealiseIn. apply MatchFin_Sem.
+    - apply LiftAlphabet_RealiseIn. apply MatchFin_Sem.
   }
-  { cbn. Unshelve. reflexivity. }
+  { cbn. reflexivity. }
   {
     intros tin (yout, tout) H. intros t HEncT. TMSimp.
     unfold sigTok in *.
