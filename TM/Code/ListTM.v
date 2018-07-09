@@ -630,7 +630,7 @@ Section Append.
 
   Definition App' : { M : mTM sigList^+ 2 & states M -> unit } :=
     LiftTapes (MoveRight _;; Move L;; Move L) [|Fin0|];;
-    CopySymbols_L stop id.
+    CopySymbols_L stop.
   Lemma App'_Realise : App' ⊨ App'_Rel.
   Proof.
     eapply Realise_monotone.
@@ -654,14 +654,14 @@ Section Append.
 
         rewrite app_comm_cons, app_assoc in HCopy. rewrite CopySymbols_L_correct_moveleft in HCopy; cbn in *; auto.
         + rewrite rev_app_distr, rev_involutive, <- app_assoc in HCopy. inv HCopy; TMSimp.
-          * rewrite <- app_assoc, map_id. cbn. repeat econstructor.
+          * rewrite <- app_assoc. cbn. repeat econstructor.
             -- f_equal. cbn. rewrite encode_list_app. rewrite map_app, <- app_assoc.
                cbn.
                f_equal.
                ++ now rewrite rev_involutive, map_removelast.
                ++ f_equal. now rewrite map_app, List.map_map, <- app_assoc.
-            -- f_equal. cbn. rewrite !encode_list_app. rewrite rev_app_distr, rev_involutive, <- app_assoc.
-               cbn. rewrite rev_involutive, <- app_assoc. cbn.
+            -- f_equal. cbn. rewrite !encode_list_app. rewrite rev_involutive, <- app_assoc.
+               cbn. rewrite <- app_assoc. cbn.
                rewrite removelast_app, !map_app, <- !app_assoc, map_removelast. 2: congruence. f_equal.
                setoid_rewrite app_assoc at 2. rewrite app_comm_cons. rewrite app_assoc. f_equal. f_equal.
                rewrite map_removelast. cbn -[removelast]. rewrite map_app. cbn -[removelast].

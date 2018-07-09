@@ -43,7 +43,7 @@ Section MatchPair.
   Definition MatchPair : { M : mTM sigPair^+ 2 & states M -> unit } :=
     LiftTapes (WriteMove (inl STOP) L) [|Fin1|];;
     LiftTapes (MoveToSymbol stopAfterFirst id;; Move L) [|Fin0|];;
-    CopySymbols_L stopAtStart id;;
+    CopySymbols_L stopAtStart;;
     LiftTapes (MoveToSymbol stopAfterFirst id;; Move L;; Write (inl START)) [|Fin0|].
 
   Lemma MatchPair_Realise : MatchPair ⊨ MatchPair_Rel.
@@ -157,7 +157,7 @@ Section MatchPair.
 
   Definition Constr_pair : { M : mTM sigPair^+ 2 & states M -> unit } :=
     LiftTapes (MoveRight _;; Move L) [|Fin0|];;
-    CopySymbols_L stopAtStart id.
+    CopySymbols_L stopAtStart.
 
 
   Lemma Constr_pair_Realise : Constr_pair ⊨ Constr_pair_Rel.
@@ -175,7 +175,7 @@ Section MatchPair.
         + repeat econstructor. cbn. f_equal. now rewrite map_rev, rev_involutive.
         + repeat econstructor. cbn. f_equal. simpl_tape.
           destruct HEncY as (ls'&HEncY); TMSimp_goal.
-          rewrite map_id, map_rev, rev_involutive. cbn. now rewrite map_app, <- app_assoc. 
+          rewrite map_rev, rev_involutive. cbn. now rewrite map_app, <- app_assoc. 
       - rewrite map_rev, List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
     }
   Qed.

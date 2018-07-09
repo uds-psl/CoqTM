@@ -24,19 +24,18 @@ Section Copy.
 
   Variable sig : finType.
   Variable stop : sig -> bool.
-  Variable f : sig -> sig.
 
   Lemma CopySymbols_correct tltr str1 x str2 :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local (fst tltr) = str1 ++ x :: str2 ->
-    CopySymbols_Fun stop f tltr =
+    CopySymbols_Fun stop tltr =
     (midtape (rev str1 ++ left (fst tltr)) x str2,
-     midtape (rev (map f str1) ++ left (snd tltr)) (f x) (skipn (|str1|) (right (snd tltr)))).
+     midtape (rev str1 ++ left (snd tltr)) x (skipn (|str1|) (right (snd tltr)))).
   Proof.
     intros HStop1 HStop2. intros HEnc.
     revert str1 x str2 HEnc HStop1 HStop2.
-    functional induction (CopySymbols_Fun stop f tltr); cbn in *; simpl_tape in *; intros.
+    functional induction (CopySymbols_Fun stop tltr); cbn in *; simpl_tape in *; intros.
     - destruct str1 eqn:E; inv HEnc; cbn; auto. specialize (HStop1 _ ltac:(eauto)). congruence.
     - destruct str1; cbn in *.
       + inv HEnc. congruence.
@@ -51,9 +50,9 @@ Section Copy.
     stop m = false ->
     (forall x, List.In x rs -> stop x = false) ->
     stop x = true ->
-    CopySymbols_Fun stop f (midtape ls m (rs ++ x :: rs'), t2) =
+    CopySymbols_Fun stop (midtape ls m (rs ++ x :: rs'), t2) =
     (midtape (rev rs ++ m :: ls) x rs',
-     midtape (rev (map f rs) ++ (f m) :: left (t2)) (f x) (skipn (S (|rs|)) (right t2))).
+     midtape (rev rs ++ m :: left (t2)) x (skipn (S (|rs|)) (right t2))).
   Proof.
     intros HStopM HStopRs HStopX.
     unshelve epose proof @CopySymbols_correct (midtape ls m (rs ++ x :: rs'), t2) (m::rs) x rs' _ _ _ as L; cbn in *; eauto.
@@ -64,9 +63,9 @@ Section Copy.
   Corollary CopySymbols_correct_moveright ls m rs x rs' t2:
     (forall x, List.In x rs -> stop x = false) ->
     stop x = true ->
-    CopySymbols_Fun stop f (tape_move_right' ls m (rs ++ x :: rs'), t2) =
+    CopySymbols_Fun stop (tape_move_right' ls m (rs ++ x :: rs'), t2) =
     (midtape (rev rs ++ m :: ls) x rs',
-     midtape (rev (map f rs) ++ left t2) (f x) (skipn (|rs|) (right t2))).
+     midtape (rev rs ++ left t2) x (skipn (|rs|) (right t2))).
   Proof.
     intros HStopLs HStopX.
     cbv [tape_move_left']. destruct rs as [ | s s'] eqn:E; cbn in *.
@@ -79,13 +78,13 @@ Section Copy.
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local_l (fst tltr) = str1 ++ x :: str2 ->
-    CopySymbols_L_Fun stop f tltr =
+    CopySymbols_L_Fun stop tltr =
     (midtape str2 x (rev str1 ++ right (fst tltr)),
-     midtape (skipn (|str1|) (left (snd tltr))) (f x) (rev (map f str1) ++ right (snd tltr))).
+     midtape (skipn (|str1|) (left (snd tltr))) x (rev str1 ++ right (snd tltr))).
   Proof.
     intros HStop1 HStop2. intros HEnc.
     revert str1 x str2 HEnc HStop1 HStop2.
-    functional induction (CopySymbols_L_Fun stop f tltr); cbn in *; simpl_tape in *; intros.
+    functional induction (CopySymbols_L_Fun stop tltr); cbn in *; simpl_tape in *; intros.
     - destruct str1 eqn:E; inv HEnc; cbn; auto. specialize (HStop1 _ ltac:(eauto)). congruence.
     - destruct str1; cbn in *.
       + inv HEnc. congruence.
@@ -101,9 +100,9 @@ Section Copy.
     stop m = false ->
     (forall x, List.In x ls -> stop x = false) ->
     stop x = true ->
-    CopySymbols_L_Fun stop f (midtape (ls ++ x :: ls') m rs, t2) =
+    CopySymbols_L_Fun stop (midtape (ls ++ x :: ls') m rs, t2) =
     (midtape ls' x (rev ls ++ m :: rs),
-     midtape (skipn (S (|ls|)) (left t2)) (f x) (rev (map f ls) ++ (f m) :: right t2)).
+     midtape (skipn (S (|ls|)) (left t2)) x (rev ls ++ m :: right t2)).
   Proof.
     intros HStopM HStopRs HStopX.
     unshelve epose proof @CopySymbols_L_correct (midtape (ls ++ x :: ls') m rs, t2) (m::ls) x ls' _ _ _ as L; cbn in *; eauto.
@@ -114,9 +113,9 @@ Section Copy.
   Corollary CopySymbols_L_correct_moveleft ls x ls' m rs t2 :
     (forall x, List.In x ls -> stop x = false) ->
     stop x = true ->
-    CopySymbols_L_Fun stop f (tape_move_left' (ls ++ x :: ls') m rs, t2) =
+    CopySymbols_L_Fun stop (tape_move_left' (ls ++ x :: ls') m rs, t2) =
     (midtape ls' x (rev ls ++ m :: rs),
-     midtape (skipn (|ls|) (left t2)) (f x) (rev (map f ls) ++ right t2)).
+     midtape (skipn (|ls|) (left t2)) x (rev ls ++ right t2)).
   Proof.
     intros HStopLs HStopX.
     cbv [tape_move_left']. destruct ls as [ | s s'] eqn:E; cbn in *.
@@ -124,6 +123,8 @@ Section Copy.
     - rewrite CopySymbols_L_correct_midtape; auto. subst. rewrite <- !app_assoc; cbn. reflexivity.
   Qed.
   
+
+  Variable f : sig -> sig.
 
   Lemma MoveToSymbol_correct t str1 str2 x :
     (forall x, List.In x str1 -> stop x = false) ->
@@ -522,7 +523,7 @@ Section CopyValue.
   Variable (sig: finType) (X:Type) (cX : codable sig X).
 
   Definition CopyValue :=
-    LiftTapes (MoveRight _) [|Fin0|];; CopySymbols_L (@isStart sig) id.
+    LiftTapes (MoveRight _) [|Fin0|];; CopySymbols_L (@isStart sig).
 
   Definition CopyValue_Rel : Rel (tapes (sig^+) 2) (unit * tapes (sig^+) 2) :=
     ignoreParam (
@@ -544,7 +545,7 @@ Section CopyValue.
       intros x HEncX HRight.
       TMSimp. clear H1_0.
       apply H in HEncX. clear H. destruct HEncX as (r3&HEncX). rewrite HEncX in H0.
-      erewrite CopySymbols_L_correct_midtape in H0; eauto. rewrite map_id in *.
+      erewrite CopySymbols_L_correct_midtape in H0; eauto.
       - inv H0. TMSimp. repeat econstructor; f_equal; rewrite map_rev, rev_involutive; repeat f_equal. now apply isRight_right.
       - intros ? (?&<-&?) % in_map_iff. reflexivity.
     }

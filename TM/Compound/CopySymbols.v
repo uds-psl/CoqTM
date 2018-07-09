@@ -17,8 +17,6 @@ Section CopySymbols.
   Variable sig : finType.
   (* Termination check *)
   Variable f : sig -> bool.
-  (* translation *)
-  Variable g : sig -> sig.
 
   Definition CopySymbols_Step : { M : mTM sig 2 & states M -> option unit} :=
     MATCH (ReadChar_at Fin.F1)
@@ -28,9 +26,9 @@ Section CopySymbols.
                (* First write the read symbol to tape 1 *)
                if f x
                then (* found the symbol: write it to tape 1; break and return *)
-                 Return (LiftTapes (Write (g x)) [|Fin.FS Fin.F1|]) (Some tt)
+                 Return (LiftTapes (Write x) [|Fin.FS Fin.F1|]) (Some tt)
                else (* wrong symbol: write it to tape 1 and move both tapes right and continue *)
-                 LiftTapes (Write (g x)) [|Fin.FS Fin.F1|];;
+                 LiftTapes (Write x) [|Fin.FS Fin.F1|];;
                  Return (MovePar R R) (None)
              | _ => Return Nop (Some tt) (* there is no such symbol, break and return *)
              end).
@@ -40,8 +38,8 @@ Section CopySymbols.
       match t1, t2 with
       | midtape ls x rs as t1, t2 =>
         if (f x)
-        then (t1, tape_write t2 (Some (g x)))
-        else (tape_move_right t1, tape_move_mono t2 (Some (g x), R))
+        then (t1, tape_write t2 (Some x))
+        else (tape_move_right t1, tape_move_mono t2 (Some x, R))
       | t1, t2 => (t1, t2)
       end.
 
@@ -95,8 +93,8 @@ Section CopySymbols.
     match tin with
       (midtape ls m rs as t1, t2) =>
       if f m
-      then (t1, tape_write t2 (Some (g m)))
-      else CopySymbols_Fun (tape_move_right t1, tape_move_mono t2 (Some (g m), R))
+      then (t1, tape_write t2 (Some m))
+      else CopySymbols_Fun (tape_move_right t1, tape_move_mono t2 (Some m, R))
     |  (t1, t2) => (t1, t2)
     end.
   Proof.
@@ -113,7 +111,7 @@ Section CopySymbols.
   Lemma CopySymbols_skip ls m rs t2 :
     f m = false ->
     CopySymbols_Fun (midtape ls m rs, t2) = CopySymbols_Fun (tape_move_right (midtape ls m rs),
-                                                             tape_move_mono t2 (Some (g m), R)).
+                                                             tape_move_mono t2 (Some m, R)).
   Proof. intros H. now rewrite CopySymbols_Fun_equation, H. Qed.
     
 
@@ -181,8 +179,8 @@ Section CopySymbols.
     match tin with
       (midtape ls m rs as t1, t2) =>
       if f m
-      then (t1, tape_write t2 (Some (g m)))
-      else CopySymbols_L_Fun (tape_move_left t1, tape_move_mono t2 (Some (g m), L))
+      then (t1, tape_write t2 (Some m))
+      else CopySymbols_L_Fun (tape_move_left t1, tape_move_mono t2 (Some m, L))
     | (t1, t2) => (t1, t2)
     end.
   Proof.
@@ -300,10 +298,10 @@ End CopySymbols.
 
 Ltac smpl_TM_CopySymbols :=
   match goal with
-  | [ |- CopySymbols  _ _ ⊨ _ ] => eapply CopySymbols_Realise
-  | [ |- projT1 (CopySymbols _ _) ↓ _ ] => eapply CopySymbols_Terminates
-  | [ |- CopySymbols_L  _ _ ⊨ _ ] => eapply CopySymbols_L_Realise
-  | [ |- projT1 (CopySymbols_L _ _) ↓ _ ] => eapply CopySymbols_L_Terminates
+  | [ |- CopySymbols _ ⊨ _ ] => eapply CopySymbols_Realise
+  | [ |- projT1 (CopySymbols _) ↓ _ ] => eapply CopySymbols_Terminates
+  | [ |- CopySymbols_L _ ⊨ _ ] => eapply CopySymbols_L_Realise
+  | [ |- projT1 (CopySymbols_L _) ↓ _ ] => eapply CopySymbols_L_Terminates
   end.
 
 Smpl Add smpl_TM_CopySymbols : TM_Correct.

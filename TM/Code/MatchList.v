@@ -29,7 +29,7 @@ Section MatchList.
     LiftTapes Skip_cons [|Fin0|];;
     LiftTapes (Write (inl STOP)) [|Fin1|];;
     MovePar L L;;
-    CopySymbols_L stop id;;
+    CopySymbols_L stop;;
     LiftTapes (Write (inl START)) [|Fin1|].
 
   Definition MatchList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
@@ -114,11 +114,11 @@ Section MatchList.
       - rewrite CopySymbols_L_correct_moveleft in HCopy; cbn; auto.
         2: setoid_rewrite <- in_rev; apply stop_lemma.
         inv HCopy. TMSimp.
-        cbn. rewrite !map_id, !rev_involutive. repeat econstructor. cbn. f_equal. simpl_tape. reflexivity.
+        cbn. rewrite !rev_involutive. repeat econstructor. cbn. f_equal. simpl_tape. reflexivity.
       - rewrite CopySymbols_L_correct_moveleft in HCopy; cbn; auto.
         2: setoid_rewrite <- in_rev; apply stop_lemma.
         inv HCopy. TMSimp.
-        cbn. rewrite !map_id, !rev_involutive. repeat econstructor.
+        cbn. rewrite !rev_involutive. repeat econstructor.
         + f_equal. rewrite map_app, <- app_assoc. reflexivity.
         + cbn. f_equal. simpl_tape. reflexivity.
     }
@@ -355,7 +355,7 @@ Section MatchList.
 
   Definition Constr_cons : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
     LiftTapes (MoveRight _;; Move L) [|Fin1|];;
-    LiftTapes (CopySymbols_L stop id) [|Fin1;Fin0|];;
+    LiftTapes (CopySymbols_L stop) [|Fin1;Fin0|];;
     LiftTapes (WriteMove (inr sigList_cons) L;; Write (inl START)) [|Fin0|].
 
   Definition Constr_cons_Rel : Rel (tapes (sigList sigX)^+ 2) (unit * tapes (sigList sigX)^+ 2) :=
@@ -382,7 +382,7 @@ Section MatchList.
       { intros ? (?&<-& (?&<-&?) % in_rev % in_map_iff) % in_map_iff. cbn. reflexivity. }
       inv H0. TMSimp.
       repeat econstructor.
-      - cbn. f_equal. simpl_tape. rewrite map_id. rewrite !map_rev, rev_involutive. f_equal.
+      - cbn. f_equal. simpl_tape. rewrite !map_rev, rev_involutive. f_equal.
         now rewrite !List.map_map, map_app, <- app_assoc, List.map_map.
       - f_equal. now rewrite !map_rev, rev_involutive.
     }
