@@ -13,44 +13,39 @@ Require Import Recdef.
 
 
 Section CopySymbols.
-  
+
   Variable sig : finType.
   (* Termination check *)
   Variable f : sig -> bool.
 
   Definition CopySymbols_Step : { M : mTM sig 2 & states M -> option unit} :=
-    MATCH (ReadChar_at Fin.F1)
+    MATCH (ReadChar_at Fin0)
           (fun b : option sig =>
              match b with
              | Some x =>
                (* First write the read symbol to tape 1 *)
                if f x
                then (* found the symbol: write it to tape 1; break and return *)
-                 Return (LiftTapes (Write x) [|Fin.FS Fin.F1|]) (Some tt)
+                 Return (LiftTapes (Write x) [|Fin1|]) (Some tt)
                else (* wrong symbol: write it to tape 1 and move both tapes right and continue *)
-                 LiftTapes (Write x) [|Fin.FS Fin.F1|];;
-                 Return (MovePar R R) (None)
+                 Return (LiftTapes (Write x) [|Fin1|];;
+                         MovePar R R) (None)
              | _ => Return Nop (Some tt) (* there is no such symbol, break and return *)
              end).
 
-  Definition CopySymbols_Step_Fun : tape sig * tape sig -> tape sig * tape sig :=
-    fun '(t1, t2) =>
-      match t1, t2 with
-      | midtape ls x rs as t1, t2 =>
-        if (f x)
-        then (t1, tape_write t2 (Some x))
-        else (tape_move_right t1, tape_move_mono t2 (Some x, R))
-      | t1, t2 => (t1, t2)
-      end.
-
   Definition CopySymbols_Step_Rel : pRel sig (option unit) 2 :=
     fun tin '(yout, tout) =>
-      (tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = CopySymbols_Step_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]) /\
-      match tin[@Fin0] with
-      | midtape _ m _ => yout = if f m
-                               then Some tt (* break *)
-                               else None (* continue *)
-      | _ => yout = Some tt (* break *)
+      match current tin[@Fin0] with
+      | Some x =>
+        if (f x)
+        then tout[@Fin0] = tin[@Fin0] /\
+             tout[@Fin1] = tape_write tin[@Fin1] (Some x) /\
+             yout = Some tt (* break *)
+        else tout[@Fin0] = tape_move_right tin[@Fin0] /\
+             tout[@Fin1] = tape_move_mono tin[@Fin1] (Some x, R) /\
+             yout = None (* continue *)
+      | _ => tout = tin /\
+            yout = Some tt
       end.
 
   Lemma CopySymbols_Step_RealiseIn :
@@ -62,8 +57,8 @@ Section CopySymbols.
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e); swap 1 2.
-        + eapply Seq_RealiseIn. eapply LiftTapes_RealiseIn; [vector_dupfree | eapply Write_Sem]. apply Return_RealiseIn. eapply MovePar_Sem.
-        + cbn. eapply Return_RealiseIn, LiftTapes_RealiseIn; [vector_dupfree | eapply Write_Sem].
+        + apply Return_RealiseIn. eapply Seq_RealiseIn. eapply LiftTapes_RealiseIn; [vector_dupfree | eapply Write_Sem]. eapply MovePar_Sem.
+        + apply Return_RealiseIn, LiftTapes_RealiseIn; [vector_dupfree | eapply Write_Sem].
       - cbn. eapply RealiseIn_monotone'. apply Return_RealiseIn. eapply Nop_Sem. omega.
     }
     { cbn. reflexivity. }
@@ -77,7 +72,7 @@ Section CopySymbols.
    * Execute CopySymbols_Step in a loop until CopySymbols_Step returned [ Some tt ]
    *)
   Definition CopySymbols : pTM sig unit 2 := WHILE CopySymbols_Step.
-  
+
   Definition rlength (t : tape sig) :=
     match t with
     | niltape _ => 0
@@ -113,7 +108,7 @@ Section CopySymbols.
     CopySymbols_Fun (midtape ls m rs, t2) = CopySymbols_Fun (tape_move_right (midtape ls m rs),
                                                              tape_move_mono t2 (Some m, R)).
   Proof. intros H. now rewrite CopySymbols_Fun_equation, H. Qed.
-    
+
 
   Lemma CopySymbols_Realise :
     CopySymbols ⊨ CopySymbols_Rel.
@@ -124,10 +119,10 @@ Section CopySymbols.
     }
     {
       apply WhileInduction; intros; TMSimp.
-      - destruct tin[@Fin0]; TMSimp; rewrite CopySymbols_Fun_equation; auto.
-        + destruct (f e); cbn in *; auto. inv H0.
+      - destruct tin[@Fin0] eqn:E0; TMSimp; rewrite CopySymbols_Fun_equation; auto.
+        destruct (f e); cbn in *; auto; destruct HLastStep as (HLS1&HLS2&HLS3); TMSimp; auto.
       - destruct tin[@Fin0] eqn:E; TMSimp; auto.
-        assert (f e = false) as E2 by now destruct (f e); cbn in *; auto. rewrite E2 in *. clear H0.
+        destruct (f e) eqn:Ee; destruct HStar as (HS1&HS2&HS3); TMSimp.
         now rewrite CopySymbols_skip.
     }
   Qed.
@@ -156,13 +151,13 @@ Section CopySymbols.
       - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
       - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
       - destruct (f e) eqn:E2.
-        + eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
-        + eexists. split. eauto. intros o tmid (H1&->); inv H1. TMSimp.
+        + eexists. split. eauto. cbn. rewrite E2. intros o tmid (H1&H2); inv H2. omega.
+        + eexists. split. eauto. cbn. rewrite E2. intros o tmid (H1&H2&->). TMSimp.
           exists (CopySymbols_TermTime (tape_move_right' l e l0)). repeat split; auto.
     }
   Qed.
-  
-  
+
+
   (** Move to left *)
 
   Definition CopySymbols_L := Mirror CopySymbols.
@@ -261,7 +256,7 @@ Section CopySymbols.
     }
   Qed.
 
-  
+
   Function CopySymbols_L_TermTime (t : tape sig) { measure llength t } : nat :=
     match t with
     | midtape ls m rs => if f m then 8 else 8 + CopySymbols_L_TermTime (tape_move_left t)
@@ -271,7 +266,7 @@ Section CopySymbols.
     all: (intros; try now (cbn; omega)). destruct ls; cbn; omega.
   Qed.
 
-  
+
   Lemma CopySymbols_TermTime_mirror t :
     CopySymbols_L_TermTime t = CopySymbols_TermTime (mirror_tape t).
   Proof.
@@ -291,7 +286,7 @@ Section CopySymbols.
     - cbn. intros tin k Hk. destruct_tapes; cbn. rewrite <- Hk. unfold mirror_tapes.
       rewrite CopySymbols_TermTime_mirror. cbn. auto.
   Qed.
-  
+
 
 End CopySymbols.
 
