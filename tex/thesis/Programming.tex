@@ -2,11 +2,11 @@
 \label{chap:programming}
 
 We can define machines using primitive operations like $\MS{DoAct}$, and can combine machines in an imperative programming style.  However, our
-imperative ``language'' still has no notion of \emph{variables} or data cells.  We want to use each tape as a data cell to store one variable.
-Therefore, we have to define what it means that a tape \emph{contains} a value.  When we ``\emph{program}'' Turing machines, instead of using basic
-machines, we only use machines that directly change the value of a tape.  We use the combinators introduced in Chapter \ref{chap:combining} to
-simulate control flow of imperative programming languages.  Using the definition of value-containing, we specify a ``callee-saving'' convention for
-function computation.  We present a generic pattern how to program and verify Turing machines and show more complex case studies.
+imperative ``language'' still has no notion of values or data cells.  We want to use each tape as a data cell to store one variable.  Therefore, we
+have to define what it means that a tape contains a value.  When we ``program'' Turing machines, instead of using basic machines, we only use machines
+that directly change the value of a tape.  We use the combinators introduced in Chapter~\ref{chap:combining} to simulate control flow of imperative
+programming languages.  Using the definition of value-containing, we specify a ``callee-saving'' convention for function computation.  We present a
+generic pattern how to program and verify Turing machines and show more complex case studies.
 
 
 \section{Value-Containing}
@@ -16,30 +16,87 @@ We first want to define what it means that a tape $t$ \emph{contains} a value $x
 essentially a list of symbols, so we have to linearise values to strings.
 
 \begin{definition}[Encodable types]
-  We say that a type $X$ is \emph{encodable} over $\Sigma$, if there is an injective function $encode : X \to \List(\Sigma)$.
+  We say that a type $X$ is \emph{encodable} over $\Sigma$, if there is a function $encode : X \to \List(\Sigma)$.
 \end{definition}
 
-We write $encode_\Sigma$ if $\Sigma$ is not clear from the context.  For example, we can map encodings to different alphabets:
-
+Morally, the encoding functions should be injective and there also should be a decoding function such that the encoding and decoding functions is a
+retraction on $\List(\Sigma)$.  However, we do not need this strict definition.  We may encode a type $X$ on any alphabet $\Tau$, if $\Sigma$ is a
+retraction on $\Tau$:
 \begin{definition}[Map encodings]
-  Let $X$ be encodable over $\Sigma$ and $f : \Sigma \to \Tau$ be injective.  Then $X$ is also encodable over $\Tau$ with the following encoding
-  function:
-  \[ encode_\Tau(x) = \map{f}{(encode_\Sigma(x))}. \]
+  \label{def:Encode_map}
+  Let $X$ be encodable over $\Sigma$ and $f : \Sigma \hookrightarrow \Tau$ be a retraction.  Then $X$ is also encodable over $\Tau$ with the following
+  encoding function:
+  \[ encode_\Tau(x) := encodeMap~encode_\Sigma~f~(x) := \map{f}{(encode_\Sigma(x))}. \]
+\end{definition}
+Note that mapping of encodings is compatible with composition of retractions.  This means that if we map the encoding twice, this is the same as
+mapping the encoding with the composition of both retractions:
+\begin{lemma}[Composition and encoding mapping]
+  \label{lem:Encode_map_comp}
+  Let $f : \Sigma \hookrightarrow \Tau$ and $g : \Tau \hookrightarrow \Delta$ be retractions and $X$ be encodable over $\Sigma$.  Then there is only
+  one way how $X$ can be encoded over $\Delta$, i.e.:
+  \[ encodeMap~(encodeMap~f~encode)~g~(x) = encodeMap~(f \cirg g)~encode~x \]
+\end{lemma}
+
+For each type and type constructor, we have a disting alphabet.  We define basic encodings:
+\begin{definition}[Basic encodings]
+  \begin{enumerate}
+  \item We encode $\Unit$ over the empty alphabet $\False$:
+  \[ encode(\unit) := \nil
+  \]
+  \item The types $\Bool$ is encoded over itselve, i.e.\ $encode(b):=[b]$.
+  \item Let $X$ be encodable over $\Sig$.  Then $\Option(X)$ is encodable over
+    \[ SigOpt~\Sigma ::= \MS{NONE} ~|~ \MS{SOME} ~|~ (x:\Sigma) \]
+    With the retraction $RetrOpt : \Sigma \hookrightarrow SigOpt~\Sigma$ and
+    \[
+      encode(o) :=
+      \begin{cases}
+        [\MS{NONE}] & o=\None \\
+        \MS{SOME} \cons encode(x) & x=\Some{x}
+      \end{cases}
+    \]
+  \item Let $X$ be encodable over $\Sig$ and $Y$ over $\Tau$.  Then $X+Y$ is encodable over
+    \[ SigSum~\Sigma~\Tau ::= \MS{INL} ~|~ \MS{INR} ~|~ (x:\Sigma) (y:\Tau) \] With the retraction
+    $RetrOptX : \Sigma \hookrightarrow SigOpt~\Sigma~\Tau$ and $RetrOptY : \Tau \hookrightarrow SigOpt~\Sigma~\Tau$ and
+    \[
+      encode(s) :=
+      \begin{cases}
+        \MS{INL} \cons encode(x) & s=\inl x \\
+        \MS{INR} \cons encode(y) & x=\inr y
+      \end{cases}
+    \]
+  \item Let $X$ be encodable over $\Sig$ and $Y$ over $\Tau$.  Then $X*Y$ is encodable over
+    \[ SigSum~\Sigma~\Tau ::= (x:\Sigma) ~|~ (y:\Tau) \] With the retraction
+    $RetrSumX : \Sigma \hookrightarrow SigSum~\Sigma~\Tau$ and $RetrSumY : \Tau \hookrightarrow SigSum~\Sigma~\Tau$ and
+    \[
+      encode(s) :=
+      \begin{cases}
+        \MS{INL} \cons encode(x) & s=\inl x \\
+        \MS{INR} \cons encode(y) & x=\inr y
+      \end{cases}
+    \]
+  \item Let $X$ be encodable over $\Sig$.  Then $\List(X)$ is encodable over
+    \[ SigList~\Sigma ::= \MS{NIL} ~|~ \MS{CONS} ~|~ (x:\Sigma) \]
+    With the retraction $RetrList : \Sigma \hookrightarrow SigList~\Sigma$ and
+    \begin{alignat*}{3}
+      &encode~&&(\nil      ) &~:=~& [\MS{NIL}] \\
+      &encode~&&(l \cons ls) &~:=~& \MS{CONS} \cons encode(x) \app encode(ls)
+    \end{alignat*}
+  \end{enumerate}
 \end{definition}
 
+This are all encodings we need.  However, there is still a problem about ambiguity: Suppose $X$ is encodable over $\Sigma$.  Then the smallest
+alphabet on which we can encode the type $X+X$ is $\Tau := SigSum~\Sigma~\Sigma$.  However, now there are two possibilities how to encode $X$ on
+$\Tau$: using the retraction $RetrSigX$ and $RetrSigY$.  We must deal with this problem, when we program and prove Turing machines, by explicitely
+giving the right retractions.
 
-If $X$ is encodable over $\Sigma$, we encode values of $x$ on tapes with an extended alphabet $\Sigma^+$ that has an additional start symbol and end
-symbol.
-
+If $X$ is encodable over $\Sigma$, we encode values of $x$ on tapes with an extended alphabet $\Sigma^+$ that has an additional start and stop symbol.
 \begin{definition}[$\Sigma^+$] Let $\Sigma$ be an alphabet.
   \[
     \Sigma^+ ::= \MS{START} ~|~ \MS{STOP} ~|~ \MS{UNKNOWN} ~|~ (s: \Sigma)
   \]
   Also define the retract $RetrPlus : \Sigma \hookrightarrow \Sigma^+$.
 \end{definition}
-
-Then we can define what $t \simeq x$ means:
-
+The $\MS{UNKNOWN}$ symbol is important later. Then we can define what $t \simeq x$ means:
 \begin{definition}[$t \simeq x$]
   \label{def:tape_contains}
   Let $X$ be encodable over $\Sigma$ and $t : \Tape_{\Sigma^+}$.
