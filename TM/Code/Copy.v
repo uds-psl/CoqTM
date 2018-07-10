@@ -215,36 +215,36 @@ Section Copy.
 
   (* The termination times of CopySymbols and MoveTosymbol only differ in the factors *)
 
-  Lemma MoveToSymbol_TermTime_local t r1 sym r2 :
+  Lemma MoveToSymbol_Steps_local t r1 sym r2 :
     tape_local t = r1 ++ sym :: r2 ->
     stop sym = true ->
-    MoveToSymbol_TermTime stop f t <= 4 + 4 * length r1.
+    MoveToSymbol_Steps stop f t <= 4 + 4 * length r1.
   Proof.
     revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
-    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_Steps_equation. rewrite HStop. cbn. omega.
     - destruct t; cbn in HEnc; try congruence. inv HEnc.
-      rewrite MoveToSymbol_TermTime_equation. destruct (stop a).
+      rewrite MoveToSymbol_Steps_equation. destruct (stop a).
       + omega.
       + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
         eapply IHr1; eauto. cbn. now simpl_tape.
   Qed.
 
-  Corollary MoveToSymbol_TermTime_midtape ls x m rs rs' :
+  Corollary MoveToSymbol_Steps_midtape ls x m rs rs' :
     stop x = true ->
-    MoveToSymbol_TermTime stop f (midtape ls m (rs ++ x :: rs')) <= 8 + 4 * length rs.
+    MoveToSymbol_Steps stop f (midtape ls m (rs ++ x :: rs')) <= 8 + 4 * length rs.
   Proof.
     intros.
-    rewrite MoveToSymbol_TermTime_local with (r1 := m::rs) (sym := x) (r2 := rs'); auto.
+    rewrite MoveToSymbol_Steps_local with (r1 := m::rs) (sym := x) (r2 := rs'); auto.
     cbn [length]. omega.
   Qed.
 
-  Corollary MoveToSymbol_TermTime_moveright ls m rs x rs' :
+  Corollary MoveToSymbol_Steps_moveright ls m rs x rs' :
     stop x = true ->
-    MoveToSymbol_TermTime stop f (tape_move_right' ls m (rs ++ x :: rs')) <= 4 + 4 * length rs.
+    MoveToSymbol_Steps stop f (tape_move_right' ls m (rs ++ x :: rs')) <= 4 + 4 * length rs.
   Proof.
     intros HStop. destruct rs as [ | s s'] eqn:E; cbn.
-    - rewrite MoveToSymbol_TermTime_equation, HStop; cbn. omega.
-    - rewrite MoveToSymbol_TermTime_midtape; auto. omega.
+    - rewrite MoveToSymbol_Steps_equation, HStop; cbn. omega.
+    - rewrite MoveToSymbol_Steps_midtape; auto. omega.
   Qed.
 
 
@@ -281,34 +281,34 @@ Section Copy.
   Qed.
 
 
-  Lemma CopySymbols_TermTime_local t r1 sym r2 :
+  Lemma CopySymbols_Steps_local t r1 sym r2 :
     tape_local t = r1 ++ sym :: r2 ->
     stop sym = true ->
-    CopySymbols_TermTime stop t <= 8 + 8 * length r1.
+    CopySymbols_Steps stop t <= 8 + 8 * length r1.
   Proof.
     revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
-    - destruct t; cbn in HEnc; inv HEnc. rewrite CopySymbols_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite CopySymbols_Steps_equation. rewrite HStop. cbn. omega.
     - destruct t; cbn in HEnc; try congruence. inv HEnc.
-      rewrite CopySymbols_TermTime_equation. destruct (stop a).
+      rewrite CopySymbols_Steps_equation. destruct (stop a).
       + omega.
       + apply Nat.add_le_mono_l. replace (8 * S (|r1|)) with (8 + 8 * |r1|) by omega.
         eapply IHr1; eauto. cbn. now simpl_tape.
   Qed.
 
-  Corollary CopySymbols_TermTime_midtape ls m rs x rs' :
+  Corollary CopySymbols_Steps_midtape ls m rs x rs' :
     stop x = true ->
-    CopySymbols_TermTime stop (midtape ls m (rs ++ x :: rs')) <= 16 + 8 * length rs.
+    CopySymbols_Steps stop (midtape ls m (rs ++ x :: rs')) <= 16 + 8 * length rs.
   Proof.
-    intros. erewrite CopySymbols_TermTime_local with (r1 := m :: rs); cbn -[plus mult]; eauto. omega.
+    intros. erewrite CopySymbols_Steps_local with (r1 := m :: rs); cbn -[plus mult]; eauto. omega.
   Qed.
 
-  Corollary CopySymbols_TermTime_moveright ls m rs x rs' :
+  Corollary CopySymbols_Steps_moveright ls m rs x rs' :
     stop x = true ->
-    CopySymbols_TermTime stop (tape_move_right' ls m (rs ++ x :: rs')) <= 8 + 8 * length rs.
+    CopySymbols_Steps stop (tape_move_right' ls m (rs ++ x :: rs')) <= 8 + 8 * length rs.
   Proof.
     intros HStop. destruct rs as [ | s s'] eqn:E; cbn.
-    - rewrite CopySymbols_TermTime_equation, HStop; cbn. omega.
-    - rewrite CopySymbols_TermTime_midtape; auto. omega.
+    - rewrite CopySymbols_Steps_equation, HStop; cbn. omega.
+    - rewrite CopySymbols_Steps_midtape; auto. omega.
   Qed.
 
   Lemma CopySymbols_L_TermTime_local t r1 sym r2 :
@@ -423,7 +423,7 @@ Section Move.
     {
       intros tin k (x&HEncX&Hk).
       destruct HEncX as (r1&->).
-      rewrite MoveToSymbol_TermTime_midtape; auto. now rewrite map_length.
+      rewrite MoveToSymbol_Steps_midtape; auto. now rewrite map_length.
     }
   Qed.
 
@@ -715,7 +715,7 @@ Section Translate.
     {
       intros tin k (x&HEncX&Hk). unfold size in *.
       destruct HEncX as (r1&->).
-      rewrite MoveToSymbol_TermTime_midtape; auto. cbn. now rewrite !map_length.
+      rewrite MoveToSymbol_Steps_midtape; auto. cbn. now rewrite !map_length.
     }
   Qed.
 

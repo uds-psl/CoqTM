@@ -186,8 +186,8 @@ Section MatchList.
       exists 1, (4 + 4 * size cX x). repeat split. 1-2: omega.
       intros tmid () H. TMSimp. clear H.
       destruct l as [ | x' l]; cbn.
-      - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. now rewrite !map_length.
-      - rewrite MoveToSymbol_TermTime_moveright; cbn; auto. now rewrite !map_length.
+      - rewrite MoveToSymbol_Steps_moveright; cbn; auto. now rewrite !map_length.
+      - rewrite MoveToSymbol_Steps_moveright; cbn; auto. now rewrite !map_length.
     }
   Qed.
 

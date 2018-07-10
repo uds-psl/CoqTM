@@ -48,7 +48,7 @@ Section CopySymbols.
             yout = Some tt
       end.
 
-  Lemma CopySymbols_Step_RealiseIn :
+  Lemma CopySymbols_Step_Sem :
     CopySymbols_Step ⊨c(7) CopySymbols_Step_Rel.
   Proof.
     eapply RealiseIn_monotone.
@@ -83,7 +83,7 @@ Section CopySymbols.
 
   Definition rlength' (tin : tape sig * tape sig) : nat := rlength (fst tin).
 
-  (* Function of M2 *)
+  (* Function of CopySymbols *)
   Function CopySymbols_Fun (tin : tape sig * tape sig) { measure rlength' tin } : tape sig * tape sig :=
     match tin with
       (midtape ls m rs as t1, t2) =>
@@ -115,7 +115,7 @@ Section CopySymbols.
   Proof.
     eapply Realise_monotone.
     {
-      unfold CopySymbols. eapply While_Realise. eapply RealiseIn_Realise. eapply CopySymbols_Step_RealiseIn.
+      unfold CopySymbols. eapply While_Realise. eapply RealiseIn_Realise. eapply CopySymbols_Step_Sem.
     }
     {
       apply WhileInduction; intros; TMSimp.
@@ -130,9 +130,9 @@ Section CopySymbols.
 
   (** Termination *)
 
-  Function CopySymbols_TermTime (t : tape sig) { measure rlength t } : nat :=
+  Function CopySymbols_Steps (t : tape sig) { measure rlength t } : nat :=
     match t with
-    | midtape ls m rs => if f m then 8 else 8 + CopySymbols_TermTime (tape_move_right t)
+    | midtape ls m rs => if f m then 8 else 8 + CopySymbols_Steps (tape_move_right t)
     | _ => 8
     end.
   Proof.
@@ -141,19 +141,19 @@ Section CopySymbols.
 
 
   Lemma CopySymbols_Terminates :
-    projT1 CopySymbols ↓ (fun tin k => CopySymbols_TermTime (tin[@Fin.F1]) <= k).
+    projT1 CopySymbols ↓ (fun tin k => CopySymbols_Steps (tin[@Fin.F1]) <= k).
   Proof.
     eapply While_TerminatesIn.
-    1-2: eapply Realise_total; eapply CopySymbols_Step_RealiseIn.
+    1-2: eapply Realise_total; eapply CopySymbols_Step_Sem.
     {
-      intros tin k Hk. destruct tin[@Fin0] eqn:E; rewrite CopySymbols_TermTime_equation in *; cbn in *; try rewrite E.
+      intros tin k Hk. destruct tin[@Fin0] eqn:E; rewrite CopySymbols_Steps_equation in *; cbn in *; try rewrite E.
       - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
       - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
       - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
       - destruct (f e) eqn:E2.
         + eexists. split. eauto. cbn. rewrite E2. intros o tmid (H1&H2); inv H2. omega.
         + eexists. split. eauto. cbn. rewrite E2. intros o tmid (H1&H2&->). TMSimp.
-          exists (CopySymbols_TermTime (tape_move_right' l e l0)). repeat split; auto.
+          exists (CopySymbols_Steps (tape_move_right' l e l0)). repeat split; auto.
     }
   Qed.
 
@@ -267,12 +267,12 @@ Section CopySymbols.
   Qed.
 
 
-  Lemma CopySymbols_TermTime_mirror t :
-    CopySymbols_L_TermTime t = CopySymbols_TermTime (mirror_tape t).
+  Lemma CopySymbols_Steps_mirror t :
+    CopySymbols_L_TermTime t = CopySymbols_Steps (mirror_tape t).
   Proof.
     functional induction CopySymbols_L_TermTime t; cbn; auto;
       simpl_tape in *; cbn in *;
-        rewrite CopySymbols_TermTime_equation.
+        rewrite CopySymbols_Steps_equation.
     - now rewrite e0.
     - now rewrite e0, IHn.
     - destruct t; cbn; auto.
@@ -284,7 +284,7 @@ Section CopySymbols.
     eapply TerminatesIn_monotone.
     - eapply Mirror_Terminates. eapply CopySymbols_Terminates.
     - cbn. intros tin k Hk. destruct_tapes; cbn. rewrite <- Hk. unfold mirror_tapes.
-      rewrite CopySymbols_TermTime_mirror. cbn. auto.
+      rewrite CopySymbols_Steps_mirror. cbn. auto.
   Qed.
 
 

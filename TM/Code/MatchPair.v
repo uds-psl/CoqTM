@@ -104,9 +104,9 @@ Section MatchPair.
       {
         exists (8 + 4 * size _ x), 1. repeat split; try omega. 2: now intros _ _ _.
         destruct HEncP as (ls&->). cbn. destruct (cY y) eqn:EY.
-        - rewrite app_nil_r. rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !map_length.
+        - rewrite app_nil_r. rewrite MoveToSymbol_Steps_midtape; cbn; auto. now rewrite !map_length.
         - rewrite map_app, <- app_assoc. cbn.
-          rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !map_length.
+          rewrite MoveToSymbol_Steps_midtape; cbn; auto. now rewrite !map_length.
       }
       intros tmid1 (). intros ?; TMSimp.
       exists (8 + 8 * size _ x), (12 + 4 * size _ x). repeat split; try omega.
@@ -126,12 +126,12 @@ Section MatchPair.
         destruct HEncP as (ls&HEncP); TMSimp. cbn in *. destruct (cY y) eqn:EY.
         - rewrite app_nil_r in HCopy. rewrite MoveToSymbol_correct_midtape in HCopy; cbn in *; auto.
           + rewrite CopySymbols_L_correct_moveleft in HCopy; cbn; auto.
-            * inv HCopy; TMSimp. rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !rev_length, !map_length.
+            * inv HCopy; TMSimp. rewrite MoveToSymbol_Steps_midtape; cbn; auto. now rewrite !rev_length, !map_length.
             * rewrite List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
           + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
         - rewrite map_app, <- app_assoc in HCopy. cbn in *. rewrite MoveToSymbol_correct_midtape in HCopy; cbn in *; auto.
           + rewrite CopySymbols_L_correct_moveleft in HCopy; cbn; auto. 
-            * inv HCopy; TMSimp. rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !rev_length, !map_length.
+            * inv HCopy; TMSimp. rewrite MoveToSymbol_Steps_midtape; cbn; auto. now rewrite !rev_length, !map_length.
             * rewrite List.map_map. now intros ? (?&<-&?) % in_rev % in_map_iff.
           + rewrite List.map_map. now intros ? (?&<-&?) % in_map_iff.
       }
@@ -253,10 +253,10 @@ Section MatchPair.
       exists (8+4*size _ x), 3. repeat split; try omega.
       {
         destruct HEncP as (ls&->). destruct (cY y) eqn:EY; cbn in *.
-        - rewrite MoveToSymbol_TermTime_midtape; cbn; auto. rewrite EY. cbn.
+        - rewrite MoveToSymbol_Steps_midtape; cbn; auto. rewrite EY. cbn.
           rewrite map_length, app_length, map_length. cbn. unfold size. omega.
         - rewrite map_app, <- app_assoc, EY. cbn.
-          rewrite MoveToSymbol_TermTime_midtape; cbn; auto. now rewrite !map_length.
+          rewrite MoveToSymbol_Steps_midtape; cbn; auto. now rewrite !map_length.
       }
       intros ? _ _. exists 1, 1. split. reflexivity. split. reflexivity. intros _ _ _. reflexivity.
     }
