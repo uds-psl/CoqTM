@@ -50,7 +50,7 @@ canonical value.
   \label{fig:match}
 \end{figure}
 
-\todo{Maybe use parenthesises, e.g.\ $\Match(M,M')$ and $MS{MatchRel}(R,R')$ for better readability}
+\todo{Maybe use parenthesises, e.g.\ $\Match(M,M')$ and $\MS{MatchRel}(R,R')$ for better readability}
 
 
 $\MS{Match}~M~M'$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
@@ -309,40 +309,56 @@ only halts in states where $part_M(q)$ has a $\Some{.}$ value.
 
 The correctness of $\MS{While}$ can be easily expressed using the following relation:
 
-\begin{definition}[$\MS{WhileRel}$]
-  \label{def:While_Rel}
-  Let $R \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.  $\MS{WhileRel}~R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$
-  is defined inductively by the following two rules:
-  \[
-    \inferrule{R~t~(\None, t') \and \MS{WhileRel}~R~t'~(y, t'')}{\MS{WhileRel}~R~t~(y, t'')}
-    \quad
-    \inferrule{R~t~(\Some y, t')}{\MS{WhileRel}~R~t~(y, t')}
-  \]
+\begin{definition}[$WhileRel$]
 \end{definition}
 
-We can also express this relation using the Kleene star:
+\begin{lemma}[Correctness of $\MS{While}$]
+  \label{lem:While_Realise}
+  Let $R \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.
+  If $M \vDash R$, then $\While~M \vDash \MS{WhileRel}~M$, where
+  $WhileRel~R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$
+  is inductively defined by the following two rules:
+  \[
+    \inferrule{R~t~(\None, t') \and WhileRel~R~t'~(y, t'')}{WhileRel~R~t~(y, t'')}
+    \quad
+    \inferrule{R~t~(\Some y, t')}{WhileRel~R~t~(y, t')}
+  \]
+\end{lemma}
 
+We can also express the correctness relation of $\While$ using the Kleene star:
 \begin{lemma}[Alternative specification of $\While~M$]
   ~
   \[
     \MS{WhileRel}~R \equiv (R \at \None)^* \circ \Bigl( \bigcup_{y:F} \bigl( R \at {\Some y} \bigr) \att y \Bigr)
   \]
-  (Where $\equiv$ means relational equivalence.)
 \end{lemma}
 
-Both definitions of $\MS{WhileRel}$ should make clear what $\While~M$ does: It repeats the execution of $M$ as long as it terminated in $\None$, and
+Both definitions of $WhileRel$ should make clear what $\While~M$ does: It repeats the execution of $M$ as long as it terminated in $\None$, and
 after it terminated in $\Some y$, it terminates in the partition $y$.  This is visualised in Figure~\ref{fig:while-example}.  However, the inductive
 definition is more practical when we prove correctness of concrete $\MS{While}$ machines, because we can just do induction on the inductive predicate.
 
-\begin{lemma}[Correctness of $\MS{While}$]
-  \label{lem:While_Realise}
-  If $M \vDash R$, then $\While~M \vDash \MS{WhileRel}~M$.
+When we want to prove $\While~M \vDash R$ for some machine $M:\TM_\Sigma^n(F)$ and relation
+$R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, we must of course have proven that $M \vDash R'$ for some relation
+$R' \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.  Then we apply Lemma~\ref{lem:Realise_monotone} and~\ref{lem:While_Realise},
+and have to show $WhileRel~R' \subseteq R$.  We can prove this by induction on the inductive predicate, which is equivalent to applying the following
+lemma:
+\begin{lemma}[Induction for $WhileRel$]
+  \label{lem:WhileInduction}
+  ~
+  \begin{alignat*}{1}
+    & \left(\forall t~t'~y.~R' \at{\Some{y}}~t~t' \rightarrow R~t~(y,t')\right) \rightarrow \\
+    & \left(\forall t~t'~t''~y.~R'\at\None~t~t' \rightarrow R~t'~(y, t'') \rightarrow R~t~(y,t'')\right) \rightarrow \\
+    & WhileRel~R' \subseteq R
+  \end{alignat*}
 \end{lemma}
+\begin{proof}
+  By induction.
+\end{proof}
 
 
-We can not simply give a runtime relation in which $\While~M$ terminates, because we do not know the number of iterations in general.  However if we
-know that $M$ realises $R$ and terminates in $T$, we can show $\While~M \downarrow T'$ for another runtime relation $T'$, if $T'$ ``decreases'' in
-terms of $R$ and $t$:
+We can not simply give a (useful) runtime relation in which $\While~M$ terminates, because we do not know the number of iterations in general.
+However, if we know that $M$ realises $R$ and terminates in $T$, we can show $\While~M \downarrow T'$ for another runtime relation $T'$, if $T'$
+``decreases'' in terms of $R$ and $T$:
 
 \begin{lemma}[Runtime of $\While~M$]
   \label{lem:While_TerminatesIn}
@@ -384,7 +400,7 @@ another final configuration $(q'',t'')$.  Thus, we can only prove $\While~M \dow
 \end{lemma}
 
 However, our correctness relations are not functional in practice.  We encode preconditions in the relations, and if the precondition is not satisfied
-for $t$, the value of $R~t~(y,t')$ simply is $\True$.  Therefore, we always use Lemma~\ref{lem:While_TerminatesIn} in practice.
+for $t$, the value of $R~t~(y,t')$ simply is $\True$.  Therefore, we always use Lemma~\ref{lem:While_TerminatesIn}.
 
 
 

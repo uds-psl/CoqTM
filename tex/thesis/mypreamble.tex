@@ -105,14 +105,6 @@
 \DeclareMathOperator{\ignoreParam}{\Uparrow}
 \DeclareMathOperator{\hideParam}{\Downarrow}
 
-%% Control flow operators
-\newcommand{\While}{\MS{While}}
-\newcommand{\Seq}{;~}
-\newcommand{\Match}{\MS{Match}}
-\newcommand{\If}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
-\newcommand{\Let}[2]{\MS{let}~#1~\MS{in}~#2}
-\newcommand{\cond}[3]{\MS{if}~#1~\MS{then}~#2~\MS{else}~#3}
-\newcommand{\Nop}{\MS{Nop}}
 
 %% Constructors
 \DeclareMathOperator{\inl}{\ensuremath{\MS{inl}}}
@@ -138,16 +130,30 @@
 \newcommand{\length}[1]{\left| #1 \right|}
 \newcommand{\blength}[1]{\bigl| #1 \bigr|}
 
-
 %% Big-Step semantics
 \newcommand{\terminates}{\mathrel{\triangleright}}
 
+%%
+%% Turing Machines
+%%
+
+%% Control flow operators
+\newcommand{\While}{\MS{While}}
+\newcommand{\Seq}{;~}
+\newcommand{\Match}{\MS{Match}}
+\newcommand{\If}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
+\newcommand{\Let}[2]{\MS{let}~#1~\MS{in}~#2}
+\newcommand{\cond}[3]{\MS{if}~#1~\MS{then}~#2~\MS{else}~#3}
+\newcommand{\Nop}{\MS{Nop}}
+\newcommand{\Return}[2]{\MS{Return}~#1~#2}
+% \newcommand{\Return}[2]{\MS{Return}_{#2}~#1}
+
 %% Lifts
 % #1 is the machine, #2 the lifting
-\newcommand{\LiftTapes}[2]{#1 \mathbin{@} #2}
-\newcommand{\LiftAlphabet}[2]{#1 \mathbin{\Uparrow} #2}
+\newcommand{\LiftTapes}[2]{\Uparrow_{#2} #1}
+\newcommand{\LiftAlphabet}[2]{\Uparrow_{#2} #1}
 % #1 is the machine, #2 the alphabet lifting, and #3 the tape-lifting
-\newcommand{\LiftBoth}[3]{#1 \mathbin{\Uparrow} #2 \mathbin{@} #3}
+\newcommand{\LiftBoth}[3]{\Uparrow_{#2;~#3} #1}
 
 
 %%% Local Variables:
