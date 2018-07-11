@@ -130,7 +130,7 @@ Section Copy.
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local t = str1 ++ x :: str2 ->
-    MoveToSymbol_Fun stop f t = midtape (rev (map f str1) ++ left t) x str2.
+    MoveToSymbol_Fun stop f t = midtape (rev (map f str1) ++ left t) (f x) str2.
   Proof.
     intros H H0. destruct t as [ | r rs | l ls | ls m rs]; cbn in *.
     1,3: rewrite MoveToSymbol_Fun_equation; cbn; destruct str1; cbn in *; try congruence.
@@ -153,7 +153,7 @@ Section Copy.
     (forall x, List.In x rs -> stop x = false) ->
     stop x = true ->
     MoveToSymbol_Fun stop f (midtape ls m (rs ++ x :: rs')) =
-    midtape (rev (map f rs) ++ (f m) :: ls) x rs'.
+    midtape (rev (map f rs) ++ (f m) :: ls) (f x) rs'.
   Proof.
     intros HStopM HStopRs HStopX.
     unshelve epose proof (@MoveToSymbol_correct (midtape ls m (rs ++ x :: rs')) (m::rs) rs' x _ HStopX eq_refl) as L.
@@ -165,7 +165,7 @@ Section Copy.
     (forall x, List.In x rs -> stop x = false) ->
     stop x = true ->
     MoveToSymbol_Fun stop f (tape_move_right' ls m (rs ++ x :: rs')) =
-    midtape (rev (map f rs) ++ m :: ls) x rs'.
+    midtape (rev (map f rs) ++ m :: ls) (f x) rs'.
   Proof.
     intros HStopR HStopX.
     destruct rs as [ | s s'] eqn:E; cbn.
@@ -177,7 +177,7 @@ Section Copy.
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
     tape_local_l t = str1 ++ x :: str2 ->
-    MoveToSymbol_L_Fun stop f t = midtape str2 x (rev (map f str1) ++ right t).
+    MoveToSymbol_L_Fun stop f t = midtape str2 (f x) (rev (map f str1) ++ right t).
   Proof.
     intros. pose proof (@MoveToSymbol_correct (mirror_tape t) str1 str2 x) as L.
     simpl_tape in L. repeat spec_assert L by auto.
@@ -190,7 +190,7 @@ Section Copy.
     (forall x, List.In x ls -> stop x = false) ->
     stop x = true ->
     MoveToSymbol_L_Fun stop f (midtape (ls ++ x :: ls') m rs) =
-    midtape ls' x (rev (map f ls) ++ (f m) :: rs).
+    midtape ls' (f x) (rev (map f ls) ++ (f m) :: rs).
   Proof.
     intros HStopM HStopRs HStopX.
     unshelve epose proof (@MoveToSymbol_L_correct (midtape (ls ++ x :: ls') m rs) (m::ls) ls' x _ HStopX eq_refl) as L.
@@ -202,7 +202,7 @@ Section Copy.
     (forall x, List.In x ls -> stop x = false) ->
     stop x = true ->
     MoveToSymbol_L_Fun stop f (tape_move_left' (ls ++ x :: ls') m rs) =
-    midtape ls' x (rev (map f ls) ++ m :: rs).
+    midtape ls' (f x) (rev (map f ls) ++ m :: rs).
   Proof.
     intros HStopL HStopX.
     destruct ls as [ | s s'] eqn:E; cbn.

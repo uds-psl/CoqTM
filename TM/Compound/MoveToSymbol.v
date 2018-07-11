@@ -30,7 +30,8 @@ Section move_to_symbol.
           (fun b : option sig =>
              match b with
              | Some x => if f x
-                        then Return (Nop) (Some tt) (* found the symbol, break *)
+                        (* then Return (Nop) (Some tt) (* found the symbol, break *) *)
+                        then Return (Write (g x)) (Some tt) (* found the symbol, break *)
                         else Return (WriteMove (g x) R) (None) (* wrong symbol, move right and continue *)
              | _ => Return (Nop) (Some tt) (* there is no such symbol, break *)
              end).
@@ -38,7 +39,7 @@ Section move_to_symbol.
   Definition MoveToSymbol_Step_Fun : tape sig -> tape sig :=
     fun t1 =>
       match t1 with
-      | midtape ls x rs => if (f x) then t1 else tape_move_mono t1 (Some (g x), R)
+      | midtape ls x rs => if (f x) then tape_write t1 (Some (g x)) else tape_move_mono t1 (Some (g x), R)
       | _ => t1
       end.
 
@@ -63,7 +64,7 @@ Section move_to_symbol.
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e). 
-        + instantiate (1 := 1). apply Return_RealiseIn. eapply Nop_Sem.
+        + instantiate (1 := 1). apply Return_RealiseIn. eapply Write_Sem.
         + apply Return_RealiseIn. eapply WriteMove_Sem.
       - apply Return_RealiseIn. eapply Nop_Sem.
     }
@@ -93,7 +94,9 @@ Section move_to_symbol.
   (* Function of M2 *)
   Function MoveToSymbol_Fun (t : tape sig) { measure rlength t } : tape sig :=
     match t with
-    | midtape ls m rs => if f m then t else MoveToSymbol_Fun (tape_move_mono t (Some (g m), R))
+    | midtape ls m rs => if f m
+                        then tape_write t (Some (g m))
+                        else MoveToSymbol_Fun (tape_move_mono t (Some (g m), R))
     | _ => t
     end.
   Proof.
@@ -117,7 +120,7 @@ Section move_to_symbol.
   Lemma MoveToSymbol_Step_true t x :
     current t = Some x ->
     f x = true ->
-    MoveToSymbol_Step_Fun t = t.
+    MoveToSymbol_Step_Fun t = tape_write t (Some (g x)).
   Proof.
     intros H1 H2. unfold MoveToSymbol_Step_Fun. destruct t; cbn in *; inv H1. rewrite H2. auto.
   Qed.
@@ -130,18 +133,6 @@ Section move_to_symbol.
     intros H1 H2. destruct t; cbn in *; inv H1. rewrite MoveToSymbol_Fun_equation, H2. auto.
   Qed.
 
-  Lemma MoveToSymbol_MoveToSymbol_Step_false t x :
-    current t = Some x ->
-    f x = false ->
-    MoveToSymbol_Fun (MoveToSymbol_Step_Fun t) = MoveToSymbol_Fun t.
-  Proof.
-    intros H1 H2. functional induction MoveToSymbol_Fun t; cbn.
-    - rewrite e0. rewrite MoveToSymbol_Fun_equation. rewrite e0. reflexivity.
-    - rewrite e0. destruct rs; auto.
-    - destruct _x; rewrite MoveToSymbol_Fun_equation; cbn; auto.
-  Qed.
-
-  
   Definition MoveToSymbol_Rel : Rel (tapes sig 1) (unit * tapes sig 1) :=
     Mk_R_p (ignoreParam (fun tin tout => tout = MoveToSymbol_Fun tin)).
 
@@ -173,9 +164,8 @@ Section move_to_symbol.
 
   Lemma MoveToSymbol_Fun_niltape t : MoveToSymbol_Fun t = niltape _ -> t = niltape _.
   Proof.
-    intros H. remember (niltape sig) as N. functional induction MoveToSymbol_Fun t; subst; try congruence.
+    intros H. remember (niltape sig) as N. functional induction MoveToSymbol_Fun t; subst; cbn in *; try congruence.
     - specialize (IHt0 H). destruct rs; cbn in *; congruence.
-      (* - specialize (IHt0 H). destruct rs; cbn in *; congruence. *)
   Qed.
 
 
@@ -228,7 +218,9 @@ Section move_to_symbol.
 
   Function MoveToSymbol_L_Fun (t : tape sig) { measure llength t } : tape sig :=
     match t with
-    | midtape ls m rs => if f m then t else MoveToSymbol_L_Fun (tape_move_mono t (Some (g m), L))
+    | midtape ls m rs => if f m
+                        then tape_write t (Some (g m))
+                        else MoveToSymbol_L_Fun (tape_move_mono t (Some (g m), L))
     | _ => t
     end.
   Proof.
@@ -240,7 +232,7 @@ Section move_to_symbol.
   Proof.
     functional induction MoveToSymbol_L_Fun t; intros H; cbn in *; try reflexivity;
       rewrite MoveToSymbol_Fun_equation in H; cbn; auto.
-    - rewrite e0 in *; cbn in *; destruct t'; cbn in *; congruence.
+    - rewrite e0 in *; cbn in *. now apply mirror_tape_inv_midtape' in H as ->.
     - rewrite e0 in *; cbn in *. destruct ls; cbn in *; rewrite MoveToSymbol_Fun_equation, MoveToSymbol_L_Fun_equation in *.
       + destruct t'; cbn in *; now inv H.
       + destruct (f e) eqn:E1; cbn in *; eauto.
