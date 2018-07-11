@@ -9,9 +9,9 @@ As a result, we get a shallow-embed-ed language for programming multi-tape Turin
 \section{Match}
 \label{sec:match}
 
-Asperti and Ricciotti~\cite{asperti2015} also define the control flow operators sequential composition, conditional, and while.  However, for the
+Asperti and Ricciotti~\cite{asperti2015} define the control flow operators sequential composition, conditional, and while.  However, for the
 conditional they have to give one explicit ``else'' state.  Giving an explicit state is very tedious for complex machines.  That is why we use the
-generalised notion of partitioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  If $M_1$
+generalised notion of partitioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  In case $M_1$
 terminated in a ``positive'' state (i.e. a state belonging to the partition $\true$), $M_2$ is executed after $M_1$.  Else it executes $M_3$ after
 $M_1$.  We observe that sequential composition and conditional can be defined as instances of a more general operator we call $\MS{Match}$.  We give
 proof scratches for the correctness and runtime in Subsection~\ref{sec:match-proofs}.
@@ -71,8 +71,8 @@ a machine $M'~y$, it terminates.  The correctness part of the semantics can be e
 \end{lemma}
 
 Note that in the relation $\MS{MatchRel}$, we compose the unpartitioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the
-partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~M'$ ``discards'' the partition of the
-final state of $M$ and terminates in the partition of $M'~y$.
+partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~M'$ terminates in the partition of
+$M'~y$, which has type $F'$.
 
 To specify the runtime of $\MS{Match}~M~M'$, we need to know the runtime relation in that $M$ terminates, and for each $y:F$ the runtime of $M'~y$.
 We also need to know the correctness of $M$, because the runtime of $M'~y$ depends on the output of $M$, which is the input of $M~y$.
@@ -84,10 +84,21 @@ We also need to know the correctness of $M$, because the runtime of $M'~y$ depen
   $\MS{Match}~M~M' \downarrow \MS{MatchT}~R~T~T'$, where
   \[
     \MS{MatchT}~R~T~T' :=
-    \lambda~t~i.~ \exists~i_1~i_2.~T~t~i_1 \land 1+i_1+i_2 \le i \land
-      \forall~y~t'.~ R~t~y~t' \rightarrow T'~y~t'~i_2
+    \lambda~t~k.~ \exists~k_1~k_2.~T~t~k_1 \land 1+k_1+k_2 \le k \land
+      \forall~y~t'.~ R~t~y~t' \rightarrow T'~y~t'~k_2
   \]
 \end{lemma}
+
+We can combine the correctness and runtime lemma, in case $M$ and every $M'~y$ terminates in constant time.
+\begin{lemma}[Correctness of $\MS{Match}~M~M'$ in constant time]
+  \label{lem:Match_RealiseIn}
+  Let $k_1, k_2:\Nat$.\\
+  If $M \vDash^{k_1} R$ and $M'~y \vDash^{k_2} R'~y$ for every $y:F$, then
+  \[ \MS{Match}~M~M' \vDash^{1+k_1+k_2} \MS{MatchRel}~R~R'. \]
+\end{lemma}
+\begin{proof}
+  Follows with the Lemmas~\ref{lem:Realise_total},~\ref{lem:Match_Realise}, and~\ref{lem:Match_Terminates}.
+\end{proof}
 
 
 \subsection{Derived Operators}
@@ -106,7 +117,16 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
   \]
 \end{definition}
 
-\begin{definition}[Sequencial composition]
+\begin{lemma}[Correctness of conditional]
+  \label{lem:If_RealiseIn}
+  If $M_1 \vDash^{k_1} R_1$, $M_2 \vDash^{k_2} R_2$, and $M_3 \vDash^{k_3} R_3$, then
+  $
+    \If{M_1}{M_2}{M_3} \vDash^{1+k_1+max(k_2+k_3)} (R_1\at\true \circ R_2) \cup (R_1\at\false \circ R_3).
+  $
+\end{lemma}
+
+\begin{definition}[Sequential composition]
+  \label{def:Seq}
   Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
   \[
     M_1 \Seq M_2 := \Match~M_1~
@@ -115,6 +135,16 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
     \bigr)
   \]
 \end{definition}
+
+\begin{lemma}[Correctness of sequential composition]
+  \label{lem:Seq_RealiseIn}
+  If $M_1 \vDash^{k_1} R_1$ and $R_1 \vDash^{k_2} R_2$, then
+  $
+  M_1 \Seq M_2 \vDash^{1+k_1+k_2} \left(\bigcup_{y:F} R_1\at y\right) \circ R_2.
+  $
+\end{lemma}
+
+The versions of above lemmas without constant-time termination hold as well.
 
 
 \subsection{Proof of $\Match$}
