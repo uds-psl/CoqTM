@@ -173,9 +173,9 @@ Under these two assumptions we can show two lemmas that essentially say that the
   \label{lem:loop_lift}
   Under the assumptions~(\ref{eq:loop_lift_assumption1}) and~(\ref{eq:loop_lift_assumption2}):
   \begin{alignat*}{1}
-    & \forall (k:\Nat)~(c_1~c_2 : A). \\
-    & \quad \Loop~f ~h ~k~c_1 = \Some{c_2} \rightarrow \\
-    & \quad \Loop~f'~h'~k~(lift~c_1) = \Some {lift~c_2}
+    & \forall (k:\Nat)~(a~a' : A). \\
+    & \quad \Loop~f ~h ~k~a = \Some{a'} \rightarrow \\
+    & \quad \Loop~f'~h'~k~(lift~a) = \Some {lift~a'}
   \end{alignat*}
 \end{lemma}
 \begin{proof}
@@ -187,12 +187,33 @@ Under these two assumptions we can show two lemmas that essentially say that the
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(a:A)~(b':B). \\
     & \quad \Loop~f'~h'~k~(lift~a) = \Some{b'} \rightarrow \\
-    & \quad \exists (b:B).~\Loop~f~h~k~a = \Some b \land b'=lift~b
+    & \quad \exists (a':A).~\Loop~f~h~k~a = \Some{a'} \land b'=lift~a'
   \end{alignat*}
 \end{lemma}
 \begin{proof}
   By induction over $k:\Nat$.
 \end{proof}
+
+\begin{figure}
+  \center
+  \begin{tikzcd}
+    a'                    \arrow[r, "lift"] & \cdot \\
+    \cdot \arrow[u, "f"]  \arrow[r, "lift"] & \cdot \arrow[u, "g", swap] \\
+    a     \arrow[u, "f"]  \arrow[r, "lift"] & \cdot \arrow[u, "g", swap] \\
+  \end{tikzcd}
+  \hspace{1cm}
+  \begin{tikzcd}
+    a'                            \arrow[r, "lift", dotted] & b' \\
+    \cdot \arrow[u, "f", dotted]  \arrow[r, "lift", dotted] & \cdot \arrow[u, "g", swap] \\
+    a     \arrow[u, "f", dotted]  \arrow[r, "lift"]         & \cdot \arrow[u, "g", swap] \\
+  \end{tikzcd}
+  \caption{Instances of Lemma~\ref{lem:loop_lift} (left) and Lemma~\ref{lem:loop_unlift} (right) for $k=2$ as commuting diagrams.  Dotted lines denote
+    existentials.  Note that the rectangles correspond to condition (\ref{eq:loop_lift_assumption1}).  Only the top ``states'' are terminating
+    states.}
+  \label{fig:loop_lift_lemmas}
+\end{figure}
+
+The Lemmas~\ref{lem:loop_lift} and~\ref{lem:loop_unlift} are visualised in Figure \ref{fig:loop_lift_lemmas}.
 
 For the second feature, \emph{sequencing}, we assume a type $A$ with the step function $f \from A \to A$ and two halting functions
 $h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume
@@ -205,10 +226,10 @@ i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state 
   \label{lem:loop_merge}
   Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
-    & \forall (k_1~k_2:\Nat)~(c_1~c_2~c_3 : A).\\
-    & \quad \Loop~f~h ~k_1      ~c_1 = \Some{c_2} \rightarrow\\
-    & \quad \Loop~f~h'~k_2      ~c_2 = \Some{c_3} \rightarrow\\
-    & \quad \Loop~f~h'~(k_1+k_2)~c_1 = \Some{c_3}.
+    & \forall (k_1~k_2:\Nat)~(a_1~a_2~a_3 : A).\\
+    & \quad \Loop~f~h ~k_1      ~a_1 = \Some{a_2} \rightarrow\\
+    & \quad \Loop~f~h'~k_2      ~a_2 = \Some{a_3} \rightarrow\\
+    & \quad \Loop~f~h'~(k_1+k_2)~a_1 = \Some{a_3}.
   \end{align*}
 \end{lemma}
 \begin{proof}
@@ -218,11 +239,11 @@ i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state 
   \label{lem:loop_split}
   Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
-    & \forall (k:\Nat)~(c_1~c_3 : A).\\
-    & \quad \Loop~f~h'~k~c_1 = \Some{c_3} \rightarrow \\
-    & \quad \exists (k_1~k_2:\Nat)~(c_2:A).\\
-    & \quad \quad \Loop~f~h~k_1~c_1 = \Some{c_2} \land\\
-    & \quad \quad \Loop~f~h~k_2~c_2 = \Some{c_3} \land\\
+    & \forall (k:\Nat)~(a_1~a_3 : A).\\
+    & \quad \Loop~f~h'~k~a_1 = \Some{a_3} \rightarrow \\
+    & \quad \exists (k_1~k_2:\Nat)~(a_2:A).\\
+    & \quad \quad \Loop~f~h~k_1~a_1 = \Some{a_2} \land\\
+    & \quad \quad \Loop~f~h~k_2~a_2 = \Some{a_3} \land\\
     & \quad \quad k_1 + k_2 \leq k.
   \end{align*}
 \end{lemma}
@@ -650,8 +671,9 @@ partition.
   \[ \MS{Return~M~y} := \MS{ChangePartition}~M~(\lambda \_.~y). \]
 \end{definition}
 
-The correctness for these simple operators is obvious.  We do not even need lemmas for runtime, because the Definition~\ref{def:TerminatesIn} of
-runtime is defined over bare machine without partitioning function.
+The correctness for these simple operators is obvious.  Note that we do not need lemmas for runtime, because Definition~\ref{def:TerminatesIn} of
+runtime is defined over the bare machine without partitioning function.  So the runtime lemmas for $M$ apply also for $\MS{ChangePartition}$ and
+$\MS{Return}$
 \begin{lemma}[Correctness of $\MS{ChangePartition}$ and $\MS{Return}$]
   If $M \vDash R$, then
   \begin{alignat*}{1}
@@ -662,13 +684,6 @@ runtime is defined over bare machine without partitioning function.
 \begin{proof}
   By definition.
 \end{proof}
-
-
-\section{Examples}
-\label{sec:combining-examples}
-
-
-
 
 
 %%% Local Variables:
