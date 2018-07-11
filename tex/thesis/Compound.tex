@@ -146,6 +146,20 @@ $\Option(\Unit)$; $\Some\unit$ means break out of the loop and $\None$ means rep
     \end{cases}
     \Biggr)
   \end{multline*}
+  \centerline{\emph{versus}}
+  \small
+\begin{lstlisting}[style=semicoqstyle]
+$\MS{CopySymbolsStep}~f :=$
+  Match ($\LiftTapes{\MS{Read}}{\Vector{0}}$)
+        ($\lambda (s:\Option(\Sigma)).$ match $s$
+           [$\Some{x}$ => (*The head of tape $t[0]$ is on symbol $x$*)
+             if $f(x)$
+             then $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit}$ (*break*)
+             else $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None}$ (*continue*)
+           |$\None$ => $\Return{\Nop}{\Some\unit}$ (*No symbol; break*)
+           ]).
+\end{lstlisting}
+  \todo{Decide!}
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{CopySymbolsStep}$]

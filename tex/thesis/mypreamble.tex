@@ -156,6 +156,41 @@
 \newcommand{\LiftBoth}[3]{\Uparrow_{#2;~#3} #1}
 
 
+
+
+%%%
+%%% lstlisting
+%%%
+
+% Style and language to define complex multi-line definitions similar to Coq code
+\lstdefinelanguage{semicoq}{
+  morekeywords={if,then,else,match,Match,If,Then,Else},
+  morecomment=[s]{(*}{*)},
+}
+
+\lstdefinestyle{semicoqstyle}{
+  mathescape=true,
+  keywordstyle=\textsf,
+  language=semicoq,
+  literate={
+    {=>}{{$\Rightarrow$}}2
+    {>->}{{$\rightarrowtail\,$}}2
+    {<->}{{$\leftrightarrow$ }}2
+    {->}{{$\to$ }}3
+    {~}{{$\lnot$}}1
+    {/\\}{{$\land$ }}2
+    {\\/}{{$\lor$ }}2
+    {forall}{{$\forall$ }}1
+    {exists}{{$\exists$ }}1
+    {<>}{{$\not =$ }}{2}
+  }
+}
+
+
+
+
+
+
 %%% Local Variables:
 %%% mode: LaTeX
 %%% TeX-master: "thesis"
