@@ -171,7 +171,7 @@ The second assumptions is that $h'$ is compatible with $h$, w.r.t.\ $lift$, form
 Under these two assumptions we can show two lemmas that essentially say that the second abstract machine $B$ simulates the first machine $A$.
 \begin{lemma}[Loop lifting]
   \label{lem:loop_lift}
-  Under the assumptions~\ref{eq:loop_lift_assumption1} and~\ref{eq:loop_lift_assumption2}:
+  Under the assumptions~(\ref{eq:loop_lift_assumption1}) and~(\ref{eq:loop_lift_assumption2}):
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(c_1~c_2 : A). \\
     & \quad \Loop~f ~h ~k~c_1 = \Some{c_2} \rightarrow \\
@@ -183,7 +183,7 @@ Under these two assumptions we can show two lemmas that essentially say that the
 \end{proof}
 \begin{lemma}[Loop unlifting]
   \label{lem:loop_unlift}
-  Under the assumptions~\ref{eq:loop_lift_assumption1} and~\ref{eq:loop_lift_assumption2}:
+  Under the assumptions~(\ref{eq:loop_lift_assumption1}) and~(\ref{eq:loop_lift_assumption2}):
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(a:A)~(b':B). \\
     & \quad \Loop~f'~h'~k~(lift~a) = \Some{b'} \rightarrow \\
@@ -203,7 +203,7 @@ $h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume
 i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state w.r.t.\ $h$.
 \begin{lemma}[Loop merging]
   \label{lem:loop_merge}
-  Under assumption~\ref{eq:loop_merge_assumption}:
+  Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
     & \forall (k_1~k_2:\Nat)~(c_1~c_2~c_3 : A).\\
     & \quad \Loop~f~h ~k_1      ~c_1 = \Some{c_2} \rightarrow\\
@@ -216,7 +216,7 @@ i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state 
 \end{proof}
 \begin{lemma}[Loop splitting]
   \label{lem:loop_split}
-  Under the above assumption:
+  Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
     & \forall (k:\Nat)~(c_1~c_3 : A).\\
     & \quad \Loop~f~h'~k~c_1 = \Some{c_3} \rightarrow \\
