@@ -124,7 +124,7 @@ Section Match.
     loopM (k1 + (1 + k2)) (initc Match t) = Some (lift_confR c2).
   Proof.
     intros HLoop1 HLoop2. unfold loopM in *.
-    apply loop_merge with (h := halt_liftL) (c2 := lift_confL c1).
+    apply loop_merge with (h := halt_liftL) (a2 := lift_confL c1).
     - apply halt_conf_liftL.
     - rewrite lift_initc.
       apply loop_lift with (h := haltConf (M := M1)) (f := step (M := M1)).
