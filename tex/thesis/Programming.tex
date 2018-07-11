@@ -34,17 +34,18 @@ mapping the encoding with the composition of both retractions:
   \label{lem:Encode_map_comp}
   Let $f : \Sigma \hookrightarrow \Tau$ and $g : \Tau \hookrightarrow \Delta$ be retractions and $X$ be encodable over $\Sigma$.  Then there is only
   one way how $X$ can be encoded over $\Delta$, i.e.:
-  \[ encodeMap~(encodeMap~f~encode)~g~(x) = encodeMap~(f \cirg g)~encode~x \]
+  \[ encodeMap~(encodeMap~f~encode)~g~(x) = encodeMap~(f \circ g)~encode~x \]
 \end{lemma}
 
 For each type and type constructor, we have a disting alphabet.  We define basic encodings:
 \begin{definition}[Basic encodings]
+  \label{def:basic-encodings}
   \begin{enumerate}
   \item We encode $\Unit$ over the empty alphabet $\False$:
   \[ encode(\unit) := \nil
   \]
-  \item The types $\Bool$ is encoded over itselve, i.e.\ $encode(b):=[b]$.
-  \item Let $X$ be encodable over $\Sig$.  Then $\Option(X)$ is encodable over
+  \item The type $\Bool$ is encoded over itselve, i.e.\ $encode(b):=[b]$.
+  \item Let $X$ be encodable over $\Sigma$.  Then $\Option(X)$ is encodable over
     \[ SigOpt~\Sigma ::= \MS{NONE} ~|~ \MS{SOME} ~|~ (x:\Sigma) \]
     With the retraction $RetrOpt : \Sigma \hookrightarrow SigOpt~\Sigma$ and
     \[
@@ -54,8 +55,8 @@ For each type and type constructor, we have a disting alphabet.  We define basic
         \MS{SOME} \cons encode(x) & x=\Some{x}
       \end{cases}
     \]
-  \item Let $X$ be encodable over $\Sig$ and $Y$ over $\Tau$.  Then $X+Y$ is encodable over
-    \[ SigSum~\Sigma~\Tau ::= \MS{INL} ~|~ \MS{INR} ~|~ (x:\Sigma) (y:\Tau) \] With the retraction
+  \item Let $X$ be encodable over $\Sigma$ and $Y$ over $\Tau$.  Then $X+Y$ is encodable over
+    \[ SigSum~\Sigma~\Tau ::= \MS{INL} ~|~ \MS{INR} ~|~ (x:\Sigma) ~|~ (y:\Tau) \] With the retraction
     $RetrOptX : \Sigma \hookrightarrow SigOpt~\Sigma~\Tau$ and $RetrOptY : \Tau \hookrightarrow SigOpt~\Sigma~\Tau$ and
     \[
       encode(s) :=
@@ -64,17 +65,17 @@ For each type and type constructor, we have a disting alphabet.  We define basic
         \MS{INR} \cons encode(y) & x=\inr y
       \end{cases}
     \]
-  \item Let $X$ be encodable over $\Sig$ and $Y$ over $\Tau$.  Then $X*Y$ is encodable over
+  \item Let $X$ be encodable over $\Sigma$ and $Y$ over $\Tau$.  Then $X \times Y$ is encodable over
     \[ SigSum~\Sigma~\Tau ::= (x:\Sigma) ~|~ (y:\Tau) \] With the retraction
-    $RetrSumX : \Sigma \hookrightarrow SigSum~\Sigma~\Tau$ and $RetrSumY : \Tau \hookrightarrow SigSum~\Sigma~\Tau$ and
+    $RetrSumX : \Sigma \hookrightarrow SigSum~\Sigma~\Tau$ and \\$RetrSumY : \Tau \hookrightarrow SigSum~\Sigma~\Tau$ and
     \[
       encode(s) :=
       \begin{cases}
         \MS{INL} \cons encode(x) & s=\inl x \\
-        \MS{INR} \cons encode(y) & x=\inr y
+        \MS{INR} \cons encode(y) & s=\inr y
       \end{cases}
     \]
-  \item Let $X$ be encodable over $\Sig$.  Then $\List(X)$ is encodable over
+  \item Let $X$ be encodable over $\Sigma$.  Then $\List(X)$ is encodable over
     \[ SigList~\Sigma ::= \MS{NIL} ~|~ \MS{CONS} ~|~ (x:\Sigma) \]
     With the retraction $RetrList : \Sigma \hookrightarrow SigList~\Sigma$ and
     \begin{alignat*}{3}
@@ -94,9 +95,9 @@ If $X$ is encodable over $\Sigma$, we encode values of $x$ on tapes with an exte
   \[
     \Sigma^+ ::= \MS{START} ~|~ \MS{STOP} ~|~ \MS{UNKNOWN} ~|~ (s: \Sigma)
   \]
-  Also define the retract $RetrPlus : \Sigma \hookrightarrow \Sigma^+$.
+  Also, we define the retraction $RetrPlus : \Sigma \hookrightarrow \Sigma^+$.
 \end{definition}
-The $\MS{UNKNOWN}$ symbol is important later. Then we can define what $t \simeq x$ means:
+The $\MS{UNKNOWN}$ symbol is important later. We define what $t \simeq x$ means:
 \begin{definition}[$t \simeq x$]
   \label{def:tape_contains}
   Let $X$ be encodable over $\Sigma$ and $t : \Tape_{\Sigma^+}$.
@@ -104,11 +105,13 @@ The $\MS{UNKNOWN}$ symbol is important later. Then we can define what $t \simeq 
     t \simeq x := \exists~ls.~
     t = \MS{midtape}~ls~(\MS{START})~(encode(x) \app [\MS{STOP}])
   \]
+  In case the encoding is not clear, we write $t \simeq_{f} x$ with $t:\Tape_{\Tau^+}$ and $x:X$, when $X$ is encodable on $\Sigma$ according to
+  Definition~\ref{def:basic-encodings}, and we map this encoding to $\Tau$ using the retraction $f: \Sigma \hookrightarrow \Tau$.
 \end{definition}
 
 Note that in Definition~\ref{def:tape_contains}, we have to map the encoding of $x$ to the extended alphabet $\Sigma^+$.  If $t \simeq x$, the head of
-$t$ stands on the start symbol.  To the right, there is the encoding, which is terminated by the stop-symbol.  To the left of the head, there may be
-arbitrary many ``rest'' symbols.
+$t$ stands on the start symbol.  To the right, there is the encoding terminated by the stop-symbol.  To the left of the head, there may be arbitrary
+many ``rest'' symbols.
 
 We found the convention useful, that there are no further symbols beyond the stop symbol.  In future work we also want to reason about space usage of
 machines.  If a tape contains a value, the size of the tape (i.e.\ the number of symbols on it), only depends on the length of the encoding and the
