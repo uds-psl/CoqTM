@@ -288,9 +288,9 @@ Section WhileInduction.
   Variable R2 : Rel (tapes sig n) (F * tapes sig n).
 
   Lemma WhileInduction :
-    (forall tin yout tout (HLastStep: (R1 |_(Some yout)) tin tout), R2 tin (yout, tout)) ->
+    (forall tin yout tout (HLastStep: R1 tin (Some yout, tout)), R2 tin (yout, tout)) ->
     (forall tin tmid tout yout
-       (HStar : (R1 |_None) tin tmid) (HLastStep : R2 tmid (yout, tout)), R2 tin (yout, tout)) ->
+       (HStar : R1 tin (None, tmid)) (HLastStep : R2 tmid (yout, tout)), R2 tin (yout, tout)) ->
     While_Rel R1 <<=2 R2.
   Proof. intros H1 H2. intros tin tout. induction 1; eauto. Qed.
 
