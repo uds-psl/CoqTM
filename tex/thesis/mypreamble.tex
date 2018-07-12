@@ -130,6 +130,13 @@
 \newcommand{\length}[1]{\left| #1 \right|}
 \newcommand{\blength}[1]{\bigl| #1 \bigr|}
 
+
+%%
+%% Encding
+%%
+\newcommand{\contains}{\simeq}
+\newcommand{\size}[1]{\length{encode(#1)}}
+
 %% Big-Step semantics
 \newcommand{\terminates}{\mathrel{\triangleright}}
 
@@ -164,7 +171,7 @@
 
 % Style and language to define complex multi-line definitions similar to Coq code
 \lstdefinelanguage{semicoq}{
-  morekeywords={if,then,else,match,Match,If,Then,Else},
+  morekeywords={if,then,else,true,false,match,Match,If,Then,Else,Nop,Return,Move,Reset,DoAct,WriteMove,L,R,N},
   morecomment=[s]{(*}{*)},
 }
 
