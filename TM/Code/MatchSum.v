@@ -19,31 +19,6 @@ Section MatchSum.
             | _, _ => False
             end).
 
-  (*
-Ltac destruct_shelve e :=
-  cbn in e;
-  idtac "Input:";
-  print_type e;
-  idtac "Output:";
-  print_goal_cbn; 
-  match goal with
-  | [ |- Rel _ _] =>
-    elim e; repeat
-              (let x := fresh "x" in
-               clear e; (* The variable should not occure in the environment of the shelved goals *)
-               first [ intros x;
-                       match goal with (* make sure that we don't intros from the relation we want to generate *)
-                       | [ |- Rel _ _ ] =>
-                         destruct_shelve x
-                       end
-                     | shelve (* If there was no parameter for this constructor, shelve *)
-                     ]
-              )
-  end
-.
-   *)
-
-
 
   Definition MatchSum : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> bool } :=
     Move R;; (* skip the [START] symbol *)
