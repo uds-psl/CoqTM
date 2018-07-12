@@ -7,7 +7,7 @@ Section While.
   Variable sig : finType.
 
   Variable F : finType.
-  (** Parameter [None] indicates continueing, [Some f] means breaking out of the loop and terminating in the partition [f]. *)
+  (** Parteter [None] indicates continueing, [Some f] means breaking out of the loop and terminating in the partition [f]. *)
   Variable pM : pTM sig (option F) n.
 
   Definition While_trans :
@@ -15,10 +15,7 @@ Section While.
     (TM.states (projT1 pM)) * Vector.t (option sig * move) n :=
     fun '(q,s) =>
       if halt q
-      then match projT2 pM q with
-           | Some y => (q, null_action)
-           | None => (start (projT1 pM), null_action)
-           end
+      then (start (projT1 pM), null_action)
       else trans (q,s).
 
   Definition While : mTM sig n :=
@@ -30,7 +27,7 @@ Section While.
 
   Hypothesis (defF : inhabitedC F).
 
-  Definition While_param : states (projT1 pM) -> F :=
+  Definition While_part : states (projT1 pM) -> F :=
     fun q =>
       match projT2 pM q with
       | Some y => y
@@ -38,7 +35,7 @@ Section While.
       end.
 
   Definition WHILE : pTM sig F n :=
-    (While; While_param).
+    (While; While_part).
 
   Local Arguments loopM {_ _} _ _ _.
   Local Arguments halt {_ _} _ _.
@@ -69,7 +66,7 @@ Section While.
   Proof.
     intros HHalt HRepeat. unfold haltConf in HHalt.
     destruct c as [q t]; cbn in *.
-    unfold step. cbn -[tape_move_multi] in *. rewrite HHalt, HRepeat. unfold initc. f_equal. apply tape_move_null_action.
+    unfold step. cbn -[tape_move_multi] in *. rewrite HHalt. unfold initc. f_equal. apply tape_move_null_action.
   Qed.
 
   Lemma While_split k (c1 c3 : mconfig sig (states (projT1 pM)) n) :
@@ -164,7 +161,7 @@ Section While.
     intros HRel. hnf in HRel; hnf. intros t k; revert t. apply complete_induction with (x := k); clear k; intros k IH. intros tin c3 HLoop.
     apply While_split in HLoop as (k1&k2&c2&HLoop1&HLoop2&Hk).
     destruct (projT2 pM (cstate c2)) as [ f | ] eqn:E; cbn in *; [ clear IH | ].
-    - apply While_split_term with (f := f) in HLoop2 as ->; auto. 2: apply (loop_fulfills HLoop1). unfold While_param. rewrite E.
+    - apply While_split_term with (f := f) in HLoop2 as ->; auto. 2: apply (loop_fulfills HLoop1). unfold While_part. rewrite E.
       constructor 1. specialize HRel with (1 := HLoop1). now rewrite E in HRel.
     - apply While_split_repeat in HLoop2 as (k2'&->&HLoop2); auto. 2: apply (loop_fulfills HLoop1).
       specialize IH with (2 := HLoop2); spec_assert IH by omega.
