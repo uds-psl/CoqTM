@@ -120,7 +120,7 @@ Section While.
     intros HLoop1 HRepeat HLoop2. unfold loopM in *.
     eapply loop_lift with (lift := id) (f' := step (While)) (h' := haltConf (M := projT1 pM)) in HLoop1; cbv [id] in *; cbn; auto; cycle 1.
     { intros. symmetry. now apply step_comp. }
-    apply loop_merge with (h := haltConf (M := projT1 pM)) (c2 := c2).
+    apply loop_merge with (h := haltConf (M := projT1 pM)) (a2 := c2).
     - apply halt_comp.
     - apply HLoop1.
     - cbn [loop plus]. rewrite While_trans_repeat; auto. 2: apply (loop_fulfills HLoop1).
@@ -137,7 +137,7 @@ Section While.
     { intros. symmetry. now apply step_comp. }
     unfold loopM.
     replace k1 with (k1 + 0) by omega.
-    apply loop_merge with (h := haltConf (M := projT1 pM)) (c2 := c2).
+    apply loop_merge with (h := haltConf (M := projT1 pM)) (a2 := c2).
     - apply halt_comp.
     - apply HLoop.
     - cbn in *. setoid_rewrite (loop_fulfills HLoop). rewrite HTerm. cbn. reflexivity.

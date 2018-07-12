@@ -86,20 +86,20 @@ Section LoopLift.
   Hypothesis halt_lift_comp : forall x:A, h' (lift x) = h x.
   Hypothesis step_lift_comp : forall x:A, h x = false -> f' (lift x) = lift (f x).
 
-  Lemma loop_lift (k : nat) (c1 c2 : A) :
-    loop (A := A) f  h  k c1        = Some c2 ->
-    loop (A := B) f' h' k (lift c1) = Some (lift c2).
+  Lemma loop_lift (k : nat) (a a' : A) :
+    loop (A := A) f  h  k a         = Some a' ->
+    loop (A := B) f' h' k (lift a)  = Some (lift a').
   Proof.
-    revert c1. induction k as [ | k']; intros; cbn in *.
-    - rewrite halt_lift_comp. destruct (h c1); now inv H.
-    - rewrite halt_lift_comp. destruct (h c1) eqn:E.
+    revert a. induction k as [ | k']; intros; cbn in *.
+    - rewrite halt_lift_comp. destruct (h a); now inv H.
+    - rewrite halt_lift_comp. destruct (h a) eqn:E.
       + now inv H.
       + rewrite step_lift_comp by auto. now apply IHk'.
   Qed.
 
   Lemma loop_unlift (k : nat) (a : A) (b' : B) :
     loop f' h' k (lift a) = Some b' ->
-    exists b : A, loop f h k a = Some b /\ b' = lift b.
+    exists a' : A, loop f h k a = Some a' /\ b' = lift a'.
   Proof.
     revert a b'. induction k as [ | k']; intros; cbn in *.
     - rewrite halt_lift_comp in H.
@@ -123,34 +123,34 @@ Section LoopMerge.
   (** Every halting state w.r.t. [h] is also a halting state w.r.t. [h'] *)
   Hypothesis halt_comp : forall a, h a = false -> h' a = false.
 
-  Lemma loop_merge (k1 k2 : nat) (c1 c2 c3 : A) :
-    loop f h  k1 c1 = Some c2 ->
-    loop f h' k2 c2 = Some c3 ->
-    loop f h' (k1+k2) c1 = Some c3.
+  Lemma loop_merge (k1 k2 : nat) (a1 a2 a3 : A) :
+    loop f h  k1 a1 = Some a2 ->
+    loop f h' k2 a2 = Some a3 ->
+    loop f h' (k1+k2) a1 = Some a3.
   Proof.
-    revert c1 c2 c3. induction k1 as [ | k1' IH]; intros c1 c2 c3 HLoop1 HLoop2; cbn in HLoop1.
-    - now destruct (h c1); inv HLoop1.
-    - destruct (h c1) eqn:E.
+    revert a1 a2 a3. induction k1 as [ | k1' IH]; intros a1 a2 a3 HLoop1 HLoop2; cbn in HLoop1.
+    - now destruct (h a1); inv HLoop1.
+    - destruct (h a1) eqn:E.
       + inv HLoop1. eapply loop_monotone; eauto. omega.
       + cbn. rewrite (halt_comp E). eapply IH; eauto.
   Qed.
 
-  Lemma loop_split (k : nat) (c1 c3 : A) :
-    loop f h' k c1 = Some c3 ->
-    exists k1 c2 k2,
-      loop f h  k1 c1 = Some c2 /\
-      loop f h' k2 c2 = Some c3 /\
+  Lemma loop_split (k : nat) (a1 a3 : A) :
+    loop f h' k a1 = Some a3 ->
+    exists k1 a2 k2,
+      loop f h  k1 a1 = Some a2 /\
+      loop f h' k2 a2 = Some a3 /\
       k1 + k2 <= k.
   Proof.
-    revert c1 c3. revert k; refine (size_recursion id _); intros k IH. intros c1 c3 HLoop. cbv [id] in *.
+    revert a1 a3. revert k; refine (size_recursion id _); intros k IH. intros a1 a3 HLoop. cbv [id] in *.
     destruct k as [ | k']; cbn in *.
-    - destruct (h' c1) eqn:E; inv HLoop.
-      exists 0, c3, 0. cbn. rewrite E.
-      destruct (h c3) eqn:E'.
+    - destruct (h' a1) eqn:E; inv HLoop.
+      exists 0, a3, 0. cbn. rewrite E.
+      destruct (h a3) eqn:E'.
       + auto.
       + apply halt_comp in E'. congruence.
-    - destruct (h c1) eqn:E.
-      + exists 0, c1, (S k'). cbn. rewrite E. auto.
+    - destruct (h a1) eqn:E.
+      + exists 0, a1, (S k'). cbn. rewrite E. auto.
       + rewrite (halt_comp E) in HLoop.
         apply IH in HLoop as (k1&c2&k2&IH1&IH2&IH3); [ | omega].
         exists (S k1), c2, k2. cbn. rewrite E. repeat split; auto. omega.

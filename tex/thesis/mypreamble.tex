@@ -130,6 +130,13 @@
 \newcommand{\length}[1]{\left| #1 \right|}
 \newcommand{\blength}[1]{\bigl| #1 \bigr|}
 
+
+%%
+%% Encding
+%%
+\newcommand{\contains}{\simeq}
+\newcommand{\size}[1]{\length{encode(#1)}}
+
 %% Big-Step semantics
 \newcommand{\terminates}{\mathrel{\triangleright}}
 
@@ -154,6 +161,41 @@
 \newcommand{\LiftAlphabet}[2]{\Uparrow_{#2} #1}
 % #1 is the machine, #2 the alphabet lifting, and #3 the tape-lifting
 \newcommand{\LiftBoth}[3]{\Uparrow_{#2;~#3} #1}
+
+
+
+
+%%%
+%%% lstlisting
+%%%
+
+% Style and language to define complex multi-line definitions similar to Coq code
+\lstdefinelanguage{semicoq}{
+  morekeywords={if,then,else,true,false,match,Match,If,Then,Else,Nop,Return,Move,Reset,DoAct,WriteMove,L,R,N},
+  morecomment=[s]{(*}{*)},
+}
+
+\lstdefinestyle{semicoqstyle}{
+  mathescape=true,
+  keywordstyle=\textsf,
+  language=semicoq,
+  literate={
+    {=>}{{$\Rightarrow$}}2
+    {>->}{{$\rightarrowtail\,$}}2
+    {<->}{{$\leftrightarrow$ }}2
+    {->}{{$\to$ }}3
+    {~}{{$\lnot$}}1
+    {/\\}{{$\land$ }}2
+    {\\/}{{$\lor$ }}2
+    {forall}{{$\forall$ }}1
+    {exists}{{$\exists$ }}1
+    {<>}{{$\not =$ }}{2}
+  }
+}
+
+
+
+
 
 
 %%% Local Variables:

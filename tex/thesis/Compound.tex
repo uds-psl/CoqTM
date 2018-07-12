@@ -127,7 +127,7 @@ Thus, we do not do more proofs of this kind on paper.
 \label{sec:CopySymbols}
 
 The machine $\MS{CopySymbols}~h : \TM_\Sigma^2$, where $h:\Sigma\to\Bool$, is a compound machine involving a $\While$-loop.  The machine reads the
-symbol on tape $0$.  It reads the symbol on tape $0$ and writes it to tape $1$.  If the symbol fulfils $h$, then the machine halts.  Else it moves
+symbol on tape $0$.  It reads the symbol on tape $0$ and writes it to tape $1$.  If the symbol satisfies $h$, then the machine halts.  Else it moves
 both tapes right and continues the loop.  The machine also halts if there was no current symbol to read from tape $0$.
 
 We first define the machine for the step.  Since we want to apply the $\While$ operator on the step machine, it must be partitioned over
@@ -135,17 +135,31 @@ $\Option(\Unit)$; $\Some\unit$ means break out of the loop and $\None$ means rep
 \begin{definition}[$\MS{CopySymbolsStep}$]
   \label{CopySymbols_Step}
   \begin{multline*}
-    \MS{CopySymbolsStep}~f :=
+    \MS{CopySymbolsStep}~h :=
     \Match(\LiftTapes{Read}{\Vector{0}}) \\
     \Biggl(
     \lambda s.
     \begin{cases}
-      \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit} & s=\Some{x} ~\land~ f(x)=\true \\
-      \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None} & s=\Some{x} ~\land~ f(x)=\false \\
+      \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit} & s=\Some{x} ~\land~ h(x)=\true \\
+      \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None} & s=\Some{x} ~\land~ h(x)=\false \\
       \Return{\Nop}{\Some\unit} & s=\None
     \end{cases}
     \Biggr)
   \end{multline*}
+  \centerline{\emph{versus}}
+  \small
+\begin{lstlisting}[style=semicoqstyle]
+$\MS{CopySymbolsStep}~h :=$
+  Match ($\LiftTapes{\MS{Read}}{\Vector{0}}$)
+        ($\lambda (s:\Option(\Sigma)).$ match $s$
+           [$\Some{x}$ => (*The head of tape $t[0]$ is on symbol $x$*)
+             if $h(x)$
+             then $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit}$ (*break*)
+             else $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None}$ (*continue*)
+           |$\None$ => $\Return{\Nop}{\Some\unit}$ (*No symbol; break*)
+           ]).
+\end{lstlisting}
+  \todo{Decide!}
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{CopySymbolsStep}$]
@@ -158,13 +172,12 @@ $\Option(\Unit)$; $\Some\unit$ means break out of the loop and $\None$ means rep
   \begin{multline*}
     CopySymbolsStepRel := \lambda t~(y, t').~\\
     \begin{cases}
-      t'[0] = t[0]           \land t'[1]=\MS{wr}~t[1]~\Some{x}         \land y=\Some\unit & \MS{current}~t[0]=\Some{x} \land       f(x) \\
-      t'[0] = \MS{mv}~R~t[0] \land t'[1]=\MS{doAct}~t[1]~(\Some{x}, R) \land y=\None      & \MS{current}~t[0]=\Some{x} \land \lnot f(x) \\
+      t'[0] = t[0]           \land t'[1]=\MS{wr}~t[1]~\Some{x}         \land y=\Some\unit & \MS{current}~t[0]=\Some{x} \land       h(x) \\
+      t'[0] = \MS{mv}~R~t[0] \land t'[1]=\MS{doAct}~t[1]~(\Some{x}, R) \land y=\None      & \MS{current}~t[0]=\Some{x} \land \lnot h(x) \\
       t' = t \land y=\Some\unit                                                           & \text{else}
     \end{cases}
   \end{multline*}
 \end{lemma}
-\todo{This looks \emph{ugly}!!!!!}
 \begin{proof}
   Mechanical, with case-analysis over $t[0]$.
 \end{proof}
@@ -172,20 +185,20 @@ $\Option(\Unit)$; $\Some\unit$ means break out of the loop and $\None$ means rep
 Now, to define $\MS{CopySymbols}$, we simply apply the $\While$ operator to the step machine:
 \begin{definition}[$\MS{CopySymbols}$]
   \label{def:CopySymbols}
-  $\MS{CopySymbols}~f := \While(\MS{CopySymbolsStep}~f)$.
+  $\MS{CopySymbols}~h := \While(\MS{CopySymbolsStep}~h)$.
 \end{definition}
 
 The correctness of $\MS{CopySymbols}$ can be expressed using a recursive function on tapes:
 \begin{lemma}[Correctness of $\MS{CopySymbols}$]
   \label{lem:CopySymbols_Realise}
   \
-  $$\MS{CopySymbols}~f \vDash CopySymbolsRel~f$$
-  with $CopySymbolsRel~f := \lambda t~t' = CopySymbolsFun~f~t$ and
+  $$\MS{CopySymbols}~h \vDash CopySymbolsRel~h$$
+  with $CopySymbolsRel~h := \lambda t~t' = CopySymbolsFun~h~t$ and
   \begin{multline*}
-    CopySymbolsFun~f~t :=\\
+    CopySymbolsFun~h~t :=\\
     \begin{cases}
-      \Vector{t[0]; \MS{wr}~t[1]~(\Some{x})}                                  & \MS{current}(t[0])=\Some{x} \land f(x) \\
-      CopySymbolsFun~f~\Vector{\MS{mv}~R~t[0]; \MS{doAct}~t[1]~(\Some{x}, R)} & \MS{current}(t[0])=\Some{x} \land \lnot f(x) \\
+      \Vector{t[0]; \MS{wr}~t[1]~(\Some{x})}                                  & \MS{current}(t[0])=\Some{x} \land h(x) \\
+      CopySymbolsFun~h~\Vector{\MS{mv}~R~t[0]; \MS{doAct}~t[1]~(\Some{x}, R)} & \MS{current}(t[0])=\Some{x} \land \lnot h(x) \\
       t                                                                       & \MS{current}(t[0])=\None
     \end{cases}
   \end{multline*}
@@ -204,8 +217,8 @@ $\While$ requires one additional step for each repeat of the loop.
   \begin{multline*}
     CopySymbolsSteps (t) := \\
     \begin{cases}
-      8                                & \MS{current}(t)=\Some{x} \land f(x) \\
-      8 + CopySymbolSteps(\MS{mv}~R~t) & \MS{current}(t)=\Some{x} \land \lnot f(x) \\
+      8                                & \MS{current}(t)=\Some{x} \land h(x) \\
+      8 + CopySymbolSteps(\MS{mv}~R~t) & \MS{current}(t)=\Some{x} \land \lnot h(x) \\
       8                                & \MS{current}(t)=\None
     \end{cases}
   \end{multline*}
@@ -215,16 +228,47 @@ $\While$ requires one additional step for each repeat of the loop.
   (Lemma~\ref{lem:Realise_total} with Lemma~\ref{lem:CopySymbols_Realise}).\\
   Let $CopySymbolsSteps~t[0] \leq k$.  We have two cases.
   \begin{enumerate}
-  \item We have $CopySymbolsStepRel~t~(\Some\unit, t')$.  Therefore, we know that either $\MS{current}(t[0])=\Some{x}$ with $f(x)=\true$, or
+  \item We have $CopySymbolsStepRel~t~(\Some\unit, t')$.  Therefore, we know that either $\MS{current}(t[0])=\Some{x}$ with $h(x)=\true$, or
     $\MS{current}(t[0])=\None$.  In both cases, we have $CopySymbolsSteps(t[0]) = 8$.  Thus, we have
     $$ 7 \leq CopySymbolSteps(t[0]) = 8 \leq k. $$
-  \item We have $CopySymbolsStepRel~t~(\None, t')$.  Therefore, we have $\MS{current}(t[0])=\Some{x}$ with $f(x)=\false$, and $t'[0]=\MS{mv}~R~t[0]$.
+  \item We have $CopySymbolsStepRel~t~(\None, t')$.  Therefore, we have $\MS{current}(t[0])=\Some{x}$ with $h(x)=\false$, and $t'[0]=\MS{mv}~R~t[0]$.
     Then, we have
     $$ 1+7+CopySymbolSteps(t'[0]) = CopySymbolSteps(t[0]) \leq k.$$
     \qed
   \end{enumerate}
 \end{proof}
 % Note that we see in the proof that we could replace the $8$s in the non-recursive parts of the runtime functions with $7$s.
+
+Using the $\MS{Mirror}$ operator, we can define a machine $\MS{CopySymbolsL}$ that copies and goes to the left instead.  However, we also have to
+``mirror'' the correctness relations and their respective functions.  We do not repeat the definitions here.
+\begin{definition}[$\MS{CopySymbolsL}$]
+  $\MS{CopySymbolsL}~h := \MS{Mirror}(\MS{CopySymbols}~h).$
+\end{definition}
+
+\section{$\MS{MoveToSymbol}$}
+\label{sec:MoveToSymbol}
+
+We can define a machine $\MS{MoveToSymbol}~h~f : \TM_\Sigma^1$, where $h:\Sigma\to\Bool$ and $f:\Sigma\to\Sigma$.  This machine behaves similarly like
+$\MS{CopySymbols}~h$.  However, instead of copying the symbols from one tape to another tape, it ``translates'' the symbols it read, until it read a
+symbol that satisfies the boolean predicate $h$.  We leave out the correctness and runtime statements, as they easily can be derived from the
+statements above.
+
+\begin{definition}[$\MS{MoveToSymbol}$]
+  ~
+\begin{lstlisting}[style=semicoqstyle]
+$\MS{MoveToSymbolStep}~h~f :=$
+  Match ($\MS{Read}$)
+        ($\lambda (s:\Option(\Sigma)).$ match $s$
+           [$\Some{x}$ => (*The head of tape $t[0]$ is on symbol $x$*)
+             if $h(x)$
+             then $\Return{\bigl(\MS{Write}~(f~x)        \bigr)}{\Some\unit}$ (*break*)
+             else $\Return{\bigl(\MS{WriteMove}~(f~x)~R) \bigr)}{\None}$ (*continue*)
+           |$\None$ => $\Return{\Nop}{\Some\unit}$ (*No symbol; break*)
+           ]).
+$\MS{MoveToSymbol}~h~f := \While(\MS{MoveToSymbolStep}~h~f)$
+$\MS{MoveToSymbolL}~h~f := \MS{Mirror}(\MS{MoveToSymbol}~h~f)$
+\end{lstlisting}
+\end{definition}
 
 
 

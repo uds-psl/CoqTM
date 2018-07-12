@@ -9,9 +9,9 @@ As a result, we get a shallow-embed-ed language for programming multi-tape Turin
 \section{Match}
 \label{sec:match}
 
-Asperti and Ricciotti~\cite{asperti2015} also define the control flow operators sequential composition, conditional, and while.  However, for the
+Asperti and Ricciotti~\cite{asperti2015} define the control flow operators sequential composition, conditional, and while.  However, for the
 conditional they have to give one explicit ``else'' state.  Giving an explicit state is very tedious for complex machines.  That is why we use the
-generalised notion of partitioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  If $M_1$
+generalised notion of partitioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  In case $M_1$
 terminated in a ``positive'' state (i.e. a state belonging to the partition $\true$), $M_2$ is executed after $M_1$.  Else it executes $M_3$ after
 $M_1$.  We observe that sequential composition and conditional can be defined as instances of a more general operator we call $\MS{Match}$.  We give
 proof scratches for the correctness and runtime in Subsection~\ref{sec:match-proofs}.
@@ -71,8 +71,8 @@ a machine $M'~y$, it terminates.  The correctness part of the semantics can be e
 \end{lemma}
 
 Note that in the relation $\MS{MatchRel}$, we compose the unpartitioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the
-partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~M'$ ``discards'' the partition of the
-final state of $M$ and terminates in the partition of $M'~y$.
+partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~M'$ terminates in the partition of
+$M'~y$, which has type $F'$.
 
 To specify the runtime of $\MS{Match}~M~M'$, we need to know the runtime relation in that $M$ terminates, and for each $y:F$ the runtime of $M'~y$.
 We also need to know the correctness of $M$, because the runtime of $M'~y$ depends on the output of $M$, which is the input of $M~y$.
@@ -84,10 +84,21 @@ We also need to know the correctness of $M$, because the runtime of $M'~y$ depen
   $\MS{Match}~M~M' \downarrow \MS{MatchT}~R~T~T'$, where
   \[
     \MS{MatchT}~R~T~T' :=
-    \lambda~t~i.~ \exists~i_1~i_2.~T~t~i_1 \land 1+i_1+i_2 \le i \land
-      \forall~y~t'.~ R~t~y~t' \rightarrow T'~y~t'~i_2
+    \lambda~t~k.~ \exists~k_1~k_2.~T~t~k_1 \land 1+k_1+k_2 \le k \land
+      \forall~y~t'.~ R~t~y~t' \rightarrow T'~y~t'~k_2
   \]
 \end{lemma}
+
+We can combine the correctness and runtime lemma, in case $M$ and every $M'~y$ terminates in constant time.
+\begin{lemma}[Correctness of $\MS{Match}~M~M'$ in constant time]
+  \label{lem:Match_RealiseIn}
+  Let $k_1, k_2:\Nat$.\\
+  If $M \vDash^{k_1} R$ and $M'~y \vDash^{k_2} R'~y$ for every $y:F$, then
+  \[ \MS{Match}~M~M' \vDash^{1+k_1+k_2} \MS{MatchRel}~R~R'. \]
+\end{lemma}
+\begin{proof}
+  Follows with the Lemmas~\ref{lem:Realise_total},~\ref{lem:Match_Realise}, and~\ref{lem:Match_Terminates}.
+\end{proof}
 
 
 \subsection{Derived Operators}
@@ -106,7 +117,16 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
   \]
 \end{definition}
 
-\begin{definition}[Sequencial composition]
+\begin{lemma}[Correctness of conditional]
+  \label{lem:If_RealiseIn}
+  If $M_1 \vDash^{k_1} R_1$, $M_2 \vDash^{k_2} R_2$, and $M_3 \vDash^{k_3} R_3$, then
+  $
+    \If{M_1}{M_2}{M_3} \vDash^{1+k_1+max(k_2+k_3)} (R_1\at\true \circ R_2) \cup (R_1\at\false \circ R_3).
+  $
+\end{lemma}
+
+\begin{definition}[Sequential composition]
+  \label{def:Seq}
   Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
   \[
     M_1 \Seq M_2 := \Match~M_1~
@@ -115,6 +135,16 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
     \bigr)
   \]
 \end{definition}
+
+\begin{lemma}[Correctness of sequential composition]
+  \label{lem:Seq_RealiseIn}
+  If $M_1 \vDash^{k_1} R_1$ and $R_1 \vDash^{k_2} R_2$, then
+  $
+  M_1 \Seq M_2 \vDash^{1+k_1+k_2} \left(\bigcup_{y:F} R_1\at y\right) \circ R_2.
+  $
+\end{lemma}
+
+The versions of above lemmas without constant-time termination hold as well.
 
 
 \subsection{Proof of $\Match$}
@@ -141,11 +171,11 @@ The second assumptions is that $h'$ is compatible with $h$, w.r.t.\ $lift$, form
 Under these two assumptions we can show two lemmas that essentially say that the second abstract machine $B$ simulates the first machine $A$.
 \begin{lemma}[Loop lifting]
   \label{lem:loop_lift}
-  Under the assumptions~\ref{eq:loop_lift_assumption1} and~\ref{eq:loop_lift_assumption2}:
+  Under the assumptions~(\ref{eq:loop_lift_assumption1}) and~(\ref{eq:loop_lift_assumption2}):
   \begin{alignat*}{1}
-    & \forall (k:\Nat)~(c_1~c_2 : A). \\
-    & \quad \Loop~f ~h ~k~c_1 = \Some{c_2} \rightarrow \\
-    & \quad \Loop~f'~h'~k~(lift~c_1) = \Some {lift~c_2}
+    & \forall (k:\Nat)~(a~a' : A). \\
+    & \quad \Loop~f ~h ~k~a = \Some{a'} \rightarrow \\
+    & \quad \Loop~f'~h'~k~(lift~a) = \Some {lift~a'}
   \end{alignat*}
 \end{lemma}
 \begin{proof}
@@ -153,16 +183,37 @@ Under these two assumptions we can show two lemmas that essentially say that the
 \end{proof}
 \begin{lemma}[Loop unlifting]
   \label{lem:loop_unlift}
-  Under the assumptions~\ref{eq:loop_lift_assumption1} and~\ref{eq:loop_lift_assumption2}:
+  Under the assumptions~(\ref{eq:loop_lift_assumption1}) and~(\ref{eq:loop_lift_assumption2}):
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(a:A)~(b':B). \\
     & \quad \Loop~f'~h'~k~(lift~a) = \Some{b'} \rightarrow \\
-    & \quad \exists (b:B).~\Loop~f~h~k~a = \Some b \land b'=lift~b
+    & \quad \exists (a':A).~\Loop~f~h~k~a = \Some{a'} \land b'=lift~a'
   \end{alignat*}
 \end{lemma}
 \begin{proof}
   By induction over $k:\Nat$.
 \end{proof}
+
+\begin{figure}
+  \center
+  \begin{tikzcd}
+    a'                    \arrow[r, "lift"] & \cdot \\
+    \cdot \arrow[u, "f"]  \arrow[r, "lift"] & \cdot \arrow[u, "g", swap] \\
+    a     \arrow[u, "f"]  \arrow[r, "lift"] & \cdot \arrow[u, "g", swap] \\
+  \end{tikzcd}
+  \hspace{1cm}
+  \begin{tikzcd}
+    a'                            \arrow[r, "lift", dotted] & b' \\
+    \cdot \arrow[u, "f", dotted]  \arrow[r, "lift", dotted] & \cdot \arrow[u, "g", swap] \\
+    a     \arrow[u, "f", dotted]  \arrow[r, "lift"]         & \cdot \arrow[u, "g", swap] \\
+  \end{tikzcd}
+  \caption{Instances of Lemma~\ref{lem:loop_lift} (left) and Lemma~\ref{lem:loop_unlift} (right) for $k=2$ as commuting diagrams.  Dotted lines denote
+    existentials.  Note that the rectangles correspond to condition (\ref{eq:loop_lift_assumption1}).  Only the top ``states'' are terminating
+    states.}
+  \label{fig:loop_lift_lemmas}
+\end{figure}
+
+The Lemmas~\ref{lem:loop_lift} and~\ref{lem:loop_unlift} are visualised in Figure \ref{fig:loop_lift_lemmas}.
 
 For the second feature, \emph{sequencing}, we assume a type $A$ with the step function $f \from A \to A$ and two halting functions
 $h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume
@@ -173,12 +224,12 @@ $h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume
 i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state w.r.t.\ $h$.
 \begin{lemma}[Loop merging]
   \label{lem:loop_merge}
-  Under assumption~\ref{eq:loop_merge_assumption}:
+  Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
-    & \forall (k_1~k_2:\Nat)~(c_1~c_2~c_3 : A).\\
-    & \quad \Loop~f~h ~k_1      ~c_1 = \Some{c_2} \rightarrow\\
-    & \quad \Loop~f~h'~k_2      ~c_2 = \Some{c_3} \rightarrow\\
-    & \quad \Loop~f~h'~(k_1+k_2)~c_1 = \Some{c_3}.
+    & \forall (k_1~k_2:\Nat)~(a_1~a_2~a_3 : A).\\
+    & \quad \Loop~f~h ~k_1      ~a_1 = \Some{a_2} \rightarrow\\
+    & \quad \Loop~f~h'~k_2      ~a_2 = \Some{a_3} \rightarrow\\
+    & \quad \Loop~f~h'~(k_1+k_2)~a_1 = \Some{a_3}.
   \end{align*}
 \end{lemma}
 \begin{proof}
@@ -186,13 +237,13 @@ i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state 
 \end{proof}
 \begin{lemma}[Loop splitting]
   \label{lem:loop_split}
-  Under the above assumption:
+  Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
-    & \forall (k:\Nat)~(c_1~c_3 : A).\\
-    & \quad \Loop~f~h'~k~c_1 = \Some{c_3} \rightarrow \\
-    & \quad \exists (k_1~k_2:\Nat)~(c_2:A).\\
-    & \quad \quad \Loop~f~h~k_1~c_1 = \Some{c_2} \land\\
-    & \quad \quad \Loop~f~h~k_2~c_2 = \Some{c_3} \land\\
+    & \forall (k:\Nat)~(a_1~a_3 : A).\\
+    & \quad \Loop~f~h'~k~a_1 = \Some{a_3} \rightarrow \\
+    & \quad \exists (k_1~k_2:\Nat)~(a_2:A).\\
+    & \quad \quad \Loop~f~h~k_1~a_1 = \Some{a_2} \land\\
+    & \quad \quad \Loop~f~h~k_2~a_2 = \Some{a_3} \land\\
     & \quad \quad k_1 + k_2 \leq k.
   \end{align*}
 \end{lemma}
@@ -620,8 +671,9 @@ partition.
   \[ \MS{Return~M~y} := \MS{ChangePartition}~M~(\lambda \_.~y). \]
 \end{definition}
 
-The correctness for these simple operators is obvious.  We do not even need lemmas for runtime, because the Definition~\ref{def:TerminatesIn} of
-runtime is defined over bare machine without partitioning function.
+The correctness for these simple operators is obvious.  Note that we do not need lemmas for runtime, because Definition~\ref{def:TerminatesIn} of
+runtime is defined over the bare machine without partitioning function.  So the runtime lemmas for $M$ apply also for $\MS{ChangePartition}$ and
+$\MS{Return}$
 \begin{lemma}[Correctness of $\MS{ChangePartition}$ and $\MS{Return}$]
   If $M \vDash R$, then
   \begin{alignat*}{1}
@@ -632,13 +684,6 @@ runtime is defined over bare machine without partitioning function.
 \begin{proof}
   By definition.
 \end{proof}
-
-
-\section{Examples}
-\label{sec:combining-examples}
-
-
-
 
 
 %%% Local Variables:
