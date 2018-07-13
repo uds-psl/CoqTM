@@ -25,12 +25,12 @@ Section Loop.
     loop (S k) a = loop k (f a).
   Proof. intros HHalt. destruct k; cbn; rewrite HHalt; auto. Qed.
 
-  Lemma loop_injective k1 k2 a c1 c2 :
-    loop k1 a = Some c1 ->
-    loop k2 a = Some c2 ->
-    c1 = c2.
+  Lemma loop_injective k1 k2 a b b' :
+    loop k1 a = Some b ->
+    loop k2 a = Some b' ->
+    b = b'.
   Proof.
-    revert k2 c1 c2 a. induction k1; intros; cbn in *.
+    revert k2 b b' a. induction k1; intros; cbn in *.
     - destruct (p a) eqn:E; inv H.
       destruct k2; cbn in H0; rewrite E in H0; now inv H0.
     - destruct (p a) eqn:E.
@@ -39,9 +39,9 @@ Section Loop.
         eauto.
   Qed.
 
-  Lemma loop_fulfills k a c :
-    loop k a = Some c ->
-    p c = true.
+  Lemma loop_fulfills k a b :
+    loop k a = Some b ->
+    p b = true.
   Proof.
     revert a; induction k; intros; cbn in *.
     - now destruct (p a) eqn:E; inv H.
@@ -55,14 +55,13 @@ Section Loop.
     loop k a = Some a.
   Proof. intros. destruct k; cbn; now rewrite H. Qed.
 
-  Lemma loop_eq_0 k a c :
+  Lemma loop_eq_0 k a b :
     p a = true ->
-    loop k a = Some c ->
-    c = a.
+    loop k a = Some b ->
+    b = a.
   Proof. intros H1 H2. eapply (loop_0 k) in H1. congruence. Qed.
 
-  
-  Lemma loop_monotone (k1 k2 : nat) (a c : A) : loop k1 a = Some c -> k1 <= k2 -> loop k2 a = Some c.
+  Lemma loop_monotone (k1 k2 : nat) (a b : A) : loop k1 a = Some b -> k1 <= k2 -> loop k2 a = Some b.
   Proof.
     revert a k2; induction k1 as [ | k1' IH]; intros a k2 HLoop Hk; cbn in *.
     - destruct k2; cbn; destruct (p a); now inv HLoop.
