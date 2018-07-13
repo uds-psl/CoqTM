@@ -149,7 +149,7 @@ Section MatchOption.
                 end).
 
   Local Instance Retract_sigOption_sigSum :
-    Retract (sigSum sigX (FinType (EqType Empty_set))) (sigOption sigX) :=
+    Retract (sigSum sigX Empty_set) (sigOption sigX) :=
     {|
       Retr_f x := match x : (sigSum sigX (FinType (EqType Empty_set))) with
                   | sigSum_X a => sigOption_X a

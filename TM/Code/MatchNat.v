@@ -21,7 +21,7 @@ Section MatchNat.
           (fun o => match o with
                  | Some (inr sigNat_S) => Return (Write (inl START)) true (* S *)
                  | Some (inr sigNat_O) => Return (Move L) false (* O *)
-                 | _ => Return (Nop) true (* invalid input *)
+                 | _ => Return (Nop) default (* invalid input *)
                  end).
 
   Definition MatchNat_steps := 5.
