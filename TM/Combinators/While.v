@@ -7,7 +7,7 @@ Section While.
   Variable sig : finType.
 
   Variable F : finType.
-  (** Parteter [None] indicates continueing, [Some f] means breaking out of the loop and terminating in the partition [f]. *)
+  (** Partition [None] indicates continueing, [Some f] means breaking out of the loop and terminating in the partition [f]. *)
   Variable pM : pTM sig (option F) n.
 
   Definition While_trans :
