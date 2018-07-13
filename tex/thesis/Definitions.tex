@@ -13,7 +13,7 @@ Ricciotti \cite{asperti2015}.  We define basic machines and prove their correctn
 \label{sec:notational-conventions}
 
 The symbols $\Unit$, $\Bool$, $\Nat$, $X \times Y$, $X + Y$, $\Option(X)$, and $\List(X)$ stand for the well-known standard types.  $\Type$ stands for
-the type of types and $\Prop$ for the type of propositions.  The unit element $\unit$ is the only element of $\Unit$.  $\sum_{a:A} B$ denote sigma
+the type of types and $\Prop$ for the type of propositions.  The unit element $\unit$ is the only element of $\Unit$.  $\sum_{a:A} B(a)$ denote sigma
 types, i.e.\ depended pairs, with the projections $\pi_1$ and $\pi_2$.  We write $(a,b)$ for elements of sigma types.  For tuples
 $A = (a, b, c, \cdots)$, we use subscripts ($a_A$) for the projections.  We use the symbols $\None$ and $\Some x$ as elements of the type
 $\Option(X)$.  $\Fin_n := \setOf{0, \dots, n-1}$ is the type with $k$ elements.  We use indices $i:\Fin_n$ for vector-access $x[i]$ with $x:X^n$,
@@ -23,7 +23,7 @@ where $X^n$ denotes the type of vectors over $X$ of size $n$.  We usually leave 
 \subsection{Relations}
 \label{sec:relations}
 
-We define the semantics of concrete Turing machines in terms of relations.  We use write $R \subseteq A \times B$ as a notation for
+We define the semantics of concrete Turing machines in terms of relations.  We write $R \subseteq A \times B$ as a notation for
 $R : A \to B \to \Prop$.  We call relations of the form $R \subseteq A \times (B \times A)$ \emph{partitioned relations} and write
 $R \subseteq A \times B \times C$.  We use lambda-notation to define relations.  We identify unit-partitioned relations
 $R \subseteq A \times \Unit \times A$ with binary relations $R \subseteq A \times A$.
@@ -33,9 +33,9 @@ We use the following standard relational operators:
 \begin{definition}[Relational operators]
   Let $R, S \subseteq A \times B$ and $T \subseteq B \times C$.
   \begin{align*}
-    R \cap S &:= \lam{x~y}{R~x~y \land S~x~y} \\
-    R \cup S &:= \lam{x~y}{R~x~y \lor S~x~y} \\
-    R \circ T &:= \lam{x~z}{\exists y.~R~x~y \land S~y~z}
+    R \cap S  &:= \lambda (x~y).~R~x~y \land S~x~y \\
+    R \cup S  &:= \lambda (x~y).~R~x~y \lor S~x~y \\
+    R \circ T &:= \lambda (x~z).~\exists y.~R~x~y \land S~y~z
   \end{align*}
 \end{definition}
 
@@ -60,7 +60,7 @@ We have an operator that restricts the partition $B$ of a partitioned relation a
   \label{def:rel-restrict}
   Let $R \subseteq A \times B \times A$ and $y:B$.
   \[
-    R \at y := \lam{x~z}{R~x~(y,z)}
+    R \at y := \lambda(x~z).~R~x~(y,z)
   \]
 \end{definition}
 
@@ -69,7 +69,7 @@ Similarly, we can define an operator that takes a binary relation and yields a p
   \label{def:rel-fix}
   Let $R \subseteq A \times A$ and $y : B$.
   \[
-    R \att y := \lam{x~(y', z)}{R~x~z \land y'=y}
+    R \att y := \lambda x~(y', z).~R~x~z \land y'=y
   \]
 \end{definition}
 
@@ -87,9 +87,9 @@ Similarly, we can define an operator that takes a binary relation and yields a p
 
 Retractions are a natural way to formalise injections $f$ together with a partial inversion function $f^{-1}$.
 
-\begin{definition}[Retract]
+\begin{definition}[Retraction]
   \label{def:retract}
-  Let $A$ and $B$ be types.  A pair of functions $f : A \to B$, $f^{-1} : B \to \Option(A)$ is called a retraction between $A$ and $B$, if
+  Let $A, B : \Type$.  A pair of functions $f : A \to B$, $f^{-1} : B \to \Option(A)$ is called a retraction between $A$ and $B$, if
   $ \forall x~y.~f^{-1}(y) = \Some x \iff y = f(x). $
 \end{definition}
 
@@ -102,7 +102,7 @@ diagram:
   \end{tikzcd}
 \]
 The direction from left to right of Definition~\ref{def:retract} means that $f^{-1}$ only maps values back that are in the image of $f$.  This
-property is sometimes called \emph{tightness}.
+property is called \emph{tightness}.
 
 We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is a retraction.
 
@@ -152,13 +152,13 @@ We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is
 
 \begin{definition}[Composition of retractions]
   \label{def:retract-compose}
-  Let $f : A \hookrightarrow B$ and $g : B \hookrightarrow C$.  Then $f \circ g : A \hookrightarrow C$ defined as followed is a retraction.
+  Let $f : A \hookrightarrow B$ and $g : B \hookrightarrow C$.  Then $f \circ g : A \hookrightarrow C$ is defined as the following retraction:
   \begin{alignat*}{2}
     & (f \circ g)      & (a) &:= g(f(a)) \\
     & (f \circ g)^{-1} & (c) &:=
     \begin{cases}
-      \Some a & g^{-1}(c) = \Some b \land f^{-1}(b) = \Some a \\
-      \None   & \text{else}
+      f^{-1}(b) & g^{-1}(c) = \Some{b} \\
+      \None & g^{-1}(c) = \None
     \end{cases}
   \end{alignat*}
 \end{definition}
@@ -179,12 +179,12 @@ We use the definition of \emph{multi-tape Turing machines} and their semantics f
 
 \begin{definition}[Multi-tape Turing machine]
   \label{def:mTM}
-  An \emph{$n$-tape Turing machine} \footnote{Asperti and Ricciotti~\cite{asperti2015} restrict this definition to machines with $n>0$.  We do not
-    have this restriction.  We actually define a $0$-tape machine $\MS{Null}$, see~\ref{sec:Null}.}  over a finite alphabet $\Sigma$ is a tuple
+  An \emph{$n$-tape Turing machine}\footnote{Asperti and Ricciotti~\cite{asperti2015} restrict this definition to machines with $n>0$.  We do not have
+    this restriction.  We actually define a $0$-tape machine $\MS{Null}$, see Section~\ref{sec:Null}.} over a finite alphabet $\Sigma$ is a tuple
   $M = (Q, \delta, start, halt)$ where
   \begin{itemize}
   \item $Q$ is a finite type
-  \item $\delta \from Q \times (\Option~\Sigma)^n \to Q \times (\Option~\Sigma \times \MS{Move})^n$
+  \item $\delta \from Q \times \left(\Option(\Sigma)\right)^n \to Q \times \left(\Option(\Sigma) \times \MS{Move}\right)^n$
   \item $start:Q$
   \item $halt \from Q \to \Bool$ 
   \end{itemize}
@@ -208,9 +208,9 @@ both partitioned and unpartitioned machines $\TM_\Sigma^n$.  It should however b
 unpartitioned machine.
 
 On a \emph{tape}, arbitrary much memory can be allocated.  However every tape has only finitely many symbols, i.e.\ there is a left-most and a
-right-most symbol.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol on which the (read/write) head of tape is.  It is
-essential that the symbol lists are ordered such that the head of the list is the symbol next to the symbol $m$.  With other words, $ls$ is stored in
-reversed order.
+right-most symbol.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol under which the (read/write) head of tape is.  It
+is convenient that the symbol lists are ordered such that the head of the list is the symbol next to the symbol $m$.  With other words, $ls$ is stored
+in reversed order.
 
 There are three cases where there is no current symbol: the tape can be completely empty, or the head can be to the left (or right) outermost of the
 non-empty tape.  Formally, tapes are defined inductively:
@@ -256,17 +256,16 @@ The function $\MS{mv} \from \Move \to \Tape_\Sigma \to \Tape_\Sigma$ moves a tap
 \begin{definition}[Tape movement]
   \footnotesize
   \begin{alignat*}{4}
-    & \MS{mv}~L~(\MS{leftof}~r~rs)               &&:= \MS{leftof}~r~rs
-    &~~~&
-      \MS{mv}~R~(\MS{leftof}~r~rs)               &&:= \MS{midtape}~\nil~r~rs \\
-    & \MS{mv}~L~(\MS{midtape}~\nil~m~rs          &&:= \MS{leftof}~m~rs
-    && \MS{mv}~R~(\MS{midtape}~ls~m~\nil         &&:= \MS{rightof}~m~ls \\
-    & \MS{mv}~L~(\MS{midtape}~(l \cons ls)~m~rs  &&:= \MS{midtape}~ls~l~(m \cons rs)
-    && \MS{mv}~R~(\MS{midtape}~ls~m~(r \cons rs) &&:= \MS{midtape}~(m \cons ls)~r~rs \\
-    & \MS{mv}~L~(\MS{rightof}~l~ls)              &&:= \MS{midtape}~ls~l~\nil
-    && \MS{mv}~R~(\MS{rightof}~l~ls)             &&:= \MS{rightof}~l~ls \\
-    & \MS{mv}~\_~(\MS{niltape})                  &&:= \MS{niltape}
-    && \MS{mv}~N~t                               &&:= t
+    & \MS{mv}~L~(\MS{leftof}~r~rs)                &&:= \MS{leftof}~r~rs
+    && \MS{mv}~R~(\MS{leftof}~r~rs)               &&:= \MS{midtape}~\nil~r~rs \\
+    & \MS{mv}~L~(\MS{midtape}~\nil~m~rs           &&:= \MS{leftof}~m~rs
+    && \MS{mv}~R~(\MS{midtape}~ls~m~\nil          &&:= \MS{rightof}~m~ls \\
+    & \MS{mv}~L~(\MS{midtape}~(l \cons ls)~m~rs)  &&:= \MS{midtape}~ls~l~(m \cons rs)
+    && \MS{mv}~R~(\MS{midtape}~ls~m~(r \cons rs)) &&:= \MS{midtape}~(m \cons ls)~r~rs \\
+    & \MS{mv}~L~(\MS{rightof}~l~ls)               &&:= \MS{midtape}~ls~l~\nil
+    && \MS{mv}~R~(\MS{rightof}~l~ls)              &&:= \MS{rightof}~l~ls \\
+    & \MS{mv}~\_~(\MS{niltape})                   &&:= \MS{niltape}
+    && \MS{mv}~N~t                                &&:= t
   \end{alignat*}
 \end{definition}
 Note that moving further right (or left) when that tape already is to the right (or left) of the symbols, does not change the tape.
@@ -301,8 +300,8 @@ the middle.
 \end{definition}
 
 To define the function $\MS{step} \from \Conf \to \Conf$, we need to know the symbols on the tapes.  Therefore we define a function
-$\MS{current} \from Tape \to \Option(\Sigma)$.  It returns $\None$ if the pointer is not under a symbol, and $\Some a$ if the pointer is under the
-symbol $a$.
+$\MS{current} \from Tape \to \Option(\Sigma)$.  It returns $\None$ if the head is not under a symbol, and $\Some a$ if the head is under the symbol
+$a$.
 
 \begin{definition}[$\MS{current}$]
   \begin{alignat*}{2}
@@ -341,15 +340,15 @@ $\delta$ yielded for it.  The machine ends up in a new step $q'$.
 \end{definition}
 
 To define the execution of a machine, we first define an abstract recursive \emph{loop} function of the type
-$\Loop \from (A \to A) \to (A \to \Bool) \to \Nat \to A \to \Option(A)$, for every $A:\Type$:
+$\Loop \from (A \to A) \to (A \to \Bool) \to A \to \Nat \to \Option(A)$, for every $A:\Type$:
 
 \begin{definition}[$\Loop$]
   \begin{align*}
-    \Loop~f~h~k~s :=
+    \Loop~f~h~a~k :=
     \begin{cases}
-      \Some{s}                   & h(s) \\
-      \None                      & \lnot h(s) \land k = 0 \\
-      \Loop~f~h~(k-1)~(f~s)  & \lnot h(s) \land k > 0
+      \Some{a}               & h(a) \\
+      \None                  & \lnot h(a) \land k = 0 \\
+      \Loop~f~h~(f~a)~(k-1)  & \lnot h(a) \land k > 0
     \end{cases}
   \end{align*}
 \end{definition}
@@ -357,18 +356,18 @@ $\Loop \from (A \to A) \to (A \to \Bool) \to \Nat \to A \to \Option(A)$, for eve
 We can show some basic facts about $\Loop$.
 \begin{lemma}[Basic facts about $\Loop$]
   \label{lem:loop}
-  Let $k,l : \Nat$ and $x,s:A$.
+  Let $k,l : \Nat$ and $a,b,b':A$.
   \begin{enumerate}
   \item \label{lem:loop_monotone}
-    If $k \le l$ and $\Loop~f~h~k~s = \Some x$, then $\Loop~f~h~l~s = \Some x$.
+    If $k \le l$ and $\Loop~f~h~a~k = \Some{b}$, then $\Loop~f~h~a~l = \Some{b}$.
   \item \label{lem:loop_injective}
-    If $\Loop~f~h~k~s = \Some x$ and $\Loop~l~f~k~s = \Some y$, then $x = y$.
+    If $\Loop~f~h~a~k = \Some{b}$ and $\Loop~f~h~a~l = \Some{b'}$, then $b = b'$.
   \item \label{lem:loop_fulfills}
-    If $\Loop~f~h~k~s = \Some{x}$, then $h(x) = \true$.
+    If $\Loop~f~h~a~k = \Some{b}$, then $h(b) = \true$.
   \item \label{lem:loop_0}
-    If $h~x = \true$, then $\Loop~f~h~k~s = \Some{s}$.
+    If $h~a = \true$, then $\Loop~f~h~a~k = \Some{a}$.
   \item \label{lem:loop_eq_0}
-    If $h~s = \true$ and $\Loop~f~h~k~a = \Some{x}$, then $x=s$.
+    If $h~a = \true$ and $\Loop~f~h~a~k = \Some{b}$, then $a=b$.
   \end{enumerate}
 \end{lemma}
 \begin{proof}
@@ -377,18 +376,17 @@ We can show some basic facts about $\Loop$.
 \end{proof}
 
 
-We instantiate the abstract $\Loop$ function and get a function $\MS{exec} \from \Tape^n \to \Nat \to \Option(\Conf)$ that executes $k$ steps
-of the machine, given initial tapes $t: \Tape^n$:
-
+We instantiate the abstract $\Loop$ function and get a function $\MS{loopM} \from \Conf \to \Nat \to \Option(\Conf)$ that executes $k$ steps of the
+machine:
 \begin{definition}[Machine execution]
   \begin{alignat*}{3}
     \MS{initConf}   &~t         &&:= (t, start) \\
     \MS{haltConf}   &~(t, q)    &&:= halt(q) \\
-    \MS{loopM}      &~c~k       &&:= \Loop~\MS{step}~\MS{haltConf}~k~c
+    \MS{loopM}      &~c~k       &&:= \Loop~\MS{step}~\MS{haltConf}~c~k
   \end{alignat*}
 \end{definition}
 
-We write $M(c) \terminates^k c'$ for $\MS{loopM}~k~c = \Some {c'}$ and $M(t) \terminates^k c$ for $M(\MS{initConf}~t) \terminates^k c$.
+We write $M(c) \terminates^k c'$ for $\MS{loopM}~c~k = \Some {c'}$ and $M(t) \terminates^k c$ for $M(\MS{initConf}~t) \terminates^k c$.
 
 All definitions, except partitioned machines are from Asperti and Ricciotti \cite{asperti2015}, with similar names.  However, the $\Loop$ function
 was slightly changed for convenience, so that it needs zero steps when the (abstract) state is a halting state.
@@ -415,8 +413,8 @@ The correctness part is captured by \emph{realisation} of a (partitioned) relati
 If $M \vDash R$, we say that $M$ realises the relation $R$.  Informally, this means that the output of the machine is correct (i.e.\ is in the
 relation), if the machine terminates.
 
-The runtime part of the semantics implies termination of the machine on certain inputs.  It also links the input $t:\Tape_\Sigma^n$ to the number of
-steps the machine needs for the computation.
+The runtime part of the semantics implies termination of the machine on certain inputs.  It links the input $t:\Tape_\Sigma^n$ to the number of steps
+the machine needs for the computation.
 
 \begin{definition}[Termination on a runtime relation]
   \label{def:TerminatesIn}
@@ -424,7 +422,7 @@ steps the machine needs for the computation.
   \[
     M \downarrow T :=
     \forall t~k.~T~t~k \rightarrow
-    \exists c.~M \terminates^k c.
+    \exists c.~M (t) \terminates^k c.
   \]
 \end{definition}
 
@@ -463,21 +461,20 @@ For machines that always terminate in a constant number of steps, it is useful t
 
 \begin{lemma}[Monotonicity of $M \vDash^k R$]
   \label{lem:RealiseIn_monotone}
-  If $M \vDash^k R$, $k \leq k'$, and $R \subseteq R'$, then \\
-  $M \vDash^{k'} R'$.
+  If $M \vDash^{k'} R'$, $k' \leq k$, and $R' \subseteq R$, then \\
+  $M \vDash^{k} R$.
 \end{lemma}
 
 Asperti and Ricciotti \cite{asperti2015} make a distinction between weak and strong realisation, where the strong version implies termination for
-every input.  We use their weak realisation extended with the finite partition $F$.  They also have no notion of runtime.
+every input, however, in an uncertain number of steps.  We use their weak realisation extended with the finite partition $F$.  They also have no
+notion of runtime.
 
 
 \section{Basic Machines}
 \label{sec:basic_machines}
 
-
-We define several classes of \emph{basic} one-tape machines.  All complex machines we will build later, will be based on these basic machines.  In the
-next chapter, we will show how to combine these basic machines and build complex machines.
-
+We define several classes of \emph{basic} machines.  All complex machines we build are based on these basic machines.  In the next chapter, we show
+how to combine these basic machines and build complex machines.
 
 \subsection{Null}
 \label{sec:Null}
@@ -493,23 +490,15 @@ steps.
     Q          &:= \Unit \\
     start      &:= \unit \\
     \delta ~\_ &:= (\unit, \nil) \\
-    halt   ~\_ &:= \true \\
+    halt   ~\_ &:= \true
   \end{align*}
 \end{definition}
 Note that if we have an unpartitioned machine $M:\TM_\Sigma^n$, we implicitly partition it over $\Unit$ with $part(q)=\unit$.
 
 % The correctness relation says exactly that the tapes don't change:
-The correctness relation is the (unit-partitioned) universal relation, because empty vectors do not have information.
+The correctness relation is the universal relation, because empty vectors do not have information.
 \begin{lemma}[Correctness of $\MS{Null}$]
-  \label{lem:Null_Sem}
-  ~
-  \[
-    \MS{Null} \vDash^0 \MS{NullRel}.
-  \]
-  with
-  \[
-    NullRel := \lambda~t~t'.~ \True.
-  \]
+  \label{lem:Null_Sem} $\MS{Null} \vDash^0 \MS{NullRel}$ with $NullRel := \lambda~t~t'.~ \True$.
 \end{lemma}
 \begin{proof}
   By execution.  The machine terminates after zero steps in the start state.
@@ -518,7 +507,8 @@ The correctness relation is the (unit-partitioned) universal relation, because e
 \subsection{DoAct}
 \label{sec:DoAct}
 
-Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action $a$ and terminate after one step.
+Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action $a:\Act$ (i.e.\ they optionally write a symbol and move the tape) and
+terminate after this step.
 \begin{definition}[$\MS{DoAct}~a$]
   \label{def:DoAct}
   Let $a:\MS{Act}$.
@@ -526,17 +516,12 @@ Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action
     Q          &:= \Bool \\
     start      &:= \false \\
     \delta ~\_ &:= (\true, \Vector{a}) \\
-    halt   ~ b &:= b \\
+    halt   ~ b &:= b
   \end{align*}
 \end{definition}
 The semantics of $\MS{DoAct}$ is easily expressed using $\MS{doAct}$ (see Definition~\ref{def:step}):
 \begin{lemma}[Correctness of $\MS{DoAct}$]
-  \label{lem:DoAct_Sem}
-  ~
-  \[
-    \MS{DoAct}~a \vDash^1 \MS{DoActRel}~a.
-  \]
-  with
+  \label{lem:DoAct_Sem} $\MS{DoAct}~a \vDash^1 \MS{DoActRel}~a$ with
   \[
     \MS{DoActRel}~a := \lambda~t~t'.~ t' = \MS{doAct}~t~a.
   \]
@@ -565,9 +550,8 @@ We define some abbreviations:
 \label{sec:basic_machines-Read}
 
 $Read : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of partitioned machines.  The machines of this class have one state for each character
-of the alphabet.  They read a symbol and terminate in the state that corresponds to this symbol.  They have a distinct state for the case that the
-current symbol is $\None$.
-
+of the alphabet.  They read a symbol and terminate in the state that corresponds to this symbol.  They also have a distinct state for the case that
+the current symbol is $\None$.
 
 \begin{definition}[$\MS{Read}$]
   \begin{align*}
@@ -588,12 +572,7 @@ current symbol is $\None$.
 
 
 \begin{lemma}[Correctness of $\MS{Read}$]
-  \label{lem:Read_Sem}
-  ~
-  \[
-    \MS{Read}~f \vDash^0 \MS{ReadRel}~f.
-  \]
-  where
+  \label{lem:Read_Sem} $\MS{Read}~f \vDash^0 \MS{ReadRel}~f$ with
   \[
     \MS{ReadRel} := \lambda~t~y~t'.~ y = \MS{current}~t[0] \land t' = t
   \]

@@ -1,10 +1,9 @@
 \chapter{Combining Turing Machines}
 \label{chap:combining}
 
-In Chapter \ref{chap:definitions}, we have defined the notion of multi-tape Turing machines and basic machines.  In this chapter, we want to construct
-more complex machines, for example a single-tape machine that moves the head to the right or to a certain symbol.
-We define control flow operators, like ``match'', ``if then else'', ``sequential composition'', and ``while''.
-As a result, we get a shallow-embed-ed language for programming multi-tape Turing machines in an imperative way.
+In Chapter \ref{chap:definitions}, we have defined the notion of multi-tape Turing machines and basic machines.  In this chapter, we define control
+flow operators, like ``match'', ``if then else'', ``sequential composition'', and ``while''.  As a result, we get a shallow-embeded language for
+programming multi-tape Turing machines in an imperative way.
 
 \section{Match}
 \label{sec:match}
@@ -43,14 +42,14 @@ canonical value.
 \begin{figure}
   \center
   \input{fig-MatchExample}
-  \caption{Example of a $\MS{Match}$.  The left box stands for the first machine $M_1:\TM_\Sigma^n(\Bool)$.  The states $q_1$ and $q_2$ are mapped to
-    $\true$, $q_3$ is mapped to $\false$.  After the $\MS{Match}$ reaches one of the injections of the terminal states $q_1, \cdots, q_3$ of $M_1$, it
+  \caption{Example of a $\MS{Match}$.  The left box stands for the first machine $M_1:\TM_\Sigma^n(\Bool)$.  The final states $q_1$ and $q_2$ are
+    mapped to $\true$ and $q_3$ to $\false$.  After $\MS{Match}$ reaches one of the injections of the terminal states $q_1, q_2, q_3$ of $M_1$, it
     continues its execution either in the top case machine $M_2$ or in the bottom case machine $M_3$.  The halting states of $\MS{Match}$ are exactly
     the injections of the halting states of the case-machines.}
   \label{fig:match}
 \end{figure}
 
-\todo{Maybe use parenthesises, e.g.\ $\Match(M,M')$ and $\MS{MatchRel}(R,R')$ for better readability}
+\todo{Maybe use parenthesises, e.g.\ $\Match(M,M')$ and $MatchRel(R,R')$ for better readability}
 
 
 $\MS{Match}~M~M'$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
@@ -62,20 +61,20 @@ a machine $M'~y$, it terminates.  The correctness part of the semantics can be e
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$ and $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$ for all $y:F$.
   If $M \vDash R$ and $M'~y \vDash R'~y$ for all $y:F$, then
   \[
-    \MS{Match}~M~M' \vDash \MS{MatchRel}~R~R'
+    \MS{Match}~M~M' \vDash MatchRel~R~R'
   \]
   with
   \[
-    \MS{MatchRel}~R~R' := \bigcup_{y:F} \bigl( R\at y \circ R'~y \bigr).
+    MatchRel~R~R' := \bigcup_{y:F} \bigl( R\at y \circ R'~y \bigr).
   \]
 \end{lemma}
 
-Note that in the relation $\MS{MatchRel}$, we compose the unpartitioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the
-partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~M'$ terminates in the partition of
+Note that in the relation $MatchRel$, we compose the unpartitioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the
+partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~M'$ terminates in a partition of
 $M'~y$, which has type $F'$.
 
 To specify the runtime of $\MS{Match}~M~M'$, we need to know the runtime relation in that $M$ terminates, and for each $y:F$ the runtime of $M'~y$.
-We also need to know the correctness of $M$, because the runtime of $M'~y$ depends on the output of $M$, which is the input of $M~y$.
+We also need to know the correctness of $M$, because the runtime of $M'~y$ depends on the output of $M$, which is the input of $M'~y$.
 
 \begin{lemma}[Runtime of $\MS{Match}~M~M'$]
   \label{lem:Match_Terminates}
@@ -85,7 +84,7 @@ We also need to know the correctness of $M$, because the runtime of $M'~y$ depen
   \[
     \MS{MatchT}~R~T~T' :=
     \lambda~t~k.~ \exists~k_1~k_2.~T~t~k_1 \land 1+k_1+k_2 \le k \land
-      \forall~y~t'.~ R~t~y~t' \rightarrow T'~y~t'~k_2
+      \forall~y~t'.~ R~t~(y,t') \rightarrow T'(y)~t'~k_2.
   \]
 \end{lemma}
 
@@ -94,7 +93,7 @@ We can combine the correctness and runtime lemma, in case $M$ and every $M'~y$ t
   \label{lem:Match_RealiseIn}
   Let $k_1, k_2:\Nat$.\\
   If $M \vDash^{k_1} R$ and $M'~y \vDash^{k_2} R'~y$ for every $y:F$, then
-  \[ \MS{Match}~M~M' \vDash^{1+k_1+k_2} \MS{MatchRel}~R~R'. \]
+  \[ \MS{Match}~M~M' \vDash^{1+k_1+k_2} MatchRel~R~R'. \]
 \end{lemma}
 \begin{proof}
   Follows with the Lemmas~\ref{lem:Realise_total},~\ref{lem:Match_Realise}, and~\ref{lem:Match_Terminates}.
@@ -113,7 +112,7 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
   Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F')$.
   \[
     \If{M_1}{M_2}{M_3} := \Match~M_1~
-    \left(\lam{b}{\cond{b}{M_2}{M_3} \right})
+    \left(\lambda b.~\cond{b}{M_2}{M_3} \right)
   \]
 \end{definition}
 
@@ -151,21 +150,21 @@ The versions of above lemmas without constant-time termination hold as well.
 \label{sec:match-proofs}
 
 The idea of the proofs of Lemma~\ref{lem:Match_Realise} and Lemma~\ref{lem:Match_Terminates} is to abstract two features of the machine: lifting of
-configurations from one abstract machine to another abstract machines and sequence of two loops.  We formalise these two concepts for abstract
+configurations from one abstract machine to another abstract machines, and sequence of two loops.  We formalise these two concepts for abstract
 machines, i.e.\ we argue on the abstract $\Loop$ function.
 
-For the first feature, \emph{lifting}, we assume two types $A$, $B$ for abstract configurations, an injective function $lift : A \to B$, two step
-functions $f : A \to A$, $f' : B \to B$, and two halting function $h : A \to \Bool$, $h' : B \to \Bool$.  We assume that the step functions $f$ and
-$f'$, which are compatible with $lift$ in non-halting states of $A$.  Formally, this means
+For the first feature, \emph{lifting}, we assume two types $A$, $B$ for abstract configurations, a function $lift : A \to B$, two step functions
+$f : A \to A$, $f' : B \to B$, and two halting function $h : A \to \Bool$, $h' : B \to \Bool$.  We assume that the step functions $f$ and $f'$ are
+compatible with $lift$ in non-halting states of $A$.  Formally, this means
 \begin{equation}
   \label{eq:loop_lift_assumption1}
-  \forall a:A.~\lnot h~x \rightarrow f' (lift~x) = lift (f~x).
+  \forall a:A.~\lnot h(x) \rightarrow f' (lift~x) = lift (f~x).
 \end{equation}
 
-The second assumptions is that $h'$ is compatible with $h$, w.r.t.\ $lift$, formally:
+The second assumption is that $h'$ and $h$ are compatible w.r.t.\ $lift$; formally:
 \begin{equation}
   \label{eq:loop_lift_assumption2}
-  \forall a:A.~h'(lift~x)=h~x.
+  \forall a:A.~h'(lift~x)=h(x).
 \end{equation}
 
 Under these two assumptions we can show two lemmas that essentially say that the second abstract machine $B$ simulates the first machine $A$.
@@ -174,8 +173,8 @@ Under these two assumptions we can show two lemmas that essentially say that the
   Under the assumptions~(\ref{eq:loop_lift_assumption1}) and~(\ref{eq:loop_lift_assumption2}):
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(a~a' : A). \\
-    & \quad \Loop~f ~h ~k~a = \Some{a'} \rightarrow \\
-    & \quad \Loop~f'~h'~k~(lift~a) = \Some {lift~a'}
+    & \quad \Loop~f ~h ~a        ~k = \Some{a'} \rightarrow \\
+    & \quad \Loop~f'~h'~(lift~a) ~k = \Some {lift~a'}
   \end{alignat*}
 \end{lemma}
 \begin{proof}
@@ -186,8 +185,8 @@ Under these two assumptions we can show two lemmas that essentially say that the
   Under the assumptions~(\ref{eq:loop_lift_assumption1}) and~(\ref{eq:loop_lift_assumption2}):
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(a:A)~(b':B). \\
-    & \quad \Loop~f'~h'~k~(lift~a) = \Some{b'} \rightarrow \\
-    & \quad \exists (a':A).~\Loop~f~h~k~a = \Some{a'} \land b'=lift~a'
+    & \quad \Loop~f'~h'~(lift~a)~k = \Some{b'} \rightarrow \\
+    & \quad \exists (a':A).~\Loop~f~h~a~k = \Some{a'} \land b'=lift~a'
   \end{alignat*}
 \end{lemma}
 \begin{proof}
@@ -221,15 +220,15 @@ $h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume
   \label{eq:loop_merge_assumption}
   \forall(a:A).~h~a = \false \rightarrow h'~a = \false,
 \end{equation}
-i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state w.r.t.\ $h$.
+i.e.,\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state w.r.t.\ $h$.
 \begin{lemma}[Loop merging]
   \label{lem:loop_merge}
   Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
     & \forall (k_1~k_2:\Nat)~(a_1~a_2~a_3 : A).\\
-    & \quad \Loop~f~h ~k_1      ~a_1 = \Some{a_2} \rightarrow\\
-    & \quad \Loop~f~h'~k_2      ~a_2 = \Some{a_3} \rightarrow\\
-    & \quad \Loop~f~h'~(k_1+k_2)~a_1 = \Some{a_3}.
+    & \quad \Loop~f~h ~a_1~k_1       = \Some{a_2} \rightarrow\\
+    & \quad \Loop~f~h'~a_2~k_2       = \Some{a_3} \rightarrow\\
+    & \quad \Loop~f~h'~a_1~(k_1+k_2) = \Some{a_3}.
   \end{align*}
 \end{lemma}
 \begin{proof}
@@ -240,10 +239,10 @@ i.e.\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state 
   Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
     & \forall (k:\Nat)~(a_1~a_3 : A).\\
-    & \quad \Loop~f~h'~k~a_1 = \Some{a_3} \rightarrow \\
+    & \quad \Loop~f~h'~a_1~k = \Some{a_3} \rightarrow \\
     & \quad \exists (k_1~k_2:\Nat)~(a_2:A).\\
-    & \quad \quad \Loop~f~h~k_1~a_1 = \Some{a_2} \land\\
-    & \quad \quad \Loop~f~h~k_2~a_2 = \Some{a_3} \land\\
+    & \quad \quad \Loop~f~h ~a_1~k_1 = \Some{a_2} \land\\
+    & \quad \quad \Loop~f~h'~a_2~k_2 = \Some{a_3} \land\\
     & \quad \quad k_1 + k_2 \leq k.
   \end{align*}
 \end{lemma}
@@ -256,7 +255,7 @@ Back to the verification of $\Match~M~M'$.  In the following, we simply write $\
 first, the lifted steps of execution of $M$, second, a ``nop'' transition, and third, the lifted steps of the execution of $M'~y$.  We give the
 concrete lifting functions from $M$ to $\Match$ and from $M~y$ to $\Match$:
 \begin{definition}[Liftings of $\Match$]
-  We define the functions \\$liftL : \Conf_M \to \Conf_\Match$ and $liftR_y : \Conf_{M'~y} \to \Conf_\Match$:
+  We define the functions \\$liftL : \Conf_M \to \Conf_\Match$ and $liftR_y : \Conf_{M'(y)} \to \Conf_\Match$ for all $y:F$:
   \begin{alignat*}{2}
     & liftL   & (q, t) &:= (\inl q,      t) \\
     & liftR_y & (q, t) &:= (\inr (y, q), t).
@@ -274,10 +273,10 @@ For the sequential part, we also have to define the lifted halting function of \
 Using Lemma \ref{lem:loop_merge} and \ref{lem:loop_lift}, we can show the lemma we need for runtime:
 \begin{lemma}[Merging parts of executions of $\Match$]
   \label{lem:Match_merge}
-  Let $t : \Tape_\Sigma^n$, $k_1, k_2:\Nat$, $c_1=(q', t') : \Conf_M$ and $c_2=(q'', t'') : \Conf_{M'~y}$.
+  Let $t : \Tape_\Sigma^n$, $k_1, k_2:\Nat$, $c_1 : \Conf_M$ and $c_2 : \Conf_{M'(y)}$.
   \begin{alignat*}{1}
     & M(t) \terminates^{k_1} c_1 \rightarrow\\
-    & \bigl( M'~(part_M~q') \bigr) (t_1) \terminates^{k_2} c_2 rightarrow\\
+    & \bigl( M'~(part_M~q_1) \bigr) (t_1) \terminates^{k_2} c_2 \rightarrow\\
     & \Match(t) \terminates^{1+k_1+k_2} liftR(c_2).
   \end{alignat*}
 \end{lemma}
@@ -285,13 +284,13 @@ Using Lemma \ref{lem:loop_merge} and \ref{lem:loop_lift}, we can show the lemma 
   We apply \ref{lem:loop_merge} and have to show:
   \begin{enumerate}
   \item $\forall a:\Conf_\Match.~ \lnot haltConfL~a \rightarrow \lnot \MS{haltConf}~a$.  This holds trivially by definition.
-  \item $loop~k_1~step_\Match~haltConfL~(\MS{initConf}_\Match~t) =
+  \item $\Loop~step_\Match~haltConfL~(\MS{initConf}_\Match~t)~k_1 =
     \Some{liftL~c1}$.  By definition, we have $\MS{initConf}_\Match~t=liftL(\MS{initConf}_M t)$.  The claim follows with Lemma~\ref{lem:loop_lift}.
-  \item $loop~(1+k_2)~step_\Match~haltConf_\Match~(liftL~c1) =
+  \item $\Loop~step_\Match~haltConf_\Match~(liftL~c1)~(1+k_2) =
     \Some{liftR(c_2)}$.  By definition, we know that the first step must be a ``nop'' transition from
-    $liftL~c_1$ to $liftR~\bigl(\MS{initConf}_{M'(part_M~q')}~t' \bigr)$.
-    It remains to show that
-    $$ loop~k_2~step_\Match~haltConf_\Match~liftR \bigl(\MS{initConf}_{M'(part_M~q')}~t' \bigr) = liftR(c_2).$$
+    $liftL~c_1$ to\\
+    $liftR~\bigl(\MS{initConf}_{M'(part_M~q_1)}~t' \bigr)$.  It remains to show that
+    $$\Loop~step_\Match~haltConf_\Match~liftR \bigl(\MS{initConf}_{M'(part_M~q_1)}~t' \bigr)~k_2 = \Some{liftR(c_2)}.$$
     This follows with Lemma~\ref{lem:loop_merge}.
   \end{enumerate}
 \end{proof}
@@ -301,10 +300,10 @@ The runtime Lemma~\ref{lem:Match_Terminates} follows directly from Lemma~\ref{le
   \label{lem:Match_split}
   Let $t : \Tape_\Sigma^n$, $k : \Nat$, $c : \Conf_\Match$.
   \begin{align*}
-    & \Match(t) \terminates^k outc \rightarrow \\
-    & \exists (k_1~k_2 : \Nat)~(c_1 = (q', t') : \Conf_M)~(c_2 : \Conf_{M'(part_M~q')}). \\
+    & \Match(t) \terminates^k c \rightarrow \\
+    & \exists (k_1~k_2 : \Nat)~(c_1 : \Conf_M)~(c_2 : \Conf_{M'(part_M~q_1)}). \\
     & \quad M(t) \terminates^{k_1} c_1 ~\land~ \\
-    & \quad \bigl( M' (part_M~q') \bigr) (t') \terminates^{k_2} c_2 ~\land~ \\
+    & \quad \bigl( M' (part_M~q_1) \bigr) (t_1) \terminates^{k_2} c_2 ~\land~ \\
     & \quad c = liftR(c_2).
   \end{align*}
 \end{lemma}
@@ -320,9 +319,9 @@ Asperti and Ricciotti~\cite{asperti2015} have a version of Lemma~\ref{lem:loop_l
 \label{sec:While}
 
 
-The machine $\While M$ essentially behaves like a ``do-while'' loop in imperative languages like C.  At the end of the execution of the loop body $M$,
-$M$ decides either to continue or break out of the loop.  If $M$ terminated in the partition $\None$, then the loop is continued, and if $M$ terminated
-in $\Some{y}$, the loop brakes and $\While M$ terminates in $y$.  When $M : \TM_\Sigma^n(\Option(F))$, then $\While M : \TM_\Sigma^n(F)$.
+The machine $\While~M$ essentially behaves like a ``do-while'' loop in imperative languages like C.  At the end of the execution of the loop body $M$,
+$M$ decides either to continue or break out of the loop.  If $M$ terminated in the partition $\None$, then the loop is continued, and if $M$
+terminated in $\Some{y}$, the loop breaks and $\While~M$ terminates in $y$.  When $M : \TM_\Sigma^n(\Option(F))$, then $\While~M : \TM_\Sigma^n(F)$.
 
 \begin{definition}[$\MS{While}~M$]
   \label{def:While}
@@ -333,8 +332,7 @@ in $\Some{y}$, the loop brakes and $\While M$ terminates in $y$.  When $M : \TM_
     & start          &~:=~& start_M \\
     \delta ~& (q, s) &~:=~&
     \begin{cases}
-      (q,       (\None, N)^n) & halt_M(q) \land part_M(q) = \Some y \\
-      (start_M, (\None, N)^n) & halt_M(q) \land part_M(q) = \None \\
+      (start_M, (\None, N)^n) & halt_M(q) \\
       \delta_M (q,s)    & \lnot halt_M(q)
     \end{cases} \\
     halt ~& q      &~:=~& halt_M(q) \land \MS{isSome}(part_M(q)) \\
@@ -358,7 +356,7 @@ in $\Some{y}$, the loop brakes and $\While M$ terminates in $y$.  When $M : \TM_
 In Definition~\ref{def:While}, we have to assume that $F$ is inhabited.  However, the choice of $def:F$ is semantically irrelevant, because $\While~M$
 only halts in states where $part_M(q)$ has a $\Some{.}$ value.
 
-The correctness of $\MS{While}$ can be easily expressed using the following relation:
+The correctness of $\MS{While}$ can be expressed using the following relation:
 
 \begin{definition}[$WhileRel$]
 \end{definition}
@@ -366,13 +364,13 @@ The correctness of $\MS{While}$ can be easily expressed using the following rela
 \begin{lemma}[Correctness of $\MS{While}$]
   \label{lem:While_Realise}
   Let $R \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.
-  If $M \vDash R$, then $\While~M \vDash \MS{WhileRel}~M$, where
+  If $M \vDash R$, then $\While~M \vDash WhileRel~M$, where
   $WhileRel~R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$
   is inductively defined by the following two rules:
   \[
-    \inferrule{R~t~(\None, t') \and WhileRel~R~t'~(y, t'')}{WhileRel~R~t~(y, t'')}
-    \quad
     \inferrule{R~t~(\Some y, t')}{WhileRel~R~t~(y, t')}
+    \quad
+    \inferrule{R~t~(\None, t') \and WhileRel~R~t'~(y, t'')}{WhileRel~R~t~(y, t'')}
   \]
 \end{lemma}
 
@@ -380,7 +378,7 @@ We can also express the correctness relation of $\While$ using the Kleene star:
 \begin{lemma}[Alternative specification of $\While~M$]
   ~
   \[
-    \MS{WhileRel}~R \equiv (R \at \None)^* \circ \Bigl( \bigcup_{y:F} \bigl( R \at {\Some y} \bigr) \att y \Bigr)
+    WhileRel~R \equiv (R \at \None)^* \circ \Bigl( \bigcup_{y:F} \bigl( R \at {\Some y} \bigr) \att y \Bigr)
   \]
 \end{lemma}
 
@@ -397,8 +395,8 @@ lemma:
   \label{lem:WhileInduction}
   ~
   \begin{alignat*}{1}
-    & \left(\forall t~t'~y.~R' \at{\Some{y}}~t~t' \rightarrow R~t~(y,t')\right) \rightarrow \\
-    & \left(\forall t~t'~t''~y.~R'\at\None~t~t' \rightarrow R~t'~(y, t'') \rightarrow R~t~(y,t'')\right) \rightarrow \\
+    & \left(\forall t~t'~y.~R'~t~(\Some{y}, t') \rightarrow R~t~(y,t')\right) \rightarrow \\
+    & \left(\forall t~t'~t''~y.~R'~t~(\None, t') \rightarrow R~t'~(y, t'') \rightarrow R~t~(y,t'')\right) \rightarrow \\
     & WhileRel~R' \subseteq R
   \end{alignat*}
 \end{lemma}
@@ -431,7 +429,7 @@ However, if we know that $M$ realises $R$ and terminates in $T$, we can show $\W
   \end{multline*}
 \end{lemma}
 
-Note that we defined concrete correctness and termination relations for all combinators, but there is no known ``direct'' runtime Relation for
+Note that we define concrete correctness and termination relations for all combinators, but there is no known ``direct'' runtime Relation for
 $\While$.  The best we could hope would be something like this relation:
 
 \begin{definition}[Direct runtime relation for $\While$?]
@@ -484,11 +482,11 @@ The first lemma says that an execution of $\While$ consists of an execution of $
 We have two more splitting lemmas, for that case that $\While$ terminated immediately, and for that case that $\While$ continued the loop.
 \begin{lemma}[Splitting, break case]
   \label{lem:While_split_term}
-  Let $c_1 = (q, t)$, $c_2 : \Conf$, $k:\Nat$, and $y:F$.
+  Let $c_1$, $c_2 : \Conf$, $k:\Nat$, and $y:F$.
   \begin{alignat*}{1}
     & \While(c_1) \terminates^k c_2 \rightarrow \\
     & haltConf_M~c_1 \rightarrow \\
-    & part_M(q) = \Some y \rightarrow \\
+    & part_M(q_1) = \Some y \rightarrow \\
     & c_2 = c_1.
   \end{alignat*}
 \end{lemma}
@@ -497,12 +495,12 @@ We have two more splitting lemmas, for that case that $\While$ terminated immedi
 \end{proof}
 \begin{lemma}[Splitting, continue case]
   \label{lem:While_split_repeat}
-  Let $c_1 = (q, t)$, $c_2 : \Conf$, $k:\Nat$.
+  Let $c_1$, $c_2 : \Conf$, $k:\Nat$.
   \begin{alignat*}{1}
     & \While(c_1) \terminates^k c_2 \rightarrow \\
     & haltConf_M~c_1 \rightarrow \\
-    & part_M(q) = \None \rightarrow \\
-    & \exists k'.~k = 1+k' ~\land~ \While(t) \terminates^{k'} c_2.
+    & part_M(q_1) = \None \rightarrow \\
+    & \exists k'.~k = 1+k' ~\land~ \While(c_1) \terminates^{k'} c_2.
   \end{alignat*}
 \end{lemma}
 \begin{proof}
@@ -516,9 +514,9 @@ We now can prove the correctness Lemma~\ref{lem:While_Realise} of $\While$.
   analysis.
   \begin{enumerate}
   \item $part_M(q_2) = \Some{y}$.  Then we know by Lemma~\ref{lem:While_split_term}, that $c_2=c_3$.  It remains to show $WhileRel~t_1~(y, t_2)$.  By
-    applying the second constructor, it is enough to show $R~t_1~(\Some{y}, t_2)$.  This follows from the realisation of $M$.
+    applying the first constructor, it is enough to show $R~t_1~(\Some{y}, t_2)$.  This follows from the realisation of $M$.
   \item $part_M(q_2) = \None$.  By Lemma~\ref{lem:While_split_repeat}, we know that $\While(t_2) \terminates^{k'_2} c_3$ for $k_2 = 1 + k'_2$.  The
-    inductive hypothesis gives $WhileRel~t_2~(part_\While~q_3, t_3)$.  The goal follows by applying the first constructor and the realisation of $M$.
+    inductive hypothesis gives $WhileRel~t_2~(part_\While~q_3, t_3)$.  The goal follows by applying the second constructor and the realisation of $M$.
   \end{enumerate}
 \end{proof}
 
@@ -552,9 +550,8 @@ The runtime Lemma~\ref{lem:While_TerminatesIn} follows similarly, by complete in
 
 We can define a machine operator that ``mirrors'' a machine $M$.  Whenever $M$ makes a transition with a move to $L$, $\MS{Mirror}~M$ moves the head
 to the right instead.  For example, we define a machine $MoveToSymbol$ below, that moves the head of the tape right, until it reads a certain symbol.
-Using this operator, we get a machine ``for free'' that moves the head to the left instead.  Of course, the machine could be parametrised over the
-direction.  However, in the correctness and termination proofs, we had to make case-distinctions over this direction parameter.  Essentially, this
-repeats the proof.  However, we still have to copy or parametrise the correctness and runtime relations.
+Using this operator, we get a machine ``for free'' that moves the head to the left instead.  However, we still have to copy or parametrise the
+correctness and runtime relations.
 
 Using the proving techniques developed in the previous sections, verifying this $Mirror$ operator is very easy.
 
@@ -657,8 +654,8 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
 \section{Partition Operators}
 \label{sec:partition-op}
 
-The operators of the above sections of this Chapter modified the behaviour of the machine.  However, we can also define simple operators that simply
-modify the partitioning function $part : Q \to F$.  This is for example useful, if we want some (partitioned) machine to terminate in one particular
+The operators of the above sections of this Chapter modified the behaviour of the machine.  However, we can also define simple operators that modify
+the partitioning function $part : Q \to F$.  This is for example useful, if we want some (partitioned) machine to terminate in one particular
 partition.
 
 \begin{definition}[$\MS{ChangePartition}$]
@@ -672,7 +669,7 @@ partition.
 \end{definition}
 
 The correctness for these simple operators is obvious.  Note that we do not need lemmas for runtime, because Definition~\ref{def:TerminatesIn} of
-runtime is defined over the bare machine without partitioning function.  So the runtime lemmas for $M$ apply also for $\MS{ChangePartition}$ and
+runtime is defined over the bare machine without partitioning function.  So the runtime lemmas for $M$ also apply for $\MS{ChangePartition}$ and
 $\MS{Return}$
 \begin{lemma}[Correctness of $\MS{ChangePartition}$ and $\MS{Return}$]
   If $M \vDash R$, then
