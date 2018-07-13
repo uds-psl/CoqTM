@@ -163,9 +163,9 @@ Section LiftAlphabet.
     f_equal. unfold tape_move_multi, surjectTapes. apply Vector.eq_nth_iff; intros i ? <-. simpl_tape. apply tape_move_mono_surject.
   Qed.
 
-  Lemma LiftAlphabet_lift (c1 c2 : mconfig tau (states LiftAlphabet_TM) n) (i : nat) :
-    loopM (M := LiftAlphabet_TM) i c1 = Some c2 ->
-    loopM (M := projT1 pMSig) i (surjectConf c1) = Some (surjectConf c2).
+  Lemma LiftAlphabet_lift (c1 c2 : mconfig tau (states LiftAlphabet_TM) n) (k : nat) :
+    loopM (M := LiftAlphabet_TM) c1 k = Some c2 ->
+    loopM (M := projT1 pMSig) (surjectConf c1) k = Some (surjectConf c2).
   Proof.
     unfold loopM. intros H. eapply loop_lift. 3: apply H. auto.
     - intros ? _. apply LiftAlphabet_comp_step.
@@ -182,9 +182,9 @@ Section LiftAlphabet.
   Qed.
 
   Lemma LiftAlphabet_unlift (k : nat) iconf (oconf : mconfig sig (states (projT1 pMSig)) n) :
-    loopM k (surjectConf iconf) = Some oconf ->
+    loopM (surjectConf iconf) k = Some oconf ->
     exists oconf' : mconfig tau (states LiftAlphabet_TM) n,
-      loopM k iconf = Some oconf'.
+      loopM iconf k = Some oconf'.
   Proof.
     intros HLoop. unfold loopM in *.
     apply loop_unlift with (f := step(M:=LiftAlphabet_TM)) (h:=haltConf(M:=LiftAlphabet_TM)) in HLoop as (c'&HLoop&->); eauto.

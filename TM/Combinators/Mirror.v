@@ -75,8 +75,8 @@ Section MirrorTM.
   Qed.
 
   Lemma mirror_split k c1 c2 :
-    loopM (M := projT1 Mirror) k             c1  = Some             c2 ->
-    loopM (M := projT1 pM    ) k (mirrorConf c1) = Some (mirrorConf c2).
+    loopM (M := projT1 Mirror)             c1  k = Some             c2 ->
+    loopM (M := projT1 pM    ) (mirrorConf c1) k = Some (mirrorConf c2).
   Proof.
     unfold loopM. intros HLoop.
     apply loop_lift with (lift := mirrorConf) (f' := step (M:=projT1 pM)) (h' := haltConf (M:=projT1 pM)) in HLoop; auto.
@@ -84,8 +84,8 @@ Section MirrorTM.
   Qed.
 
   Lemma mirror_merge k c1 c2 :
-    loopM (M := projT1     pM) k (mirrorConf c1) = Some (mirrorConf c2) ->
-    loopM (M := projT1 Mirror) k (           c1) = Some (           c2).
+    loopM (M := projT1     pM) (mirrorConf c1) k = Some (mirrorConf c2) ->
+    loopM (M := projT1 Mirror) (           c1) k = Some (           c2).
   Proof.
     unfold loopM. intros HLoop.
     apply loop_unlift with (lift := mirrorConf) (f := step (M:=MirrorTM)) (h := haltConf (M:=MirrorTM)) in HLoop

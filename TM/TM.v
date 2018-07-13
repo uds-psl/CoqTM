@@ -729,7 +729,7 @@ Section Semantics.
   (** A (partitioned) machine [M] realises a (parametrised) relation [R], if: for every tape vectors [t], if [M] with [t] terminates in a configuration [c], then [R (t), (projT2 M (cstate c), ctapes c)], which means that the pair of the input tape vectors, the partition where the machine terminated, and the output tape, must be in the relation [R]. *)
   
   Definition Realise n F (pM : pTM n F) (R : pRel n F) :=
-    forall t i outc, loopM i (initc (projT1 pM) t) = Some outc -> R t (projT2 pM (cstate outc), ctapes outc).
+    forall t k outc, loopM (initc (projT1 pM) t) k = Some outc -> R t (projT2 pM (cstate outc), ctapes outc).
 
   Notation "M '⊨' R" := (Realise M R) (no associativity, at level 30, format "M  '⊨'  R").
 
@@ -740,12 +740,12 @@ Section Semantics.
 
   (** *** Termination/Runtime *)
 
-  (** A machine is said to "terminate in" a relation [T : Rel (tapes sig n) nat], if for every pair of input tape vectors [t] and step numbers [i], there exists an output configuration [cout] that [M] reaches from [t] in [i] steps. *)
+  (** A machine is said to "terminate in" a relation [T : Rel (tapes sig n) nat], if for every pair of input tape vectors [t] and step numbers [k], there exists an output configuration [cout] that [M] reaches from [t] in [k] steps. *)
 
   Definition tRel n := Rel (tapes sig n) nat.
 
   Definition TerminatesIn {n : nat} (M : mTM n) (T : tRel n) :=
-    forall tin k, T tin k -> exists conf, loopM k (initc M tin) = Some conf.
+    forall tin k, T tin k -> exists conf, loopM (initc M tin) k = Some conf.
   
 
   Arguments TerminatesIn { _ } _.
@@ -769,11 +769,11 @@ Section Semantics.
 
   (** Realisation and termination in constant time *)
   Definition RealiseIn n (F : finType) (pM : pTM F n) (R : pRel F n) (k : nat) :=
-    forall input, exists outc, loopM k (initc (projT1 pM) input) = Some outc /\ R input ((projT2 pM (cstate outc)), ctapes outc).
+    forall input, exists outc, loopM (initc (projT1 pM) input) k = Some outc /\ R input ((projT2 pM (cstate outc)), ctapes outc).
   Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
 
   Fact RealiseIn_monotone n (F : finType) (pM : pTM F n) (R1 R2 : pRel F n) k1 k2 :
-    pM ⊨c(k1) R1 -> k1 <= k2 -> R1 <<=2 R2  -> pM ⊨c(k2) R2.
+    pM ⊨c(k1) R1 -> k1 <= k2 -> R1 <<=2 R2 -> pM ⊨c(k2) R2.
   Proof.
     unfold RealiseIn. intros H1 H2 H3 input.
     specialize (H1 input) as (outc & H1). exists outc.
@@ -841,7 +841,7 @@ Section Semantics.
 
     Definition R_canonical : pRel F n :=
       fun t1 '(y, t2) =>
-        exists outc k, loopM (M := projT1 pM) k (initc (projT1 pM) t1) = Some outc /\
+        exists outc k, loopM (M := projT1 pM) (initc (projT1 pM) t1) k = Some outc /\
                   ctapes outc = t2 /\ projT2 pM (cstate outc) = y.
 
     Lemma Realise_R_mTM :
@@ -861,7 +861,7 @@ Section Semantics.
     Variable (M : mTM n).
 
     Definition T_canonical : tRel n :=
-      fun t k => exists outc, loopM (M := M) k (initc M t) = Some outc.
+      fun t k => exists outc, loopM (M := M) (initc M t) k = Some outc.
 
     Lemma T_canonical_TerminatesIn :
       M ↓ T_canonical.
@@ -885,11 +885,11 @@ Notation "M '↓' t" := (TerminatesIn M t) (no associativity, at level 60, forma
 
 
 (* Auxiliary function to actually execute a machine *)
-Definition execTM (sig : finType) (n : nat) (M : mTM sig n) (steps : nat) (tapes : tapes sig n) :=
-  option_map (@ctapes _ _ _) (loopM steps (initc M tapes)).
+Definition execTM (sig : finType) (n : nat) (M : mTM sig n) (tapes : tapes sig n) (k : nat) :=
+  option_map (@ctapes _ _ _) (loopM (initc M tapes) k).
 
-Definition execTM_p (sig : finType) (n : nat) (F : finType) (pM : { M : mTM sig n & states M -> F }) (steps : nat) (tapes : tapes sig n) :=
-  option_map (fun x => (ctapes x, projT2 pM (cstate x))) (loopM steps (initc (projT1 pM) tapes)).
+Definition execTM_p (sig : finType) (n : nat) (F : finType) (pM : { M : mTM sig n & states M -> F }) (tapes : tapes sig n) (k : nat) :=
+  option_map (fun x => (ctapes x, projT2 pM (cstate x))) (loopM (initc (projT1 pM) tapes) k ).
 
 
 

@@ -70,10 +70,10 @@ Section While.
   Qed.
 
   Lemma While_split k (c1 c3 : mconfig sig (states (projT1 pM)) n) :
-    loopM While k c1 = Some c3 ->
+    loopM While c1 k = Some c3 ->
     exists k1 k2 c2,
-      loopM (projT1 pM) k1 c1 = Some c2 /\
-      loopM While k2 c2 = Some c3 /\
+      loopM (projT1 pM) c1 k1 = Some c2 /\
+      loopM While c2 k2 = Some c3 /\
       k1 + k2 <= k.
   Proof.
     unfold loopM. intros HLoop.
@@ -87,12 +87,12 @@ Section While.
   Qed.
 
   Lemma While_split_repeat k (c1 c2 : mconfig sig (states While) n) :
-    loopM While k c1 = Some c2 ->
+    loopM While c1 k = Some c2 ->
     haltConf (M := projT1 pM) c1 = true ->
     projT2 pM (cstate c1) = None ->
     exists k' : nat,
       k = S k' /\
-      loopM While k' (initc While (ctapes c1)) = Some c2.
+      loopM While (initc While (ctapes c1)) k' = Some c2.
   Proof.
     intros HLoop HHalt HRepeat. unfold haltConf in HHalt.
     destruct k as [ | k']; cbn in *.
@@ -102,7 +102,7 @@ Section While.
   Qed.
 
   Lemma While_split_term k (c1 c2 : mconfig sig (states While) n) (f : F) :
-    loopM While k c1 = Some c2 ->
+    loopM While c1 k = Some c2 ->
     haltConf (M := projT1 pM) c1 = true ->
     projT2 pM (cstate c1) = Some f ->
     c2 = c1.
@@ -112,10 +112,10 @@ Section While.
   Qed.
 
   Lemma While_merge_repeat k1 k2 (c1 c2 c3 : mconfig sig (states While) n) :
-    loopM (projT1 pM) k1 c1 = Some c2 ->
+    loopM (projT1 pM) c1 k1 = Some c2 ->
     (projT2 pM) (cstate c2) = None ->
-    loopM While k2 (initc While (ctapes c2)) = Some c3 ->
-    loopM While (k1+(1+k2)) c1 = Some c3.
+    loopM While (initc While (ctapes c2)) k2 = Some c3 ->
+    loopM While c1 (k1+(1+k2)) = Some c3.
   Proof.
     intros HLoop1 HRepeat HLoop2. unfold loopM in *.
     eapply loop_lift with (lift := id) (f' := step (While)) (h' := haltConf (M := projT1 pM)) in HLoop1; cbv [id] in *; cbn; auto; cycle 1.
@@ -128,9 +128,9 @@ Section While.
   Qed.
 
   Lemma While_merge_term k1 (c1 c2 : mconfig sig (states While) n) (f : F) :
-    loopM (projT1 pM) k1 c1 = Some c2 ->
+    loopM (projT1 pM) c1 k1 = Some c2 ->
     (projT2 pM) (cstate c2) = Some f ->
-    loopM While k1 c1 = Some c2.
+    loopM While c1 k1 = Some c2.
   Proof.
     intros HLoop HTerm. unfold loopM in *.
     eapply loop_lift with (lift := id) (f' := step (While)) (h' := haltConf (M := projT1 pM)) in HLoop; cbv [id] in *; cbn; auto; cycle 1.

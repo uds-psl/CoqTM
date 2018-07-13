@@ -13,21 +13,21 @@ Global Open Scope vector_scope.
 Section Loop.
   Variable (A : Type) (f : A -> A) (p : A -> bool).
 
-  Fixpoint loop (k : nat) (a : A) {struct k} :=
+  Fixpoint loop (a : A) (k : nat) {struct k} :=
     if p a then Some a else
       match k with
       | O => None
-      | S k' => loop k' (f a)
+      | S k' => loop (f a) k'
       end.
 
   Lemma loop_step k a :
     p a = false ->
-    loop (S k) a = loop k (f a).
+    loop a (S k) = loop (f a) k.
   Proof. intros HHalt. destruct k; cbn; rewrite HHalt; auto. Qed.
 
   Lemma loop_injective k1 k2 a b b' :
-    loop k1 a = Some b ->
-    loop k2 a = Some b' ->
+    loop a k1 = Some b ->
+    loop a k2 = Some b' ->
     b = b'.
   Proof.
     revert k2 b b' a. induction k1; intros; cbn in *.
@@ -40,7 +40,7 @@ Section Loop.
   Qed.
 
   Lemma loop_fulfills k a b :
-    loop k a = Some b ->
+    loop a k = Some b ->
     p b = true.
   Proof.
     revert a; induction k; intros; cbn in *.
@@ -52,16 +52,16 @@ Section Loop.
 
   Lemma loop_0 k a :
     p a = true ->
-    loop k a = Some a.
+    loop a k = Some a.
   Proof. intros. destruct k; cbn; now rewrite H. Qed.
 
   Lemma loop_eq_0 k a b :
     p a = true ->
-    loop k a = Some b ->
+    loop a k = Some b ->
     b = a.
   Proof. intros H1 H2. eapply (loop_0 k) in H1. congruence. Qed.
 
-  Lemma loop_monotone (k1 k2 : nat) (a b : A) : loop k1 a = Some b -> k1 <= k2 -> loop k2 a = Some b.
+  Lemma loop_monotone (k1 k2 : nat) (a b : A) : loop a k1 = Some b -> k1 <= k2 -> loop a k2 = Some b.
   Proof.
     revert a k2; induction k1 as [ | k1' IH]; intros a k2 HLoop Hk; cbn in *.
     - destruct k2; cbn; destruct (p a); now inv HLoop.
@@ -86,8 +86,8 @@ Section LoopLift.
   Hypothesis step_lift_comp : forall x:A, h x = false -> f' (lift x) = lift (f x).
 
   Lemma loop_lift (k : nat) (a a' : A) :
-    loop (A := A) f  h  k a         = Some a' ->
-    loop (A := B) f' h' k (lift a)  = Some (lift a').
+    loop (A := A) f  h  a        k = Some a' ->
+    loop (A := B) f' h' (lift a) k = Some (lift a').
   Proof.
     revert a. induction k as [ | k']; intros; cbn in *.
     - rewrite halt_lift_comp. destruct (h a); now inv H.
@@ -97,8 +97,8 @@ Section LoopLift.
   Qed.
 
   Lemma loop_unlift (k : nat) (a : A) (b' : B) :
-    loop f' h' k (lift a) = Some b' ->
-    exists a' : A, loop f h k a = Some a' /\ b' = lift a'.
+    loop f' h' (lift a) k = Some b' ->
+    exists a' : A, loop f h a k = Some a' /\ b' = lift a'.
   Proof.
     revert a b'. induction k as [ | k']; intros; cbn in *.
     - rewrite halt_lift_comp in H.
@@ -123,9 +123,9 @@ Section LoopMerge.
   Hypothesis halt_comp : forall a, h a = false -> h' a = false.
 
   Lemma loop_merge (k1 k2 : nat) (a1 a2 a3 : A) :
-    loop f h  k1 a1 = Some a2 ->
-    loop f h' k2 a2 = Some a3 ->
-    loop f h' (k1+k2) a1 = Some a3.
+    loop f h  a1 k1      = Some a2 ->
+    loop f h' a2 k2      = Some a3 ->
+    loop f h' a1 (k1+k2) = Some a3.
   Proof.
     revert a1 a2 a3. induction k1 as [ | k1' IH]; intros a1 a2 a3 HLoop1 HLoop2; cbn in HLoop1.
     - now destruct (h a1); inv HLoop1.
@@ -135,10 +135,10 @@ Section LoopMerge.
   Qed.
 
   Lemma loop_split (k : nat) (a1 a3 : A) :
-    loop f h' k a1 = Some a3 ->
+    loop f h' a1 k = Some a3 ->
     exists k1 a2 k2,
-      loop f h  k1 a1 = Some a2 /\
-      loop f h' k2 a2 = Some a3 /\
+      loop f h  a1 k1 = Some a2 /\
+      loop f h' a2 k2 = Some a3 /\
       k1 + k2 <= k.
   Proof.
     revert a1 a3. revert k; refine (size_recursion id _); intros k IH. intros a1 a3 HLoop. cbv [id] in *.

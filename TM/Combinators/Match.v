@@ -119,9 +119,9 @@ Section Match.
   Lemma Match_merge t (k1 k2 : nat)
         (c1 : mconfig sig (states M1) n)
         (c2 : mconfig sig (states (Mf (p1 (cstate c1)))) n) :
-    loopM k1 (initc M1 t) = Some c1 ->
-    loopM k2 (initc (Mf (p1 (cstate c1))) (ctapes c1)) = Some c2 ->
-    loopM (k1 + (1 + k2)) (initc Match t) = Some (lift_confR c2).
+    loopM (initc M1 t) k1 = Some c1 ->
+    loopM (initc (Mf (p1 (cstate c1))) (ctapes c1)) k2 = Some c2 ->
+    loopM (initc Match t) (k1 + (1 + k2)) = Some (lift_confR c2).
   Proof.
     intros HLoop1 HLoop2. unfold loopM in *.
     apply loop_merge with (h := halt_liftL) (a2 := lift_confL c1).
@@ -144,10 +144,10 @@ Section Match.
   (** The [Match] machine must take the "nop" action if it is in a final state of [M1]. *)
   Lemma step_nop_split (k2 : nat) (c2 : mconfig sig (states M1) n) (outc : mconfig sig (states Match) n) :
     haltConf c2 = true ->
-    loopM (M := Match) k2 (lift_confL c2) = Some outc ->
+    loopM (M := Match) (lift_confL c2) k2 = Some outc ->
     exists k2' c2',
       k2 = S k2' /\
-      loopM (M := Mf (p1 (cstate c2))) k2' (initc _ (ctapes c2)) = Some c2' /\
+      loopM (M := Mf (p1 (cstate c2))) (initc _ (ctapes c2)) k2' = Some c2' /\
       outc = lift_confR c2'.
   Proof.
     unfold loopM. intros HHalt HLoop2. unfold haltConf in HHalt.
@@ -166,10 +166,10 @@ Section Match.
 
 
   Lemma Match_split k t (outc : mconfig sig (states Match) n) :
-    loopM k (initc Match t) = Some outc ->
+    loopM (initc Match t) k = Some outc ->
     exists k1 (c1 : mconfig sig (states M1) n) k2 (c2 : mconfig sig (states (Mf (p1 (cstate c1)))) n),
-      loopM k1 (initc M1 t) = Some c1 /\
-      loopM k2 (initc (Mf (p1 (cstate c1))) (ctapes c1)) = Some c2 /\
+      loopM (initc M1 t) k1 = Some c1 /\
+      loopM (initc (Mf (p1 (cstate c1))) (ctapes c1)) k2 = Some c2 /\
       outc = lift_confR c2.
   Proof.
     unfold loopM. intros H.

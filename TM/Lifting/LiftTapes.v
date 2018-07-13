@@ -133,7 +133,7 @@ Section loop_map.
   Hypothesis step_map_comp : forall a, g (f a) = g a.
 
   Lemma loop_map k a1 a2 :
-    loop f h k a1 = Some a2 ->
+    loop f h a1 k = Some a2 ->
     g a2 = g a1.
   Proof.
     revert a1 a2. induction k as [ | k' IH]; intros; cbn in *.
@@ -198,9 +198,9 @@ Section LiftNM.
     f_equal. apply tape_move_multi_select.
   Qed.
 
-  Lemma LiftTapes_lift (c1 c2 : mconfig sig (states LiftTapes_TM) n) (i : nat) :
-    loopM (M := LiftTapes_TM) i c1 = Some c2 ->
-    loopM (M := projT1 pM) i (selectConf c1) = Some (selectConf c2).
+  Lemma LiftTapes_lift (c1 c2 : mconfig sig (states LiftTapes_TM) n) (k : nat) :
+    loopM (M := LiftTapes_TM) c1 k = Some c2 ->
+    loopM (M := projT1 pM) (selectConf c1) k = Some (selectConf c2).
   Proof.
     intros HLoop.
     eapply loop_lift with (f := step (M := LiftTapes_TM)) (h := haltConf (M := LiftTapes_TM)).
@@ -209,10 +209,10 @@ Section LiftNM.
     - apply HLoop.
   Qed.
 
-  Lemma LiftTapes_comp_eq (c1 c2 : mconfig sig (states LiftTapes_TM) n) (k : Fin.t n) :
-    not_index I k ->
+  Lemma LiftTapes_comp_eq (c1 c2 : mconfig sig (states LiftTapes_TM) n) (i : Fin.t n) :
+    not_index I i ->
     step (M := LiftTapes_TM) c1 = c2 ->
-    (ctapes c2)[@k] = (ctapes c1)[@k].
+    (ctapes c2)[@i] = (ctapes c1)[@i].
   Proof.
     intros HI H. unfold LiftTapes_TM in *.
     destruct c1 as [state1 tapes1] eqn:E1, c2 as [state2 tapes2] eqn:E2.
@@ -221,13 +221,13 @@ Section LiftNM.
     inv H. erewrite Vector.nth_map2; eauto. now rewrite fill_default_not_index.
   Qed.
 
-  Lemma LiftTapes_eq (c1 c2 : mconfig sig (states LiftTapes_TM) n) (i : nat) (k : Fin.t n) :
-    not_index I k ->
-    loopM (M := LiftTapes_TM) i c1 = Some c2 ->
-    (ctapes c2)[@k] = (ctapes c1)[@k].
+  Lemma LiftTapes_eq (c1 c2 : mconfig sig (states LiftTapes_TM) n) (k : nat) (i : Fin.t n) :
+    not_index I i ->
+    loopM (M := LiftTapes_TM) c1 k = Some c2 ->
+    (ctapes c2)[@i] = (ctapes c1)[@i].
   Proof.
     intros Hi HLoop. unfold loopM in HLoop.
-    eapply loop_map with (g := fun c => (ctapes c)[@k]); eauto.
+    eapply loop_map with (g := fun c => (ctapes c)[@i]); eauto.
     intros. now apply LiftTapes_comp_eq.
   Qed.
 
@@ -236,17 +236,17 @@ Section LiftNM.
     LiftTapes ⊨ LiftTapes_Rel I R.
   Proof.
     intros H. split.
-    - apply (H (select I t) i (mk_mconfig (cstate outc) (select I (ctapes outc)))).
-      now apply (@LiftTapes_lift (initc LiftTapes_TM t) outc i).
-    - hnf. intros k HI. now apply (@LiftTapes_eq (initc LiftTapes_TM t) outc i k HI).
+    - apply (H (select I t) k (selectConf outc)).
+      now apply (@LiftTapes_lift (initc LiftTapes_TM t) outc k).
+    - hnf. intros i HI. now apply (@LiftTapes_eq (initc LiftTapes_TM t) outc k i HI).
   Qed.
 
   Lemma LiftTapes_unlift (k : nat)
         (c1 : mconfig sig (states (LiftTapes_TM)) n)
         (c2 : mconfig sig (states (LiftTapes_TM)) m) :
-    loopM (M := projT1 pM) k (selectConf c1) = Some c2 ->
+    loopM (M := projT1 pM) (selectConf c1) k = Some c2 ->
     exists c2' : mconfig sig (states (LiftTapes_TM)) n,
-      loopM (M := LiftTapes_TM) k c1 = Some c2' /\
+      loopM (M := LiftTapes_TM) c1 k = Some c2' /\
       c2 = selectConf c2'.
   Proof.
     intros HLoop. unfold loopM in *. cbn in *.
@@ -265,9 +265,9 @@ Section LiftNM.
     pose proof (@LiftTapes_unlift k (initc LiftTapes_TM initTapes) outc H) as (X&X'&->). eauto.
   Qed.
 
-  Lemma LiftTapes_RealiseIn R i :
-    pM ⊨c(i) R ->
-    LiftTapes ⊨c(i) LiftTapes_Rel I R.
+  Lemma LiftTapes_RealiseIn R k :
+    pM ⊨c(k) R ->
+    LiftTapes ⊨c(k) LiftTapes_Rel I R.
   Proof.
     intros (H1&H2) % Realise_total. apply Realise_total. split.
     - now apply LiftTapes_Realise.
