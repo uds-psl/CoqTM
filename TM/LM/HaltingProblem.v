@@ -119,7 +119,7 @@ Definition initTapes : state -> tapes sigStep^+ 11 :=
 
 
 Definition Halts {sig: finType} {n: nat} (M : mTM sig n) (t : tapes sig n) :=
-  exists outc k, loopM k (initc M t) = Some outc.
+  exists outc k, loopM (initc M t) k = Some outc.
 
 
 Theorem HaltingProblem s :
