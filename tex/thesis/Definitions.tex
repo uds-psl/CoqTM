@@ -405,9 +405,9 @@ The correctness part is captured by \emph{realisation} of a (partitioned) relati
   \[
     M \vDash R :=
     \forall t~k~q~t'.~M(t) \terminates^k (q, t') \rightarrow
-    R~t~(\MS{part}_M~q, t')
+    R~t~(part_M~q, t')
   \]
-  Where $\MS{part}_M \from Q_M \to F$ is the partitioning function of $M$.
+  Where $part_M \from Q_M \to F$ is the partitioning function of $M$.
 \end{definition}
 
 If $M \vDash R$, we say that $M$ realises the relation $R$.  Informally, this means that the output of the machine is correct (i.e.\ is in the

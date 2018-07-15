@@ -178,7 +178,7 @@ Under these two assumptions we can show two lemmas that essentially say that the
   \end{alignat*}
 \end{lemma}
 \begin{proof}
-  By induction over $k:\Nat$.
+  By induction on $k:\Nat$.
 \end{proof}
 \begin{lemma}[Loop unlifting]
   \label{lem:loop_unlift}
@@ -190,7 +190,7 @@ Under these two assumptions we can show two lemmas that essentially say that the
   \end{alignat*}
 \end{lemma}
 \begin{proof}
-  By induction over $k:\Nat$.
+  By induction on $k:\Nat$.
 \end{proof}
 
 \begin{figure}
@@ -232,7 +232,7 @@ i.e.,\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state
   \end{align*}
 \end{lemma}
 \begin{proof}
-  By induction over $k_1:\Nat$, using Lemma~\ref{lem:loop}~(\ref{lem:loop_monotone}).
+  By induction on $k_1:\Nat$, using Lemma~\ref{lem:loop}~(\ref{lem:loop_monotone}).
 \end{proof}
 \begin{lemma}[Loop splitting]
   \label{lem:loop_split}
@@ -247,7 +247,7 @@ i.e.,\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state
   \end{align*}
 \end{lemma}
 \begin{proof}
-  By complete induction over $k:\Nat$.
+  By complete induction on $k:\Nat$.
 \end{proof}
 
 
@@ -400,9 +400,6 @@ lemma:
     & WhileRel~R' \subseteq R
   \end{alignat*}
 \end{lemma}
-\begin{proof}
-  By induction.
-\end{proof}
 
 
 We can not simply give a (useful) runtime relation in which $\While~M$ terminates, because we do not know the number of iterations in general.
@@ -458,7 +455,7 @@ for $t$, the value of $R~t~(y,t')$ simply is $\True$.  Therefore, we always use 
 
 The runtime and correctness proofs are similar to the proofs of $\Match$, as explained in Section~\ref{sec:match-proofs}.  However, the
 configurations of $\Match$ are exactly the configurations of $M$, so the lifting function is the identity function.  The fundamental difference
-between $\Match$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction over step-numbers,
+between $\Match$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction on step-numbers,
 in addition to the loop-splitting and loop-merging lemmas.  We present the key lemmas here and the most important parts of the proofs.
 
 We simply write $\While$ instead of $\While~M$ in this section.  Since we have $\Conf_M = \Conf_\While$, we also only write $\Conf$.
@@ -541,7 +538,7 @@ For the runtime proofs, we again have lemmas that ``merge'' steps together.
   \end{alignat*}
 \end{lemma}
 
-The runtime Lemma~\ref{lem:While_TerminatesIn} follows similarly, by complete induction over $k:\Nat$.
+The runtime Lemma~\ref{lem:While_TerminatesIn} follows similarly, by complete induction on $k:\Nat$.
 
 
 
@@ -678,9 +675,6 @@ $\MS{Return}$
     \MS{Return}~M~y          & \vDash \Bigl( \bigcup_{y':F} R \at y' \Bigr) \att y
   \end{alignat*}
 \end{lemma}
-\begin{proof}
-  By definition.
-\end{proof}
 
 
 %%% Local Variables:

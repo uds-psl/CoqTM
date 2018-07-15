@@ -8,8 +8,8 @@ right, we would like to use sequential composition and move one tape after the o
 moves the first tape to the right and one that moves the second tape to the right.  There are multiple ways to solve this problem.  For example, we
 could define a class of $n$-tape machines that move the $i$th tape to the right and leave all other tapes unchanged.  However, it is in general easier
 to build and prove correctness of small machines that operate on a minimal amount of tapes.  Asperti and Ricciotti~\cite{asperti2015} define an
-\emph{injecting} operator that translates an one-tape machine into a $1+n$-tape machine.  We generalise this approach and implement an operator that
-takes an $m$-tape machine and yields an $n$-tape machine, where $m \le n$.
+injecting operator that translates an one-tape machine into a $1+n$-tape machine.  We generalise this approach and implement an operator that takes an
+$m$-tape machine and yields an $n$-tape machine, where $m \le n$.
 
 The second part of this problem is how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that sums
 (encodings of) natural numbers, we could want to build a machine $\MS{Sum}$ that sums numbers in a list of numbers.  Consider an alphabet
@@ -19,8 +19,10 @@ define $\MS{Sum}$.
 
 Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem.  They consider a fixed alphabet to ``encode'' all needed data on, to implement a
 universal Turing machine.  However, this approach does not scale.  When the alphabet has to be changed, for example because we have to add a new
-``data type'', they also must change the definitions of the involved ``smaller'' machines.  That is why we also introduce an operator that
-\emph{lifts} a machine to a bigger alphabet.
+``data type'', they also must change the definitions of all involved ``smaller'' machines.  That is why we also introduce an operator that lifts a
+machine to a bigger alphabet.
+
+\todo{Maybe use another example for motivating the alphabet-lift, since this example is not implemented}
 
 \section{Tape-Lift}
 \label{sec:n-Lift}
@@ -32,8 +34,8 @@ $i:\Fin_n$, $j:\Fin_m$), behaves exactly as the tape $j$ of $M$. All other tapes
 
 
 The transition function of $\LiftTapes{M}{I}$ gets the $n$ read symbols and selects the $m$ relevant symbols.  Then it applies the transition function
-$\delta_M$ with the selected symbols and the current state $q$.  $\delta_M$ yields an $m$-vector $act:\Act^m$ and the continuation state $q'$.  We to
-fill in ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
+$\delta_M$ with the selected symbols and the current state $q$.  $\delta_M$ yields an $m$-vector $act:\Act^m$ and the continuation state $q'$.  It
+fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 
 \begin{definition}[Vector selecting]
   \label{def:select}
@@ -72,25 +74,25 @@ fill in ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   \label{def:LiftTapes}
   Let $M:\TM_\Sigma^m(F)$.
   \begin{alignat*}{2}
-    &\delta(q,s) &:=& \Let{(q', act) := \delta_M(q, select~I~sym)}{\\%
-    &            &  & (q', fill~I~(\None,N)^n~act)}
+    &\delta(q,s) &~:=~& \Let{(q', act) := \delta_M(q, select~I~sym)}{\\%
+    &            &~  ~& (q', fill~I~(\None,N)^n~act)}
   \end{alignat*}
   (All other components of $\LiftTapes{M}{I}$ are the same as $M$.)
 \end{definition}
 
 \begin{lemma}[Correctness of $\LiftTapes{M}{I}$]
   \label{lem:LiftTapes_Realise}
-  Let $M : \TM_\Sigma^m(F)$ and $I$ duplicate-free index-vector.  If $M \vDash R$, then $\LiftTapes{M}{I} \vDash \LiftTapes{M}{R}$ with
+  Let $M : \TM_\Sigma^m(F)$ and $I : \Fin_n^m$ a duplicate-free index-vector.  If $M \vDash R$, then $\LiftTapes{M}{I} \vDash \LiftTapes{R}{I}$ with
   \[
-    \LiftTapes{M}{R} := \lambda t~(y,t').~ R~(select~I~t)~(y, select~I~t') \land \forall i:\Fin_n.~i \notin I \rightarrow t'[i]=t[i].
+    \LiftTapes{R}{I} := \lambda t~(y,t').~ R~(select~I~t)~(y, select~I~t') \land \forall i:\Fin_n.~i \notin I \rightarrow t'[i]=t[i].
   \]
 \end{lemma}
 
 \begin{lemma}[Runtime of $\LiftTapes{M}{I}$]
   \label{lem:LiftTapes_TerminatesIn}
-  Let $M : \TM_\Sigma^m(F)$ and $I$ duplicate-free index-vector. If $M \downarrow T$, then $\LiftTapes{M}{R} \downarrow \LiftTapes{M}{T}$ with
+  Let $M : \TM_\Sigma^m(F)$ and $I$ duplicate-free index-vector. If $M \downarrow T$, then $\LiftTapes{M}{R} \downarrow \LiftTapes{T}{I}$ with
   $
-    \LiftTapes{M}{T} := \lambda t~k.~ T~(select~I~t)~k.
+    \LiftTapes{T}{I} := \lambda t~k.~ T~(select~I~t)~k.
   $
 \end{lemma}
 
@@ -115,7 +117,7 @@ However, for the second part of the correctness, i.e.\ tapes that are not in $I$
   By induction on $k:\Nat$.
 \end{proof}
 
-We apply this lemma in the proof of Lemma~\ref{lem:LiftTapes_Realise} with $g := \lambda ((q,t):\Conf_M).~t[i]$.
+We apply this lemma in the proof of Lemma~\ref{lem:LiftTapes_Realise} with $g := \lambda ((q,t):\Conf).~t[i]$.
 
 
 
@@ -140,7 +142,7 @@ $def$ instead.  The transition function $\delta_M$ of $M$ yields the successor s
     &               &~  ~& (q', \map{(mapAct~f)}{act})} \\
     & surject(\tau) &~:=~&
     \begin{cases}
-      x   & f^{-1}(\tau) = \Some{x} \\
+      \sigma & f^{-1}(\tau) = \Some{\sigma} \\
       def & f^{-1}(\tau) = \None
     \end{cases}
   \end{alignat*}

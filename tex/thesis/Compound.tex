@@ -13,7 +13,7 @@ When $M$ always terminates in constant time $k$, we show $M \vDash^k R$ instead.
 prove correctness and (constant) runtime at once.
 
 For (non-constant) runtime, we use the dual approach.  However, we have an exception for $\While$, where we have to apply
-Lemma~\ref{lem:While_TerminatesIn} directly instead of using the anti-monotonicity Lemma~\ref{lem:TerminatesIn_monotone}.
+Lemma~\ref{lem:While_TerminatesIn} directly, instead of using the anti-monotonicity Lemma~\ref{lem:TerminatesIn_monotone}.
 
 \section{$\Nop$}
 \label{sec:Nop}
@@ -21,7 +21,7 @@ Lemma~\ref{lem:While_TerminatesIn} directly instead of using the anti-monotonici
 Using the alphabet-lift (Definition~\ref{def:LiftAlphabet}) and $\MS{Null}$ (Definition~\ref{def:Null}), it is easy to define an $n$-tape machine
 $\Nop : \TM_\Sigma^n$ for every alphabet $\Sigma$ and number of tapes $n$:
 \begin{definition}[$\Nop$]
-  $Nop := \LiftTapes{\MS{Null}}{\nil}.$
+  $\Nop \defop \LiftTapes{\MS{Null}}{\nil}.$
 \end{definition}
 Note that because $\MS{Null}$ is a 0-tape machine, and $\Nop$ is supposed to be an $n$-tape machine, the index-vector must be the vector
 $\nil : \Fin_n^0$.
@@ -31,18 +31,18 @@ $\nil : \Fin_n^0$.
   $\Nop \vDash^0 NopRel$ with $NopRel := \lambda t~t'.~t'=t$.
 \end{lemma}
 \begin{proof}
-  By applying monotonicity of $\vDash^\cdot$ (Lemma~\ref{lem:RealiseIn_monotone}) and the correctness of $\MS{Null}$ (Lemma~\ref{lem:Null_Sem}), it
+  By applying monotonicity of $\vDash^\cdot$ (Lemma~\ref{lem:RealiseIn_monotone}) and the correctness of $\MS{Null}$ (Lemma~\ref{lem:Null_Sem}).  It
   remains to show that $\LiftTapes{NullRel}{\nil} \subseteq NopRel$.  To show the equality $t'=t$ we show $t'[i]=t[i]$ for all $i:\Fin_n$.  This
   follows with the equality part of the relation $\LiftTapes{NullRel}{\nil}$, because $i \notin \nil$.
 \end{proof}
 
 Note that the correctness relation of $\Nop$ can also be expressed using the identity relation $Id$:
 \[
-  \MS{NopRel} \equiv Id.
+  NopRel \equiv Id.
 \]
-However, we have the convention to define relations of concrete machine (classes) in $\lambda$-notation, i.e.\ not using relational operators.  Also
-note that the tape $t'$ is per convention always on the left side of the equality.  This convention makes rewriting of tapes uniform; therefore,
-rewriting of tapes can be automatised in Coq.
+However, we have the convention to define relations of concrete machines in $\lambda$-notation, i.e.\ not using relational operators.  Also note that
+the tape $t'$ is per convention always on the left side of the equality.  This convention makes rewriting of tapes uniform; therefore, rewriting of
+tapes can be automatised in Coq.
 
 \section{$\MS{WriteString}$}
 \label{sec:WriteString}
@@ -55,7 +55,7 @@ The machine $\MS{WriteString}~d~str$ writes a fixed string $str:\List(\Sigma)$ i
   \end{alignat*}
 \end{definition}
 
-Note that this is the our only machine we define per recursion.  However, the way we proof correctness in constant time (depending on the length of
+Note that this is the our only machine we define per recursion.  However, the way we prove correctness in constant time (depending on the length of
 $str$) is still the same.
 
 The relation that $\MS{WriteString}$ ``automatically'' realises in $3 \cdot \length{str}$ steps is the following:
@@ -67,11 +67,10 @@ The relation that $\MS{WriteString}$ ``automatically'' realises in $3 \cdot \len
   \end{alignat*}
 \end{lemma}
 \begin{proof}
-  By induction on $str:\List(\Sigma)$, using the monotonicity Lemma~\ref{lem:RealiseIn_monotone}, the correctness of $Nop$ (Lemma~\ref{lem:Nop_Sem}),
+  By induction on $str:\List(\Sigma)$, using the monotonicity Lemma~\ref{lem:RealiseIn_monotone}, the correctness of $\Nop$ (Lemma~\ref{lem:Nop_Sem}),
   the correctness of $\MS{WriteMove}$ (which is defined by $\MS{DoAct}$; Lemma~\ref{lem:DoAct_Sem}), and correctness of sequential composition for
   constant time (Lemma~\ref{lem:Seq_RealiseIn}).
 \end{proof}
-\todo{I don't have corollaries yet about seq, and if, and $\vDash^\cdot$.}
 
 We define the actual relation of $\MS{WriteString}$ in terms of a recursive function on tapes:
 \begin{lemma}[Correctness of $\MS{WriteString}$]
@@ -87,7 +86,7 @@ We define the actual relation of $\MS{WriteString}$ in terms of a recursive func
 \end{lemma}
 \begin{proof}
   We apply the monotonicity Lemma~\ref{lem:RealiseIn_monotone} and have to show\\
-  $R'~d~str \subseteq WriteStringRel~d~str$.  We show this by induction on $str$.
+  $R'~d~str \subseteq WriteStringRel~d~str$.  This can be shown by induction on $str$.
 \end{proof}
 
 Note that we could as well use the $\MS{Mirror}$ operator instead of parametrising the machine $\MS{WritingString}$ over the direction.  However, in
@@ -97,69 +96,69 @@ this particular example, this approach seems to be easier.
 \label{sec:MovePar}
 
 The two-tape machine $\MS{MovePar}~d~d'$ combines two $\MS{Move}$ machines.  It first moves the $0$th\footnote{To avoid confusion with zero-based
-  indices, we write the $0$th or $1$st tape, instead of the first or second tape.} tape in direction $d$ and after that the $1$st tape in
-direction $d'$.
+  indices used throughout this thesis, we write ``the $0$th or $1$st tape'', instead of ``the first or second tape.''} tape in direction $d$ and after
+that the $1$st tape in direction $d'$.
 \begin{definition}[$\MS{MovePar}$]
   \label{def:MovePar}
-  $\MS{MovePar}~d~d' := \LiftTapes{(\MS{Move}~d)}{\Vector{0}} \Seq \LiftTapes{(\MS{Move}~d')}{\Vector{1}}$.
+  $\MS{MovePar}~d_1~d_2 \defop \LiftTapes{(\MS{Move}~d_1)}{\Vector{0}} \Seq \LiftTapes{(\MS{Move}~d_2)}{\Vector{1}}$.
 \end{definition}
 \begin{lemma}[Correctness of $\MS{MovePar}$]
   \label{lem:MovePar_Sem}
-  $\MS{MovePar}~d~d' \vDash^3 MoveParRel~d~d'$ with
-  \[ MoveParRel~d~d' := \lambda t~t'.~t'[0]=\MS{mv}~d~t[0] ~\land~ t'[1]=\MS{mv}~d'~t[1]. \]
+  $\MS{MovePar}~d_1~d_2 \vDash^3 MoveParRel~d_1~d_2$ with
+  \[ MoveParRel~d_1~d_2 := \lambda t~t'.~t'[0]=\MS{mv}~d_1~t[0] ~\land~ t'[1]=\MS{mv}~d_2~t[1]. \]
 \end{lemma}
 \begin{proof}
   We have to show
   $$
-    \LiftTapes{(\MS{DoActRel}(\None,d ))}{\Vector{0}} \circ
-    \LiftTapes{(\MS{DoActRel}(\None,d'))}{\Vector{1}} \subseteq
-    \MS{MovePairRel}~d~d'.
+    \LiftTapes{(DoActRel(\None,d_1))}{\Vector{0}} \circ
+    \LiftTapes{(DoActRel(\None,d_2))}{\Vector{1}} \subseteq
+    MovePairRel~d_1~d_2.
   $$
-  We assume tapes $t, t', t''$ such that $(\LiftTapes{(\MS{DoActRel}(\None,d ))}{\Vector{0}})~t~t'$ and \\
-  $(\LiftTapes{(\MS{DoActRel}(\None,d'))}{\Vector{1}})~t'~t''$, and have to show $t''[0]=\MS{mv}~d~t[0]$ and $t''[1]=\MS{mv}~d'~t[1]$.  By definition,
-  we know $t'[0]=\MS{mv}~d~t[0]$ and $t'[1]=t[1]$ (because $1 \notin \Vector{0}$).  We also know $t''[1]=\MS{mv}~d'~t'[1]$ and $t''[0]=t'[0]$ (because
-  $0 \notin \Vector{1}$).  The goal follows trivially.
+  We assume tape vectors $t, t', t'' : \Tape_\Sigma^2$, such that $(\LiftTapes{(\MS{DoActRel}(\None,d_1))}{\Vector{0}})~t~t'$ and \\
+  $(\LiftTapes{(DoActRel(\None,d_2))}{\Vector{1}})~t'~t''$.  We have to show $t''[0]=\MS{mv}~d_1~t[0]$ and $t''[1]=\MS{mv}~d_2~t[1]$.  By definition,
+  we know $t'[0]=\MS{mv}~d_1~t[0]$ and $t'[1]=t[1]$ (because $1 \notin \Vector{0}$).  We also know $t''[1]=\MS{mv}~d_2~t'[1]$ and $t''[0]=t'[0]$
+  (because $0 \notin \Vector{1}$).  The goal follows trivially.
 \end{proof}
 Note that this kind of proof is very mechanical: We only need to unfold the relations, and rewrite tapes.  Indeed, these steps are automatised in Coq.
-Thus, we do not do more proofs of this kind on paper.
+Thus, we also do not more proofs of this kind on paper.
 
 \section{$\MS{CopySymbols}$}
 \label{sec:CopySymbols}
 
 The machine $\MS{CopySymbols}~h : \TM_\Sigma^2$, where $h:\Sigma\to\Bool$, is a compound machine involving a $\While$-loop.  The machine reads the
-symbol on tape $0$.  It reads the symbol on tape $0$ and writes it to tape $1$.  If the symbol satisfies $h$, then the machine halts.  Else it moves
-both tapes right and continues the loop.  The machine also halts if there was no current symbol to read from tape $0$.
+symbol on tape $0$.  It reads the symbol on tape $0$ and writes it to tape $1$.  If the symbol satisfies $h$, the machine halts.  Else it moves both
+tapes right and continues the loop.  The machine also halts if there was no current symbol to read from tape $0$.
 
 We first define the machine for the step.  Since we want to apply the $\While$ operator on the step machine, it must be partitioned over
-$\Option(\Unit)$; $\Some\unit$ means break out of the loop and $\None$ means repeat the loop.
+$\Option(\Unit)$.  $\Some\unit$ means break out of the loop and $\None$ means repeat the loop.
 \begin{definition}[$\MS{CopySymbolsStep}$]
   \label{CopySymbols_Step}
-  \begin{multline*}
-    \MS{CopySymbolsStep}~h :=
-    \Match(\LiftTapes{Read}{\Vector{0}}) \\
-    \Biggl(
-    \lambda s.
-    \begin{cases}
-      \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit} & s=\Some{x} ~\land~ h(x)=\true \\
-      \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None} & s=\Some{x} ~\land~ h(x)=\false \\
-      \Return{\Nop}{\Some\unit} & s=\None
-    \end{cases}
-    \Biggr)
-  \end{multline*}
-  \centerline{\emph{versus}}
-  \small
+  % \begin{multline*}
+  %   \MS{CopySymbolsStep}~h :=
+  %   \Match(\LiftTapes{Read}{\Vector{0}}) \\
+  %   \Biggl(
+  %   \lambda s.
+  %   \begin{cases}
+  %     \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit} & s=\Some{x} ~\land~ h(x)=\true \\
+  %     \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None} & s=\Some{x} ~\land~ h(x)=\false \\
+  %     \Return{\Nop}{\Some\unit} & s=\None
+  %   \end{cases}
+  %   \Biggr)
+  % \end{multline*}
+  % \centerline{\emph{versus}}
+  % \small
+  % \todo{Decide!}
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{CopySymbolsStep}~h :=$
   Match ($\LiftTapes{\MS{Read}}{\Vector{0}}$)
         ($\lambda (s:\Option(\Sigma)).$ match $s$
-           [$\Some{x}$ => (*The head of tape $t[0]$ is on symbol $x$*)
+           [$\Some{x}$ =>
              if $h(x)$
-             then $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit}$ (*break*)
-             else $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None}$ (*continue*)
-           |$\None$ => $\Return{\Nop}{\Some\unit}$ (*No symbol; break*)
+             then $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit}$ 
+             else $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None}$ 
+           |$\None$ => $\Return{\Nop}{\Some\unit}$ 
            ]).
 \end{lstlisting}
-  \todo{Decide!}
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{CopySymbolsStep}$]
@@ -182,7 +181,7 @@ $\MS{CopySymbolsStep}~h :=$
   Mechanical, with case-analysis over $t[0]$.
 \end{proof}
 
-Now, to define $\MS{CopySymbols}$, we simply apply the $\While$ operator to the step machine:
+Now, to define $\MS{CopySymbols}$, we apply the $\While$ operator to the step machine:
 \begin{definition}[$\MS{CopySymbols}$]
   \label{def:CopySymbols}
   $\MS{CopySymbols}~h := \While(\MS{CopySymbolsStep}~h)$.
@@ -191,15 +190,14 @@ Now, to define $\MS{CopySymbols}$, we simply apply the $\While$ operator to the 
 The correctness of $\MS{CopySymbols}$ can be expressed using a recursive function on tapes:
 \begin{lemma}[Correctness of $\MS{CopySymbols}$]
   \label{lem:CopySymbols_Realise}
-  \
-  $$\MS{CopySymbols}~h \vDash CopySymbolsRel~h$$
+  $\MS{CopySymbols}~h \vDash CopySymbolsRel~h$
   with $CopySymbolsRel~h := \lambda t~t' = CopySymbolsFun~h~t$ and
   \begin{multline*}
     CopySymbolsFun~h~t :=\\
     \begin{cases}
-      \Vector{t[0]; \MS{wr}~t[1]~(\Some{x})}                                  & \MS{current}(t[0])=\Some{x} \land h(x) \\
-      CopySymbolsFun~h~\Vector{\MS{mv}~R~t[0]; \MS{doAct}~t[1]~(\Some{x}, R)} & \MS{current}(t[0])=\Some{x} \land \lnot h(x) \\
-      t                                                                       & \MS{current}(t[0])=\None
+      \Vector{t[0]; \MS{wr}~t[1]~(\Some{x})}                                  & \MS{current}~t[0]=\Some{x} \land h(x) \\
+      CopySymbolsFun~h~\Vector{\MS{mv}~R~t[0]; \MS{doAct}~t[1]~(\Some{x}, R)} & \MS{current}~t[0]=\Some{x} \land \lnot h(x) \\
+      t                                                                       & \MS{current}~t[0]=\None
     \end{cases}
   \end{multline*}
   Note that the function $CopySymbolsFun$ is not structural recursive.  It terminates because tapes have only finitely many symbols.
@@ -209,7 +207,7 @@ The correctness of $\MS{CopySymbols}$ can be expressed using a recursive functio
 \end{proof}
 
 We observe that the runtime of $\MS{CopySymbols}$ only depends on the $0$th tape.  Therefore, we define a function
-$CopySymbolsSteps : \Tape_\Sigma^n \to \Nat$ that overestimates the number of steps needed for the loop, depending on the $0$th tape.  Note that
+$CopySymbolsSteps : \Tape_\Sigma \to \Nat$ that overestimates the number of steps needed for the loop, depending on the $0$th tape.  Note that
 $\While$ requires one additional step for each repeat of the loop.
 \begin{lemma}[Runtime of $\MS{CopySymbols}$]
   $\MS{CopySymbols} \downarrow CopySymbolsT$ with \\
@@ -249,9 +247,9 @@ Using the $\MS{Mirror}$ operator, we can define a machine $\MS{CopySymbolsL}$ th
 \label{sec:MoveToSymbol}
 
 We can define a machine $\MS{MoveToSymbol}~h~f : \TM_\Sigma^1$, where $h:\Sigma\to\Bool$ and $f:\Sigma\to\Sigma$.  This machine behaves similarly like
-$\MS{CopySymbols}~h$.  However, instead of copying the symbols from one tape to another tape, it ``translates'' the symbols it read, until it read a
-symbol that satisfies the boolean predicate $h$.  We leave out the correctness and runtime statements, as they easily can be derived from the
-statements above.
+$\MS{CopySymbols}~h$.  However, instead of copying the symbols from one tape to another tape, it ``translates'' the symbols it read, until it reads a
+symbol that satisfies the boolean predicate $h$.  We leave out the correctness and runtime statements, as they can be derived from the statements
+about $\MS{CopySymbols}$ above.
 
 \begin{definition}[$\MS{MoveToSymbol}$]
   ~
@@ -259,15 +257,18 @@ statements above.
 $\MS{MoveToSymbolStep}~h~f :=$
   Match ($\MS{Read}$)
         ($\lambda (s:\Option(\Sigma)).$ match $s$
-           [$\Some{x}$ => (*The head of tape $t[0]$ is on symbol $x$*)
+           [$\Some{x}$ => 
              if $h(x)$
-             then $\Return{\bigl(\MS{Write}~(f~x)        \bigr)}{\Some\unit}$ (*break*)
-             else $\Return{\bigl(\MS{WriteMove}~(f~x)~R) \bigr)}{\None}$ (*continue*)
-           |$\None$ => $\Return{\Nop}{\Some\unit}$ (*No symbol; break*)
+             then $\Return{\bigl(\MS{Write}~(f~x)       \bigr)}{\Some\unit}$ 
+             else $\Return{\bigl(\MS{WriteMove}~(f~x)~R \bigr)}{\None}$ 
+           |$\None$ => $\Return{\Nop}{\Some\unit}$ 
            ]).
-$\MS{MoveToSymbol}~h~f := \While(\MS{MoveToSymbolStep}~h~f)$
-$\MS{MoveToSymbolL}~h~f := \MS{Mirror}(\MS{MoveToSymbol}~h~f)$
 \end{lstlisting}
+  and
+  \begin{align*}
+    \MS{MoveToSymbol }~h~f &:= \While(\MS{MoveToSymbolStep}~h~f) \\
+    \MS{MoveToSymbolL}~h~f &:= \MS{Mirror}(\MS{MoveToSymbol}~h~f)
+  \end{align*}
 \end{definition}
 
 

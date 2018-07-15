@@ -1,12 +1,13 @@
 \chapter{Programming Turing Machines}
 \label{chap:programming}
 
-We can define machines using primitive operations like $\MS{DoAct}$, and can combine machines in an imperative programming style.  However, our
-imperative ``language'' still has no notion of values or data cells.  We want to use each tape as a data cell to store one variable.  Therefore, we
-have to define what it means that a tape contains a value.  When we ``program'' Turing machines, instead of using basic machines, we only use machines
-that directly change the value of a tape.  We use the combinators introduced in Chapter~\ref{chap:combining} to simulate control flow of imperative
-programming languages.  Using the definition of value-containing, we specify a ``callee-saving'' convention for function computation.  We present a
-generic pattern how to program and verify Turing machines and show more complex case studies.
+We can define machines using primitive operations like $\MS{DoAct}$, and can combine machines in an imperative programming style.  Furthermore, we can
+reuse machines in bigger contexts.  However, our imperative ``language'' still has no notion of values or data cells.  We want to use each tape as a
+data cell to store one value.  Therefore, we have to define what it means that a tape contains a value.  When we ``program'' Turing machines, instead
+of using basic machines, we only use machines that directly change the value of a tape.  We use the combinators introduced in
+Chapter~\ref{chap:combining} to simulate control flow of imperative programming languages.  Using the definition of value-containing, we specify a
+``callee-saving'' convention for function computation.  We present a generic pattern how to program and verify Turing machines, and present more
+complex case studies.
 
 
 \section{Value-Containing}
@@ -19,25 +20,27 @@ essentially a list of symbols, so we have to linearise values to strings.
   We say that a type $X$ is \emph{encodable} over $\Sigma$, if there is a function $encode : X \to \List(\Sigma)$.
 \end{definition}
 
-Morally, the encoding functions should be injective and there also should be a decoding function such that the encoding and decoding functions is a
-retraction on $\List(\Sigma)$.  However, we do not need this strict definition.  We may encode a type $X$ on any alphabet $\Tau$, if $\Sigma$ is a
-retraction on $\Tau$:
+Morally, the encoding functions should be injective and there also should be a decoding function, such that the encoding and decoding functions is a
+retraction on $\List(\Sigma)$.  However, we do not need this strict definition.
+
+We may encode a type $X$ on any alphabet $\Tau$, if $\Sigma$ is a retraction on $\Tau$:
 \begin{definition}[Map encodings]
   \label{def:Encode_map}
   Let $X$ be encodable over $\Sigma$ and $f : \Sigma \hookrightarrow \Tau$ be a retraction.  Then $X$ is also encodable over $\Tau$ with the following
   encoding function:
   \[ encode_\Tau(x) := encodeMap~encode_\Sigma~f~(x) := \map{f}{(encode_\Sigma(x))}. \]
 \end{definition}
-Note that mapping of encodings is compatible with composition of retractions.  This means that if we map the encoding twice, this is the same as
-mapping the encoding with the composition of both retractions:
+
+Mapping of encodings are compatible with composition of retractions.  This means that if we map the encoding twice, this is the same as mapping the
+encoding with the composition of both retractions:
 \begin{lemma}[Composition and encoding mapping]
   \label{lem:Encode_map_comp}
   Let $f : \Sigma \hookrightarrow \Tau$ and $g : \Tau \hookrightarrow \Delta$ be retractions and $X$ be encodable over $\Sigma$.  Then there is only
   one way how $X$ can be encoded over $\Delta$, i.e.:
-  \[ encodeMap~(encodeMap~f~encode)~g~(x) = encodeMap~(f \circ g)~encode~x \]
+  \[ encodeMap~(encodeMap~f~encode)~g~(x) = encodeMap~encode~(f \circ g)~x. \]
 \end{lemma}
 
-For each type and type constructor, we have a disting alphabet.  We define basic encodings:
+For each type and type constructor, we have a distinct alphabet.  We define basic encodings:
 \begin{definition}[Basic encodings]
   \label{def:basic-encodings}
   ~
@@ -45,7 +48,7 @@ For each type and type constructor, we have a disting alphabet.  We define basic
   \item We encode $\Unit$ over the empty alphabet $\False$:
   \[ encode(\unit) := \nil
   \]
-  \item The type $\Bool$ is encoded over itselve, i.e.\ $encode(b):=[b]$.
+  \item The types $\Bool$ and $\Fin_k$ are encoded over them-self, i.e.\ $encode(x):=[x]$.
   \item Let $X$ be encodable over $\Sigma$.  Then $\Option(X)$ is encodable over
     \[ SigOpt~\Sigma ::= \MS{NONE} ~|~ \MS{SOME} ~|~ (x:\Sigma) \]
     With the retraction $RetrOpt : \Sigma \hookrightarrow SigOpt~\Sigma$ and
@@ -57,8 +60,8 @@ For each type and type constructor, we have a disting alphabet.  We define basic
       \end{cases}
     \]
   \item Let $X$ be encodable over $\Sigma$ and $Y$ over $\Tau$.  Then $X+Y$ is encodable over
-    \[ SigSum~\Sigma~\Tau ::= \MS{INL} ~|~ \MS{INR} ~|~ (x:\Sigma) ~|~ (y:\Tau) \] With the retraction
-    $RetrOptX : \Sigma \hookrightarrow SigOpt~\Sigma~\Tau$ and $RetrOptY : \Tau \hookrightarrow SigOpt~\Sigma~\Tau$ and
+    \[ SigSum~\Sigma~\Tau ::= \MS{INL} ~|~ \MS{INR} ~|~ (x:\Sigma) ~|~ (y:\Tau) \] With the retractions
+    $RetrOptX : \Sigma \hookrightarrow SigOpt~\Sigma~\Tau$, $RetrOptY : \Tau \hookrightarrow SigOpt~\Sigma~\Tau$ and
     \[
       encode(s) :=
       \begin{cases}
@@ -67,8 +70,8 @@ For each type and type constructor, we have a disting alphabet.  We define basic
       \end{cases}
     \]
   \item Let $X$ be encodable over $\Sigma$ and $Y$ over $\Tau$.  Then $X \times Y$ is encodable over
-    \[ SigSum~\Sigma~\Tau ::= (x:\Sigma) ~|~ (y:\Tau) \] With the retraction
-    $RetrSumX : \Sigma \hookrightarrow SigSum~\Sigma~\Tau$ and \\$RetrSumY : \Tau \hookrightarrow SigSum~\Sigma~\Tau$ and
+    \[ SigSum~\Sigma~\Tau ::= (x:\Sigma) ~|~ (y:\Tau) \] With the retractions
+    $RetrSumX : \Sigma \hookrightarrow SigSum~\Sigma~\Tau$, $RetrSumY : \Tau \hookrightarrow SigSum~\Sigma~\Tau$ and
     \[
       encode(s) :=
       \begin{cases}
@@ -90,8 +93,6 @@ For each type and type constructor, we have a disting alphabet.  We define basic
     \end{alignat*}
   \end{enumerate}
 \end{definition}
-
-\todo{This actually looks like a definition for encodable types.}
 
 This are all encodings we need.  However, there is still a problem about ambiguity: Suppose $X$ is encodable over $\Sigma$.  Then the smallest
 alphabet on which we can encode the type $X+X$ is $\Tau := SigSum~\Sigma~\Sigma$.  However, now there are two possibilities how to encode $X$ on
@@ -121,14 +122,14 @@ Note that in Definition~\ref{def:tape_contains}, we have to map the encoding of 
 $t$ stands on the start symbol.  To the right, there is the encoding terminated by the stop-symbol.  To the left of the head, there may be arbitrary
 many ``rest'' symbols.
 
-We found the convention useful, that there are no further symbols beyond the stop symbol.  In future work we also want to reason about space usage of
+We find the convention useful, that there are no further symbols beyond the stop symbol.  In future work we also want to reason about space usage of
 machines.  If a tape contains a value, the size of the tape (i.e.\ the number of symbols on it), only depends on the length of the encoding and the
 number of rest symbols $ls$ to the left.  We have the convention to only add symbols to the left of a tape.  We also only write on tapes, if the head
 of the tape is on the right-most symbol.
 
 \begin{definition}[Right tape]
   \label{def:isRght}
-  A tape $t$ is \emph{right}, if $\MS{current}(t) \neq \None$ and $\MS{left}=\nil$.  With other words, $t = \MS{midtape}~ls~m~\nil$ for some
+  A tape $t$ is \emph{right}, if $\MS{current}(t) \neq \None$ and $\MS{left}~t=\nil$.  With other words, $t = \MS{midtape}~ls~m~\nil$ for some
   $m:\Sigma$ and $ls:\List(\Sigma)$.
 \end{definition}
 
@@ -142,13 +143,12 @@ This intuition is confirmed by the following lemma:
 \begin{lemma}[$surject$ and value-containing]
   \label{lem:contains_translate_tau}
   Let $f: \Sigma \hookrightarrow \Tau$ be a retraction between two alphabets.  Let $x:X$, where $X$ is encodable over $\Sigma$. Then, for
-  $t : \Tape_\Tau$:
+  $t:\Tape_\Tau$
   \[
-    t \simeq x \iff mapTape~(surject~f)~t \simeq x.
+    t \simeq_f x \iff mapTape~(surject~f)~t \simeq x.
   \]
 \end{lemma}
-
-Note that the encoding on the left side is implicitly mapped with the retraction $f$.
+Note that the encoding on the left side is mapped with the retraction $f$.
 
 We write $\LiftAlphabet{M}{f}$ for $\LiftAlphabet{M}{(f, \MS{UNKNOWN})}$.
 
@@ -157,21 +157,20 @@ We write $\LiftAlphabet{M}{f}$ for $\LiftAlphabet{M}{(f, \MS{UNKNOWN})}$.
 
 \todo{Can I use a present tense when I refer to what is above in the text?}
 
-We {\color{red}defined} what it means that a tape contains a value.  Now we want to define machines that manipulate values, e.g.\ increase or increase a number.
+We defined what it means that a tape contains a value.  Now we want to define machines that manipulate values, e.g.\ increase or increase a number.
 Also, a very useful operation is to copy a value from one tape to another tape.
 
 \subsection{Constructors and Deconstructors}
 \label{sec:constructors-deconstructors}
 
 
-For each encodable type $X:\Type$ (see Definition~\ref{def:basic-encodings}), there is a set of machines: constructors and a matching machine.  These
-are machines over the least alphabet $\Sigma^+$ to encode $X$ on.  Constructor machines, informally, ``apply'' a constructor of the inductive type $X$
-to the value on the tape $t[0]$.  For example, considering the inductive type $\Nat$, the constructor machine $\MS{O}$ writes the number $0$ to a
-right tape.  The constructor machine $\MS{S}$ assumes that $t[0]$ contains a number $n$, and increases that number.  The deconstructor for $\Nat$
-reads a number of $t[0]$.  If it is $0$, it terminates in $\false$.  Else, it decreases the number and terminates in $\true$.  In general, we have a
-constructor machine for each constructor of the inductive type.  If the constructor has additional parameters, these are encodes on more input tapes
-$t[1], t[2], \cdots$.  On the other side, the deconstructor machine has a partition for each constructor and may have additional tapes for storing
-additional parameters.
+For each encodable type $X:\Type$, there is a set of machines: constructors and a matching machine.  These are machines over the least alphabet
+$\Sigma^+$ to encode $X$ on.  Constructor machines, informally, ``apply'' a constructor of the inductive type $X$ to the value on the tape $t[0]$.
+For example, considering the inductive type $\Nat$, the constructor machine $\MS{O}$ writes the number $0$ to a right tape.  The constructor machine
+$\MS{S}$ assumes that $t[0]$ contains a number $n$, and increases that number.  The deconstructor for $\Nat$ reads a number of $t[0]$.  If it is $0$,
+it terminates in $\false$.  Else, it decreases the number and terminates in $\true$.  In general, we have a constructor machine for each constructor
+of the inductive type.  If the constructor has additional parameters, these are encodes on more input tapes $t[1], t[2], \cdots$.  On the other side,
+the deconstructor machine has a partition for each constructor and may have additional tapes for storing additional parameters.
 
 \subsubsection{Natural numbers}
 \label{sec:match-nat}
@@ -194,9 +193,9 @@ $\MS{MatchNatRel} :=$
 \end{definition}
 
 Initially, the tape $t[0]$ contains some number $n$.  So the head of $t[0]$ must be on the start symbol.  The machine moves one step right and reads
-the first symbol of the encoding.  This symbol may either be $\MS{S}$ or $\MS{O}$.  If the machine read $\MS{O}$, this means that the number $n$ is
+the first symbol of the encoding.  This symbol may either be $\MS{S}$ or $\MS{O}$.  If the machine reads $\MS{O}$, this means that the number $n$ is
 $0$, so the machine moves back to the start symbol and terminates in the partition $\false$, indicating that the number was $0$.  On the other side,
-if the machine read $\MS{S}$, this means the number $n$ is the successor of some number $n'$.  To decrement $n$, it overwrites the current $\MS{S}$
+if the machine reads $\MS{S}$, this means the number $n$ is the successor of some number $n'$.  To decrement $n$, it overwrites the current $\MS{S}$
 with a new start symbol and terminates on this symbol in the partition $\true$.
 
 \begin{definition}[$\MS{MatchNat}$]
@@ -204,12 +203,12 @@ with a new start symbol and terminates on this symbol in the partition $\true$.
   ~
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchNat} :=$
-  Move R; (* Move to the first symbol of the encoding *)
-  MATCH ($\MS{ReadChar}$) (* and read it *)
+  Move R; 
+  MATCH ($\MS{ReadChar}$) 
         ($\lambda(o:\Option(sigNat)).$ match $o$
            [$\Some {\MS{S}}$ => $\Return{(\MS{Write}~\MS{START})}{\true}$
            |$\Some {\MS{O}}$ => $\Return{(\MS{Move}~L)}{\false}$
-           | _ => _ (* invalid input *)
+           | _ => _ 
            ]).
 \end{lstlisting}
 \end{definition}
@@ -241,12 +240,12 @@ $\false$).
   \small
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchSum} :=$
-  Move R; (* Move to the first symbol of the encoding *)
-  MATCH ($\MS{ReadChar}$) (* and read it *)
+  Move R; 
+  MATCH ($\MS{ReadChar}$) 
         ($\lambda(o:\Option(sigSum~\Sigma_X~\Sigma_Y)).$ match $o$
            [$\Some {\MS{INL}}$ => $\Return{(\MS{Write}~\MS{START})}{\true}$
            |$\Some {\MS{INR}}$ => $\Return{(\MS{Write}~\MS{START})}{\false}$
-           | _ => _ (* invalid input *)
+           | _ => _ 
            ]).
 \end{lstlisting}
 \end{definition}
@@ -268,9 +267,9 @@ $\MS{MatchSumRel} :=$
 
 The types $\Option(X)$ and $X+\Unit$ are isomorphic.  Furthermore, the alphabets to encode these types on, $SigOpt~\Sigma$ and $SigSum~\Sigma~\False$,
 are also isomorphic.  We can use this fact to derive a match machine and constructor machines for the type $\Option(X)$.  Let
-$f : SigSum~\Sigma~\False \hookrightarrow SigOpt~\Sigma$ be the canonical retractions.  Then, we can define $\MS{MatchOption}$ as
-$\LiftAlphabet{\MS{MatchSum}}{f}$.  However, in the case that $o=\None$, the surjected output tape $maptape~(surject~f)~t'$ contains $\unit$.  Thus,
-the tape has form (for some $ls$)
+$f : SigSum~\Sigma~\False \hookrightarrow SigOpt~\Sigma$ be the canonical retraction.  Then, we can define $\MS{MatchOption}$ as
+$\LiftAlphabet{\MS{MatchSum}}{f}$.  However, in the case that $o=\None$, the surjected output tape $t'$ contains $\unit$.  Thus, the tape has form
+(for some $ls$)
 \[ t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]. \] However, we want that the tape is right in this case, so we make a small change on the machine:
 
 \begin{definition}[$\MS{MatchOption}$]
@@ -306,11 +305,11 @@ Note that we had to add $2$ extra steps: one for the conditional and one for the
 \subsection{Copy Values}
 \label{sec:copy}
 
-In Section~\ref{sec:CopySymbols}, we {\color{red}defined} a machine that copies symbols until a certain symbol from one tape to another tape.  In
-Section~\ref{sec:MoveToSymbol}, we also {\color{red}defined} a machine that moves the head to a certain symbol.  We want to use these machines to
-define a machine that copies a value from tape $t[0]$ to tape $t[1]$.  By the convention we {\color{red}set up} in
-Section~\ref{sec:value-containing}), if we write new symbols to a tape, this tape must be right.  With other words, the machine $\MS{CopySymbols}$ can
-assume that the ``target'' tape is right.  Formally, the correctness relation is defined as:
+In Section~\ref{sec:CopySymbols}, we defined a machine that copies symbols until a certain symbol from one tape to another tape.  In
+Section~\ref{sec:MoveToSymbol}, we also defined a machine that moves the head to a certain symbol.  We want to use these machines to define a machine
+that copies a value from tape $t[0]$ to tape $t[1]$.  By the convention we set up in Section~\ref{sec:value-containing}), if we write new symbols to a
+tape, this tape must be right.  With other words, the machine $\MS{CopySymbols}$ can assume that the ``target'' tape is right.  Formally, the
+correctness relation is defined as:
 \begin{definition}[Correctness relation of $\MS{CopyValue}$]
   \label{def:CopyValue_Rel}
   ~
@@ -341,8 +340,8 @@ Then it copies the symbols, from the stop symbol to the start symbol, to tape $1
   \end{multline*}
 \end{definition}
 
-Note that the parameter of $\MS{MoveToSymbol}$ that is $id$, is the a translation function.  In this case, it should simply move around leave the
-symbols unchanged.
+Note that the second parameter of $\MS{MoveToSymbol}$ is the a translation function.  In this case, it should simply move around leave the symbols
+unchanged.
 
 \begin{lemma}[Correctness of $\MS{CopyValue}$]
   \label{lem:CopyValue_Realise}
@@ -361,14 +360,14 @@ The runtime of $\MS{CopyValue}$ is linear in size of the encoding of $x$.
   \]
 \end{lemma}
 
-Although $\MS{CopyValue}$ terminates for all tapes, we restricted the runtime relation in Lemma~\ref{lem:CopyValue_TerminatesIn} to reasonable tapes,
-i.e.\ tapes $t$ that actually have a symbol on $t[0]$.  The reason for that is, that we want to relate the value to the runtime.
+Although $\MS{CopyValue}$ terminates for all tapes, we restricted runtime relations to reasonable tapes, i.e.\ in this case tape vectors $t$ that
+actually have a symbol on $t[0]$.  The reason for that is, that we want to relate the value to the runtime.
 
 \subsection{Translate Values}
 \label{sec:translate-value}
 
 In Section~\ref{sec:value-containing}, we observed, that the containing relation is ambiguous: if $X$ is minimally encodable over $\Sigma$, there may
-be two retractions $f_1, f_2 : \Sigma \hookrightarrow \Tau$ on the alphabet $\Tau$.  In Section~\ref{sec:MoveToSymbol}, we {\color{red}gave} the
+be two retractions $f_1, f_2 : \Sigma \hookrightarrow \Tau$ on the alphabet $\Tau$.  In Section~\ref{sec:MoveToSymbol}, we gave the
 $\MS{MoveToSymbol}$ machine the feature to translate the symbols it read.  Using this feature, we define a machine that translates between the two
 possibilities of the encoding of $X$ on $\Tau$.  Therefore we have to define a function $tanslate : \Tau^+ \to \Tau^+$.
 
@@ -397,7 +396,7 @@ from $\Sigma$ to $\Tau$ and the (implicit) injection from $\Tau$ to $\Tau^+$.
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{Translate}$]
-  $\MS{Translate}~f_1~f_2 \vDash TranslateRel~f_1~f_2$ where
+  $\MS{Translate}~f_1~f_2 \vDash TranslateRel~f_1~f_2$ with
   \[
     TranslateRel~f_1~f_2 := \lambda t~t'.~\forall(x:X).~t[0] \simeq_{f_1} x \rightarrow t[0] \simeq_{f_2} x.
   \]

@@ -32,7 +32,16 @@
 
 
 %% Formating
-\newcommand{\MS}[1]{\ensuremath{\textsf{#1}}} % Sans-serif font in mathematical mode
+\newcommand{\MS}[1]{\ensuremath{\mathsf{#1}}}
+\newcommand{\MST}[1]{${\mathsf{#1}}$}
+\newcommand{\IsMathMode}{\ifmmode{This is math mode}\else{This is not math mode}\fi}
+
+%% Logic symbols
+\newcommand{\defop}{\mathop{:=}}
+\newcommand{\imp}{\mathbin{\rightarrow}~}
+\newcommand{\Imp}{\mathbin{\Rightarrow}~}
+\renewcommand{\iff}{\mathbin{\leftrightarrow}}
+
 
 % ++ operator:
 % Source: https://tex.stackexchange.com/questions/4194/how-to-typeset-haskell-operator-and-friends
@@ -171,8 +180,8 @@
 
 % Style and language to define complex multi-line definitions similar to Coq code
 \lstdefinelanguage{semicoq}{
-  morekeywords={if,then,else,true,false,match,Match,If,Then,Else,Nop,Return,Move,Reset,DoAct,WriteMove,L,R,N},
-  morecomment=[s]{(*}{*)},
+  keywords={if,then,else,true,false,match,Match,If,Then,Else,Nop,Return,Move,Reset,DoAct,WriteMove,L,R,N},
+  comment=[s]{(*}{*)},
 }
 
 \lstdefinestyle{semicoqstyle}{
@@ -190,6 +199,14 @@
     {forall}{{$\forall$ }}1
     {exists}{{$\exists$ }}1
     {<>}{{$\not =$ }}{2}
+    % {Match}{$\mathsf{Match}$}{5}
+    % {match}{$\textsf{match}$}{5}
+    % {If}{$\MS{If}$}{5}
+    % {if}{$\MS{if}$}{5}
+    % {Then}{$\MS{Then}$}{5}
+    % {then}{$\MS{then}$}{5}
+    % {Else}{$\MS{Else}$}{5}
+    % {else}{$\MS{else}$}{5}
   }
 }
 
