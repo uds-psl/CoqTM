@@ -114,7 +114,7 @@ that the $1$st tape in direction $d'$.
     \LiftTapes{(DoActRel(\None,d_2))}{\Vector{1}} \subseteq
     MovePairRel~d_1~d_2.
   $$
-  We assume tape vectors $t, t', t'' : \Tape_\Sigma^2$, such that $(\LiftTapes{(\MS{DoActRel}(\None,d_1))}{\Vector{0}})~t~t'$ and \\
+  We assume tape vectors $t, t', t'' : \Tape_\Sigma^2$, such that $(\LiftTapes{(DoActRel(\None,d_1))}{\Vector{0}})~t~t'$ and \\
   $(\LiftTapes{(DoActRel(\None,d_2))}{\Vector{1}})~t'~t''$.  We have to show $t''[0]=\MS{mv}~d_1~t[0]$ and $t''[1]=\MS{mv}~d_2~t[1]$.  By definition,
   we know $t'[0]=\MS{mv}~d_1~t[0]$ and $t'[1]=t[1]$ (because $1 \notin \Vector{0}$).  We also know $t''[1]=\MS{mv}~d_2~t'[1]$ and $t''[0]=t'[0]$
   (because $0 \notin \Vector{1}$).  The goal follows trivially.

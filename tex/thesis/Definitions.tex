@@ -498,7 +498,7 @@ Note that if we have an unpartitioned machine $M:\TM_\Sigma^n$, we implicitly pa
 % The correctness relation says exactly that the tapes don't change:
 The correctness relation is the universal relation, because empty vectors do not have information.
 \begin{lemma}[Correctness of $\MS{Null}$]
-  \label{lem:Null_Sem} $\MS{Null} \RealiseIn0 \MS{NullRel}$ with $NullRel := \lambda~t~t'.~ \True$.
+  \label{lem:Null_Sem} $\MS{Null} \RealiseIn0 NullRel$ with $NullRel := \lambda~t~t'.~ \True$.
 \end{lemma}
 \begin{proof}
   By execution.  The machine terminates after zero steps in the start state.
@@ -521,9 +521,9 @@ terminate after this step.
 \end{definition}
 The semantics of $\MS{DoAct}$ is easily expressed using $\MS{doAct}$ (see Definition~\ref{def:step}):
 \begin{lemma}[Correctness of $\MS{DoAct}$]
-  \label{lem:DoAct_Sem} $\MS{DoAct}~a \RealiseIn1 \MS{DoActRel}~a$ with
+  \label{lem:DoAct_Sem} $\MS{DoAct}~a \RealiseIn1 DoActRel~a$ with
   \[
-    \MS{DoActRel}~a := \lambda~t~t'.~ t' = \MS{doAct}~t~a.
+    DoActRel~a := \lambda~t~t'.~ t' = \MS{doAct}~t~a.
   \]
 \end{lemma}
 \begin{proof}
@@ -572,9 +572,9 @@ the current symbol is $\None$.
 
 
 \begin{lemma}[Correctness of $\MS{Read}$]
-  \label{lem:Read_Sem} $\MS{Read}~f \RealiseIn0 \MS{ReadRel}~f$ with
+  \label{lem:Read_Sem} $\MS{Read}~f \RealiseIn{0} ReadRel~f$ with
   \[
-    \MS{ReadRel} := \lambda~t~y~t'.~ y = \MS{current}~t[0] \land t' = t
+    ReadRel := \lambda~t~y~t'.~ y = \MS{current}~t[0] \land t' = t
   \]
 \end{lemma}
 \begin{proof}

@@ -180,7 +180,7 @@ This is the correctness relation for $\MS{MatchNat}$:
   \label{def:MatchNat_Rel}
   ~
 \begin{lstlisting}[style=semicoqstyle]
-$\MS{MatchNatRel} :=$
+$MatchNatRel :=$
   $\lambda t~(y, t').$
     $\forall (n:\Nat).$
       $t[0] \simeq n \rightarrow$
@@ -218,7 +218,7 @@ the machine is not explicitly given, because the premise of the correctness rela
 the head which is either $\MS{S}$ or $\MS{O}$, so this part of the machine must never execute.
 
 \begin{lemma}[Correctness of $\MS{MatchNat}$]
-  $\MS{MatchNat} \RealiseIn5 \MS{MatchNatRel}$.
+  $\MS{MatchNat} \RealiseIn{5} MatchNatRel$.
 \end{lemma}
 \begin{proof}
   We know that $t[0] \simeq n$.  This means $t[0] = \MS{midtape}~ls~\MS{START}~(\MS{S}^n \app \MS{O} \cons \MS{STOP})$ for some $ls$.  The proof is
@@ -254,7 +254,7 @@ $\MS{MatchSum} :=$
   \label{lem:MatchSum_Realise}
   $\MS{MatchSum} \RealiseIn5 MatchSumRel$ with
 \begin{lstlisting}[style=semicoqstyle]
-$\MS{MatchSumRel} :=$
+$MatchSumRel :=$
   $\lambda t~(y, t').$ $\forall (s:X+Y).$ $t[0] \simeq s \rightarrow$ match $y$, $s$
       [$\false$, $\inl x$ => $t'[0] \simeq x$
       |$\true$, $\inr y$ => $t'[0] \simeq y$
@@ -286,7 +286,7 @@ $\MS{MatchOption}$ := If ($\LiftAlphabet{\MS{MatchSum}}{f}$)
   \label{lem:MatchSum_Realise}
   $\MS{MatchOption} \RealiseIn7 MatchOptionRel$ with
 \begin{lstlisting}[style=semicoqstyle]
-$\MS{MatchOptionRel} :=$
+$MatchOptionRel :=$
   $\lambda t~(y, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow$ match $y$, $o$
       [false, $\None$ => $isRight(t'[0])$
       |true, $\Some x$ => $t'[0] \simeq x$
