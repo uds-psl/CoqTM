@@ -403,14 +403,14 @@ The correctness part is captured by \emph{realisation} of a (partitioned) relati
   \label{def:realisation}
   Let $M:\TM_\Sigma^n(F)$ and $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$.
   \[
-    M \vDash R :=
+    M \Realise R :=
     \forall t~k~q~t'.~M(t) \terminates^k (q, t') \rightarrow
     R~t~(part_M~q, t')
   \]
   Where $part_M \from Q_M \to F$ is the partitioning function of $M$.
 \end{definition}
 
-If $M \vDash R$, we say that $M$ realises the relation $R$.  Informally, this means that the output of the machine is correct (i.e.\ is in the
+If $M \Realise R$, we say that $M$ realises the relation $R$.  Informally, this means that the output of the machine is correct (i.e.\ is in the
 relation), if the machine terminates.
 
 The runtime part of the semantics implies termination of the machine on certain inputs.  It links the input $t:\Tape_\Sigma^n$ to the number of steps
@@ -420,21 +420,21 @@ the machine needs for the computation.
   \label{def:TerminatesIn}
   Let $T \subseteq \Tape_\Sigma^n \times \Nat$.
   \[
-    M \downarrow T :=
+    M \TerminatesIn T :=
     \forall t~k.~T~t~k \rightarrow
     \exists c.~M (t) \terminates^k c.
   \]
 \end{definition}
 
 
-\begin{lemma}[Monotonicity of $M \vDash R$]
+\begin{lemma}[Monotonicity of $M \Realise R$]
   \label{lem:Realise_monotone}
-  If $M \vDash R'$ and $R' \subseteq R$, then $M \vDash R$.
+  If $M \Realise R'$ and $R' \subseteq R$, then $M \Realise R$.
 \end{lemma}
 
-\begin{lemma}[Anti-monotonicity of $M \downarrow T$]
+\begin{lemma}[Anti-monotonicity of $M \TerminatesIn T$]
   \label{lem:TerminatesIn_monotone}
-  If $M \downarrow T'$ and $T \subseteq T'$, then $M \downarrow T$.
+  If $M \TerminatesIn T'$ and $T \subseteq T'$, then $M \TerminatesIn T$.
 \end{lemma}
 
 For machines that always terminate in a constant number of steps, it is useful to combine both predicates:
@@ -442,7 +442,7 @@ For machines that always terminate in a constant number of steps, it is useful t
   \label{def:RealiseIn}
   ~
   \[
-    M \vDash^k R :=
+    M \RealiseIn{k} R :=
     \forall t'.~
     \exists q~t'.~
     M(t) \terminates^k(q, t') \land R~t~(part_M~q,~t')
@@ -452,17 +452,17 @@ For machines that always terminate in a constant number of steps, it is useful t
 \begin{lemma}[Specification of realisation in constant time]
   \label{lem:Realise_total}
   \[
-    M \vDash^k R
+    M \RealiseIn{k} R
     \quad\iff\quad
-    M \vDash R ~\land~
-    M \downarrow (\lambda \_~i.~k \le i)
+    M \Realise R ~\land~
+    M \TerminatesIn (\lambda \_~i.~k \le i)
   \]
 \end{lemma}
 
-\begin{lemma}[Monotonicity of $M \vDash^k R$]
+\begin{lemma}[Monotonicity of $M \RealiseIn{k} R$]
   \label{lem:RealiseIn_monotone}
-  If $M \vDash^{k'} R'$, $k' \leq k$, and $R' \subseteq R$, then \\
-  $M \vDash^{k} R$.
+  If $M \RealiseIn{k'} R'$, $k' \leq k$, and $R' \subseteq R$, then \\
+  $M \RealiseIn{k} R$.
 \end{lemma}
 
 Asperti and Ricciotti \cite{asperti2015} make a distinction between weak and strong realisation, where the strong version implies termination for
@@ -498,7 +498,7 @@ Note that if we have an unpartitioned machine $M:\TM_\Sigma^n$, we implicitly pa
 % The correctness relation says exactly that the tapes don't change:
 The correctness relation is the universal relation, because empty vectors do not have information.
 \begin{lemma}[Correctness of $\MS{Null}$]
-  \label{lem:Null_Sem} $\MS{Null} \vDash^0 \MS{NullRel}$ with $NullRel := \lambda~t~t'.~ \True$.
+  \label{lem:Null_Sem} $\MS{Null} \RealiseIn0 \MS{NullRel}$ with $NullRel := \lambda~t~t'.~ \True$.
 \end{lemma}
 \begin{proof}
   By execution.  The machine terminates after zero steps in the start state.
@@ -521,7 +521,7 @@ terminate after this step.
 \end{definition}
 The semantics of $\MS{DoAct}$ is easily expressed using $\MS{doAct}$ (see Definition~\ref{def:step}):
 \begin{lemma}[Correctness of $\MS{DoAct}$]
-  \label{lem:DoAct_Sem} $\MS{DoAct}~a \vDash^1 \MS{DoActRel}~a$ with
+  \label{lem:DoAct_Sem} $\MS{DoAct}~a \RealiseIn1 \MS{DoActRel}~a$ with
   \[
     \MS{DoActRel}~a := \lambda~t~t'.~ t' = \MS{doAct}~t~a.
   \]
@@ -572,7 +572,7 @@ the current symbol is $\None$.
 
 
 \begin{lemma}[Correctness of $\MS{Read}$]
-  \label{lem:Read_Sem} $\MS{Read}~f \vDash^0 \MS{ReadRel}~f$ with
+  \label{lem:Read_Sem} $\MS{Read}~f \RealiseIn0 \MS{ReadRel}~f$ with
   \[
     \MS{ReadRel} := \lambda~t~y~t'.~ y = \MS{current}~t[0] \land t' = t
   \]

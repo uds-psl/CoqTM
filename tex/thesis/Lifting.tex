@@ -82,7 +82,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 
 \begin{lemma}[Correctness of $\LiftTapes{M}{I}$]
   \label{lem:LiftTapes_Realise}
-  Let $M : \TM_\Sigma^m(F)$ and $I : \Fin_n^m$ a duplicate-free index-vector.  If $M \vDash R$, then $\LiftTapes{M}{I} \vDash \LiftTapes{R}{I}$ with
+  Let $M : \TM_\Sigma^m(F)$ and $I : \Fin_n^m$ a duplicate-free index-vector.  If $M \Realise R$, then $\LiftTapes{M}{I} \Realise \LiftTapes{R}{I}$ with
   \[
     \LiftTapes{R}{I} := \lambda t~(y,t').~ R~(select~I~t)~(y, select~I~t') \land \forall i:\Fin_n.~i \notin I \rightarrow t'[i]=t[i].
   \]
@@ -90,7 +90,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 
 \begin{lemma}[Runtime of $\LiftTapes{M}{I}$]
   \label{lem:LiftTapes_TerminatesIn}
-  Let $M : \TM_\Sigma^m(F)$ and $I$ duplicate-free index-vector. If $M \downarrow T$, then $\LiftTapes{M}{R} \downarrow \LiftTapes{T}{I}$ with
+  Let $M : \TM_\Sigma^m(F)$ and $I$ duplicate-free index-vector. If $M \TerminatesIn T$, then $\LiftTapes{M}{R} \TerminatesIn \LiftTapes{T}{I}$ with
   $
     \LiftTapes{T}{I} := \lambda t~k.~ T~(select~I~t)~k.
   $
@@ -158,7 +158,7 @@ that maps every symbol on a tape.  We write $mapTapes$ for the respective tape-v
 
 \begin{lemma}[Correctness of $\LiftAlphabet{M}{(f,def)}$]
   \label{lem:LiftAlphabet_Realise}
-  If $M \vDash R$, then $\LiftAlphabet{M}{(f,def)} \vDash \LiftAlphabet{R}{(f,def)}$ with
+  If $M \Realise R$, then $\LiftAlphabet{M}{(f,def)} \Realise \LiftAlphabet{R}{(f,def)}$ with
   \[
     \LiftAlphabet{R}{(f,def)} := \lambda t~(y, t').~R~(mapTapes~surject~t)~(y, mapTapes~surject~t').
   \]
@@ -166,7 +166,7 @@ that maps every symbol on a tape.  We write $mapTapes$ for the respective tape-v
 
 \begin{lemma}[Runtime of $\LiftAlphabet{M}{(f,def)}$]
   \label{lem:LiftAlphabet_TerminatesIn}
-  If $M \downarrow T$, then $\LiftAlphabet{M}{(f,def)} \downarrow \LiftAlphabet{T}{(f,def)}$ with
+  If $M \TerminatesIn T$, then $\LiftAlphabet{M}{(f,def)} \TerminatesIn \LiftAlphabet{T}{(f,def)}$ with
   \[
     \LiftAlphabet{T}{(f,def)} := \lambda t~k.~T~(mapTapes~surject~t)~k.
   \]

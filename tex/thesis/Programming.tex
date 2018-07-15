@@ -218,7 +218,7 @@ the machine is not explicitly given, because the premise of the correctness rela
 the head which is either $\MS{S}$ or $\MS{O}$, so this part of the machine must never execute.
 
 \begin{lemma}[Correctness of $\MS{MatchNat}$]
-  $\MS{MatchNat} \vDash^5 \MS{MatchNatRel}$.
+  $\MS{MatchNat} \RealiseIn5 \MS{MatchNatRel}$.
 \end{lemma}
 \begin{proof}
   We know that $t[0] \simeq n$.  This means $t[0] = \MS{midtape}~ls~\MS{START}~(\MS{S}^n \app \MS{O} \cons \MS{STOP})$ for some $ls$.  The proof is
@@ -252,7 +252,7 @@ $\MS{MatchSum} :=$
 
 \begin{lemma}[Correctness of $\MS{MatchSum}$]
   \label{lem:MatchSum_Realise}
-  $\MS{MatchSum} \vDash^5 MatchSumRel$ with
+  $\MS{MatchSum} \RealiseIn5 MatchSumRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchSumRel} :=$
   $\lambda t~(y, t').$ $\forall (s:X+Y).$ $t[0] \simeq s \rightarrow$ match $y$, $s$
@@ -284,7 +284,7 @@ $\MS{MatchOption}$ := If ($\LiftAlphabet{\MS{MatchSum}}{f}$)
 
 \begin{lemma}[Correctness of $\MS{MatchOption}$]
   \label{lem:MatchSum_Realise}
-  $\MS{MatchOption} \vDash^7 MatchOptionRel$ with
+  $\MS{MatchOption} \RealiseIn7 MatchOptionRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchOptionRel} :=$
   $\lambda t~(y, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow$ match $y$, $o$
@@ -345,7 +345,7 @@ unchanged.
 
 \begin{lemma}[Correctness of $\MS{CopyValue}$]
   \label{lem:CopyValue_Realise}
-  $\MS{CopyValue} \vDash CopyValueRel$.
+  $\MS{CopyValue} \Realise CopyValueRel$.
 \end{lemma}
 
 The proof of Lemma~\ref{lem:CopyValue_Realise} is technical.  We have several lemmas about the functions $CopySymbolFun$ and $MoveToSymbolFun$, and
@@ -356,7 +356,7 @@ The runtime of $\MS{CopyValue}$ is linear in size of the encoding of $x$.
   \label{lem:CopyValue_TerminatesIn}
   ~
   \[
-    \MS{CopyValue} \downarrow (\lambda t~k.~\exists(x:X).~t[0] \simeq x \land 25 + 12 \cdot \size{x} \leq k).
+    \MS{CopyValue} \TerminatesIn (\lambda t~k.~\exists(x:X).~t[0] \simeq x \land 25 + 12 \cdot \size{x} \leq k).
   \]
 \end{lemma}
 
@@ -396,7 +396,7 @@ from $\Sigma$ to $\Tau$ and the (implicit) injection from $\Tau$ to $\Tau^+$.
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{Translate}$]
-  $\MS{Translate}~f_1~f_2 \vDash TranslateRel~f_1~f_2$ with
+  $\MS{Translate}~f_1~f_2 \Realise TranslateRel~f_1~f_2$ with
   \[
     TranslateRel~f_1~f_2 := \lambda t~t'.~\forall(x:X).~t[0] \simeq_{f_1} x \rightarrow t[0] \simeq_{f_2} x.
   \]
@@ -416,7 +416,7 @@ write on a tape multiple times.  We must reset each ``used'' tape before writing
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{ResetTape}$]
-  $\MS{ResetTape} \vDash ResetTapeRel$ with
+  $\MS{ResetTape} \Realise ResetTapeRel$ with
   \[
     ResetTapeRel := \lambda t~t'.~\forall(x:X).~t[0] \simeq x \rightarrow isRight(t'[0]).
   \]

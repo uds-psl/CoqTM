@@ -59,9 +59,9 @@ a machine $M'~y$, it terminates.  The correctness part of the semantics can be e
 \begin{lemma}[Correctness of $\MS{Match}~M~M'$]
   \label{lem:Match_Realise}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$ and $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$ for all $y:F$.
-  If $M \vDash R$ and $M'~y \vDash R'~y$ for all $y:F$, then
+  If $M \Realise R$ and $M'~y \Realise R'~y$ for all $y:F$, then
   \[
-    \MS{Match}~M~M' \vDash MatchRel~R~R'
+    \MS{Match}~M~M' \Realise MatchRel~R~R'
   \]
   with
   \[
@@ -79,8 +79,8 @@ We also need to know the correctness of $M$, because the runtime of $M'~y$ depen
 \begin{lemma}[Runtime of $\MS{Match}~M~M'$]
   \label{lem:Match_Terminates}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, $T \subseteq \Tape_\Sigma^n \times \Nat$, and
-  $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \vDash R$, $M \downarrow T$, and $M'~y \downarrow T'~y$ for all $y:F$, then
-  $\MS{Match}~M~M' \downarrow \MS{MatchT}~R~T~T'$, where
+  $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \Realise R$, $M \TerminatesIn T$, and $M'~y \TerminatesIn T'~y$ for all $y:F$, then
+  $\MS{Match}~M~M' \TerminatesIn \MS{MatchT}~R~T~T'$, where
   \[
     \MS{MatchT}~R~T~T' :=
     \lambda~t~k.~ \exists~k_1~k_2.~T~t~k_1 \land 1+k_1+k_2 \le k \land
@@ -92,8 +92,8 @@ We can combine the correctness and runtime lemma, in case $M$ and every $M'~y$ t
 \begin{lemma}[Correctness of $\MS{Match}~M~M'$ in constant time]
   \label{lem:Match_RealiseIn}
   Let $k_1, k_2:\Nat$.\\
-  If $M \vDash^{k_1} R$ and $M'~y \vDash^{k_2} R'~y$ for every $y:F$, then
-  \[ \MS{Match}~M~M' \vDash^{1+k_1+k_2} MatchRel~R~R'. \]
+  If $M \RealiseIn{k_1} R$ and $M'~y \RealiseIn{k_2} R'~y$ for every $y:F$, then
+  \[ \MS{Match}~M~M' \RealiseIn{1+k_1+k_2} MatchRel~R~R'. \]
 \end{lemma}
 \begin{proof}
   Follows with the Lemmas~\ref{lem:Realise_total},~\ref{lem:Match_Realise}, and~\ref{lem:Match_Terminates}.
@@ -118,9 +118,9 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
 
 \begin{lemma}[Correctness of conditional]
   \label{lem:If_RealiseIn}
-  If $M_1 \vDash^{k_1} R_1$, $M_2 \vDash^{k_2} R_2$, and $M_3 \vDash^{k_3} R_3$, then
+  If $M_1 \RealiseIn{k_1} R_1$, $M_2 \RealiseIn{k_2} R_2$, and $M_3 \RealiseIn{k_3} R_3$, then
   $
-    \If{M_1}{M_2}{M_3} \vDash^{1+k_1+max(k_2+k_3)} (R_1\at\true \circ R_2) \cup (R_1\at\false \circ R_3).
+    \If{M_1}{M_2}{M_3} \RealiseIn{1+k_1+max(k_2+k_3)} (R_1\at\true \circ R_2) \cup (R_1\at\false \circ R_3).
   $
 \end{lemma}
 
@@ -137,9 +137,9 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
 
 \begin{lemma}[Correctness of sequential composition]
   \label{lem:Seq_RealiseIn}
-  If $M_1 \vDash^{k_1} R_1$ and $R_1 \vDash^{k_2} R_2$, then
+  If $M_1 \RealiseIn{k_1} R_1$ and $R_1 \RealiseIn{k_2} R_2$, then
   $
-  M_1 \Seq M_2 \vDash^{1+k_1+k_2} \left(\bigcup_{y:F} R_1\at y\right) \circ R_2.
+  M_1 \Seq M_2 \RealiseIn{1+k_1+k_2} \left(\bigcup_{y:F} R_1\at y\right) \circ R_2.
   $
 \end{lemma}
 
@@ -364,7 +364,7 @@ The correctness of $\MS{While}$ can be expressed using the following relation:
 \begin{lemma}[Correctness of $\MS{While}$]
   \label{lem:While_Realise}
   Let $R \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.
-  If $M \vDash R$, then $\While~M \vDash WhileRel~M$, where
+  If $M \Realise R$, then $\While~M \Realise WhileRel~M$, where
   $WhileRel~R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$
   is inductively defined by the following two rules:
   \[
@@ -386,8 +386,8 @@ Both definitions of $WhileRel$ should make clear what $\While~M$ does: It repeat
 after it terminated in $\Some y$, it terminates in the partition $y$.  This is visualised in Figure~\ref{fig:while-example}.  However, the inductive
 definition is more practical when we prove correctness of concrete $\MS{While}$ machines, because we can just do induction on the inductive predicate.
 
-When we want to prove $\While~M \vDash R$ for some machine $M:\TM_\Sigma^n(F)$ and relation
-$R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, we must of course have proven that $M \vDash R'$ for some relation
+When we want to prove $\While~M \Realise R$ for some machine $M:\TM_\Sigma^n(F)$ and relation
+$R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, we must of course have proven that $M \Realise R'$ for some relation
 $R' \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.  Then we apply Lemma~\ref{lem:Realise_monotone} and~\ref{lem:While_Realise},
 and have to show $WhileRel~R' \subseteq R$.  We can prove this by induction on the inductive predicate, which is equivalent to applying the following
 lemma:
@@ -403,12 +403,12 @@ lemma:
 
 
 We can not simply give a (useful) runtime relation in which $\While~M$ terminates, because we do not know the number of iterations in general.
-However, if we know that $M$ realises $R$ and terminates in $T$, we can show $\While~M \downarrow T'$ for another runtime relation $T'$, if $T'$
+However, if we know that $M$ realises $R$ and terminates in $T$, we can show $\While~M \TerminatesIn T'$ for another runtime relation $T'$, if $T'$
 ``decreases'' in terms of $R$ and $T$:
 
 \begin{lemma}[Runtime of $\While~M$]
   \label{lem:While_TerminatesIn}
-  If $M \vDash R$, $M \downarrow T$.  We can show $\While~M \downarrow T'$ under the following assumption:
+  If $M \Realise R$, $M \TerminatesIn T$.  We can show $\While~M \TerminatesIn T'$ under the following assumption:
   \begin{multline*}
     \forall~t~i.~
     T'~t~i \rightarrow
@@ -438,16 +438,16 @@ $\While$.  The best we could hope would be something like this relation:
   \]
 \end{definition}
 
-However, when we try to prove $\While~M \downarrow WhileT~R~T$, we come to a goal where we have $R~t~(\Some y, t')$ and $R~t~(part_M(q''), t'')$, for
-another final configuration $(q'',t'')$.  Thus, we can only prove $\While~M \downarrow WhileT~R~T$, if we assume that $R$ is functional:
+However, when we try to prove $\While~M \TerminatesIn WhileT~R~T$, we come to a goal where we have $R~t~(\Some y, t')$ and $R~t~(part_M(q''), t'')$, for
+another final configuration $(q'',t'')$.  Thus, we can only prove $\While~M \TerminatesIn WhileT~R~T$, if we assume that $R$ is functional:
 
 \begin{lemma}[Direct runtime relation for $\While$]
   \label{lem:While_TerminatesIn'}
-  If $M \vDash R$, $M \downarrow T$, and $R$ is functional on tapes in $T$, i.e.:
+  If $M \Realise R$, $M \TerminatesIn T$, and $R$ is functional on tapes in $T$, i.e.:
   \[
     \forall t~k.~T~t~k \rightarrow \forall t_1~t_2~y_1~y_2.~R~t~(y_1, t_1) \rightarrow R~t~(y_2, t_2) \rightarrow y_1 = y_2 \land t_1 = t_2.
   \]
-  Then $\While~M \downarrow WhileT~R~T$.
+  Then $\While~M \TerminatesIn WhileT~R~T$.
 \end{lemma}
 
 However, our correctness relations are not always functional on the tapes in $T$.  We encode preconditions in the relations.  If the precondition is
@@ -632,7 +632,7 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
 \end{proof}
 
 \begin{lemma}[Correctness of $\MS{Mirror}$]
-  Let $M \vDash R$.  Then $\MS{Mirror}~M \vDash MirrorRel~R$ with
+  Let $M \Realise R$.  Then $\MS{Mirror}~M \Realise MirrorRel~R$ with
   \[
     MirrorRel~R := \lambda t~(y, t').~ R~(\map{mirror}{t})~(y, \map{mirror}{t'}).
   \]
@@ -641,7 +641,7 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
   Follows from Lemma~\ref{lem:mirror_loop}~(\ref{lem:mirror_split}).
 \end{proof}
 \begin{lemma}[Runtime of $\MS{Mirror}$]
-  Let $M \vDash T$.  Then $\MS{Mirror}~M \downarrow MirrorT~T$ with
+  Let $M \Realise T$.  Then $\MS{Mirror}~M \TerminatesIn MirrorT~T$ with
   \[
     MirrorT~T := \lambda t~k.~ T~(\map{mirror}{t})~k.
   \]
@@ -674,10 +674,10 @@ The correctness for these simple operators is obvious.  Note that we do not need
 runtime is defined over the bare machine without partitioning function.  So the runtime lemmas for $M$ also apply for $\MS{ChangePartition}$ and
 $\MS{Return}$
 \begin{lemma}[Correctness of $\MS{ChangePartition}$ and $\MS{Return}$]
-  If $M \vDash R$, then
+  If $M \Realise R$, then
   \begin{alignat*}{1}
-    \MS{ChangePartition}~M~g & \vDash \bigcup_{y:F} (R \at y) \att {g(y)} \\
-    \MS{Return}~M~y          & \vDash \Bigl( \bigcup_{y':F} R \at y' \Bigr) \att y
+    \MS{ChangePartition}~M~g & \Realise \bigcup_{y:F} (R \at y) \att {g(y)} \\
+    \MS{Return}~M~y          & \Realise \Bigl( \bigcup_{y':F} R \at y' \Bigr) \att y
   \end{alignat*}
 \end{lemma}
 
