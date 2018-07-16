@@ -14,48 +14,65 @@ Require Import TM.Lifting.LiftAlphabet.
 Generalizable All Variables.
 
 
+Lemma skipn_0 (A:Type) (xs : list A) : skipn 0 xs = xs. Proof. reflexivity. Qed.
+
+Lemma skipn_tl (A:Type) (xs : list A) (n : nat) : skipn (S n) xs = skipn n (tl xs).
+Proof. induction n; cbn; destruct xs; auto. Qed.
+
 
 (* Don't simplify [skipn (S n) xs]; only, if the number and the lists are constructors *)
 Local Arguments skipn { A } !n !l.
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 
+
+
 Section Copy.
 
   Variable sig : finType.
   Variable stop : sig -> bool.
 
-  Lemma CopySymbols_correct tltr str1 x str2 :
+  Lemma CopySymbols_correct (t : tapes sig 2) str1 x str2 :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
-    tape_local (fst tltr) = str1 ++ x :: str2 ->
-    CopySymbols_Fun stop tltr =
-    (midtape (rev str1 ++ left (fst tltr)) x str2,
-     midtape (rev str1 ++ left (snd tltr)) x (skipn (|str1|) (right (snd tltr)))).
+    tape_local t[@Fin0] = str1 ++ x :: str2 ->
+    CopySymbols_Fun stop t =
+    [| midtape (rev str1 ++ left t[@Fin0]) x str2;
+       midtape (rev str1 ++ left t[@Fin1]) x (skipn (|str1|) (right (t[@Fin1]))) |].
   Proof.
     intros HStop1 HStop2. intros HEnc.
     revert str1 x str2 HEnc HStop1 HStop2.
-    functional induction (CopySymbols_Fun stop tltr); cbn in *; simpl_tape in *; intros.
-    - destruct str1 eqn:E; inv HEnc; cbn; auto. specialize (HStop1 _ ltac:(eauto)). congruence.
+    functional induction (CopySymbols_Fun stop t); cbn in *; intros.
     - destruct str1; cbn in *.
-      + inv HEnc. congruence.
-      + inv HEnc. specialize (IHp _ _ _ ltac:(reflexivity)). do 2 spec_assert IHp; eauto.
-        rewrite IHp. simpl_list. f_equal. f_equal.
-        destruct t2; cbn; try rewrite skipn_nil; auto; simpl_tape.
-        destruct l0; cbn; auto. apply skipn_nil.
-    - destruct t1; cbn in *; auto; now apply app_cons_not_nil in HEnc.
+      * rewrite skipn_0.
+        pose proof tape_local_current_cons HEnc as HEnc'. assert (s = x) as -> by congruence. clear HEnc'.
+        f_equal. now apply midtape_tape_local_cons.
+      * apply tape_local_cons_iff in HEnc as (HEnc'&HEnc). assert (s = e1) as -> by congruence. clear HEnc'.
+        specialize (HStop1 _ ltac:(eauto)). congruence.
+    - destruct str1; cbn in *.
+      + apply tape_local_cons_iff in HEnc as (HEnc'&HEnc). assert (s = x) as -> by congruence. clear HEnc'.
+        congruence.
+      + apply tape_local_cons_iff in HEnc as (HEnc'&HEnc). assert (s = e1) as -> by congruence. clear HEnc'.
+        apply (tape_midtape_current_right e) in HEnc. rewrite HEnc in *. cbn in *.
+        rewrite <- !app_assoc. erewrite IHt0; eauto. rewrite HEnc. cbn. f_equal.
+        * now simpl_tape.
+        * f_equal; simpl_tape. now rewrite skipn_tl.
+        * now simpl_tape.
+    - destruct (current tin[@Fin0]) eqn:E; auto.
+      apply tape_local_nil in E. rewrite E in HEnc. now apply app_cons_not_nil in HEnc.
   Qed.
+
 
   Corollary CopySymbols_correct_midtape ls m rs x rs' t2 :
     stop m = false ->
     (forall x, List.In x rs -> stop x = false) ->
     stop x = true ->
-    CopySymbols_Fun stop (midtape ls m (rs ++ x :: rs'), t2) =
-    (midtape (rev rs ++ m :: ls) x rs',
-     midtape (rev rs ++ m :: left (t2)) x (skipn (S (|rs|)) (right t2))).
+    CopySymbols_Fun stop [| midtape ls m (rs ++ x :: rs'); t2 |] =
+    [| midtape (rev rs ++ m :: ls) x rs';
+       midtape (rev rs ++ m :: left (t2)) x (skipn (S (|rs|)) (right t2)) |].
   Proof.
     intros HStopM HStopRs HStopX.
-    unshelve epose proof @CopySymbols_correct (midtape ls m (rs ++ x :: rs'), t2) (m::rs) x rs' _ _ _ as L; cbn in *; eauto.
+    unshelve epose proof @CopySymbols_correct [|midtape ls m (rs ++ x :: rs'); t2|] (m::rs) x rs' _ _ _ as L; cbn in *; eauto.
     - intros ? [->|?]; auto.
     - now rewrite <- !app_assoc in L.
   Qed.
@@ -63,49 +80,41 @@ Section Copy.
   Corollary CopySymbols_correct_moveright ls m rs x rs' t2:
     (forall x, List.In x rs -> stop x = false) ->
     stop x = true ->
-    CopySymbols_Fun stop (tape_move_right' ls m (rs ++ x :: rs'), t2) =
-    (midtape (rev rs ++ m :: ls) x rs',
-     midtape (rev rs ++ left t2) x (skipn (|rs|) (right t2))).
+    CopySymbols_Fun stop [| tape_move_right' ls m (rs ++ x :: rs'); t2|] =
+    [| midtape (rev rs ++ m :: ls) x rs';
+       midtape (rev rs ++ left t2) x (skipn (|rs|) (right t2)) |].
   Proof.
     intros HStopLs HStopX.
     cbv [tape_move_left']. destruct rs as [ | s s'] eqn:E; cbn in *.
-    - rewrite CopySymbols_Fun_equation, HStopX; cbn. reflexivity.
+    - rewrite CopySymbols_Fun_equation. cbn. rewrite HStopX; cbn. reflexivity.
     - rewrite CopySymbols_correct_midtape; auto. subst. rewrite <- !app_assoc; cbn. reflexivity.
   Qed.
   
 
-  Lemma CopySymbols_L_correct tltr str1 x str2 :
+  Corollary CopySymbols_L_correct t str1 x str2 :
     (forall x, List.In x str1 -> stop x = false) ->
     (stop x = true) ->
-    tape_local_l (fst tltr) = str1 ++ x :: str2 ->
-    CopySymbols_L_Fun stop tltr =
-    (midtape str2 x (rev str1 ++ right (fst tltr)),
-     midtape (skipn (|str1|) (left (snd tltr))) x (rev str1 ++ right (snd tltr))).
+    tape_local_l (t[@Fin0]) = str1 ++ x :: str2 ->
+    CopySymbols_L_Fun stop t =
+    [| midtape str2 x (rev str1 ++ right (t[@Fin0]));
+       midtape (skipn (|str1|) (left (t[@Fin1]))) x (rev str1 ++ right (t[@Fin1])) |].
   Proof.
     intros HStop1 HStop2. intros HEnc.
-    revert str1 x str2 HEnc HStop1 HStop2.
-    functional induction (CopySymbols_L_Fun stop tltr); cbn in *; simpl_tape in *; intros.
-    - destruct str1 eqn:E; inv HEnc; cbn; auto. specialize (HStop1 _ ltac:(eauto)). congruence.
-    - destruct str1; cbn in *.
-      + inv HEnc. congruence.
-      + inv HEnc. specialize (IHp _ _ _ ltac:(reflexivity)). do 2 spec_assert IHp; eauto.
-        rewrite IHp. simpl_list. f_equal. f_equal.
-        destruct t2; cbn; try rewrite skipn_nil; auto; simpl_tape.
-        destruct l; cbn; auto. apply skipn_nil.
-    - destruct t1; cbn in *; auto; now apply app_cons_not_nil in HEnc.
+    pose proof @CopySymbols_correct (mirror_tapes t) str1 x str2 HStop1 HStop2 as L.
+    spec_assert L by now simpl_tape.
+    apply CopySymbols_mirror. rewrite L. unfold mirror_tapes; cbn. f_equal; [ | f_equal]; now simpl_tape.
   Qed.
-
 
   Corollary CopySymbols_L_correct_midtape ls ls' m rs x t2 :
     stop m = false ->
     (forall x, List.In x ls -> stop x = false) ->
     stop x = true ->
-    CopySymbols_L_Fun stop (midtape (ls ++ x :: ls') m rs, t2) =
-    (midtape ls' x (rev ls ++ m :: rs),
-     midtape (skipn (S (|ls|)) (left t2)) x (rev ls ++ m :: right t2)).
+    CopySymbols_L_Fun stop [| midtape (ls ++ x :: ls') m rs; t2 |] =
+    [| midtape ls' x (rev ls ++ m :: rs);
+       midtape (skipn (S (|ls|)) (left t2)) x (rev ls ++ m :: right t2) |].
   Proof.
     intros HStopM HStopRs HStopX.
-    unshelve epose proof @CopySymbols_L_correct (midtape (ls ++ x :: ls') m rs, t2) (m::ls) x ls' _ _ _ as L; cbn in *; eauto.
+    unshelve epose proof @CopySymbols_L_correct [|midtape (ls ++ x :: ls') m rs; t2|] (m::ls) x ls' _ _ _ as L; cbn in *; eauto.
     - intros ? [->|?]; auto.
     - now rewrite <- !app_assoc in L.
   Qed.
@@ -113,13 +122,13 @@ Section Copy.
   Corollary CopySymbols_L_correct_moveleft ls x ls' m rs t2 :
     (forall x, List.In x ls -> stop x = false) ->
     stop x = true ->
-    CopySymbols_L_Fun stop (tape_move_left' (ls ++ x :: ls') m rs, t2) =
-    (midtape ls' x (rev ls ++ m :: rs),
-     midtape (skipn (|ls|) (left t2)) x (rev ls ++ right t2)).
+    CopySymbols_L_Fun stop [|tape_move_left' (ls ++ x :: ls') m rs; t2|] =
+    [| midtape ls' x (rev ls ++ m :: rs);
+       midtape (skipn (|ls|) (left t2)) x (rev ls ++ right t2) |].
   Proof.
     intros HStopLs HStopX.
     cbv [tape_move_left']. destruct ls as [ | s s'] eqn:E; cbn in *.
-    - rewrite CopySymbols_L_Fun_equation, HStopX; cbn. reflexivity.
+    - rewrite CopySymbols_L_Fun_equation. cbn. rewrite HStopX; cbn. reflexivity.
     - rewrite CopySymbols_L_correct_midtape; auto. subst. rewrite <- !app_assoc; cbn. reflexivity.
   Qed.
   
@@ -169,7 +178,7 @@ Section Copy.
   Proof.
     intros HStopR HStopX.
     destruct rs as [ | s s'] eqn:E; cbn.
-    - rewrite MoveToSymbol_Fun_equation, HStopX. reflexivity.
+    - rewrite MoveToSymbol_Fun_equation. cbn. rewrite HStopX. reflexivity.
     - rewrite MoveToSymbol_correct_midtape; auto. rewrite <- !app_assoc. reflexivity.
   Qed.
 
@@ -206,7 +215,7 @@ Section Copy.
   Proof.
     intros HStopL HStopX.
     destruct ls as [ | s s'] eqn:E; cbn.
-    - rewrite MoveToSymbol_L_Fun_equation, HStopX. reflexivity.
+    - rewrite MoveToSymbol_L_Fun_equation. cbn. rewrite HStopX. reflexivity.
     - rewrite MoveToSymbol_L_correct_midtape; auto. rewrite <- !app_assoc. reflexivity.
   Qed.
 
@@ -215,130 +224,130 @@ Section Copy.
 
   (* The termination times of CopySymbols and MoveTosymbol only differ in the factors *)
 
-  Lemma MoveToSymbol_Steps_local t r1 sym r2 :
+  Lemma MoveToSymbol_steps_local t r1 sym r2 :
     tape_local t = r1 ++ sym :: r2 ->
     stop sym = true ->
-    MoveToSymbol_Steps stop f t <= 4 + 4 * length r1.
+    MoveToSymbol_steps stop f t <= 4 + 4 * length r1.
   Proof.
     revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
-    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_Steps_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_steps_equation. cbn. rewrite HStop. cbn. omega.
     - destruct t; cbn in HEnc; try congruence. inv HEnc.
-      rewrite MoveToSymbol_Steps_equation. destruct (stop a).
+      rewrite MoveToSymbol_steps_equation. cbn. destruct (stop a).
       + omega.
       + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
         eapply IHr1; eauto. cbn. now simpl_tape.
   Qed.
 
-  Corollary MoveToSymbol_Steps_midtape ls x m rs rs' :
+  Corollary MoveToSymbol_steps_midtape ls x m rs rs' :
     stop x = true ->
-    MoveToSymbol_Steps stop f (midtape ls m (rs ++ x :: rs')) <= 8 + 4 * length rs.
+    MoveToSymbol_steps stop f (midtape ls m (rs ++ x :: rs')) <= 8 + 4 * length rs.
   Proof.
     intros.
-    rewrite MoveToSymbol_Steps_local with (r1 := m::rs) (sym := x) (r2 := rs'); auto.
+    rewrite MoveToSymbol_steps_local with (r1 := m::rs) (sym := x) (r2 := rs'); auto.
     cbn [length]. omega.
   Qed.
 
-  Corollary MoveToSymbol_Steps_moveright ls m rs x rs' :
+  Corollary MoveToSymbol_steps_moveright ls m rs x rs' :
     stop x = true ->
-    MoveToSymbol_Steps stop f (tape_move_right' ls m (rs ++ x :: rs')) <= 4 + 4 * length rs.
+    MoveToSymbol_steps stop f (tape_move_right' ls m (rs ++ x :: rs')) <= 4 + 4 * length rs.
   Proof.
     intros HStop. destruct rs as [ | s s'] eqn:E; cbn.
-    - rewrite MoveToSymbol_Steps_equation, HStop; cbn. omega.
-    - rewrite MoveToSymbol_Steps_midtape; auto. omega.
+    - rewrite MoveToSymbol_steps_equation. cbn. rewrite HStop; cbn. omega.
+    - rewrite MoveToSymbol_steps_midtape; auto. omega.
   Qed.
 
 
-  Lemma MoveToSymbol_L_TermTime_local t r1 sym r2 :
+  Lemma MoveToSymbol_L_steps_local t r1 sym r2 :
     tape_local_l t = r1 ++ sym :: r2 ->
     stop sym = true ->
-    MoveToSymbol_L_TermTime stop f t <= 4 + 4 * length r1.
+    MoveToSymbol_L_steps stop f t <= 4 + 4 * length r1.
   Proof.
     revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
-    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_L_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite MoveToSymbol_L_steps_equation. cbn. rewrite HStop. cbn. omega.
     - destruct t; cbn in HEnc; try congruence. inv HEnc.
-      rewrite MoveToSymbol_L_TermTime_equation. destruct (stop a).
+      rewrite MoveToSymbol_L_steps_equation. cbn. destruct (stop a).
       + omega.
       + apply Nat.add_le_mono_l. replace (4 * S (|r1|)) with (4 + 4 * |r1|) by omega.
         eapply IHr1; eauto. cbn. now simpl_tape.
   Qed.
 
-  Corollary MoveToSymbol_L_TermTime_midtape ls ls' x m rs :
+  Corollary MoveToSymbol_L_steps_midtape ls ls' x m rs :
     stop x = true ->
-    MoveToSymbol_L_TermTime stop f (midtape (ls ++ x :: ls') m rs) <= 8 + 4 * length ls.
+    MoveToSymbol_L_steps stop f (midtape (ls ++ x :: ls') m rs) <= 8 + 4 * length ls.
   Proof.
     intros.
-    rewrite MoveToSymbol_L_TermTime_local with (r1 := m::ls) (sym := x) (r2 := ls'); auto.
+    rewrite MoveToSymbol_L_steps_local with (r1 := m::ls) (sym := x) (r2 := ls'); auto.
     cbn [length]. omega.
   Qed.
 
-  Corollary MoveToSymbol_L_TermTime_moveleft ls ls' x m rs :
+  Corollary MoveToSymbol_L_steps_moveleft ls ls' x m rs :
     stop x = true ->
-    MoveToSymbol_L_TermTime stop f (tape_move_left' (ls ++ x :: ls') m rs) <= 4 + 4 * length ls.
+    MoveToSymbol_L_steps stop f (tape_move_left' (ls ++ x :: ls') m rs) <= 4 + 4 * length ls.
   Proof.
     intros HStop. destruct ls as [ | s s'] eqn:E; cbn.
-    - rewrite MoveToSymbol_L_TermTime_equation, HStop; cbn. omega.
-    - rewrite MoveToSymbol_L_TermTime_midtape; auto. omega.
+    - rewrite MoveToSymbol_L_steps_equation. cbn. rewrite HStop; cbn. omega.
+    - rewrite MoveToSymbol_L_steps_midtape; auto. omega.
   Qed.
 
 
-  Lemma CopySymbols_Steps_local t r1 sym r2 :
+  Lemma CopySymbols_steps_local t r1 sym r2 :
     tape_local t = r1 ++ sym :: r2 ->
     stop sym = true ->
-    CopySymbols_Steps stop t <= 8 + 8 * length r1.
+    CopySymbols_steps stop t <= 8 + 8 * length r1.
   Proof.
     revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
-    - destruct t; cbn in HEnc; inv HEnc. rewrite CopySymbols_Steps_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite CopySymbols_steps_equation. cbn. rewrite HStop. cbn. omega.
     - destruct t; cbn in HEnc; try congruence. inv HEnc.
-      rewrite CopySymbols_Steps_equation. destruct (stop a).
+      rewrite CopySymbols_steps_equation. cbn. destruct (stop a).
       + omega.
       + apply Nat.add_le_mono_l. replace (8 * S (|r1|)) with (8 + 8 * |r1|) by omega.
         eapply IHr1; eauto. cbn. now simpl_tape.
   Qed.
 
-  Corollary CopySymbols_Steps_midtape ls m rs x rs' :
+  Corollary CopySymbols_steps_midtape ls m rs x rs' :
     stop x = true ->
-    CopySymbols_Steps stop (midtape ls m (rs ++ x :: rs')) <= 16 + 8 * length rs.
+    CopySymbols_steps stop (midtape ls m (rs ++ x :: rs')) <= 16 + 8 * length rs.
   Proof.
-    intros. erewrite CopySymbols_Steps_local with (r1 := m :: rs); cbn -[plus mult]; eauto. omega.
+    intros. erewrite CopySymbols_steps_local with (r1 := m :: rs); cbn -[plus mult]; eauto. omega.
   Qed.
 
-  Corollary CopySymbols_Steps_moveright ls m rs x rs' :
+  Corollary CopySymbols_steps_moveright ls m rs x rs' :
     stop x = true ->
-    CopySymbols_Steps stop (tape_move_right' ls m (rs ++ x :: rs')) <= 8 + 8 * length rs.
+    CopySymbols_steps stop (tape_move_right' ls m (rs ++ x :: rs')) <= 8 + 8 * length rs.
   Proof.
     intros HStop. destruct rs as [ | s s'] eqn:E; cbn.
-    - rewrite CopySymbols_Steps_equation, HStop; cbn. omega.
-    - rewrite CopySymbols_Steps_midtape; auto. omega.
+    - rewrite CopySymbols_steps_equation. cbn. rewrite HStop; cbn. omega.
+    - rewrite CopySymbols_steps_midtape; auto. omega.
   Qed.
 
-  Lemma CopySymbols_L_TermTime_local t r1 sym r2 :
+  Lemma CopySymbols_L_steps_local t r1 sym r2 :
     tape_local_l t = r1 ++ sym :: r2 ->
     stop sym = true ->
-    CopySymbols_L_TermTime stop t <= 8 + 8 * length r1.
+    CopySymbols_L_steps stop t <= 8 + 8 * length r1.
   Proof.
     revert t sym r2. induction r1; intros t sym r2 HEnc HStop; cbn -[plus mult] in *.
-    - destruct t; cbn in HEnc; inv HEnc. rewrite CopySymbols_L_TermTime_equation. rewrite HStop. cbn. omega.
+    - destruct t; cbn in HEnc; inv HEnc. rewrite CopySymbols_L_steps_equation. cbn. rewrite HStop. cbn. omega.
     - destruct t; cbn in HEnc; try congruence. inv HEnc.
-      rewrite CopySymbols_L_TermTime_equation. destruct (stop a).
+      rewrite CopySymbols_L_steps_equation. cbn. destruct (stop a).
       + omega.
       + apply Nat.add_le_mono_l. replace (8 * S (|r1|)) with (8 + 8 * |r1|) by omega.
         eapply IHr1; eauto. cbn. now simpl_tape.
   Qed.
 
-  Corollary CopySymbols_L_TermTime_midtape ls x ls' m rs :
+  Corollary CopySymbols_L_steps_midtape ls x ls' m rs :
     stop x = true ->
-    CopySymbols_L_TermTime stop (midtape (ls ++ x :: ls') m rs) <= 16 + 8 * length ls.
+    CopySymbols_L_steps stop (midtape (ls ++ x :: ls') m rs) <= 16 + 8 * length ls.
   Proof.
-    intros. erewrite CopySymbols_L_TermTime_local with (r1 := m :: ls); cbn -[plus mult]; eauto. omega.
+    intros. erewrite CopySymbols_L_steps_local with (r1 := m :: ls); cbn -[plus mult]; eauto. omega.
   Qed.
 
-  Corollary CopySymbols_L_TermTime_moveleft ls ls' x m rs :
+  Corollary CopySymbols_L_steps_moveleft ls ls' x m rs :
     stop x = true ->
-    CopySymbols_L_TermTime stop (tape_move_left' (ls ++ x :: ls') m rs) <= 8 + 8 * length ls.
+    CopySymbols_L_steps stop (tape_move_left' (ls ++ x :: ls') m rs) <= 8 + 8 * length ls.
   Proof.
     intros HStop. destruct ls as [ | s s'] eqn:E; cbn.
-    - rewrite CopySymbols_L_TermTime_equation, HStop; cbn. omega.
-    - rewrite CopySymbols_L_TermTime_midtape; auto. omega.
+    - rewrite CopySymbols_L_steps_equation. cbn. rewrite HStop; cbn. omega.
+    - rewrite CopySymbols_L_steps_midtape; auto. omega.
   Qed.
   
 
@@ -423,7 +432,7 @@ Section Move.
     {
       intros tin k (x&HEncX&Hk).
       destruct HEncX as (r1&->).
-      rewrite MoveToSymbol_Steps_midtape; auto. now rewrite map_length.
+      rewrite MoveToSymbol_steps_midtape; auto. now rewrite map_length.
     }
   Qed.
 
@@ -437,7 +446,7 @@ Section Move.
     {
       intros tin k (x&HEncX&Hk).
       destruct HEncX as (r1&->).
-      rewrite MoveToSymbol_L_TermTime_midtape; auto. now rewrite map_length, rev_length.
+      rewrite MoveToSymbol_L_steps_midtape; auto. now rewrite map_length, rev_length.
     }
   Qed.
 
@@ -543,9 +552,9 @@ Section CopyValue.
     {
       intros tin ((), tout) H.
       intros x HEncX HRight.
-      TMSimp. clear H1_0.
-      apply H in HEncX. clear H. destruct HEncX as (r3&HEncX). rewrite HEncX in H0.
-      erewrite CopySymbols_L_correct_midtape in H0; eauto.
+      TMSimp.
+      apply H in HEncX. clear H. destruct HEncX as (r3&HEncX).
+      erewrite CopySymbols_L_correct_midtape in *; eauto.
       - inv H0. TMSimp. repeat econstructor; f_equal; rewrite map_rev, rev_involutive; repeat f_equal. now apply isRight_right.
       - intros ? (?&<-&?) % in_map_iff. reflexivity.
     }
@@ -566,7 +575,7 @@ Section CopyValue.
       - unfold size in *. omega.
       - intros tmid () (H1&HInj). TMSimp.
         apply H1 in HEncX as (r1&->).
-        rewrite CopySymbols_L_TermTime_midtape; eauto.
+        rewrite CopySymbols_L_steps_midtape; eauto.
         now rewrite map_length, rev_length.
     }
   Qed.
@@ -715,7 +724,7 @@ Section Translate.
     {
       intros tin k (x&HEncX&Hk). unfold size in *.
       destruct HEncX as (r1&->).
-      rewrite MoveToSymbol_Steps_midtape; auto. cbn. now rewrite !map_length.
+      rewrite MoveToSymbol_steps_midtape; auto. cbn. now rewrite !map_length.
     }
   Qed.
 

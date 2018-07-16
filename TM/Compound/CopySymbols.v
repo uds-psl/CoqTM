@@ -73,43 +73,53 @@ Section CopySymbols.
    *)
   Definition CopySymbols : pTM sig unit 2 := WHILE CopySymbols_Step.
 
-  Definition rlength (t : tape sig) :=
-    match t with
-    | niltape _ => 0
-    | rightof _ _ => 0
-    | midtape ls m rs => 1 + length rs
-    | leftof r rs => 2 + length rs
-    end.
+  Definition rlength (t : tape sig) := length (tape_local t).
 
-  Definition rlength' (tin : tape sig * tape sig) : nat := rlength (fst tin).
+  Definition rlength' (tin : tapes sig 2) : nat := rlength tin[@Fin0].
 
   (* Function of CopySymbols *)
-  Function CopySymbols_Fun (tin : tape sig * tape sig) { measure rlength' tin } : tape sig * tape sig :=
-    match tin with
-      (midtape ls m rs as t1, t2) =>
-      if f m
-      then (t1, tape_write t2 (Some m))
-      else CopySymbols_Fun (tape_move_right t1, tape_move_mono t2 (Some m, R))
-    |  (t1, t2) => (t1, t2)
+  Function CopySymbols_Fun (tin : tapes sig 2) { measure rlength' tin } : tapes sig 2 :=
+    match current tin[@Fin0] with
+    | Some s =>
+      if f s
+      then [| tin[@Fin0]; tape_write tin[@Fin1] (Some s) |]
+      else CopySymbols_Fun [| tape_move_right tin[@Fin0]; tape_move_mono tin[@Fin1] (Some s, R) |]
+    | _ => tin
     end.
   Proof.
-    all: (intros; try now (cbn; omega)).
-    all: (intros; try now (cbn; omega)).
-    destruct rs; cbn. omega.
-    destruct rs; cbn. omega. omega.
+    intros tin m HC Hs. unfold rlength', rlength. cbn.
+    destruct tin[@Fin0]; cbn in *; inv HC. simpl_tape. omega.
   Qed.
 
 
   Definition CopySymbols_Rel : Rel (tapes sig 2) (unit * tapes sig 2) :=
-    ignoreParam (fun tin tout => ((tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = CopySymbols_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]))).
+    ignoreParam (fun tin tout => tout = CopySymbols_Fun tin).
 
-  Lemma CopySymbols_skip ls m rs t2 :
-    f m = false ->
-    CopySymbols_Fun (midtape ls m rs, t2) = CopySymbols_Fun (tape_move_right (midtape ls m rs),
-                                                             tape_move_mono t2 (Some m, R)).
-  Proof. intros H. now rewrite CopySymbols_Fun_equation, H. Qed.
+  Lemma CopySymbols_false s t :
+    current t[@Fin0] = Some s ->
+    f s = false ->
+    CopySymbols_Fun t = CopySymbols_Fun [| tape_move_right t[@Fin0]; tape_move_mono t[@Fin1] (Some s, R) |].
+  Proof. intros HCurrent Hs. rewrite CopySymbols_Fun_equation. now rewrite HCurrent, Hs. Qed.
 
+  Lemma CopySymbols_true s t :
+    current t[@Fin0] = Some s ->
+    f s = true ->
+    CopySymbols_Fun t = [| t[@Fin0]; tape_write t[@Fin1] (Some s) |].
+  Proof. intros HCurrent Hs. rewrite CopySymbols_Fun_equation. now rewrite HCurrent, Hs. Qed.
 
+  Lemma tape_destruct2 (t : tapes sig 2) t1 t2 :
+    t[@Fin0] = t1 ->
+    t[@Fin1] = t2 ->
+    t = [|t1; t2|].
+  Proof. intros <- <-. now destruct_tapes. Qed.
+
+  Lemma tape_destruct2' (t : tapes sig 2) t1 t2 :
+    t = [|t1; t2|] ->
+    t[@Fin0] = t1 /\
+    t[@Fin1] = t2.
+  Proof. destruct_tapes; now intros (-> & (-> & _) % Vector.cons_inj) % Vector.cons_inj. Qed.
+  
+    
   Lemma CopySymbols_Realise :
     CopySymbols ⊨ CopySymbols_Rel.
   Proof.
@@ -119,41 +129,47 @@ Section CopySymbols.
     }
     {
       apply WhileInduction; intros; TMSimp.
-      - destruct tin[@Fin0] eqn:E0; TMSimp; rewrite CopySymbols_Fun_equation; auto.
-        destruct (f e); cbn in *; auto; destruct HLastStep as (HLS1&HLS2&HLS3); TMSimp; auto.
-      - destruct tin[@Fin0] eqn:E; TMSimp; auto.
-        destruct (f e) eqn:Ee; destruct HStar as (HS1&HS2&HS3); TMSimp.
-        now rewrite CopySymbols_skip.
+      - destruct (current tin[@Fin0]) eqn:E.
+        + destruct (f e) eqn:Ef; TMSimp. erewrite CopySymbols_true; eauto. now apply tape_destruct2.
+        + destruct HLastStep as (->&_). now rewrite CopySymbols_Fun_equation, E.
+      - destruct (current tin[@Fin0]) eqn:E.
+        + destruct (f e) eqn:Ef; TMSimp. symmetry. erewrite CopySymbols_false; eauto. erewrite <- tape_destruct2; eauto.
+        + destruct HStar as (->&_). now rewrite CopySymbols_Fun_equation, E.
     }
   Qed.
 
 
   (** Termination *)
 
-  Function CopySymbols_Steps (t : tape sig) { measure rlength t } : nat :=
-    match t with
-    | midtape ls m rs => if f m then 8 else 8 + CopySymbols_Steps (tape_move_right t)
+  Function CopySymbols_steps (t : tape sig) { measure rlength t } : nat :=
+    match current t with
+    | Some m => if f m then 8 else 8 + CopySymbols_steps (tape_move_right t)
     | _ => 8
     end.
   Proof.
-    all: (intros; try now (cbn; omega)). destruct rs; cbn; omega.
+    intros tin m HC Hs. unfold rlength', rlength. cbn.
+    destruct tin; cbn in *; inv HC. simpl_tape. omega.
   Qed.
 
 
   Lemma CopySymbols_Terminates :
-    projT1 CopySymbols ↓ (fun tin k => CopySymbols_Steps (tin[@Fin.F1]) <= k).
+    projT1 CopySymbols ↓ (fun tin k => CopySymbols_steps (tin[@Fin.F1]) <= k).
   Proof.
-    eapply While_TerminatesIn.
-    1-2: eapply Realise_total; eapply CopySymbols_Step_Sem.
+    eapply TerminatesIn_monotone.
+    { unfold CopySymbols. repeat TM_Correct.
+      1-2: eapply Realise_total; eapply CopySymbols_Step_Sem.
+    }
     {
-      intros tin k Hk. destruct tin[@Fin0] eqn:E; rewrite CopySymbols_Steps_equation in *; cbn in *; try rewrite E.
-      - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
-      - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
-      - eexists. split. eauto. intros o tmid (H1&H2); inv H2. omega.
-      - destruct (f e) eqn:E2.
-        + eexists. split. eauto. cbn. rewrite E2. intros o tmid (H1&H2); inv H2. omega.
-        + eexists. split. eauto. cbn. rewrite E2. intros o tmid (H1&H2&->). TMSimp.
-          exists (CopySymbols_Steps (tape_move_right' l e l0)). repeat split; auto.
+      apply WhileCoInduction; intros. exists 7. repeat split.
+      - reflexivity.
+      - intros () tmid H. cbn in *.
+        destruct (current tin[@Fin0]) eqn:E.
+        + destruct (f e) eqn:Ef; TMSimp. rewrite CopySymbols_steps_equation, E, Ef in HT. omega.
+        + rewrite CopySymbols_steps_equation, E in HT. omega.
+      - intros tmid H. cbn in *.
+        destruct (current tin[@Fin0]) eqn:E; TMSimp. destruct (f e) eqn:Ef; TMSimp.
+        rewrite CopySymbols_steps_equation, E, Ef in HT.
+        exists (CopySymbols_steps (tape_move_right tin[@Fin0])). split; auto.
     }
   Qed.
 
@@ -162,89 +178,59 @@ Section CopySymbols.
 
   Definition CopySymbols_L := Mirror CopySymbols.
 
-  Definition llength (t : tape sig) :=
-    match t with
-    | midtape ls m rs => 1 + length ls
-    | _ => 0
-    end.
+  Definition llength (t : tape sig) := length (tape_local_l t).
 
-  Definition llength' (tin : tape sig * tape sig) : nat := llength (fst tin).
+  Definition llength' (tin : tapes sig 2) : nat := llength (tin[@Fin0]).
 
-  Function CopySymbols_L_Fun (tin : tape sig * tape sig) { measure llength' tin } : tape sig * tape sig :=
-    match tin with
-      (midtape ls m rs as t1, t2) =>
-      if f m
-      then (t1, tape_write t2 (Some m))
-      else CopySymbols_L_Fun (tape_move_left t1, tape_move_mono t2 (Some m, L))
-    | (t1, t2) => (t1, t2)
+  Function CopySymbols_L_Fun (tin : tapes sig 2) { measure llength' tin } : tapes sig 2 :=
+    match current tin[@Fin0] with
+    | Some s =>
+      if f s
+      then [| tin[@Fin0]; tape_write tin[@Fin1] (Some s) |]
+      else CopySymbols_L_Fun [| tape_move_left tin[@Fin0]; tape_move_mono tin[@Fin1] (Some s, L) |]
+    | _ => tin
     end.
   Proof.
-    all: (intros; try now (cbn; omega)).
-    destruct ls; cbn. omega. omega.
+    intros tin m HC Hs. unfold llength', llength. cbn.
+    destruct tin[@Fin0]; cbn in *; inv HC. simpl_tape. omega.
   Qed.
 
-
   Lemma CopySymbols_mirror t t' :
-    CopySymbols_Fun (mirror_tape (fst t), mirror_tape (snd t)) =
-    (mirror_tape (fst t'), mirror_tape (snd t')) ->
+    CopySymbols_Fun (mirror_tapes t) = mirror_tapes t' ->
     CopySymbols_L_Fun t = t'.
   Proof.
     functional induction CopySymbols_L_Fun t; intros H; cbn in *; try reflexivity;
       rewrite CopySymbols_Fun_equation in H; cbn; auto.
-    - rewrite e0 in H. cbn in *.
-      destruct t' as (t1',t2'); cbn in *. inv H.
-      apply mirror_tape_inv_midtape' in H1. subst.
-      apply mirror_tape_inv_midtape' in H2. subst.
-      simpl_tape. reflexivity.
-    - rewrite e0 in H. cbn in *.
-      destruct t' as (t1',t2'); cbn in *.
-      destruct ls; cbn in *; simpl_tape in *.
-      + rewrite CopySymbols_Fun_equation in H. inv H.
-        apply mirror_tape_inv_rightof' in H1. subst.
-        eapply IHp; clear IHp. rewrite CopySymbols_Fun_equation. f_equal. f_equal.
-        destruct (left t2); cbn.
-        * apply mirror_tape_inv_rightof' in H2. subst. reflexivity.
-        * apply mirror_tape_inv_midtape' in H2. subst. reflexivity.
-      + eapply IHp; clear IHp. now rewrite <- H; clear H.
-    - destruct t' as (t1',t2'). destruct t1; cbn in *; inv H; auto.
-      1: apply mirror_tape_inv_niltape' in H1.
-      2: apply mirror_tape_inv_rightof' in H1.
-      3: apply mirror_tape_inv_leftof' in H1.
-      all: apply mirror_tape_injective in H2.
-      all: congruence.
+    - simpl_tape in *. rewrite e, e0 in H. cbn in *.
+      symmetry in H; apply tape_destruct2' in H as (H1 & H2). simpl_tape in *.
+      apply mirror_tape_injective in H1.
+      apply mirror_tape_inv_midtape in H2.
+      symmetry; apply tape_destruct2; eauto.
+    - simpl_tape in *. rewrite e, e0 in H. cbn in *. apply IHt0. rewrite <- H. f_equal. unfold mirror_tapes. cbn.
+      do 2 (f_equal; simpl_tape; auto).
+    - destruct (current tin[@Fin0]) eqn:E; auto. simpl_tape in *. rewrite E in H. now apply mirror_tapes_injective in H.
   Qed.
 
 
   Lemma CopySymbols_mirror' t t' :
-    CopySymbols_L_Fun (mirror_tape (fst t), mirror_tape (snd t)) =
-    (mirror_tape (fst t'), mirror_tape (snd t')) ->
+    CopySymbols_L_Fun (mirror_tapes t) = mirror_tapes t' ->
     CopySymbols_Fun t = t'.
   Proof.
     functional induction CopySymbols_Fun t; intros H; cbn in *; try reflexivity;
       rewrite CopySymbols_L_Fun_equation in H; cbn; auto.
-    - rewrite e0 in H. inv H.
-      destruct t' as (t1',t2'). cbn in *.
-      apply mirror_tape_inv_midtape' in H1.
-      apply mirror_tape_inv_midtape' in H2.
-      subst. simpl_tape. reflexivity.
-    - rewrite e0 in H.
-      destruct t' as (t1',t2'). cbn in *.
-      eapply IHp; clear IHp. rewrite <- H; clear H.
-      f_equal. f_equal; simpl_tape.
-      + destruct rs; cbn; reflexivity.
-      + destruct (right t2); cbn; reflexivity.
-    - destruct t' as (t1',t2'). cbn in *.
-      destruct t1; cbn in *; inv H; auto.
-      1: apply mirror_tape_inv_niltape' in H1.
-      2: apply mirror_tape_inv_rightof' in H1.
-      3: apply mirror_tape_inv_leftof' in H1.
-      all: apply mirror_tape_injective in H2.
-      all: congruence.
+    - simpl_tape in *. rewrite e, e0 in H. cbn in *.
+      symmetry in H; apply tape_destruct2' in H as (H1 & H2). simpl_tape in *.
+      apply mirror_tape_injective in H1.
+      apply mirror_tape_inv_midtape in H2.
+      symmetry; apply tape_destruct2; eauto.
+    - simpl_tape in *. rewrite e, e0 in H. cbn in *. apply IHt0. rewrite <- H. f_equal. unfold mirror_tapes. cbn.
+      do 2 (f_equal; simpl_tape; auto).
+    - destruct (current tin[@Fin0]) eqn:E; auto. simpl_tape in *. rewrite E in H. now apply mirror_tapes_injective in H.
   Qed.
 
 
   Definition CopySymbols_L_Rel : Rel (tapes sig 2) (unit * tapes sig 2) :=
-    ignoreParam (fun tin tout => ((tout[@Fin.F1], tout[@Fin.FS Fin.F1]) = CopySymbols_L_Fun (tin[@Fin.F1], tin[@Fin.FS Fin.F1]))).
+    ignoreParam (fun tin tout => tout = CopySymbols_L_Fun tin).
 
   Lemma CopySymbols_L_Realise : CopySymbols_L ⊨ CopySymbols_L_Rel.
   Proof.
@@ -257,34 +243,35 @@ Section CopySymbols.
   Qed.
 
 
-  Function CopySymbols_L_TermTime (t : tape sig) { measure llength t } : nat :=
-    match t with
-    | midtape ls m rs => if f m then 8 else 8 + CopySymbols_L_TermTime (tape_move_left t)
+  Function CopySymbols_L_steps (t : tape sig) { measure llength t } : nat :=
+    match current t with
+    | Some s => if f s then 8 else 8 + CopySymbols_L_steps (tape_move_left t)
     | _ => 8
     end.
   Proof.
-    all: (intros; try now (cbn; omega)). destruct ls; cbn; omega.
+    intros tin m HC Hs. unfold llength', llength. cbn.
+    destruct tin; cbn in *; inv HC. simpl_tape. omega.
   Qed.
 
 
-  Lemma CopySymbols_Steps_mirror t :
-    CopySymbols_L_TermTime t = CopySymbols_Steps (mirror_tape t).
+  Lemma CopySymbols_steps_mirror t :
+    CopySymbols_L_steps t = CopySymbols_steps (mirror_tape t).
   Proof.
-    functional induction CopySymbols_L_TermTime t; cbn; auto;
+    functional induction CopySymbols_L_steps t; cbn; auto;
       simpl_tape in *; cbn in *;
-        rewrite CopySymbols_Steps_equation.
-    - now rewrite e0.
-    - now rewrite e0, IHn.
-    - destruct t; cbn; auto.
+        rewrite CopySymbols_steps_equation; simpl_tape.
+    - now rewrite e, e0.
+    - rewrite e, e0. omega.
+    - destruct (current t); cbn; auto.
   Qed.
 
   Lemma CopySymbols_L_Terminates :
-    projT1 CopySymbols_L ↓ (fun tin k => CopySymbols_L_TermTime (tin[@Fin.F1]) <= k).
+    projT1 CopySymbols_L ↓ (fun tin k => CopySymbols_L_steps (tin[@Fin.F1]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     - eapply Mirror_Terminates. eapply CopySymbols_Terminates.
     - cbn. intros tin k Hk. destruct_tapes; cbn. rewrite <- Hk. unfold mirror_tapes.
-      rewrite CopySymbols_Steps_mirror. cbn. auto.
+      rewrite CopySymbols_steps_mirror. cbn. auto.
   Qed.
 
 

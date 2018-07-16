@@ -79,6 +79,29 @@ we are on the right extremity of a non-empty tape (right overflow). *)
     apply (FinTypeC (enum := [L; R; N])).
     intros []; now cbv.
   Qed.
+
+
+  (** Inversion of [midtape] *)
+
+  Lemma tape_midtape_current_right t rs s :
+    current t = Some s ->
+    right t = rs ->
+    t = midtape (left t) s rs.
+  Proof. destruct t; cbn; congruence. Qed.
+
+  Lemma tape_midtape_current_left t ls s :
+    current t = Some s ->
+    left t = ls ->
+    t = midtape ls s (right t).
+  Proof. destruct t; cbn; congruence. Qed.
+
+  Lemma tape_is_midtape t ls s rs :
+    left t = ls ->
+    current t = Some s ->
+    right t = rs ->
+    t = midtape ls s rs.
+  Proof. destruct t; cbn; congruence. Qed.
+  
   
   
   (** Definition of tape movements *)
@@ -384,7 +407,7 @@ Hint Rewrite mirror_tape_involution : tape.
 Hint Rewrite mirror_tape_move_left : tape.
 Hint Rewrite mirror_tape_move_right : tape.
 Hint Rewrite mirror_tapes_involution : tape.
-Hint Rewrite mirror_tapes_nth using eauto : tape.
+Hint Rewrite mirror_tapes_nth : tape.
 
 
 Section Tape_Local.
@@ -420,7 +443,7 @@ Section Tape_Local.
   Proof. destruct t eqn:E; cbn; congruence. Qed.
 
   Lemma tape_local_l_current_cons (x : sig) (xs : list sig) (t : tape sig) :
-    tape_local t = x :: xs -> current t = Some x.
+    tape_local_l t = x :: xs -> current t = Some x.
   Proof. destruct t eqn:E; cbn; congruence. Qed.
 
   Lemma tape_local_right (x : sig) (xs : list sig) (t : tape sig) :

@@ -174,153 +174,53 @@ Section While.
   Section While_TerminatesIn.
     Variable (T T' : Rel (tapes sig n) nat).
 
-    Lemma While_TerminatesIn :
+    Lemma While_TerminatesIn_ind :
       pM ⊨ R ->
-      projT1 pM ↓ T ->
-      (forall (tin : tapes sig n) (i : nat),
-          T' tin i ->
-          exists i1,
-            T tin i1 /\
-            forall (ymid : option F) tmid,
-              R tin (ymid, tmid) ->
-              match ymid with
-              | Some _ => i1 <= i
-              | None => exists i2, T' tmid i2 /\ 1 + i1 + i2 <= i
-              end) ->
-      While ↓T'.
+      projT1 pM ↓ T' ->
+      (forall (tin : tapes sig n) (k : nat),
+          T tin k ->
+          exists k1,
+            T' tin k1 /\
+            (forall ymid tmid, R tin (Some ymid, tmid) -> k1 <= k) /\
+            (forall tmid, R tin (None, tmid) -> exists k2, T tmid k2 /\ 1 + k1 + k2 <= k)) ->
+      While ↓T.
     Proof.
       intros Realise_M Term_M Hyp tin i. revert tin. apply complete_induction with (x:=i); clear i; intros i IH tin.
-      intros HT1. specialize (Hyp _ _ HT1) as (i1&Ht1&HT2).
-      pose proof (Term_M _ _ Ht1) as (oconf&Hloop).
+      intros (i1&HT1&HT2&HT3) % Hyp. (* todo: i *)
+      pose proof (Term_M _ _ HT1) as (oconf&Hloop).
       specialize (Realise_M _ _ _ Hloop).
-      specialize (HT2 (projT2 pM (cstate oconf)) (ctapes oconf) Realise_M).
       destruct (projT2 pM (cstate oconf)) as [ ymid | ] eqn:E1.
-      - exists oconf. eapply loop_monotone; eauto. eapply While_merge_term; eauto.
-      - destruct HT2 as (i2&HT2&Hi).
-        specialize (IH i2 ltac:(omega) _ HT2) as (oconf2&Hloop2).
+      - specialize HT2 with (1 := Realise_M).
+        exists oconf. eapply loop_monotone; eauto. eapply While_merge_term; eauto.
+      - specialize HT3 with (1 := Realise_M) as (i2&HT3&Hi).
+        specialize (IH i2 ltac:(omega) _ HT3) as (oconf2&Hloop2).
         exists oconf2. apply loop_monotone with (k1 := i1 + (1 + i2)). 2: omega.
         eapply While_merge_repeat; eauto.
-    Qed.
-
-    Hypothesis functionalOn : forall tin yout1 yout2 tout1 tout2, R tin (yout1, tout1) -> R tin (yout2, tout2) -> yout1 = yout2 /\ tout1 = tout2.
-
-    Inductive While_T : tRel sig n :=
-    | While_T1 tin yout tout k k' :
-        T tin k ->
-        R tin (Some yout, tout) ->
-        k <= k' ->
-        While_T tin k'
-    | While_T2 tin tmid k1 k2 k' :
-        T tin k1 ->
-        R tin (None, tmid) ->
-        While_T tmid k2 ->
-        1 + k1 + k2 <= k' ->
-        While_T tin k'.
-
-    Lemma While_TerminatesIn_T :
-      pM ⊨ R ->
-      projT1 pM ↓ T ->
-      While ↓ While_T.
-    Proof.
-      intros HRel HTerm. hnf in HRel, HTerm.
-      hnf. intros tin k HT. induction HT as [ tin yout tout k k' HT HR Hk' | tin tout k1 k2 k' HT HR1 HR2 IH Hk'].
-      - apply HTerm in HT as (oconf&HT).
-        pose proof HRel _ _ _ HT as HT'.
-        pose proof functionalOn HT' HR as (FF&<-).
-        exists oconf. eapply loop_monotone. eapply While_merge_term; eauto. omega.
-      - apply HTerm in HT as (midconf&HT).
-        pose proof HRel _ _ _ HT as HT'.
-        pose proof functionalOn HT' HR1 as (FF&<-).
-        destruct IH as (oconf&IH).
-        exists oconf. eapply loop_monotone. eapply While_merge_repeat; eauto. omega.
-    Qed.
-    
-    Lemma While_TerminatesIn' :
-      pM ⊨ R ->
-      projT1 pM ↓ T ->
-      (forall (tin : tapes sig n) (i : nat),
-          T' tin i ->
-          exists i1,
-            T tin i1 /\
-            forall (ymid : option F) tmid,
-              R tin (ymid, tmid) ->
-              match ymid with
-              | Some _ => i1 <= i
-              | None => exists i2, T' tmid i2 /\ 1 + i1 + i2 <= i
-              end) ->
-      While ↓T'.
-    Proof.
-      intros HRel HTerm HCond.
-      eapply TerminatesIn_monotone.
-      { eapply TerminatesIn_extend. now apply While_TerminatesIn_T. }
-      {
-        hnf in HRel, HTerm.
-        intros tin k HT'.
-        revert HT'. revert tin. apply complete_induction with (x := k); clear k; intros k IH. intros.
-        
-        specialize HCond with (1 := HT') as (k1&HT1&HCond).
-        specialize HTerm with (1 := HT1) as (midconf&HTerm).
-        specialize HRel with (1 := HTerm).
-        specialize HCond with (1 := HRel).
-        destruct (projT2 pM (cstate midconf)) eqn:E.
-        + exists k1. split; eauto. econstructor 1; eauto.
-        + destruct HCond as (k2&HT''&Hk).
-          specialize IH with (2 := HT'') as (k'&Hk'&IH); [ omega | ].
-          eexists. split. eauto.
-          econstructor 2; eauto. omega.
-      }
     Qed.
 
   End While_TerminatesIn.
 
   (** Alternative for [While_TerminatesIn] using co-induction *)
   Section While_TerminatesIn_coind.
-    Variable (T T' : Rel (tapes sig n) nat).
+    Variable (T : Rel (tapes sig n) nat).
 
-    CoInductive WhileT_coind : tRel sig n :=
-    | WhileT_coind_intro tin k k1 :
+    CoInductive While_T : tRel sig n :=
+    | While_T_intro tin k k1 :
         T tin k1 ->
-        (forall tmid,
-            R tin (None, tmid) ->
-            exists k2, WhileT_coind tmid k2 /\ 1 + k1 + k2 <= k) ->
         (forall tmid ymid,
             R tin (Some ymid, tmid) -> k1 <= k) ->
-        WhileT_coind tin k.
+        (forall tmid,
+            R tin (None, tmid) ->
+            exists k2, While_T tmid k2 /\ 1 + k1 + k2 <= k) ->
+        While_T tin k.
 
-    Lemma While_TerminatesIn_coind :
+    Lemma While_TerminatesIn :
       pM ⊨ R ->
       projT1 pM ↓ T ->
-      While ↓ WhileT_coind.
+      While ↓ While_T.
     Proof.
-      intros HRel HTerm. eapply While_TerminatesIn; eauto.
-      intros tin k' HCoInd. destruct HCoInd as [ t k k1 H1 H2 H3 ].
-      exists k1. split; eauto. intros ymid tmid HR. destruct ymid; cbn in *; eauto.
-    Qed.
-
-    Lemma While_TerminatesIn_coind' :
-      pM ⊨ R ->
-      projT1 pM ↓ T ->
-      (forall (tin : tapes sig n) (i : nat),
-          T' tin i ->
-          exists i1,
-            T tin i1 /\
-            forall (ymid : option F) tmid,
-              R tin (ymid, tmid) ->
-              match ymid with
-              | Some _ => i1 <= i
-              | None => exists i2, T' tmid i2 /\ 1 + i1 + i2 <= i
-              end) ->
-      While ↓T'.
-    Proof.
-      intros HRel HTerm HSpec. eapply TerminatesIn_monotone.
-      { now apply While_TerminatesIn_coind. }
-      {
-        cofix IH.
-        intros tin k Hk. specialize HSpec with (1 := Hk) as (k1&HT&H).
-        split with (k1 := k1); eauto.
-        - intros tmid HR. specialize H with (1 := HR) as (k2&?&?). exists k2. split; eauto.
-        - intros tmid ymid HR. specialize H with (1 := HR). cbn in *. auto.
-      }
+      intros HRel HTerm. eapply While_TerminatesIn_ind; eauto.
+      intros tin k' HCoInd. destruct HCoInd as [ t k k1 H1 H2 H3 ]. eauto.
     Qed.
 
   End While_TerminatesIn_coind.
@@ -336,11 +236,10 @@ Arguments WHILE {n sig F} pM {defF}.
 
 
 Section WhileInduction.
-
   Variable (sig : finType) (n : nat) (F : finType).
 
-  Variable R1 : Rel (tapes sig n) (option F * tapes sig n).
-  Variable R2 : Rel (tapes sig n) (F * tapes sig n).
+  Variable R1 : pRel sig (option F) n.
+  Variable R2 : pRel sig F n.
 
   Lemma WhileInduction :
     (forall tin yout tout (HLastStep: R1 tin (Some yout, tout)), R2 tin (yout, tout)) ->
@@ -350,6 +249,27 @@ Section WhileInduction.
   Proof. intros H1 H2. intros tin tout. induction 1; eauto. Qed.
 
 End WhileInduction.
+
+
+Section WhileCoInduction.
+  Variable (sig : finType) (n : nat) (F : finType).
+
+  Variable R : pRel sig (option F) n.
+  Variable T T' : tRel sig n.
+
+  Lemma WhileCoInduction :
+    (forall (tin : tapes sig n) (k : nat) (HT : T tin k),
+        exists k1,
+          T' tin k1 /\
+          (forall ymid tmid, R tin (Some ymid, tmid) -> k1 <= k) /\
+          (forall tmid, R tin (None, tmid) -> exists k2, T tmid k2 /\ 1 + k1 + k2 <= k)) ->
+    T <<=2 While_T R T'.
+  Proof.
+    intros. cofix IH. intros tin k HT. specialize H with (1 := HT) as (k1&H1&H2&H3). econstructor; eauto.
+    - intros tmid HR. specialize H3 with (1 := HR) as (k2&H3&H4). eauto.
+  Qed.
+
+End WhileCoInduction.
 
 
 (** Alternative definition of [While_Rel] *)
