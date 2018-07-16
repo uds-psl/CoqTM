@@ -756,8 +756,8 @@ Section Semantics.
 
   Notation "M '⊨' R" := (Realise M R) (no associativity, at level 30, format "M  '⊨'  R").
 
-  Lemma Realise_monotone n (F : finType) (pM : pTM F n) R1 R2 :
-    pM ⊨ R1 -> R1 <<=2 R2 -> pM ⊨ R2.
+  Lemma Realise_monotone n (F : finType) (pM : pTM F n) R R' :
+    pM ⊨ R' -> R' <<=2 R -> pM ⊨ R.
   Proof. firstorder. Qed.
 
 
@@ -774,8 +774,8 @@ Section Semantics.
   Arguments TerminatesIn { _ } _.
   Notation "M ↓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '↓'  T").
 
-  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T1 T2 : tRel n) :
-    M ↓ T1 -> (T2 <<=2 T1) -> M ↓ T2.
+  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T T' : tRel n) :
+    M ↓ T' -> (T <<=2 T') -> M ↓ T.
   Proof.
     intros H1 H2. firstorder.
   Qed.

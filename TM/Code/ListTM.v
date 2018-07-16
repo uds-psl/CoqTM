@@ -404,11 +404,12 @@ Section Nth'.
   
   Lemma Nth'_Loop_Terminates : projT1 Nth'_Loop ↓ Nth'_Loop_T.
   Proof.
-    unfold Nth'_Loop. repeat TM_Correct.
-    { apply Nth'_Step_Realise. }
-    { apply Nth'_Step_Terminates. }
+    eapply TerminatesIn_monotone.
+    { unfold Nth'_Loop. repeat TM_Correct.
+      - apply Nth'_Step_Realise.
+      - apply Nth'_Step_Terminates. }
     {
-      intros tin k (l&n&HEncL&HEncN&HRight&Hk).
+      apply WhileCoInduction. intros tin k (l&n&HEncL&HEncN&HRight&Hk).
       destruct l as [ | x l'] eqn:E1, n as [ | n'] eqn:E2; cbn in *; auto; TMSimp.
       - (* [n=0] and [l=0]; return *)
         exists (Nth'_Step_steps nil 0). split.
@@ -699,11 +700,11 @@ Section Append.
 
       destruct (app_or_nil xs) as [-> | (xs'&x&->)]; cbn in *.
       { (* [xs = nil] *)
-        rewrite CopySymbols_L_TermTime_equation. cbn. omega.
+        rewrite CopySymbols_L_steps_equation. cbn. omega.
       }
       { (* [xs = xs' ++ [x]] *)
         rewrite encode_list_app. rewrite rev_app_distr. cbn. rewrite <- app_assoc, rev_app_distr, <- app_assoc. cbn.
-        rewrite CopySymbols_L_TermTime_moveleft; cbn; auto.
+        rewrite CopySymbols_L_steps_moveleft; cbn; auto.
         rewrite map_length, !app_length, rev_length. cbn. rewrite map_length, rev_length, !app_length, !map_length. cbn.
         rewrite removelast_length. omega.
       }
@@ -901,11 +902,12 @@ Section Lenght.
 
   Lemma Length_Loop_Terminates : projT1 Length_Loop ↓ Length_Loop_T.
   Proof.
-    unfold Length_Loop. repeat TM_Correct.
-    { apply Length_Step_Realise. }
-    { apply Length_Step_Terminates. }
+    eapply TerminatesIn_monotone.
+    { unfold Length_Loop. repeat TM_Correct.
+      - apply Length_Step_Realise.
+      - apply Length_Step_Terminates. }
     {
-      intros tin k (xs&n&HEncXs&HEncN&HRight2&Hk). exists (Length_Step_steps xs). repeat split.
+      apply WhileCoInduction. intros tin k (xs&n&HEncXs&HEncN&HRight2&Hk). exists (Length_Step_steps xs). repeat split.
       - hnf. do 2 eexists. repeat split; eauto.
       - intros b tmid HStep. hnf in HStep. modpon HStep. destruct b as [ () | ], xs as [ | x xs']; cbn in *; auto; modpon HStep.
         eexists (Length_Loop_steps xs'). repeat split; try omega. hnf. exists xs', (S n). repeat split; eauto.

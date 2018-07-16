@@ -467,11 +467,12 @@ Definition JumpTarget_Loop_T : tRel sigPro^+ 5 :=
 
 Lemma JumpTarget_Loop_Terminates : projT1 JumpTarget_Loop ↓ JumpTarget_Loop_T.
 Proof.
-  unfold JumpTarget_Loop. repeat TM_Correct.
-  { apply JumpTarget_Step_Realise. }
-  { apply JumpTarget_Step_Terminates. }
+  eapply TerminatesIn_monotone.
+  { unfold JumpTarget_Loop. repeat TM_Correct.
+    - apply JumpTarget_Step_Realise.
+    - apply JumpTarget_Step_Terminates. }
   {
-    intros tin steps. intros (P&Q&k&HEncP&HEncQ&HEncK&HRight3&HRight4&Hk).
+    apply WhileCoInduction. intros tin steps. intros (P&Q&k&HEncP&HEncQ&HEncK&HRight3&HRight4&Hk).
     exists (JumpTarget_Step_steps P Q k). repeat split. hnf; cbn; eauto 10.
     intros ymid tmid HStep. cbn in HStep. modpon HStep. destruct ymid as [ [ | ] | ].
     { (* [Some true], i.e. [P = retT :: P'] and [k = 0] *)

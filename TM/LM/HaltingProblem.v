@@ -83,11 +83,12 @@ Definition Loop_T : tRel sigStep^+ 11 :=
 
 Lemma Loop_Terminates : projT1 Loop ↓ Loop_T.
 Proof.
-  unfold Loop. repeat TM_Correct.
-  { apply Step_Realise. }
-  { apply Step_Terminates. }
+  eapply TerminatesIn_monotone.
+  { unfold Loop. repeat TM_Correct.
+    - apply Step_Realise.
+    - apply Step_Terminates. }
   {
-    intros tin i. intros (T&V&Heap&k&Halt&HEncT&HEncV&HEncH&HInt&Hi).
+    eapply WhileCoInduction. intros tin i. intros (T&V&Heap&k&Halt&HEncT&HEncV&HEncH&HInt&Hi).
     exists (Step_steps T V Heap). repeat split.
     { hnf. do 3 eexists; repeat split; eauto. }
     intros ymid tmid HStep. cbn in HStep. modpon HStep. destruct ymid as [ () | ].

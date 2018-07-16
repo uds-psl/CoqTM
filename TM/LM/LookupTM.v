@@ -344,11 +344,12 @@ t4: internal tape
 
   Lemma Lookup_Terminates : projT1 Lookup ↓ Lookup_T.
   Proof.
-    unfold Lookup. repeat TM_Correct.
-    { apply Lookup_Step_Realise. }
-    { apply Lookup_Step_Terminates. }
+    eapply TerminatesIn_monotone.
+    { unfold Lookup. repeat TM_Correct.
+      - apply Lookup_Step_Realise.
+      - apply Lookup_Step_Terminates. }
     {
-      intros tin k (Heap&a&n&HEncHeap&HEncA&HEncN&HRight3&HRight4&Hk).
+      apply WhileCoInduction. intros tin k (Heap&a&n&HEncHeap&HEncA&HEncN&HRight3&HRight4&Hk).
       exists (Lookup_Step_steps Heap a n). split.
       - hnf. do 3 eexists; repeat split; eauto.
       - intros ymid tmid HStep. cbn in *. modpon HStep. destruct ymid as [ [ | ] | ], n as [ | n']; cbn in *; auto.

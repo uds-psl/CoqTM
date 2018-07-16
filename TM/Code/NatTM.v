@@ -223,12 +223,26 @@ Lemma Add_Loop_Terminates :
               tin[@Fin1] ≃ b /\
               Add_Loop_steps b <= i).
 Proof.
-  unfold Add_Loop, Add_Loop_steps. repeat TM_Correct.
-  { eapply RealiseIn_Realise. apply Add_Step_Sem. }
-  { eapply RealiseIn_TerminatesIn. apply Add_Step_Sem. }
+  eapply TerminatesIn_monotone.
+  { unfold Add_Loop. repeat TM_Correct.
+    - eapply RealiseIn_Realise. apply Add_Step_Sem.
+    - eapply RealiseIn_TerminatesIn. apply Add_Step_Sem. }
   {
-    intros tin i (a&b&HEncA&HEncB&Hi).
+    unfold Add_Loop_steps. apply WhileCoInduction. intros tin i (a&b&HEncA&HEncB&Hi).
     destruct b.
+    (* (* In case I want to use the [WhileInduction] principle without [match] *)
+    - exists 11. repeat split.
+      + omega.
+      + intros () ? _. omega.
+      + intros tmid H. cbn in *. specialize (H _ _ HEncA HEncB). cbn in *. auto.
+    - exists 11. repeat split.
+      + omega.
+      + intros () tmid H. cbn in H. specialize (H _ _ HEncA HEncB). now cbn in *.
+      + intros tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn in *. destruct H as (H1&H2).
+        exists (11 + b * 12). repeat split.
+        * exists (S a), b. repeat split; eauto. omega.
+        * omega.
+        *)
     - exists 11. repeat split.
       + omega.
       + intros o tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn in *.
@@ -634,11 +648,12 @@ Lemma Mult_Loop_Terminates :
               isRight tin[@Fin4] /\
               Mult_Loop_steps m' n c <= i).
 Proof.
-  unfold Mult_Loop. repeat TM_Correct.
-  { apply Mult_Step_Realise. }
-  { apply Mult_Step_Terminates. }
+  eapply TerminatesIn_monotone.
+  { unfold Mult_Loop. repeat TM_Correct.
+    - apply Mult_Step_Realise.
+    - apply Mult_Step_Terminates. }
   {
-    intros tin k (m'&n&c&HEncM'&HEncN&HEncC&HRight3&HRight4&Hk).
+    apply WhileCoInduction. intros tin k (m'&n&c&HEncM'&HEncN&HEncC&HRight3&HRight4&Hk).
     destruct m' as [ | m''] eqn:E; cbn in *; exists (Mult_Step_steps m' n c).
     {
       repeat split.
