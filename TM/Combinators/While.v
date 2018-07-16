@@ -261,12 +261,17 @@ Section WhileCoInduction.
     (forall (tin : tapes sig n) (k : nat) (HT : T tin k),
         exists k1,
           T' tin k1 /\
-          (forall ymid tmid, R tin (Some ymid, tmid) -> k1 <= k) /\
-          (forall tmid, R tin (None, tmid) -> exists k2, T tmid k2 /\ 1 + k1 + k2 <= k)) ->
+          forall (ymid : option F) tmid,
+            R tin (ymid, tmid) ->
+            match ymid with
+            | Some _ => k1 <= k
+            | None => exists k2, T tmid k2 /\ 1 + k1 + k2 <= k
+            end) ->
     T <<=2 While_T R T'.
   Proof.
-    intros. cofix IH. intros tin k HT. specialize H with (1 := HT) as (k1&H1&H2&H3). econstructor; eauto.
-    - intros tmid HR. specialize H3 with (1 := HR) as (k2&H3&H4). eauto.
+    intros. cofix IH. intros tin k HT. specialize H with (1 := HT) as (k1&H1&H2). econstructor; eauto.
+    - intros tmid ymid HR. specialize (H2 (Some ymid) tmid); cbn in *. auto.
+    - intros tmid HR. specialize (H2 None tmid) as (k2&H3&H4); eauto.
   Qed.
 
 End WhileCoInduction.

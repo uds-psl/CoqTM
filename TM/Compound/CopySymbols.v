@@ -162,14 +162,13 @@ Section CopySymbols.
     {
       apply WhileCoInduction; intros. exists 7. repeat split.
       - reflexivity.
-      - intros () tmid H. cbn in *.
-        destruct (current tin[@Fin0]) eqn:E.
-        + destruct (f e) eqn:Ef; TMSimp. rewrite CopySymbols_steps_equation, E, Ef in HT. omega.
-        + rewrite CopySymbols_steps_equation, E in HT. omega.
-      - intros tmid H. cbn in *.
-        destruct (current tin[@Fin0]) eqn:E; TMSimp. destruct (f e) eqn:Ef; TMSimp.
-        rewrite CopySymbols_steps_equation, E, Ef in HT.
-        exists (CopySymbols_steps (tape_move_right tin[@Fin0])). split; auto.
+      - intros ymid tmid H. cbn in *. destruct ymid as [()| ]; cbn in *.
+        + destruct (current tin[@Fin0]) eqn:E; TMSimp.
+          * destruct (f e) eqn:Ef; TMSimp. rewrite CopySymbols_steps_equation, E, Ef in HT. omega.
+          * rewrite CopySymbols_steps_equation, E in HT. omega.
+        + destruct (current tin[@Fin0]) eqn:E; TMSimp. destruct (f e) eqn:Ef; TMSimp.
+          rewrite CopySymbols_steps_equation, E, Ef in HT.
+          exists (CopySymbols_steps (tape_move_right tin[@Fin0])). split; auto.
     }
   Qed.
 

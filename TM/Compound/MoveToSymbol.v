@@ -203,18 +203,17 @@ Section move_to_symbol.
       apply WhileCoInduction; intros. cbn.
       exists 3. repeat split.
       - reflexivity.
-      - intros () tmid. intros H. TMSimp.
-        destruct (current tin[@Fin0]) eqn:E; TMSimp; auto.
-        + destruct (f e) eqn:Ef; inv H0. rewrite MoveToSymbol_steps_equation in HT. rewrite E, Ef in HT. omega.
-        + rewrite MoveToSymbol_steps_equation in HT. rewrite E in HT. omega.
-      - intros tmid. intros H. TMSimp.
-        destruct (current tin[@Fin0]) eqn:E.
-        + destruct (f e) eqn:Ef; inv H0. rewrite MoveToSymbol_steps_equation in HT. rewrite E, Ef in HT.
-          exists (MoveToSymbol_steps (tape_move_mono tin[@Fin0] (Some (g e), R))). cbn.
-          split.
-          * unfold MoveToSymbol_Step_Fun. rewrite E, Ef. cbn. reflexivity.
-          * rewrite <- HT. cbn. omega.
-        + congruence.
+      - intros ymid tmid. intros H. destruct ymid as [()| ]; TMSimp.
+        + destruct (current tin[@Fin0]) eqn:E; TMSimp; auto.
+          * destruct (f e) eqn:Ef; inv H0. rewrite MoveToSymbol_steps_equation in HT. rewrite E, Ef in HT. omega.
+          * rewrite MoveToSymbol_steps_equation in HT. rewrite E in HT. omega.
+        + destruct (current tin[@Fin0]) eqn:E.
+          * destruct (f e) eqn:Ef; inv H0. rewrite MoveToSymbol_steps_equation in HT. rewrite E, Ef in HT.
+            exists (MoveToSymbol_steps (tape_move_mono tin[@Fin0] (Some (g e), R))). cbn.
+            split.
+            -- unfold MoveToSymbol_Step_Fun. rewrite E, Ef. cbn. reflexivity.
+            -- rewrite <- HT. cbn. omega.
+          * congruence.
     }
   Qed.
   
