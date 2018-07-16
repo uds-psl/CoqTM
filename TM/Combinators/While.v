@@ -273,7 +273,62 @@ Section While.
 
   End While_TerminatesIn.
 
+  (** Alternative for [While_TerminatesIn] using co-induction *)
+  Section While_TerminatesIn_coind.
+    Variable (T T' : Rel (tapes sig n) nat).
+
+    CoInductive WhileT_coind : tRel sig n :=
+    | WhileT_coind_intro tin k k1 :
+        T tin k1 ->
+        (forall tmid,
+            R tin (None, tmid) ->
+            exists k2, WhileT_coind tmid k2 /\ 1 + k1 + k2 <= k) ->
+        (forall tmid ymid,
+            R tin (Some ymid, tmid) -> k1 <= k) ->
+        WhileT_coind tin k.
+
+    Lemma While_TerminatesIn_coind :
+      pM ⊨ R ->
+      projT1 pM ↓ T ->
+      While ↓ WhileT_coind.
+    Proof.
+      intros HRel HTerm. eapply While_TerminatesIn; eauto.
+      intros tin k' HCoInd. destruct HCoInd as [ t k k1 H1 H2 H3 ].
+      exists k1. split; eauto. intros ymid tmid HR. destruct ymid; cbn in *; eauto.
+    Qed.
+
+    Lemma While_TerminatesIn_coind' :
+      pM ⊨ R ->
+      projT1 pM ↓ T ->
+      (forall (tin : tapes sig n) (i : nat),
+          T' tin i ->
+          exists i1,
+            T tin i1 /\
+            forall (ymid : option F) tmid,
+              R tin (ymid, tmid) ->
+              match ymid with
+              | Some _ => i1 <= i
+              | None => exists i2, T' tmid i2 /\ 1 + i1 + i2 <= i
+              end) ->
+      While ↓T'.
+    Proof.
+      intros HRel HTerm HSpec. eapply TerminatesIn_monotone.
+      { now apply While_TerminatesIn_coind. }
+      {
+        cofix IH.
+        intros tin k Hk. specialize HSpec with (1 := Hk) as (k1&HT&H).
+        split with (k1 := k1); eauto.
+        - intros tmid HR. specialize H with (1 := HR) as (k2&?&?). exists k2. split; eauto.
+        - intros tmid ymid HR. specialize H with (1 := HR). cbn in *. auto.
+      }
+    Qed.
+
+  End While_TerminatesIn_coind.
+
 End While.
+
+
+
 (* Arguments While {n} {sig} M _. *)
 
 Arguments WHILE : simpl never.
