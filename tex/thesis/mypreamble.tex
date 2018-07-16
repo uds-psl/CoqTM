@@ -148,9 +148,9 @@
 
 %% Semantics
 \newcommand{\terminates}{\mathrel{\triangleright}}
-\newcommand{\TerminatesIn}{\mathop{\downarrow}}
-\newcommand{\Realise}{\mathop{\vDash}}
-\newcommand{\RealiseIn}[1]{\mathop{\vDash^{#1}}}
+\newcommand{\TerminatesIn}{\mathrel{\downarrow}}
+\newcommand{\Realise}{\mathrel{\vDash}}
+\newcommand{\RealiseIn}[1]{\mathrel{\vDash^{#1}}}
 
 %%
 %% Turing Machines
@@ -169,10 +169,10 @@
 
 %% Lifts
 % #1 is the machine, #2 the lifting
-\newcommand{\LiftTapes}[2]{\Uparrow_{#2} #1}
-\newcommand{\LiftAlphabet}[2]{\Uparrow_{#2} #1}
+\newcommand{\LiftTapes}[2]{\mathop{\Uparrow_{#2}} #1}
+\newcommand{\LiftAlphabet}[2]{\mathop{\Uparrow_{#2}} #1}
 % #1 is the machine, #2 the alphabet lifting, and #3 the tape-lifting
-\newcommand{\LiftBoth}[3]{\Uparrow_{#2;~#3} #1}
+\newcommand{\LiftBoth}[3]{\mathop{\Uparrow_{#2;~#3}} #1}
 
 
 
