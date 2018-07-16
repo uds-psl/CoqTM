@@ -422,6 +422,79 @@ write on a tape multiple times.  We must reset each ``used'' tape before writing
 
 
 
+\section{Designing Machines}
+\label{sec:programming-design}
+
+As noted above, when we speak of ``programming'' Turing machines, we mean that we use tapes as registers, and use the combinators and lift to compose
+machines.  Moreover, we only use machines that directly change the values of registers (tapes).  We have machines that do a case-distinction on
+values, and machines that apply constructors to the value that a tape contains.
+
+Our $\While$ operator corresponds to ``do-while'' in imperative languages, i.e.\ the machine $M$ has to decide at the end of its execution whether to
+continue or break out of the loop.  Tail-recursive functions can easily be transformed into ``do-while'' loops.  Therefore, when we translate
+functions to Turing machines, we first have to implement the function as a tail-recursive function, which is then translated to a Turing machine in
+``programming style''.
+
+The ``matching'' machines do a case-distinction over the value on a tape.  They may alter the content of the tape.  Therefore, if we use ``matching''
+machines inside a loop, we can not restore the value of the tape before the loop.  We have to copy the value of the tape and only work on the copy.
+After that, the ``internal tape'' is reseted, so we can use the tape again without a memory leak.
+
+% When we define and prove the semantical properties machines, we break the machine down to parts and verify each part independently.  For example, if
+% we have a machine $\While~\MS{Step}$, then we first have to encode the loop-invariant into the relation $StepRel$.
+
+We make an informal distinction between input, output, and internal tapes.  Each kind of tapes have an invariant, which is encoded in the correctness
+relations of machines.  For input tapes, we have the invariant that they contain a value, and this value does not change during the execution.  Output
+tapes are initially right, and contain an output value after the execution.  Internal tapes are right before and after the execution.  With this
+distinction of input, output, and internal tapes, we can formalise a convention for functional computation of binary functions: Tapes $t[0]$ and
+$t[1]$ are input tapes for $x$ and $y$, $t[2]$ is the output tape for $f~x~y$, and all other tapes are internal tapes.
+
+\begin{definition}[Functional Computation Relation]
+  \label{def:Computes_Rel}
+  Let $f : X \to Y$, where $X$ and $Y$ are encodable on $\Sigma$.  Then $FunRel(f) \subseteq \Tape_{\Sigma^+}^{3+n} \times \Tape_{\Sigma^+}^{3+n}$ is defined as:
+  \begin{alignat*}{2}
+     FunRel(f) &:= \lambda t~t'.~\forall (x:X)~(y:Y). \\
+    &\qquad t[0] \simeq x \rightarrow t[1] \simeq y \rightarrow \\
+    &\qquad isRight~t[2] \rightarrow \\
+    &\qquad \left(\forall (i:\Fin_n).~isRight~t[3+i] \right) \rightarrow \\
+    &\qquad t[0] \simeq x ~\land~ t[1] \simeq y \rightarrow ~\land~ \\
+    &\qquad t[2] \simeq f~x~y ~\land~ \\
+    &\qquad \left(\forall (i:\Fin_n).~isRight~t'[3+i] \right).
+  \end{alignat*}
+  We say that a machine $M$ computes the function $f$, if $M \Realise f$.
+\end{definition}
+
+Note that this definition can be generalised to unary or functions with higher arity.
+
+Internal tapes may be used to copy input-values on, if they need to be changed, e.g.\ for loops.  Thus, the general design for implementing a machine
+$M$ that computes a binary function $f$, is the following:
+\begin{align*}
+  M := & \LiftTapes{\MS{CopyValue}}{\Vector{0; 3}} \Seq \LiftTapes{\MS{CopyValue}}{\Vector{1; 4}} \Seq \\
+       & \LiftTapes{\MS{Loop}}{\Vector{3; 4; 2; 5; 6; 7; \cdots}} \Seq \\
+       & \LiftTapes{\MS{Reset}}{\Vector{3}} \Seq \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq \LiftTapes{\MS{Reset}}{\Vector{5}} \Seq \cdots
+\end{align*}
+with $\MS{Loop} := \While(\MS{Step})$.  Note that the step-machine has then only ``access'' to the copies of $x$ and $y$, but not to the ``original''
+on $t[0]$ and $t[1]$; $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $y$ is on the $0$st and $1$st tape of $\MS{Step}$, the output is
+on tape $2$, all further tapes are internal tapes.  After the loop, all tapes that $\MS{Step}$ did not reset, including the tapes to contain the
+copies of $x$ and $y$ and additional tapes, are reseted by $M$.
+
+For the verification of $M$, we first have to give the correctness relation of $\MS{Step}$.  It should encode the loop invariant as general as
+possible.  Then we can define the correctness relation $LoopRel$ of $\MS{Loop}$ and prove $\MS{Loop} \Realise LoopRel$.
+
+
+\section{Case Studies}
+\label{sec:case-studies}
+
+We implement the general design of the previous section for concrete functions.
+
+\subsection{Machines Computing Natural Functions}
+\label{sec:NatTM}
+
+\subsection{Folding of Sum Functions}
+\label{sec:SumTM}
+
+\subsection{Machines Computing Functions on Lists}
+\label{sec:ListTM}
+
+
 
 
 %%% Local Variables:
