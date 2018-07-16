@@ -186,8 +186,8 @@ Section MatchList.
       exists 1, (4 + 4 * size cX x). repeat split. 1-2: omega.
       intros tmid () H. TMSimp. clear H.
       destruct l as [ | x' l]; cbn.
-      - rewrite MoveToSymbol_Steps_moveright; cbn; auto. now rewrite !map_length.
-      - rewrite MoveToSymbol_Steps_moveright; cbn; auto. now rewrite !map_length.
+      - rewrite MoveToSymbol_steps_moveright; cbn; auto. now rewrite !map_length.
+      - rewrite MoveToSymbol_steps_moveright; cbn; auto. now rewrite !map_length.
     }
   Qed.
 
@@ -212,14 +212,14 @@ Section MatchList.
         exists 3, (10 + 8 * size cX x). repeat split; try omega.
         intros tmid3 (). intros (H3&H3'); TMSimp.
         exists (8+8*size cX x), 1. repeat split; cbn; try omega.
-        + rewrite CopySymbols_L_TermTime_moveleft; auto.
+        + rewrite CopySymbols_L_steps_moveleft; auto.
           now rewrite rev_length, !map_length.
         + intros tmid4 () _. omega.
       - intros tmid2 (). intros (_&HInj2); TMSimp.
         exists 3, (10 + 8 * size cX x). repeat split; try omega.
         intros tmid3 (). intros (H3&H3'); TMSimp.
         exists (8+8*size cX x), 1. repeat split; cbn; try omega.
-        + rewrite CopySymbols_L_TermTime_moveleft; auto.
+        + rewrite CopySymbols_L_steps_moveleft; auto.
           now rewrite rev_length, !map_length.
         + intros tmid4 () _. omega.
     }
@@ -413,7 +413,7 @@ Section MatchList.
       - intros tmid () (H&HInj). TMSimp.
         specialize (H _ HEncY) as (ls&HEncY'). TMSimp.
         exists (8 + 8 * size _ y), 3. repeat split; try omega.
-        + erewrite CopySymbols_L_TermTime_moveleft; eauto. now rewrite map_length, rev_length, map_length.
+        + erewrite CopySymbols_L_steps_moveleft; eauto. now rewrite map_length, rev_length, map_length.
         + intros tmid2 (). intros (H2&HInj2). TMSimp.
           exists 1, 1. repeat split; try omega. intros ? _ _. omega.
     }
