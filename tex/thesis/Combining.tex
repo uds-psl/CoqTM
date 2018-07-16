@@ -49,9 +49,6 @@ canonical value.
   \label{fig:match}
 \end{figure}
 
-\todo{Maybe use parenthesises, e.g.\ $\Match(M,M')$ and $MatchRel(R,R')$ for better readability}
-
-
 $\MS{Match}~M~M'$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
 to to the injection of the start state of the machine $M'(part~q)$.  When $\MS{Match}~M~M'$ reaches a state that is the injection of a final state of
 a machine $M'~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
