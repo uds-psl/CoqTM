@@ -9,11 +9,9 @@ realises.  For that, we use the correctness lemmas of the combinators, lifts, an
 applying Lemma~\ref{lem:Realise_monotone} and showing $R' \subseteq R$.  Note that the first part of the proof, i.e.\ generating the relation $R'$
 such that $M \Realise R'$, is mechanical.  Indeed, we can automatise this step in Coq, see more in Chapter~\ref{chap:implementation}.
 
-When $M$ always terminates in constant time $k$, we show $M \RealiseIn{k} R$ instead.  Using the monotonicity Lemma~\ref{lem:RealiseIn_monotone}, we can
-prove correctness and (constant) runtime at once.
-
-For (non-constant) runtime, we use the dual approach.  However, we have an exception for $\While$, where we have to apply
-Lemma~\ref{lem:While_TerminatesIn} directly, instead of using the anti-monotonicity Lemma~\ref{lem:TerminatesIn_monotone}.
+When $M$ always terminates in constant time $k$, we show $M \RealiseIn{k} R$ instead.  Using the monotonicity Lemma~\ref{lem:RealiseIn_monotone}, we
+can prove correctness and (constant) runtime at once.  For (non-constant) runtime, we use the dual approach, using the anti-monotonicity
+Lemma~\ref{lem:TerminatesIn_monotone}.
 
 \section{$\Nop$}
 \label{sec:Nop}
@@ -78,7 +76,7 @@ We define the actual relation of $\MS{WriteString}$ in terms of a recursive func
   Let $d:\Move$ and $str:\List(\Sigma)$.
   \[ \MS{WriteString}~d~str \RealiseIn{4\cdot\length{str}} WriteStringRel~d~str \]
   with
-  $WriteStringRel~d~str := \lambda t~t'.~t' = WriteStringFun~d~t~str'$ and
+  $WriteStringRel~d~str := \lambda t~t'.~t' = WriteStringFun~d~t~str$ and
   \begin{alignat*}{3}
     &WriteStringFun~d~t~&&(\nil        ) &~:=~& t \\
     &WriteStringFun~d~t~&&(s \cons str') &~:=~& WriteStringFun~d~\bigl(doAct~t~(\Some{s}, d)\bigr)~str'
@@ -222,9 +220,8 @@ $\While$ requires one additional step for each repeat of the loop.
   \end{multline*}
 \end{lemma}
 \begin{proof}
-  We use the termination Lemma~\ref{lem:While_TerminatesIn} of $\While$, with the correctness and (constant) runtime of $\MS{CopySymbolsStep}$
-  (Lemma~\ref{lem:Realise_total} with Lemma~\ref{lem:CopySymbols_Realise}).\\
-  Let $CopySymbolsSteps~t[0] \leq k$.  We have two cases.
+  We have to show $CopySymbolsT \subseteq WhileT~CopySymbolsStepRel~(\lambda \_~k.~7 \leq k)$, using the co-induction
+  Lemma~\ref{lem:WhileCoInduction}.  Let $CopySymbolsSteps~t[0] \leq k$.  We chose $k_1 := 7$.  We have two cases.
   \begin{enumerate}
   \item We have $CopySymbolsStepRel~t~(\Some\unit, t')$.  Therefore, we know that either $\MS{current}(t[0])=\Some{x}$ with $h(x)=\true$, or
     $\MS{current}(t[0])=\None$.  In both cases, we have $CopySymbolsSteps(t[0]) = 8$.  Thus, we have

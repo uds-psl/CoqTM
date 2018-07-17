@@ -248,9 +248,11 @@ i.e.,\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state
 \end{proof}
 
 
-Back to the verification of $\Match~M~M'$.  In the following, we simply write $\Match$.  The execution steps of $\Match$ are essentially a sequence of
-first, the lifted steps of execution of $M$, second, a ``nop'' transition, and third, the lifted steps of the execution of $M'~y$.  We give the
-concrete lifting functions from $M$ to $\Match$ and from $M~y$ to $\Match$:
+Back to the verification of $\Match~M~M'$.  In the following, we simply write $\Match$.  For a configuration $c_k$, we write $q_k$ and $t_k$ for the
+state and tapes component of $c_k$.
+
+The execution steps of $\Match$ are essentially a sequence of first, the lifted steps of execution of $M$, second, a ``nop'' transition, and third,
+the lifted steps of the execution of $M'~y$.  We give the concrete lifting functions from $M$ to $\Match$ and from $M~y$ to $\Match$:
 \begin{definition}[Liftings of $\Match$]
   We define the functions \\$liftL : \Conf_M \to \Conf_\Match$ and $liftR_y : \Conf_{M'(y)} \to \Conf_\Match$ for all $y:F$:
   \begin{alignat*}{2}
@@ -305,7 +307,7 @@ The runtime Lemma~\ref{lem:Match_Terminates} follows directly from Lemma~\ref{le
   \end{align*}
 \end{lemma}
 \begin{proof}
-  Analogous to the proof of Lemma~\ref{lem:Match_merge}, using Lemma~\ref{lem:loop_split} and Lemma~\ref{lem:loop_unlift}.
+  Analogous to the proof of Lemma~\ref{lem:Match_merge}, using Lemmas~\ref{lem:loop_split} and~\ref{lem:loop_unlift}.
 \end{proof}
 The correctness Lemma~\ref{lem:Match_Realise} follows directly from Lemma~\ref{lem:Match_split}.
 
@@ -386,8 +388,7 @@ definition is more practical when we prove correctness of concrete $\MS{While}$ 
 When we want to prove $\While~M \Realise R$ for some machine $M:\TM_\Sigma^n(F)$ and relation
 $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, we must of course have proven that $M \Realise R'$ for some relation
 $R' \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.  Then we apply Lemma~\ref{lem:Realise_monotone} and~\ref{lem:While_Realise},
-and have to show $WhileRel~R' \subseteq R$.  We can prove this by induction on the inductive predicate, which is equivalent to applying the following
-lemma:
+and have to show $WhileRel~R' \subseteq R$.  We can prove this by induction on the inductive predicate, which is equivalent to applying the following lemma:
 \begin{lemma}[Induction for $WhileRel$]
   \label{lem:WhileInduction}
   ~
@@ -399,68 +400,55 @@ lemma:
 \end{lemma}
 
 
-We can not simply give a (useful) runtime relation in which $\While~M$ terminates, because we do not know the number of iterations in general.
-However, if we know that $M$ realises $R$ and terminates in $T$, we can show $\While~M \TerminatesIn T'$ for another runtime relation $T'$, if $T'$
-``decreases'' in terms of $R$ and $T$:
-
+The runtime lemma of $\While$ is dual.  We define a co-inductive relation $WhileT~R~T'$, where $R$ is the relation that $M$ realises and $T'$ is the
+runtime relation in that $M$ terminates.
 \begin{lemma}[Runtime of $\While~M$]
   \label{lem:While_TerminatesIn}
-  If $M \Realise R$, $M \TerminatesIn T$.  We can show $\While~M \TerminatesIn T'$ under the following assumption:
-  \begin{multline*}
-    \forall~t~i.~
-    T'~t~i \rightarrow
-    \exists~i_1.~
-    \forall~t'.~ \\
-    \bigl(
-    \forall~y.~ R~t~(\Some y, t') \rightarrow i_1 \le i
-    \bigl) ~\land~
-    \bigl(
-    R~t~(\None, t') \rightarrow
-    \exists~i_2.~
-    T'~t'~i_2 \land
-    1 + i_1 + i_2 \le i
-    \bigr)
-  \end{multline*}
+  If $M \Realise R$ and $M \TerminatesIn T'$.  Then $\While~M \TerminatesIn\\ WhileT~R~T'$, which is defined as a co-inductive predicate:
+  \[
+    \inferrule{T~t~k_1 \\
+      \forall t'~y.~R~t~(\Some{y}, t') \rightarrow k_1 \leq k \\
+      \forall t'.~R~t~(\None,t') \rightarrow \exists k_2.~WhileT~R~T'~t'~k_2 \land 1+k_1+k_2 \leq k}%
+    {WhileT~R~T'~t~k}.
+  \]
 \end{lemma}
 
-\todo{This is wrong; also use co-induction}
-
-Note that we define concrete correctness and termination relations for all combinators, but there is no known ``direct'' runtime Relation for
-$\While$.  The best we could hope would be something like this relation:
-
-\begin{definition}[Direct runtime relation for $\While$?]
-  ~
-  \[
-    \inferrule{T~t~k \and R~t~(\Some y, t')}{WhileT~R~T~t~k}
-    \quad
-    \inferrule{T~t~k_1 \and R~t~(\None, t') \and WhileT~R~T~t'~k_2}{WhileT~R~T~t~(1+k_1+k_2)}
-  \]
-\end{definition}
-
-However, when we try to prove $\While~M \TerminatesIn WhileT~R~T$, we come to a goal where we have $R~t~(\Some y, t')$ and $R~t~(part_M(q''), t'')$, for
-another final configuration $(q'',t'')$.  Thus, we can only prove $\While~M \TerminatesIn WhileT~R~T$, if we assume that $R$ is functional:
-
-\begin{lemma}[Direct runtime relation for $\While$]
-  \label{lem:While_TerminatesIn'}
-  If $M \Realise R$, $M \TerminatesIn T$, and $R$ is functional on tapes in $T$, i.e.:
-  \[
-    \forall t~k.~T~t~k \rightarrow \forall t_1~t_2~y_1~y_2.~R~t~(y_1, t_1) \rightarrow R~t~(y_2, t_2) \rightarrow y_1 = y_2 \land t_1 = t_2.
-  \]
-  Then $\While~M \TerminatesIn WhileT~R~T$.
+When we want to show $\While~M \TerminatesIn T$, this is dual to show $\While~M \Realise R$.  We apply the anti-monotonicity
+Lemma~\ref{lem:TerminatesIn_monotone} and the above runtime lemma, and have to show $T \subseteq WhileT~R~T'$.  Therefore, we use the co-induction
+lemma of $WhileT$:
+\begin{lemma}[$WhileT$ co-induction]
+  \label{lem:WhileCoInduction}
+  To show $T \subseteq WhileT~R~T'$, it suffices to show:
+  \begin{alignat*}{1}
+    &\forall t~k.~T~t~k \rightarrow \\
+    &\quad \exists k_1.~T'~t~k_1 ~\land~ \\
+    &\quad\quad \left( \forall y~t'.~R~t~(\Some{y}, t') \rightarrow k_1 \leq k \right) ~\land~ \\
+    &\quad\quad \left( \forall t'.~R~t~(\None, t') \rightarrow \exists k_2.~T~t'~k_2 ~\land~ 1+k_1+k_2 \leq k \right).
+  \end{alignat*}
+% (forall (tin : tapes sig n) (k : nat) (HT : T tin k),
+%   exists k1,
+%     T' tin k1 /\
+%     forall (ymid : option F) tmid,
+%       R tin (ymid, tmid) ->
+%       match ymid with
+%       | Some _ => k1 <= k
+%       | None => exists k2, T tmid k2 /\ 1 + k1 + k2 <= k
+%       end) ->
 \end{lemma}
+The number $k_1$ is the number of steps needed for the first iteration of the loop.  We have to consider all possible outputs of the first loop.  If
+$M$ terminated in the partition $\Some{y}$ in $k_1$ steps, then $\While~M$ also only needs $k_1$ steps.  However, if $M$ terminated in the partition
+$\None$, and $\While~M$ needs $k_2$ steps for all other loops, then $\While~M$ needs $1+k_1+k_2$ steps in total.  The one additional step comes from
+the ``nop''-transition back to the starting state.
 
-However, our correctness relations are not always functional on the tapes in $T$.  We encode preconditions in the relations.  If the precondition is
-not satisfied for $t$, then the proposition $R~t~(y,t')$ holds for every $t'$ and $y$.  Also, Lemma~\ref{lem:While_TerminatesIn} follows from
-Lemma~\ref{lem:While_TerminatesIn'}, however, only under the functionality assumption.  Therefore, we always use Lemma~\ref{lem:While_TerminatesIn}.
 
 
 \subsection{Proof of $\While$}
 \label{sec:while-proofs}
 
-The runtime and correctness proofs are similar to the proofs of $\Match$, as explained in Section~\ref{sec:match-proofs}.  However, the
-configurations of $\Match$ are exactly the configurations of $M$, so the lifting function is the identity function.  The fundamental difference
-between $\Match$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction on step-numbers,
-in addition to the loop-splitting and loop-merging lemmas.  We present the key lemmas here and the most important parts of the proofs.
+The runtime and correctness proofs are similar to the proofs of $\Match$, as explained in Section~\ref{sec:match-proofs}.  The configurations of
+$\Match$ are exactly the configurations of $M$, so the lifting function is the identity function.  However, the fundamental difference between
+$\Match$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction on step-numbers, in
+addition to the loop-splitting and loop-merging lemmas.  We present the key lemmas here and the most important parts of the proofs.
 
 We simply write $\While$ instead of $\While~M$ in this section.  Since we have $\Conf_M = \Conf_\While$, we also only write $\Conf$.
 
@@ -604,8 +592,7 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
 
 \begin{definition}[Mirror configuration]
   \label{def:mirrorConf}
-  Let $c : \Conf$.
-  \[ mirrorConf(q,t) := (q, \map{mirror}{t}). \]
+  $mirrorConf(q,t) := (q, \map{mirror}{t}).$
 \end{definition}
 
 
@@ -649,9 +636,6 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
   Follows from Lemma~\ref{lem:mirror_loop}~(\ref{lem:mirror_merge}).
 \end{proof}
 
-
-
-
 \section{Partition Operators}
 \label{sec:partition-op}
 
@@ -671,7 +655,7 @@ partition.
 
 The correctness for these simple operators is obvious.  Note that we do not need lemmas for runtime, because Definition~\ref{def:TerminatesIn} of
 runtime is defined over the bare machine without partitioning function.  So the runtime lemmas for $M$ also apply for $\MS{ChangePartition}$ and
-$\MS{Return}$
+$\MS{Return}$.
 \begin{lemma}[Correctness of $\MS{ChangePartition}$ and $\MS{Return}$]
   If $M \Realise R$, then
   \begin{alignat*}{1}
