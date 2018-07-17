@@ -421,6 +421,35 @@ write on a tape multiple times.  We must reset each ``used'' tape before writing
 \end{lemma}
 
 
+\section{Extending Alphabets}
+\label{sec:extend-alphabet}
+
+Consider that we have a machines $M_1 : \TM_{\Sigma_X}^{n_1}, M_2 : \TM_{\Sigma_Y}^{n_1}$ that operate on values of type $X$ and $Y$, where $X$ is
+encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then, we could combine this machines using sequential composition and the alphabet-lift and
+tapes-lift, to a machine $M : \TM_\Sigma^{n_1+n_2}$.  However, the choice of $\Sigma$ is relevant.  For example, we could chose
+$\Sigma := \Sigma_X + \Sigma_Y$.  If another machine $M' : \TM_{\Sigma'}^m$ ``uses'' $M$, it has to give a retraction
+$f : \Sigma_X+\Sigma_Y \hookrightarrow \Sigma'$.  However, there is a problem of generality:
+\begin{fact}
+  Not for all $X, Y, Z : \Type$, if there is a retraction $f_1 : X \hookrightarrow Z$ and $f_2 : Y \hookrightarrow Z$, there is a retraction
+  $f_1+f_2 : X+Y \hookrightarrow Z$.
+\end{fact}
+\begin{proof}
+  There is no injective function $\Unit+\Unit\to\Unit$.
+\end{proof}
+
+That means that we have to show a precondition to combine two retractions $f_1 : \Sigma_X \hookrightarrow \Sigma'$ and
+$f_2 : \Sigma_Y \hookrightarrow \Sigma'$ and get a retraction $f_1+f_2 : \Sigma_X + \Sigma_Y \hookrightarrow \Sigma'$:
+\begin{fact}
+  If the retractions $f_1 : X \hookrightarrow Z$ and $f_2 : Y \hookrightarrow Z$ have disjoint images, then we can define a retraction
+  $f_1+f_2 : X+Y \hookrightarrow Z$.
+\end{fact}
+
+We could live with the restriction that we have to show that the retractions have disjoint images.  However, this approach does not scale good when we
+have to add more alphabets and retractions, we have to show that all retractions have disjoint images.  It seems to be easier and more general, to
+define a class of machines $M$ parametrised over the alphabet $\Sigma'$ and the two retractions $f_1$ and $f_2$.  In the definition of $M$, we apply
+the tapes-lift on $M_1$ and $M_2$ with the retractions $f_1$ and $f_2$.
+
+
 
 \section{Designing Machines}
 \label{sec:programming-design}
@@ -446,10 +475,10 @@ relations of machines.  For input tapes, we have the invariant that they contain
 tapes are initially right, and contain an output value after the execution.  Internal tapes are right before and after the execution.  With this
 distinction of input, output, and internal tapes, we can formalise a convention for functional computation of binary functions: Tapes $t[0]$ and
 $t[1]$ are input tapes for $x$ and $y$, $t[2]$ is the output tape for $f~x~y$, and all other tapes are internal tapes.
-
-\begin{definition}[Functional Computation Relation]
-  \label{def:Computes_Rel}
-  Let $f : X \to Y$, where $X$ and $Y$ are encodable on $\Sigma$.  Then $FunRel(f) \subseteq \Tape_{\Sigma^+}^{3+n} \times \Tape_{\Sigma^+}^{3+n}$ is defined as:
+\begin{definition}[Functional computation correctness relation]
+  \label{def:Computes2_Rel}
+  Let $f : X \to Y \to Z$, where $X$ and $Y$ are encodable on $\Sigma$.  Then
+  $FunRel(f) \subseteq \Tape_{\Sigma^+}^{3+n} \times \Tape_{\Sigma^+}^{3+n}$ is defined as:
   \begin{alignat*}{2}
      FunRel(f) &:= \lambda t~t'.~\forall (x:X)~(y:Y). \\
     &\qquad t[0] \simeq x \rightarrow t[1] \simeq y \rightarrow \\
@@ -462,7 +491,21 @@ $t[1]$ are input tapes for $x$ and $y$, $t[2]$ is the output tape for $f~x~y$, a
   We say that a machine $M$ computes the function $f$, if $M \Realise f$.
 \end{definition}
 
-Note that this definition can be generalised to unary or functions with higher arity.
+Similarly, we can define the runtime function of such a machine.
+\begin{definition}[Functional computation runtime relation]
+  \label{def:Computes2_T}
+  Let $steps : X \to Y \to \Nat$ , where $X$ and $Y$ are encodable on $\Sigma$.  Then $FunT(h) \subseteq \Tape_{\Sigma^+} \times \Nat$ is defined as:
+  \begin{alignat*}{2}
+     FunT(steps) &:= \lambda t~k.~\exists (x:X)~(y:Y). \\
+    &\qquad t[0] \simeq x ~\land~ t[1] \simeq y ~\land~ \\
+    &\qquad isRight~t[2] ~\land~ \\
+    &\qquad \left(\forall (i:\Fin_n).~isRight~t[3+i] \right) ~\land~ \\
+    &\qquad steps~x~y \leq k
+  \end{alignat*}
+\end{definition}
+
+Note that these definitions can be generalised to unary or functions with higher arity.  Also note that the preconditions encoded within $FunRel(f)$
+and $FunT(f)$ coincide, however, with swapped quantifiers.
 
 Internal tapes may be used to copy input-values on, if they need to be changed, e.g.\ for loops.  Thus, the general design for implementing a machine
 $M$ that computes a binary function $f$, is the following:
@@ -471,13 +514,18 @@ $M$ that computes a binary function $f$, is the following:
        & \LiftTapes{\MS{Loop}}{\Vector{3; 4; 2; 5; 6; 7; \cdots}} \Seq \\
        & \LiftTapes{\MS{Reset}}{\Vector{3}} \Seq \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq \LiftTapes{\MS{Reset}}{\Vector{5}} \Seq \cdots
 \end{align*}
-with $\MS{Loop} := \While(\MS{Step})$.  Note that the step-machine has then only ``access'' to the copies of $x$ and $y$, but not to the ``original''
-on $t[0]$ and $t[1]$; $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $y$ is on the $0$st and $1$st tape of $\MS{Step}$, the output is
-on tape $2$, all further tapes are internal tapes.  After the loop, all tapes that $\MS{Step}$ did not reset, including the tapes to contain the
-copies of $x$ and $y$ and additional tapes, are reseted by $M$.
+with $\MS{Loop} := \While(\MS{Step})$.  Note that the $\MS{Step}$ and $\MS{Loop}$ have only ``access'' to the copies of $x$ and $y$, but not to the
+``original'' on $t[0]$ and $t[1]$ of $M$.  This also means that $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $y$ is on the $0$st and
+$1$st tape of $\MS{Step}$, the output is on tape $2$, all further tapes are internal tapes.  After the loop, all tapes that $\MS{Step}$ did not reset,
+including the tapes to contain the copies of $x$ and $y$ and additional tapes, are reseted by $M$.
 
 For the verification of $M$, we first have to give the correctness relation of $\MS{Step}$.  It should encode the loop invariant as general as
-possible.  Then we can define the correctness relation $LoopRel$ of $\MS{Loop}$ and prove $\MS{Loop} \Realise LoopRel$.
+possible.  Then we can define the correctness relation $LoopRel$ of $\MS{Loop}$ and prove $\MS{Loop} \Realise LoopRel$.  After that, we define runtime
+relations $StepT$ and $LoopT$, and show $\MS{Step} \TerminatesIn StepT$, and after that $\MS{Loop} \TerminatesIn LoopT$.
+
+
+
+
 
 
 \section{Case Studies}
@@ -488,12 +536,24 @@ We implement the general design of the previous section for concrete functions.
 \subsection{Machines Computing Natural Functions}
 \label{sec:NatTM}
 
-\subsection{Folding of Sum Functions}
+We want to implement the functions $add,mult:\Nat\to\Nat$, according to Definition~\ref{def:Computes2_Rel}.  First, we have to define
+
+\subsection{Mapping of Sum Functions}
 \label{sec:SumTM}
+
+Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function $f+g : X+Y \to Z$ with
+\begin{alignat*}{2}
+  (f+g)&(\inl x)&~:=~& f(x) \\
+  (f+g)&(\inr y)&~:=~& g(y).
+\end{alignat*}
+
+We want to define an operator that takes machines $M_1, M_2$ that compute $f$ and $g$, and yields a machine that computes the unary function $f+g$.
+
 
 \subsection{Machines Computing Functions on Lists}
 \label{sec:ListTM}
 
+\todo{Nth, App}
 
 
 

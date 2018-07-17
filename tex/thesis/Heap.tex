@@ -1,19 +1,86 @@
 \chapter{Simulating a Heap Machine}
 \label{chap:heap}
 
-\todo{This chapter has yet to be written.}
+In this chapter, we use all techniques, to implement a Turing machine that simulates an abstract heap machine.  First, we define the semantics of this
+abstract machine.  After that, we implement a Turing machine that simulates this abstract machine and prove their correctness and polynomial runtime.
 
+\section{Heap Machine}
+\label{sec:heap-def}
 
-In this chapter, we will use all techniques, to implement a Turing machine that simulates an abstract heap machine.
+\todo{Citation for this machine}
 
 Definition of the heap machine.
 
-Definition of the machine / architecture / \dots
+\begin{definition}[Types of the abstract machine]
+  ~
+  \begin{alignat*}{2}
+    &Tok  &~::=~& \MS{VAR}(n:\Nat) ~|~ \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET} \\
+    &Pro  &~:=~& \List(Pro) \\
+    &Add  &~:=~& \Nat \\
+    &Clos &~:=~& Add \times Pro \\
+    &Entr &~:=~& \Option(Clos \times Add) \\
+    &Heap &~:=~& \List(Entr)
+  \end{alignat*}
+  The configurations of the abstract machine are triples:
+  \[
+    \Conf := \List(Clos) \times \List(Clos) \times Heap.
+  \]
+\end{definition}
 
-From the semantics of this machine, it follows that the halting problem of this abstract heap machine reduces to the halting problem of multi-tape Turing machines.
+\begin{definition}[Semantics of the heap machine]
+  We define the relation $\succ$ over configurations, as an inductive predicate:
+  \begin{alignat*}{2}
+    & \inferrule{\phi~0~\nil~P = \Some{(Q, P')}}{\left((a, (\MS{LAM} \cons P)) \cons T, V, H\right) \succ \left((a, P') \cons_{tr} T, (a,Q) \cons V, H\right) }
+    \qquad& \MS{LAM} & \\
+    & \inferrule{put~H~\Some{(g,b)} = (c,H')}{\left((a, (\MS{APP} \cons P)) \cons T, g \cons (b, Q) \cons V, H\right) \succ \left((c, Q) \cons (a,P) \cons_{tr} T, V, H'\right)}
+    \qquad& \MS{APP} \\
+    & \inferrule{H[a;n]=\Some{g}}{\left((a, (\MS{VAR}(n) \cons P)) \cons T, V, H\right) \cons \left((a, P) \cons_{tr} T, g \cons V, H\right)}
+    \qquad& \MS{VAR} &
+  \end{alignat*}
+  with $ put~H~c := (\length{H}, H \app [c]) $. $\phi~P :=~ \phi'~0~\nil~P$ is defined with the helping function
+  $\phi' : \Nat \to Pro \to Pro \to \Option(Pro \times Pro)$, which is defined by recursion on $P:Pro$.
+  \begin{alignat*}{4}
+    &\phi'&~0~   &~Q&~(\MS{RET} \cons P) &&~:=~& \Some{(Q,P')} \\
+    &\phi'&~(S~k)&~Q&~(\MS{RET} \cons P) &&~:=~& \phi'~k~(Q \app [\MS{RET}])~P \\
+    &\phi'&~k    &~Q&~(\MS{LAM} \cons P) &&~:=~& \phi'~(S~k)~(Q \app [\MS{LAM}])~P \\
+    &\phi'&~k    &~Q&~(t        \cons P) &&~:=~& \phi'~k~(Q \app [t])~P \\
+    &\phi'&~k    &~Q&~              \nil &&~:=~& \None \\
+  \end{alignat*}
+  The heap lookup function $H[a,n] : \Option(Clos)$ is defined by recursion over $n$.
+  \[
+    H[a,n] :=
+    \begin{cases}
+      \Some{g}  & H[a]=\Some{\Some{(g,b)}} \land n=0 \\
+      H[b, n-1] & H[a]=\Some{\Some{(g,b)}} \land n>0 \\
+      \None     & H[a]=\None
+    \end{cases}
+  \]
+  where $H[\cdot] : \Option(\Nat)$ is the list lookup function.
+\end{definition}
 
-We can refine terms of closed lambda expressions to states of the abstract heap machine.
-Hence, the halting problemm of lambda terms reduces to the halting problem of multi-tape Turing machines.
+
+\section{Implementation As Turing Machine}
+\label{sec:heap-implementation}
+
+We use the ``programming'' techniques from Chapter~\ref{chap:programming}.  However, for simplicity, we do not use the strict definition of functional
+computation.  The machines only save the input-values that the caller machines really need.  For example, we have a machine $\MS{Nth'}$ that saves the
+list, but not the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the alphabet with
+$SigOpt~\Sigma_X$.  Instead we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the output is $\None$,
+the machine terminates in $\false$ and the output tape stays right.  Note however, that these changes are only made for simplicity, because the
+machine we present in this chapter is fairly complex.
+
+
+
+
+\section{Reduction of the Halting Problem}
+\label{sec:halting-problem}
+
+We can refine terms of closed lambda expressions to states of the abstract heap machine.  Hence, the halting problemm of lambda terms reduces to the
+halting problem of multi-tape Turing machines.
+
+\todo{Kommt hier auch die Reduktion von (closed) Lambda-Termen nach Heap rein?}
+
+
 
 %%% Local Variables:
 %%% mode: LaTeX
