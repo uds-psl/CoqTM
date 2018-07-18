@@ -231,7 +231,7 @@ with a new start symbol and terminates on this symbol in the partition $\true$.
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchNat} :=$
   Move R; 
-  MATCH ($\MS{ReadChar}$) 
+  Match ($\MS{ReadChar}$) 
         ($\lambda(o:\Option(sigNat)).$ match $o$
            [$\Some {\MS{S}}$ => $\Return{(\MS{Write}~\MS{START})}{\true}$
            |$\Some {\MS{O}}$ => $\Return{(\MS{Move}~L)}{\false}$
@@ -252,7 +252,33 @@ the head which is either $\MS{S}$ or $\MS{O}$, so this part of the machine must 
   mechanical, like the above correctness proofs.
 \end{proof}
 
-\todo{Constructors}
+We define the $O$-constructor with $\MS{WriteValue}$:
+\begin{definition}[$\MS{ConstrO}$]
+  \label{def:Constr_O}
+  $\MS{ConstrO} := \MS{WriteValue}~[\MS{O}]$.
+\end{definition}
+\begin{lemma}[Correctness of $\MS{ConstrO}$]
+  \label{lem:Constr_O_Sem}
+  $\MS{ConstrO} \RealiseIn{5} ConstrORel$ with
+  \[
+    ConstrORel := \lambda t~t'.~isRight~t[0] \rightarrow t'[0] \simeq 0.
+  \]
+\end{lemma}
+\begin{proof}
+  With Lemma~\ref{lem:RealiseIn_monotone} and~\ref{lem:WriteValue_Sem}.
+\end{proof}
+
+The $S$ constructor overwrites the current symbol (which is the start symbol) with $\MS{S}$ and writes a new start symbol.
+\begin{definition}[$\MS{ConstrS}$]
+  $\MS{ConstrS} := \MS{WriteMove}~\MS{S}~L \Seq \MS{Write}~\MS{START}$
+\end{definition}
+\begin{lemma}[Correctness of $\MS{ConstrS}$]
+  $\MS{ConstrS} \RealiseIn{3} ConstrSRel$ with
+  \[
+    ConstrSRel := \lambda t~t'.~\forall n.~ t[0] \simeq n \rightarrow t'[0] \simeq S~n.
+  \]
+\end{lemma}
+
 
 \subsubsection{Sum Types}
 \label{sec:match-sum}
@@ -268,7 +294,7 @@ $\false$).
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchSum} :=$
   Move R; 
-  MATCH ($\MS{ReadChar}$) 
+  Match ($\MS{ReadChar}$) 
         ($\lambda(o:\Option(sigSum~\Sigma_X~\Sigma_Y)).$ match $o$
            [$\Some {\MS{INL}}$ => $\Return{(\MS{Write}~\MS{START})}{\true}$
            |$\Some {\MS{INR}}$ => $\Return{(\MS{Write}~\MS{START})}{\false}$
@@ -279,7 +305,7 @@ $\MS{MatchSum} :=$
 
 \begin{lemma}[Correctness of $\MS{MatchSum}$]
   \label{lem:MatchSum_Realise}
-  $\MS{MatchSum} \RealiseIn5 MatchSumRel$ with
+  $\MS{MatchSum} \RealiseIn{5} MatchSumRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $MatchSumRel :=$
   $\lambda t~(y, t').$ $\forall (s:X+Y).$ $t[0] \simeq s \rightarrow$ match $y$, $s$
@@ -290,22 +316,36 @@ $MatchSumRel :=$
 \end{lstlisting}
 \end{lemma}
 
-\todo{Constructors}
+We have one constructor machine for $\inl$ and $\inr$.  They are both analogous.  They overwrite the start symbol with $\MS{INL}$ or $\MS{INR}$ and
+write a new start symbol on step further left.
+\begin{definition}[$\MS{ConstrInl}$]
+  \label{def:Constr_inl}
+  $\MS{ConstrInl} := \MS{WriteMove}~\MS{INL}~L \Seq \MS{Write}~\MS{START}$.
+\end{definition}
+\begin{lemma}[Correctness of $\MS{ConstrInl}$]
+  \label{lem:Constr_inl_Sem}
+  $\MS{ConstrInl} \RealiseIn{3} ConstrInlRel$ with
+  \[
+    ConstrInlRel := \lambda t~t'.~\forall(x:X).~t[0] \simeq x \rightarrow t'[0] \simeq \inl x
+  \]
+\end{lemma}
+
+\subsubsection{Option Types}
+\label{sec:match-option}
 
 The types $\Option(X)$ and $X+\Unit$ are isomorphic.  Furthermore, the alphabets to encode these types on, $SigOpt~\Sigma$ and $SigSum~\Sigma~\False$,
 are also isomorphic.  We can use this fact to derive a match machine and constructor machines for the type $\Option(X)$.  Let
 $f : SigSum~\Sigma~\False \hookrightarrow SigOpt~\Sigma$ be the canonical retraction.  Then, we can define $\MS{MatchOption}$ as
 $\LiftAlphabet{\MS{MatchSum}}{f}$.  However, in the case that $o=\None$, the surjected output tape $t'$ contains $\unit$.  Thus, the tape has form
 (for some $ls$)
-\[ t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]. \] However, we want that the tape is right in this case, so we make a small change on the machine:
-
+\[ t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]. \] However, we want that the tape is right in this case, so move one step to the right in this case:
 \begin{definition}[$\MS{MatchOption}$]
   \label{def:MatchOption}
   ~
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchOption}$ := If ($\LiftAlphabet{\MS{MatchSum}}{f}$)
              Then Return Nop true
-             Else Return (Move L) false.
+             Else Return (Move R) false.
 \end{lstlisting}
 \end{definition}
 
@@ -321,12 +361,34 @@ $MatchOptionRel :=$
       ].
 \end{lstlisting}
 \end{lemma}
-Note that we had to add $2$ extra steps: one for the conditional and one for the $\MS{Move}$ in the $\None$-case.
+Note that we have to add $2$ extra steps: one for the conditional and one for the $\MS{Move}$ in the $\None$-case.
 
-\todo{Derive constructors}
+We can also derive the $\Some{\cdot}$ constructor of $\Option(X)$ from the $\inl$ constructor of $X+\Unit$.
+\begin{definition}[$\MS{ConstrSome}$]
+  \label{def:Constr_Some}
+  $\MS{ConstrSome} := \LiftAlphabet{\MS{ConstrInl}}{f}$
+\end{definition}
+\begin{lemma}[Correctness of $\MS{ConstrSome}$]
+  \label{lem:Constr_Some_Sem}
+  $\MS{ConstrSome} \RealiseIn{3} ConstrSomeRel$ with
+  \[
+    ConstrSomeRel := \lambda t~t'.~\forall(x:X).~t[0] \simeq x \rightarrow t'[0] \simeq \Some{x}
+  \]
+\end{lemma}
+For the $\None$ constructor, we simply use $\MS{WriteValue}$
+\begin{definition}[$\MS{ConstrNone}$]
+  \label{def:Constr_None}
+  $\MS{ConstrNone} := \MS{WriteValue}~[\MS{NONE}]$
+\end{definition}
+\begin{lemma}[Correctness of $\MS{ConstrNone}$]
+  \label{lem:Constr_None_Sem}
+  $\MS{ConstrNone} \RealiseIn{3} ConstrNoneRel$ with
+  \[
+    ConstrNoneRel := \lambda t~t'.~isRight~t[0] \simeq x \rightarrow t'[0] \simeq \None
+  \]
+\end{lemma}
 
-
-\todo{More Matches and Constructors, e.g.\ lists, pairs}
+\todo{More Matches and Constructors, e.g.\ lists, pairs etc.  Only informal description and correctness relations.}
 
 
 \subsection{Copy Values}
