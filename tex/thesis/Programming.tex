@@ -158,30 +158,31 @@ We write $\LiftAlphabet{M}{f}$ for $\LiftAlphabet{M}{(f, \MS{UNKNOWN})}$.
 We defined what it means that a tape contains a value.  Now we want to define machines that manipulate values, e.g.\ increase or increase a number.
 Also, a very useful operation is to copy a value from one tape to another tape.
 
-
 \subsection{Write Value}
 \label{sec:WriteValue}
 
-Using the machine class $\MS{WriteString}$ from Section~\ref{sec:WriteString}, it is possible to define a machine
-$\MS{WriteValue}~x : \TM_{\Sigma^+}^1$, where $x:X$ is encodable over $\Sigma$, that writes the value $x$ on a right tape.
+We define a wrapper around the machine class $\MS{WriteString}$ from Section~\ref{sec:WriteString}.  Instead of a string $str : \Sigma^+$, the machine
+$\MS{WriteValue}~str : \TM_{\Sigma^+}^1$ gets an encoding $str:\List(\Sigma)$ of a value as parameter.%
+\footnote{The reason why $\MS{WriteValue}$ is not parametrised over values $x:X$ is, that we would also need to parametrise $\MS{WriteString}$ over
+  the encoding function of $X$.}%
 \begin{definition}[$\MS{WriteValue}$]
   \label{def:WriteValue}
-  Let $x:X$ and $X$ encodable over $\Sigma$.
+  Let $str:\List(\Sigma)$
   \[
-    \MS{WriteValue}(x) := \MS{WriteString}~L~\left(\MS{STOP} \cons \rev{(encode(x))}\right) \Seq \MS{Write}(\MS{START}).
+    \MS{WriteValue}(x) := \MS{WriteString}~L~\left(\rev{\left(\MS{START} \cons str \app [\MS{STOP}]\right)}\right).
   \]
+  Note that we implicitly map $str$ to the extended alphabet $\Sigma^+$.
 \end{definition}
-The stop symbol and the encoding are written on the tape, from right to left in reversed order.  After that, the machine writes the start symbol on
-the tape.  This step is done separately, because after the execution of $\MS{WriteString}$, the head of the tape is one step left to the last written
-symbol.
+The machine writes the stop symbol, the encoding $str$, and the start symbol in reversed order from right to left.  If it started with a right tape,
+then after the execution the tape contains the value $x$ that has the encoding $str$.
 \begin{lemma}[Correctness of $\MS{WriteValue}$]
   \label{lem:WriteValue_Sem}
-  Let $x:X$.
+  Let $X$ be encodable over $\Sigma$ and $str : \List(\Sigma)$.
   \[
-    \MS{WriteValue}(x) \RealiseIn{5 + 3 \cdot \size{x}} WriteValueRel(x)
+    \MS{WriteValue}(str) \RealiseIn{3 + 2 \cdot \length{str}} WriteValueRel(str)
   \]
   \[
-    WriteValueRel(x) := \lambda t~t'. isRight(t[0]) \rightarrow t'[0] \simeq x.
+    WriteValueRel(str) := \lambda t~t'. \forall (x:X).~encode(x) = str \rightarrow isRight(t[0]) \rightarrow t'[0] \simeq x.
   \]
 \end{lemma}
 

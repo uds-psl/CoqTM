@@ -49,6 +49,7 @@ The machine $\MS{WriteString}~d~str$ writes a fixed string $str:\List(\Sigma)$ i
 \begin{definition}[$\MS{WriteString}$]
   \begin{alignat*}{3}
     &\MS{WriteString}~d~&&(\nil)         &~:=~& \Nop \\
+    &\MS{WriteString}~d~&&(s \cons \nil) &~:=~& \MS{Write}~s \\
     &\MS{WriteString}~d~&&(s \cons str') &~:=~& \MS{WriteMove}~s~d \Seq \MS{WriteString}~d~str'.
   \end{alignat*}
 \end{definition}
@@ -56,21 +57,26 @@ The machine $\MS{WriteString}~d~str$ writes a fixed string $str:\List(\Sigma)$ i
 Note that this is the our only machine we define per recursion.  However, the way we prove correctness in constant time (depending on the length of
 $str$) is still the same.
 
-The relation that $\MS{WriteString}$ ``automatically'' realises in $3 \cdot \length{str}$ steps is the following:
+The machine writes all symbols of the string $str$ to the tape and moves in the tape in direction $d$ after each (but the last) symbol.  When it
+terminates, the head of the tape is under the last written symbol, which is the last symbol of $str$.  It terminates in constant time, after
+$2\cdot\length{str}-1$ steps.
+
+The relation that $\MS{WriteString}$ ``automatically'' realises, is also defined per recursion over the string:
 \begin{lemma}
   $\MS{WriteString}~d~str \RealiseIn{3 \cdot \length{str}} R'~d~str$ with
   \begin{alignat*}{3}
     &\MS{R'}~d~&&(\nil        ) &~:=~& NopRel \\
+    &\MS{R'}~d~&&(s \cons \nil) &~:=~& DoActRel(\Some{s}, N) \\
     &\MS{R'}~d~&&(s \cons str') &~:=~& DoActRel(\Some{s}, d) \circ \MS{R'}~d~str'.
   \end{alignat*}
 \end{lemma}
 \begin{proof}
   By induction on $str:\List(\Sigma)$, using the monotonicity Lemma~\ref{lem:RealiseIn_monotone}, the correctness of $\Nop$ (Lemma~\ref{lem:Nop_Sem}),
-  the correctness of $\MS{WriteMove}$ (which is defined by $\MS{DoAct}$; Lemma~\ref{lem:DoAct_Sem}), and correctness of sequential composition for
-  constant time (Lemma~\ref{lem:Seq_RealiseIn}).
+  the correctness of $\MS{Write}$ and $\MS{WriteMove}$ (which are defined by $\MS{DoAct}$; Lemma~\ref{lem:DoAct_Sem}), and correctness of sequential
+  composition for constant time (Lemma~\ref{lem:Seq_RealiseIn}).
 \end{proof}
 
-We define the actual relation of $\MS{WriteString}$ in terms of a recursive function on tapes:
+We define the actual relation of $\MS{WriteString}$ in terms of a function on tapes, defined by recursion over $str$:
 \begin{lemma}[Correctness of $\MS{WriteString}$]
   \label{lem:WriteString_Sem}
   Let $d:\Move$ and $str:\List(\Sigma)$.
@@ -79,6 +85,7 @@ We define the actual relation of $\MS{WriteString}$ in terms of a recursive func
   $WriteStringRel~d~str := \lambda t~t'.~t' = WriteStringFun~d~t~str$ and
   \begin{alignat*}{3}
     &WriteStringFun~d~t~&&(\nil        ) &~:=~& t \\
+    &WriteStringFun~d~t~&&(s \cons \nil) &~:=~& \MS{wr}~t~(\Some{s}) \\
     &WriteStringFun~d~t~&&(s \cons str') &~:=~& WriteStringFun~d~\bigl(doAct~t~(\Some{s}, d)\bigr)~str'
   \end{alignat*}
 \end{lemma}
