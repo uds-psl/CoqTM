@@ -327,8 +327,10 @@ Section MatchList.
 
   (** *** [nil] *)
   
-  Definition Constr_nil : { M : mTM (sigList sigX)^+ 1 & states M -> unit } :=
-    WriteMove (inl STOP) L;; WriteMove (inr sigList_nil) L;; Write (inl START).
+  Definition Constr_nil : pTM (sigList sigX)^+ unit 1 := WriteValue [sigList_nil].
+
+  Goal Constr_nil = WriteMove (inl STOP) L;; WriteMove (inr sigList_nil) L;; Write (inl START).
+  Proof. reflexivity. Qed.
 
 
   Definition Constr_nil_Rel : Rel (tapes (sigList sigX)^+ 1) (unit * tapes (sigList sigX)^+ 1) :=
@@ -342,10 +344,7 @@ Section MatchList.
     unfold Constr_nil_steps. eapply RealiseIn_monotone.
     { unfold Constr_nil. repeat TM_Correct. }
     { reflexivity. }
-    {
-      intros tin ((), tout) H. intros HRight. TMSimp.
-      repeat econstructor. f_equal. simpl_tape. cbn. rewrite isRight_right; auto.
-    }
+    { intros tin ((), tout) H. cbn in *. auto. }
   Qed.
   
 

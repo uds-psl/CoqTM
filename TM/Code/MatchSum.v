@@ -269,21 +269,18 @@ Section MatchOption.
                     isRight tin ->
                     tout ≃ None)).
 
-  Definition Constr_None : { M : mTM tau^+ 1 & states M -> unit } :=
-    WriteMove (inl STOP) L;; WriteMove (inr sigOption_None) L;; Write (inl START).
+  Definition Constr_None : pTM tau^+ unit 1 := WriteValue [ sigOption_None ].
+
+  Goal Constr_None = WriteMove (inl STOP) L;; WriteMove (inr sigOption_None) L;; Write (inl START).
+  Proof. reflexivity. Qed.
+    
 
   Lemma Constr_None_Sem : Constr_None ⊨c(5) Constr_None_Rel.
   Proof.
     eapply RealiseIn_monotone.
     { unfold Constr_None. repeat TM_Correct. }
     { cbn. reflexivity. }
-    {
-      intros tin ((), tout) H.
-      intros HRight.
-      subst sig tau.
-      TMSimp; clear_trivial_eqs.
-      repeat econstructor. cbn. f_equal. simpl_tape. cbn. f_equal. f_equal. now apply isRight_right.
-    }
+    { intros tin ((), tout) H. cbn in *. auto. }
   Qed.
 
 End MatchOption.

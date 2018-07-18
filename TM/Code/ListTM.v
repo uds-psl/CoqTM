@@ -85,11 +85,11 @@ Section Nth.
     If (LiftTapes (ChangeAlphabet MatchNat _) [|Fin1|])
        (If (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
            (Return (LiftTapes (Reset _) [|Fin2|]) (None))
-           (Return (LiftTapes (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (Some tt)))
+           (Return (LiftTapes (ChangeAlphabet (Constr_None _) _) [|Fin2|]) (Some tt)))
        (If (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
            (Return (LiftTapes (Translate retr_X_list retr_X_opt;;
                             ChangeAlphabet (Constr_Some sigX) _) [|Fin2|]) (Some tt))
-           (Return (LiftTapes (ChangeAlphabet (Constr_None sigX) _) [|Fin2|]) (Some tt)))
+           (Return (LiftTapes (ChangeAlphabet (Constr_None _) _) [|Fin2|]) (Some tt)))
   .
 
   Lemma Nth_Step_Realise : Nth_Step ⊨ Nth_Step_Rel.

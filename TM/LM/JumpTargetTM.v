@@ -66,11 +66,11 @@ Qed.
 
 
 (** append a token to the token list *)
-Definition App_ATok (t : ATok) : pTM sigPro^+ (FinType(EqType unit)) 2 :=
-  WriteValue _ [ATok2Tok t] @ [|Fin1|];;
+Definition App_ATok (t : ATok) : pTM sigPro^+ unit 2 :=
+  WriteValue (encode [ATok2Tok t]) @ [|Fin1|];;
   App_Tokens.
 
-Definition App_ATok_Rel (t : ATok) : pRel sigPro^+ (FinType(EqType unit)) 2 :=
+Definition App_ATok_Rel (t : ATok) : pRel sigPro^+ unit 2 :=
   ignoreParam (
       fun tin tout =>
         forall (Q : list Tok),
@@ -88,11 +88,11 @@ Proof.
   }
   {
     intros tin ((), tout) H. intros Q HENcQ HRight1.
-    TMSimp. modpon H0. auto.
+    TMSimp. specialize (H [ATok2Tok t] eq_refl). modpon H. modpon H0. auto.
   }
 Qed.
 
-Definition App_ATok_steps (Q: Pro) (t: ATok) := 1 + WriteValue_steps _ [ATok2Tok t] + App_Tokens_steps Q [ATok2Tok t].
+Definition App_ATok_steps (Q: Pro) (t: ATok) := 1 + WriteValue_steps (size _ [ATok2Tok t]) + App_Tokens_steps Q [ATok2Tok t].
 
 Definition App_ATok_T (t: ATok) : tRel sigPro^+ 2 :=
   fun tin k => exists (Q: list Tok), tin[@Fin0] ≃ Q /\ isRight tin[@Fin1] /\ App_ATok_steps Q t <= k.
@@ -105,9 +105,9 @@ Proof.
   }
   {
     intros tin k. intros (Q&HEncQ&HRight&Hk).
-    exists (WriteValue_steps _ [ATok2Tok t]), (App_Tokens_steps Q [ATok2Tok t]). cbn; repeat split; try omega.
+    exists (WriteValue_steps (size _ [ATok2Tok t])), (App_Tokens_steps Q [ATok2Tok t]). cbn; repeat split; try omega.
     now rewrite Hk.
-    intros tmid () (HWrite&HInjWrite); hnf; cbn; TMSimp. modpon HWrite. eauto.
+    intros tmid () (HWrite&HInjWrite); hnf; cbn; TMSimp. specialize (HWrite [ATok2Tok t] eq_refl). modpon HWrite. eauto.
   }
 Qed.
 
@@ -507,8 +507,8 @@ Qed.
 
 
 Definition JumpTarget : pTM sigPro^+ bool 5 :=
-  WriteValue _ (@nil Tok) @ [|Fin1|];;
-  WriteValue _ 0 @ [|Fin2|];;
+  Constr_nil _ @ [|Fin1|];;
+  Constr_O ⇑ _ @ [|Fin2|];;
   If (JumpTarget_Loop)
      (Return (Reset _ @ [|Fin2|]) true)
      (Return Nop false)
@@ -565,7 +565,7 @@ Local Definition JumpTarget_steps_Loop (P : Pro) :=
 
 
 Definition JumpTarget_steps (P : Pro) :=
-  3 + WriteValue_steps _ (@nil Tok) + WriteValue_steps _ 0 + JumpTarget_Loop_steps P nil 0 + JumpTarget_steps_Loop P.
+  3 + Constr_nil_steps + Constr_O_steps + JumpTarget_Loop_steps P nil 0 + JumpTarget_steps_Loop P.
 
 
 Definition JumpTarget_T : tRel sigPro^+ 5 :=
@@ -587,11 +587,11 @@ Proof.
   }
   {
     intros tin k (P&HEncP&Hout&HInt&Hk). unfold JumpTarget_steps in Hk.
-    exists (WriteValue_steps _ (@nil Tok)), (1 + WriteValue_steps _ 0 + 1 + JumpTarget_Loop_steps P nil 0 + JumpTarget_steps_Loop P).
+    exists (Constr_nil_steps), (1 + Constr_O_steps + 1 + JumpTarget_Loop_steps P nil 0 + JumpTarget_steps_Loop P).
     cbn; repeat split; try omega.
     intros tmid () (HWrite&HWriteInj); TMSimp. modpon HWrite.
-    exists (WriteValue_steps _ 0), (1 + JumpTarget_Loop_steps P nil 0 + JumpTarget_steps_Loop P).
-    cbn; repeat split; try omega. now setoid_rewrite WriteValue_steps_comp. now rewrite Nat.add_assoc.
+    exists (Constr_O_steps), (1 + JumpTarget_Loop_steps P nil 0 + JumpTarget_steps_Loop P).
+    cbn; repeat split; try omega.
     unfold sigPro in *. intros tmid1 () (HWrite'&HWriteInj'); TMSimp. modpon HWrite'.
     exists (JumpTarget_Loop_steps P nil 0), (JumpTarget_steps_Loop P).
     TMSimp. cbn; repeat split; try omega. cbn in *.

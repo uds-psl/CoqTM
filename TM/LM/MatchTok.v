@@ -52,18 +52,25 @@ Qed.
 (** Constructors *)
 
 (** Use [WriteValue] for [appT], [lamT], and [retT] *)
-Definition Constr_appT : { M : mTM sigTok^+ 1 & states M -> unit } := WriteValue _ appT.
-Definition Constr_lamT : { M : mTM sigTok^+ 1 & states M -> unit } := WriteValue _ lamT.
-Definition Constr_retT : { M : mTM sigTok^+ 1 & states M -> unit } := WriteValue _ retT.
+
+Definition Constr_ATok (t : ATok) : pTM sigTok^+ unit 1 := WriteValue (encode (ATok2Tok t)).
+Definition Constr_ATok_Rel (t : ATok) : pRel sigTok^+ unit 1 :=
+  Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ ATok2Tok t)).
+Definition Constr_ATok_steps := 7.
+Lemma Constr_ATok_Sem t : Constr_ATok t ⊨c(Constr_ATok_steps)Constr_ATok_Rel t.
+Proof.
+  unfold Constr_ATok_steps. eapply RealiseIn_monotone.
+  - unfold Constr_ATok. apply WriteValue_Sem.
+  - cbn. destruct t; cbn; reflexivity.
+  - intros tin ((), tout) H. cbn in *. auto.
+Qed.
 
 
-Definition Constr_varT : { M : mTM sigTok^+ 1 & states M -> unit } := Constr_inl _ _.
 
+Definition Constr_varT : pTM sigTok^+ unit 1 := Constr_inl _ _.
 Definition Constr_varT_Rel : pRel sigTok^+ (FinType (EqType unit)) 1 :=
   Mk_R_p (ignoreParam (fun tin tout => forall x : nat, tin ≃ x -> tout ≃ varT x)).
-
 Definition Constr_varT_steps := 3.
-
 Lemma Constr_varT_Sem : Constr_varT ⊨c(Constr_varT_steps) Constr_varT_Rel.
 Proof.
   unfold Constr_varT_steps. eapply RealiseIn_monotone.
@@ -74,9 +81,5 @@ Qed.
 
 
 Arguments MatchTok : simpl never.
-Arguments Constr_appT : simpl never.
-Arguments Constr_lamT : simpl never.
-Arguments Constr_retT : simpl never.
+Arguments Constr_ATok : simpl never.
 Arguments Constr_varT : simpl never.
-
-(* TODO: TM_Correct *)

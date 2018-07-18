@@ -70,23 +70,18 @@ Section MatchNat.
     Definition O_Rel : Rel (tapes sigNat^+ 1) (unit * tapes sigNat^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ O)).
 
-    Definition Constr_O : { M : mTM sigNat^+ 1 & states M -> unit } :=
-      WriteMove (inl STOP) L;;
-      WriteMove (inr sigNat_O) L;;
-      Write (inl START).
+    Definition Constr_O : pTM sigNat^+ unit 1 := WriteValue [ sigNat_O ].
 
+    Goal Constr_O = WriteMove (inl STOP) L;; WriteMove (inr sigNat_O) L;; Write (inl START).
+    Proof. unfold Constr_O, WriteValue, WriteString.WriteString, encode, Encode_map, map, rev, Encode_nat, encode, repeat, app. reflexivity. Qed.
     Definition Constr_O_steps := 5.
 
     Lemma Constr_O_Sem : Constr_O ⊨c(Constr_O_steps) O_Rel.
     Proof.
       unfold Constr_O_steps. eapply RealiseIn_monotone.
       { unfold Constr_O. repeat TM_Correct. }
-      { cbn. omega. }
-      {
-        intros tin (yout, tout) H.
-        intros HRight. destruct HRight as (r1&r2&?). TMSimp. clear_all.
-        simpl_tape. repeat econstructor.
-      }
+      { cbn. reflexivity. }
+      { intros tin (yout, tout) H. cbn in *. auto. }
     Qed.
 
   End NatConstructor.
