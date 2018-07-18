@@ -158,6 +158,34 @@ We write $\LiftAlphabet{M}{f}$ for $\LiftAlphabet{M}{(f, \MS{UNKNOWN})}$.
 We defined what it means that a tape contains a value.  Now we want to define machines that manipulate values, e.g.\ increase or increase a number.
 Also, a very useful operation is to copy a value from one tape to another tape.
 
+
+\subsection{Write Value}
+\label{sec:WriteValue}
+
+Using the machine class $\MS{WriteString}$ from Section~\ref{sec:WriteString}, it is possible to define a machine
+$\MS{WriteValue}~x : \TM_{\Sigma^+}^1$, where $x:X$ is encodable over $\Sigma$, that writes the value $x$ on a right tape.
+\begin{definition}[$\MS{WriteValue}$]
+  \label{def:WriteValue}
+  Let $x:X$ and $X$ encodable over $\Sigma$.
+  \[
+    \MS{WriteValue}(x) := \MS{WriteString}~L~\left(\MS{STOP} \cons \rev{(encode(x))}\right) \Seq \MS{Write}(\MS{START}).
+  \]
+\end{definition}
+The stop symbol and the encoding are written on the tape, from right to left in reversed order.  After that, the machine writes the start symbol on
+the tape.  This step is done separately, because after the execution of $\MS{WriteString}$, the head of the tape is one step left to the last written
+symbol.
+\begin{lemma}[Correctness of $\MS{WriteValue}$]
+  \label{lem:WriteValue_Sem}
+  Let $x:X$.
+  \[
+    \MS{WriteValue}(x) \RealiseIn{5 + 3 \cdot \size{x}} WriteValueRel(x)
+  \]
+  \[
+    WriteValueRel(x) := \lambda t~t'. isRight(t[0]) \rightarrow t'[0] \simeq x.
+  \]
+\end{lemma}
+
+
 \subsection{Constructors and Deconstructors}
 \label{sec:constructors-deconstructors}
 
