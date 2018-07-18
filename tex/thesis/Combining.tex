@@ -272,7 +272,7 @@ For the sequential part, we also have to define the lifted halting function of \
 Using Lemma \ref{lem:loop_merge} and \ref{lem:loop_lift}, we can show the lemma we need for runtime:
 \begin{lemma}[Merging parts of executions of $\Match$]
   \label{lem:Match_merge}
-  Let $t : \Tape_\Sigma^n$, $k_1, k_2:\Nat$, $c_1 : \Conf_M$ and $c_2 : \Conf_{M'(y)}$.
+  Let $t : \Tape_\Sigma^n$, $k_1, k_2:\Nat$, $c_1 : \Conf_M$ and $c_2 : \Conf_{M'(part_M~q_1)}$.
   \begin{alignat*}{1}
     & M(t) \terminates^{k_1} c_1 \rightarrow\\
     & \bigl( M'~(part_M~q_1) \bigr) (t_1) \terminates^{k_2} c_2 \rightarrow\\
@@ -284,12 +284,12 @@ Using Lemma \ref{lem:loop_merge} and \ref{lem:loop_lift}, we can show the lemma 
   \begin{enumerate}
   \item $\forall a:\Conf_\Match.~ \lnot haltConfL~a \rightarrow \lnot \MS{haltConf}~a$.  This holds trivially by definition.
   \item $\Loop~step_\Match~haltConfL~(\MS{initConf}_\Match~t)~k_1 =
-    \Some{liftL~c1}$.  By definition, we have $\MS{initConf}_\Match~t=liftL(\MS{initConf}_M t)$.  The claim follows with Lemma~\ref{lem:loop_lift}.
+    \Some{liftL~c_1}$.  By definition, we have $\MS{initConf}_\Match~t=liftL(\MS{initConf}_M~t)$.  The claim follows with Lemma~\ref{lem:loop_lift}.
   \item $\Loop~step_\Match~haltConf_\Match~(liftL~c1)~(1+k_2) =
     \Some{liftR(c_2)}$.  By definition, we know that the first step must be a ``nop'' transition from
     $liftL~c_1$ to\\
-    $liftR~\bigl(\MS{initConf}_{M'(part_M~q_1)}~t' \bigr)$.  It remains to show that
-    $$\Loop~step_\Match~haltConf_\Match~liftR \bigl(\MS{initConf}_{M'(part_M~q_1)}~t' \bigr)~k_2 = \Some{liftR(c_2)}.$$
+    $liftR~\bigl(\MS{initConf}_{M'(part_M~q_1)}~t_1 \bigr)$.  It remains to show that
+    $$\Loop~step_\Match~haltConf_\Match~liftR \bigl(\MS{initConf}_{M'(part_M~q_1)}~t_1 \bigr)~k_2 = \Some{liftR(c_2)}.$$
     This follows with Lemma~\ref{lem:loop_merge}.
   \end{enumerate}
 \end{proof}
@@ -476,7 +476,7 @@ We have two more splitting lemmas, for that case that $\While$ terminated immedi
     & \While(c_1) \terminates^k c_2 \rightarrow \\
     & haltConf_M~c_1 \rightarrow \\
     & part_M(q_1) = \Some y \rightarrow \\
-    & c_2 = c_1.
+    & c_1 = c_2.
   \end{alignat*}
 \end{lemma}
 \begin{proof}
@@ -489,11 +489,11 @@ We have two more splitting lemmas, for that case that $\While$ terminated immedi
     & \While(c_1) \terminates^k c_2 \rightarrow \\
     & haltConf_M~c_1 \rightarrow \\
     & part_M(q_1) = \None \rightarrow \\
-    & \exists k'.~k = 1+k' ~\land~ \While(c_1) \terminates^{k'} c_2.
+    & \exists k'.~k = 1+k' ~\land~ \While(t_1) \terminates^{k'} c_2.
   \end{alignat*}
 \end{lemma}
 \begin{proof}
-  $\While$ must have taken the ``nop''-transition from $c_1$ to $initConf~t$.
+  $\While$ must have taken the ``nop''-transition from $c_1$ to $initConf~t_1$, because $c_1$ is a halting configuration of $\Match$.
 \end{proof}
 
 We now can prove the correctness Lemma~\ref{lem:While_Realise} of $\While$.
