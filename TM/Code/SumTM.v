@@ -4,7 +4,7 @@ Require Import ProgrammingTools MatchSum.
 
 (**
 If there are two function [f1 : X -> Z] and [f2 : Y -> Z], then there is only one canonical way to define a function [map_sum : X + Y -> Z]. This machine operator takes machines [M1] and [M2] that compute the functions [f] and [g]; and defines a machine [Map_sum] that computes [map_sum].
-Because this is a machine combinator, we assume that [M1] and [M2] have the same number of tapes [n] and the same alphabet [sigM]. If the numbers of tapes or alphabets don't match, as usual for combinators, the machines have to be lifted, using the n-lift and the Σ-Lift.
+Because this is a machine combinator, we assume that [M1] and [M2] have the same number of tapes [n] and the same alphabet [sigM]. If the numbers of tapes or alphabets don't match, as usual for combinators, the machines have to be lifted, using the Tapes-lift and the Alphabet-Lift.
 *)
 
 Section MapSum.
@@ -19,8 +19,7 @@ Section MapSum.
   Variable (retr_sigX_sigM : Retract sigX sigM) (retr_sigY_sigM : Retract sigY sigM) (retr_sigZ_sigM : Retract sigZ sigM).
 
   (** The Machines [M1] and [M2] that compute the functions [f1] and [f2]. *)
-  Variable M1 : { M : mTM sigM^+ (S (S n)) & states M -> unit }.
-  Variable M2 : { M : mTM sigM^+ (S (S n)) & states M -> unit }.
+  Variable M1 M2 : pTM sigM^+ unit (S (S n)). 
 
   Variable f : X -> Z.
   Variable g : Y -> Z.
@@ -124,6 +123,90 @@ Section MapSum.
     }
   Qed.
 
-  (* TODO: Runtime. *)
 
+  Variable (M1_steps : X -> nat) (M2_steps : Y -> nat).
+  Hypothesis (M1_Terminates : projT1 M1 ↓ Computes_T M1_steps) (M2_Terminates : projT1 M2 ↓ Computes_T M2_steps).
+
+  Definition MapSum_steps : X + Y -> nat :=
+    fun s =>
+      match s with
+      | inl x => 4 + MatchSum_steps + Translate_steps _ x + M1_steps x + Translate_steps _ x + Constr_inl_steps
+      | inr y => 4 + MatchSum_steps + Translate_steps _ y + M2_steps y + Translate_steps _ y + Constr_inr_steps
+      end.
+
+  (** This is useful when we work with runtime polynoms *)
+  Local Arguments plus : simpl never.
+  Local Arguments mult : simpl never.
+
+  Lemma MapSum_Terminates : projT1 MapSum ↓ Computes_T MapSum_steps.
+  Proof.
+    eapply TerminatesIn_monotone.
+    { unfold MapSum. repeat TM_Correct.
+      - apply Translate_Realise with (X := X).
+      - apply Translate_Terminates with (X := X).
+      - apply (ChangeAlphabet_Computes (M1_Computes)).
+      - apply (ChangeAlphabet_Terminates (M1_Terminates)).
+      - apply Translate_Realise with (X := X).
+      - apply Translate_Terminates with (X := X).
+      - apply Translate_Realise with (X := Y).
+      - apply Translate_Terminates with (X := Y).
+      - apply (ChangeAlphabet_Computes (M2_Computes)).
+      - apply (ChangeAlphabet_Terminates (M2_Terminates)).
+      - apply Translate_Realise with (X := Y).
+      - apply Translate_Terminates with (X := Y).
+    }
+    {
+      intros tin k (s&HEncS&HRight&HInt&Hk).
+      destruct s as [x|y]; cbn in *.
+      { (* s = inl x *)
+        exists (MatchSum_steps), (3 + Translate_steps _ x + M1_steps x + Translate_steps _ x + Constr_inl_steps).
+        repeat split; try omega.
+        intros tmid b (HMatchSum&HMatchSumInj). specialize (HMatchSum (inl x)). modpon HMatchSum. destruct b; auto. simpl_surject.
+        exists (Translate_steps _ x), (2 + M1_steps x + Translate_steps _ x + Constr_inl_steps).
+        repeat split; try omega.
+        { hnf. cbn. exists x. split; auto. contains_ext. }
+        intros tmid2 () (HTranslate1&HTranslateInj1). modpon HTranslate1.
+        exists (M1_steps x), (1 + Translate_steps _ x + Constr_inl_steps).
+        repeat split; try omega.
+        { exists x. repeat split; auto.
+          - contains_ext.
+          - now rewrite HTranslateInj1, HMatchSumInj by vector_not_in.
+          - intros i. now rewrite HTranslateInj1, HMatchSumInj by vector_not_in.
+        }
+        intros tmid3 () HM1. modpon HM1.
+        { now rewrite HTranslateInj1, HMatchSumInj by vector_not_in. }
+        { intros i. now rewrite HTranslateInj1, HMatchSumInj by vector_not_in. }
+        exists (Translate_steps _ x), (Constr_inl_steps).
+        repeat split; try omega.
+        { hnf. cbn. exists x. repeat split; eauto. contains_ext. }
+        intros tmid4 () (HTranslate2&HTranslateInj2). modpon HTranslate2.
+        reflexivity.
+      }
+      { (* s = inl y, completely symmetric *)
+        exists (MatchSum_steps), (3 + Translate_steps _ y + M2_steps y + Translate_steps _ y + Constr_inr_steps).
+        repeat split; try omega.
+        intros tmid b (HMatchSum&HMatchSumInj). specialize (HMatchSum (inr y)). modpon HMatchSum. destruct b; auto. simpl_surject.
+        exists (Translate_steps _ y), (2 + M2_steps y + Translate_steps _ y + Constr_inr_steps).
+        repeat split; try omega.
+        { hnf. cbn. exists y. split; auto. contains_ext. }
+        intros tmid2 () (HTranslate1&HTranslateInj1). modpon HTranslate1.
+        exists (M2_steps y), (1 + Translate_steps _ y + Constr_inr_steps).
+        repeat split; try omega.
+        { exists y. repeat split; auto.
+          - contains_ext.
+          - now rewrite HTranslateInj1, HMatchSumInj by vector_not_in.
+          - intros i. now rewrite HTranslateInj1, HMatchSumInj by vector_not_in.
+        }
+        intros tmid3 () HM1. modpon HM1.
+        { now rewrite HTranslateInj1, HMatchSumInj by vector_not_in. }
+        { intros i. now rewrite HTranslateInj1, HMatchSumInj by vector_not_in. }
+        exists (Translate_steps _ y), (Constr_inr_steps).
+        repeat split; try omega.
+        { hnf. cbn. exists y. repeat split; eauto. contains_ext. }
+        intros tmid4 () (HTranslate2&HTranslateInj2). modpon HTranslate2.
+        reflexivity.
+      }
+    }
+  Qed.
+  
 End MapSum.

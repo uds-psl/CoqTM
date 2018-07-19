@@ -62,9 +62,10 @@ Section MatchSum.
       WriteMove (inr sigSum_inr) L;; Write (inl START).
 
 
-    Lemma Constr_inl_Sem : Constr_inl ⊨c(3) Constr_inl_Rel.
+    Definition Constr_inl_steps := 3.
+    Lemma Constr_inl_Sem : Constr_inl ⊨c(Constr_inl_steps) Constr_inl_Rel.
     Proof.
-      eapply RealiseIn_monotone.
+      unfold Constr_inl_steps. eapply RealiseIn_monotone.
       { unfold Constr_inl. repeat TM_Correct. }
       { cbn. reflexivity. }
       {
@@ -74,9 +75,10 @@ Section MatchSum.
       }
     Qed.
 
-    Lemma Constr_inr_Sem : Constr_inr ⊨c(3) Constr_inr_Rel.
+    Definition Constr_inr_steps := 3.
+    Lemma Constr_inr_Sem : Constr_inr ⊨c(Constr_inl_steps) Constr_inr_Rel.
     Proof.
-      eapply RealiseIn_monotone.
+      unfold Constr_inr_steps. eapply RealiseIn_monotone.
       { unfold Constr_inr. repeat TM_Correct. }
       { cbn. reflexivity. }
       {
@@ -243,7 +245,6 @@ Section MatchOption.
     ChangeAlphabet (Constr_inl sigX (FinType (EqType Empty_set))) _.
 
   Definition Constr_Some_steps := 3.
-
   Lemma Constr_Some_Sem : Constr_Some ⊨c(Constr_Some_steps) Constr_Some_Rel.
   Proof.
     unfold Constr_Some_steps. eapply RealiseIn_monotone.
@@ -274,8 +275,8 @@ Section MatchOption.
   Goal Constr_None = WriteMove (inl STOP) L;; WriteMove (inr sigOption_None) L;; Write (inl START).
   Proof. reflexivity. Qed.
     
-
-  Lemma Constr_None_Sem : Constr_None ⊨c(5) Constr_None_Rel.
+  Definition Constr_None_steps := 5.
+  Lemma Constr_None_Sem : Constr_None ⊨c(Constr_None_steps) Constr_None_Rel.
   Proof.
     eapply RealiseIn_monotone.
     { unfold Constr_None. repeat TM_Correct. }
