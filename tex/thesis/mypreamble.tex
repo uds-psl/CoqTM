@@ -197,11 +197,15 @@
     {<->}{{$\leftrightarrow$ }}2
     {->}{{$\to$ }}3
     {~}{{$\lnot$}}1
-    {/\\}{{$\land$ }}2
-    {\\/}{{$\lor$ }}2
-    {forall}{{$\forall$ }}1
-    {exists}{{$\exists$ }}1
-    {<>}{{$\not =$ }}{2}
+    {/\\}{{$\land$}}2
+    {\\/}{{$\lor$}}2
+    {forall}{{$\forall$}}1
+    {exists}{{$\exists$}}1
+    {<>}{{$\not =$}}{1}
+    {<=}{{$\leq$}}{1}
+    {<}{{$\lt$}}{1}
+    {>=}{{$\ge$}}{1}
+    {>}{{$\gt$}}{1}
     % {Match}{$\mathsf{Match}$}{5}
     % {match}{$\textsf{match}$}{5}
     % {If}{$\MS{If}$}{5}
@@ -210,6 +214,23 @@
     % {then}{$\MS{then}$}{5}
     % {Else}{$\MS{Else}$}{5}
     % {else}{$\MS{else}$}{5}
+  }
+}
+
+\lstdefinelanguage{pseudocode}{
+  keywords={If,Then,Else,Do,While,Reset,Return},
+}
+
+\lstdefinestyle{pseudocode}{
+  mathescape=true,
+  language=pseudocode,
+  literate={
+    {:=}{{$\leftarrow$}}{1}
+    {<>}{{$\not =$}}{1}
+    {<=}{{$\leq$}}{1}
+    {<}{{$\lt$}}{1}
+    {>=}{{$\ge$}}{1}
+    {>}{{$\gt$}}{1}
   }
 }
 

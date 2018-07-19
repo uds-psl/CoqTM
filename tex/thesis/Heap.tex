@@ -34,7 +34,7 @@ Definition of the heap machine.
     \qquad& \MS{LAM} & \\
     & \inferrule{put~H~\Some{(g,b)} = (c,H')}{\left((a, (\MS{APP} \cons P)) \cons T, g \cons (b, Q) \cons V, H\right) \succ \left((c, Q) \cons (a,P) \cons_{tr} T, V, H'\right)}
     \qquad& \MS{APP} \\
-    & \inferrule{H[a;n]=\Some{g}}{\left((a, (\MS{VAR}(n) \cons P)) \cons T, V, H\right) \cons \left((a, P) \cons_{tr} T, g \cons V, H\right)}
+    & \inferrule{H[a,n]=\Some{g}}{\left((a, (\MS{VAR}(n) \cons P)) \cons T, V, H\right) \cons \left((a, P) \cons_{tr} T, g \cons V, H\right)}
     \qquad& \MS{VAR} &
   \end{alignat*}
   with $ put~H~c := (\length{H}, H \app [c]) $. $\phi~P :=~ \phi'~0~\nil~P$ is defined with the helping function

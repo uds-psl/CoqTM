@@ -219,6 +219,11 @@ $MatchNatRel :=$
 \end{lstlisting}
 \end{definition}
 
+Note that in the case that $n$ is $0$, we could also write $t'=t$.  However we have the convention, when the tapes not change, to use the weaker
+proposition that the tape $t'$ still contains the same values, and that the same tapes are right.  We have to write more, however, when we apply the
+alphabet-lift with the retraction $f$, we would otherwise get assumptions like $mapTape~(surject~f)~t' = mapTape~(surject~f)~t$.  This means that we
+would have to apply a lemma to show that $t'[0]$ still contains $0$, which we get for free using this convention.
+
 Initially, the tape $t[0]$ contains some number $n$.  So the head of $t[0]$ must be on the start symbol.  The machine moves one step right and reads
 the first symbol of the encoding.  This symbol may either be $\MS{S}$ or $\MS{O}$.  If the machine reads $\MS{O}$, this means that the number $n$ is
 $0$, so the machine moves back to the start symbol and terminates in the partition $\false$, indicating that the number was $0$.  On the other side,
@@ -338,15 +343,15 @@ are also isomorphic.  We can use this fact to derive a match machine and constru
 $f : SigSum~\Sigma~\False \hookrightarrow SigOpt~\Sigma$ be the canonical retraction.  Then, we can define $\MS{MatchOption}$ as
 $\LiftAlphabet{\MS{MatchSum}}{f}$.  However, in the case that $o=\None$, the surjected output tape $t'$ contains $\unit$.  Thus, the tape has form
 (for some $ls$)
-\[ t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]. \] However, we want that the tape is right in this case, so move one step to the right in this case:
+\[ t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]. \] However, we want that the tape is right in this case.  That is because $\Option(X)$ is not a
+recursive data type and the information that $o=\None$ is already encoded in the partition in which $\MS{MatchOption}$ terminates.  So in this case,
+the tape moves one step to the right:
 \begin{definition}[$\MS{MatchOption}$]
   \label{def:MatchOption}
   ~
-\begin{lstlisting}[style=semicoqstyle]
-$\MS{MatchOption}$ := If ($\LiftAlphabet{\MS{MatchSum}}{f}$)
-             Then Return Nop true
-             Else Return (Move R) false.
-\end{lstlisting}
+  \[
+    \MS{MatchOption} := \If{\LiftAlphabet{\MS{MatchSum}}{f}}{\Return{\Nop}{\true}}{\Return{(\MS{Move}~R)}{\false}}.
+  \]
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{MatchOption}$]
@@ -602,21 +607,25 @@ Internal tapes may be used to copy input-values on, if they need to be changed, 
 $M$ that computes a binary function $f$, is the following:
 \begin{align*}
   M := & \LiftTapes{\MS{CopyValue}}{\Vector{0; 3}} \Seq \LiftTapes{\MS{CopyValue}}{\Vector{1; 4}} \Seq \\
+       & \LiftTapes{\MS{WriteValue}~\cdots}{\Vector{\cdots}} \Seq \\
        & \LiftTapes{\MS{Loop}}{\Vector{3; 4; 2; 5; 6; 7; \cdots}} \Seq \\
        & \LiftTapes{\MS{Reset}}{\Vector{3}} \Seq \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq \LiftTapes{\MS{Reset}}{\Vector{5}} \Seq \cdots
 \end{align*}
-with $\MS{Loop} := \While(\MS{Step})$.  Note that the $\MS{Step}$ and $\MS{Loop}$ have only ``access'' to the copies of $x$ and $y$, but not to the
-``original'' on $t[0]$ and $t[1]$ of $M$.  This also means that $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $y$ is on the $0$st and
-$1$st tape of $\MS{Step}$, the output is on tape $2$, all further tapes are internal tapes.  After the loop, all tapes that $\MS{Step}$ did not reset,
-including the tapes to contain the copies of $x$ and $y$ and additional tapes, are reseted by $M$.
+with $\MS{Loop} := \While(\MS{Step})$.  $\MS{Step}$ is partitioned over $\Option(\Unit)$, $\Some\unit$ means to break out of the loop and $\None$ to
+continue.  Note that the $\MS{Step}$ and $\MS{Loop}$ have only ``access'' to the copies of $x$ and $y$, but not to the ``original'' on $t[0]$ and
+$t[1]$ of $M$.  This also means that $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $y$ is on the $0$st and $1$st tape of $\MS{Step}$,
+the output is on tape $2$, all further tapes are internal tapes.  Before the loop, some tapes may be initialised with values.  After the loop, all
+tapes that $\MS{Step}$ did not reset, including the tapes to contain the copies of $x$ and $y$ and additional tapes, are reseted by $M$.
+
+Before we can define the machine $M$, we first have to decide on which alphabet $M$ is defined.  If the machine operates on only one data type, then
+we define $M$ over the smallest alphabet to encode this type on.  On the other hand, if $M$ operates on more alphabets, we use the technique in
+Section~\ref{sec:extend-alphabet}.
 
 For the verification of $M$, we first have to give the correctness relation of $\MS{Step}$.  It should encode the loop invariant as general as
 possible.  Then we can define the correctness relation $LoopRel$ of $\MS{Loop}$ and prove $\MS{Loop} \Realise LoopRel$.  After that, we define runtime
-relations $StepT$ and $LoopT$, and show $\MS{Step} \TerminatesIn StepT$, and after that $\MS{Loop} \TerminatesIn LoopT$.
-
-
-
-
+relations $StepT$ and $LoopT$, and show $\MS{Step} \TerminatesIn StepT$, and after that $\MS{Loop} \TerminatesIn LoopT$.  Finally, we prove
+$M \Realise FunRel(f)$ and $M \TerminatesIn FunT(steps)$, where $f:X \to Y \to Z$ is the function that $M$ computes and $steps:X \to Y \to \Nat$ the
+runtime function.
 
 
 \section{Case Studies}
@@ -627,24 +636,166 @@ We implement the general design of the previous section for concrete functions.
 \subsection{Machines Computing Natural Functions}
 \label{sec:NatTM}
 
-We want to implement the functions $add,mult:\Nat\to\Nat$, according to Definition~\ref{def:Computes2_Rel}.  First, we have to define
+We want to implement the functions $add,mult:\Nat\to\Nat\to\Nat$, according to Definition~\ref{def:Computes2_Rel}.  First we define the machine
+$\MS{Add}$ that computes the addition function.  We reuse this machine to implement a machine $\MS{Mult}$ that computes the multiplication function.
+
+\subsubsection{Addition}
+\label{sec:Add}
+
+The algorithm that our machine implements can be described with in the following pseudocode:
+{
+  \small
+\begin{lstlisting}[style=pseudocode]
+a := n
+b := m
+While (b--) {
+  a++
+}
+Reset b
+Return a
+\end{lstlisting}
+}
+The output tape is the tape that is represented by the variable $a$.  First, we copy the input $n$ to this tape, and the number $m$ to an internal
+tape.  In the loop, as long as we can decrease the copy of $m$, we increment $a$.  After the loop, we reset the copy $b$ and the machine terminates.
+The return statement in the pseudocode above only indicates, which variable stores the result after the program terminated.  The first step in the
+design of the machine is to specify, which tape contains which variable.  This is visualised in Table~\ref{tab:tapes-Add}.
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|l|l|l|l|}
+    \hline
+     Tape of $\MS{Add}$ & Variable & Role      & Tape in $\MS{AddStep}$ \\ \hline\hline
+     $0$                & $m$      & Input     & --                     \\ \hline
+     $1$                & $n$      & Input     & --                     \\ \hline
+     $2$                & $a$      & Output    & $0$                    \\ \hline
+     $3$                & $b$      & Internal  & $1$                    \\ \hline
+  \end{tabular}
+  \caption{Tape assignment for $\MS{Add}$ and $\MS{AddStep}$}
+  \label{tab:tapes-Add}
+\end{table}
+
+Because the machine only works on natural numbers, we chose $SigNat$ as the alphabet of $\MS{Add}$ and all its sub-machines.
+
+The next step is to implement the step machine.  $\MS{AddStep}$ has only access to the variables $a$ and $b$, that are stored on tape $0$ and $1$, as
+also visualised in Table~\ref{tab:tapes-Add}.  The decrement operation and test whether $b$ was $0$ is implemented using the deconstructor machine
+$\MS{MatchNat}$.  In the case that $b$ is $0$, the step machine terminates in $\Some\unit$, so that the loop brakes.  In case $b$ is greater then $0$,
+$\MS{MatchNat}$ decreases $b$ and the step machine increases $a$.  Then it terminates in $\None$, so that the loop continues.
+\begin{definition}[$\MS{AddStep}$]
+  \label{def:Add_Step}
+  \[
+    \MS{AddStep} := \If{\LiftTapes{\MS{MatchNat}}{\Vector{1}}}{\Return{(\LiftTapes{\MS{ConstrS}}{\Vector{0}})}{\None}}{\Return{\Nop}{\Some\unit}}.
+  \]
+\end{definition}
+
+Because all parts of $\MS{AddStep}$ terminate in constant time, we get the constant runtime part of the semantics of $\MS{AddStep}$ for free.
+\begin{lemma}[Correctness of $\MS{AddStep}$]
+  \label{lem:Add_Step_Sem}
+  $\MS{AddStep} \RealiseIn{9} AddStepRel$ with
+\begin{lstlisting}[style=semicoqstyle]
+$AddStepRel$ :=
+  $\lambda~t~(y, t').~ \forall (a~b:\Nat).$
+      $t[0] \simeq a \rightarrow t[1] \simeq b \rightarrow$
+      match $y$, $b$
+      [ $\Some\unit$, $O$ =>
+        $t'[0] \simeq a ~\land~$
+        $t'[1] \simeq b$
+      | $\None$, $S~b'$ =>
+        $t'[0] \simeq S~a ~\land~$
+        $t'[1] \simeq b'$
+      | _, _ => $\False$
+      ].
+\end{lstlisting}
+\end{lemma}
+
+According to the general design plan, we define $\MS{AddLoop} := \While~\MS{AddStep}$.  The correctness relation of $\MS{AddLoop}$ now says, that
+after the execution of the loop, $t'[0]$ contains $a+b$ and $t'[1]$ contains $0$:
+\begin{lemma}[Correctness of $\MS{AddLoop}$]
+  \label{lem:Add_Loop_Sem}
+  $\MS{AddLoop} \Realise AddLoopRel$ with
+  \[
+    AddLoopRel := \lambda t~t'.~\forall (a~b:\Nat).~t[0] \simeq a \rightarrow t[1] \simeq b \rightarrow t'[0] \simeq a+b \land t'[1] \simeq 0.
+  \]
+\end{lemma}
+\begin{proof}
+  Using the $\While$-induction Lemma~\ref{lem:WhileInduction}.  In case the loop terminated, $b$ must have been $0$ and $t'[0] \simeq a$, therefore
+  $t'[0]$ contains $a=a+0=a+b$.  In the induction/loop case, we know that $b=1+b'$ and that $t'[0] \simeq S~a$ and $t'[1] \simeq b'$.  By the
+  inductive hypothesis, we know that $t''[0]$ contains $b' + S~a = a+b$ and $t''[1] \simeq 0$.
+\end{proof}
+
+The runtime of $\MS{AddLoop}$ must be shown separately.  We know that the loop is executed $b+1$ times, each iteration takes $9$ steps.  We have to
+add $1$ step for each re-iteration of the loop.  So, the total step number is $9+10 \cdot b$.
+\begin{lemma}[Runtime of $\MS{AddLoop}$]
+  \label{lem:Add_Loop_TerminatesIn}
+  $\MS{AddLoop} \downarrow AddLoopT$ with
+  \[
+    AddLoopT := \lambda t~k.~\exists (a~b:\Nat).~t[0] \simeq a \land t[1] \simeq b \land 9+10 \cdot b \leq k.
+  \]
+\end{lemma}
+
+Now we can define the full machine $\MS{Add}$:
+\begin{definition}[$\MS{Add}$]
+  \label{def:Add}
+  ~
+  \[
+    \MS{Add} :=
+    \LiftTapes{\MS{CopyValue}}{\Vector{1;2}} \Seq
+    \LiftTapes{\MS{CopyValue}}{\Vector{0;3}} \Seq
+    \LiftTapes{\MS{AddLoop}}{\Vector{2;3}} \Seq
+    \LiftTapes{\MS{Reset}}{\Vector{3}}.
+  \]
+\end{definition}
+
+From the correctness and runtime of $\MS{AddLoop}$, we conclude the correctness and runtime of $\MS{Add}$.  For the runtime function, we have to add
+linear components for the copying of $m$ and $n$.
+
+\begin{lemma}[Correctness of $\MS{Add}$]
+  \label{lem:Add_Computes}
+  $\MS{Add} \Realise FunRel(add)$.
+\end{lemma}
+
+\begin{lemma}[Runtime of $\MS{Add}$]
+  $\MS{Add} \downarrow FunT(stepsAdd)$ with
+  \[
+    stepsAdd~m~n := 98 + 22 \cdot m + 12 \cdot n.
+  \]
+\end{lemma}
+
+When we prove the runtime of sequences of multiple machines, we have to give runtime functions for all suffixes of the sequence in terms of the
+sequence operator.  We accumulate the runtimes from down to top and have to add one additional step for each sequence operator.  This is visualised in
+Table~\ref{tab:runtime-Add}.
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{|l|l|l|}
+    \hline Sub-Machine & Runtime & Accumulated runtime \\ \hline\hline
+    $\LiftTapes{\MS{CopyValue}}{\Vector{1;2}}$  & $37 + 12 \cdot n$ & $98 + 22 \cdot m + 12 \cdot n$ \\ \hline
+    $\LiftTapes{\MS{CopyValue}}{\Vector{0;3}}$  & $37 + 12 \cdot m$ & $60 + 22 \cdot m$ \\ \hline
+    $\LiftTapes{\MS{AddLoop}}{\Vector{2;3}}$    & $9 + 10 \cdot m$  & $22 + 10 \cdot m$ \\ \hline
+    $\LiftTapes{\MS{Reset}}{\Vector{3}}$        & $12$              & $12$ \\ \hline
+  \end{tabular}
+  \caption{Accumulated sub-runtimes of $\MS{Add}$}
+  \label{tab:runtime-Add}
+\end{table}
+
+
 
 \subsection{Mapping of Sum Functions}
 \label{sec:SumTM}
 
-Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function $f+g : X+Y \to Z$ with
+Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function $(f+g) : X+Y \to Z$ by
 \begin{alignat*}{2}
-  (f+g)&(\inl x)&~:=~& f(x) \\
-  (f+g)&(\inr y)&~:=~& g(y).
+  (f+g)&~(\inl x)&~:=~& f(x) \\
+  (f+g)&~(\inr y)&~:=~& g(y).
 \end{alignat*}
 
-We want to define an operator that takes machines $M_1, M_2$ that compute $f$ and $g$, and yields a machine that computes the unary function $f+g$.
+We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a machine that computes the
+function $(f+g)$.
 
 
 \subsection{Machines Computing Functions on Lists}
 \label{sec:ListTM}
 
-\todo{Nth, App}
+\todo{Nth, (App), Length}
 
 
 
