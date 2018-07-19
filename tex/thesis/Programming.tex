@@ -745,24 +745,41 @@ Now we can define the full machine $\MS{Add}$:
   \]
 \end{definition}
 
-From the correctness and runtime of $\MS{AddLoop}$, we conclude the correctness and runtime of $\MS{Add}$.  For the runtime function, we have to add
-linear components for the copying of $m$ and $n$.
+At this point, we introduce a graphical notation of execution protocols that show the value of each tape after the execution of each sub-machine.  In
+the left column we have the input values for each tape, or $\dashv$ if the tape is initially right.  Each further column denotes the executions of the
+(tape-lifted) sub-machines.  We write entries $j: x$ in each cell that is in the index-vector of the sub-machine.  $j$ is the tape-index of the lifted
+machine and $x$ is the value after the execution of the sub-machine on this tape.  We use the symbol $\dashv$ to denote that the tape is right.  If a
+cell of the table is empty, the tape has not changed, read further left in the same row.  In Table~\ref{tab:exec-Add}, we have an example of an
+execution protocol for $\MS{Add}$.
 
+\begin{table}[h]
+  \centering
+  \begin{tabular}{l||l|l|l|l}
+    Input          & $\MS{CopyValue}$ & $\MS{CopyValue}$ & $\MS{AddLoop}$ & $\MS{Reset}$ \\ \hline
+    $0$ : $m$      &                  & $0$: $m$         &                &              \\
+    $1$ : $n$      & $0$: $n$         &                  &                &              \\
+    $2$ : $\dashv$ & $1$: $n$         &                  & $0$: $m+n$     &              \\
+    $3$ : $\dashv$ &                  & $1$: $m$         & $1$: $0$       & $0$: $\dashv$\\
+  \end{tabular}
+  \caption{Execution protocol of $\MS{Add}$}
+  \label{tab:exec-Add}
+\end{table}
+
+From the execution protocol in Table~\ref{tab:exec-Add}, we can see that after the execution of all four sub-machines, the tapes $0$ and $1$ still
+contain the values $m$ and $n$, tape $2$ contains $m+n$, and tape $3$ is right.  Execution protocols serve as outlines of the formal correctness
+proofs.  We conclude the correctness of $\MS{Add}$.
 \begin{lemma}[Correctness of $\MS{Add}$]
   \label{lem:Add_Computes}
   $\MS{Add} \Realise FunRel(add)$.
 \end{lemma}
 
+For the runtime function, we have to add linear components for the copying of $m$ and $n$.
 \begin{lemma}[Runtime of $\MS{Add}$]
   $\MS{Add} \downarrow FunT(stepsAdd)$ with
   \[
     stepsAdd~m~n := 98 + 22 \cdot m + 12 \cdot n.
   \]
 \end{lemma}
-
-When we prove the runtime of sequences of multiple machines, we have to give runtime functions for all suffixes of the sequence in terms of the
-sequence operator.  We accumulate the runtimes from down to top and have to add one additional step for each sequence operator.  This is visualised in
-Table~\ref{tab:runtime-Add}.
 
 \begin{table}[h]
   \centering
@@ -777,6 +794,9 @@ Table~\ref{tab:runtime-Add}.
   \label{tab:runtime-Add}
 \end{table}
 
+When we prove the runtime of sequences of multiple machines, we have to give runtime functions for all suffixes of the sequence in terms of the
+sequence operator.  We accumulate the runtimes from down to top and have to add one additional step for each sequence operator.  This is visualised in
+Table~\ref{tab:runtime-Add}.
 
 
 \subsection{Mapping of Sum Functions}
