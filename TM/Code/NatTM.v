@@ -68,6 +68,7 @@ Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := WHILE Add_Step.
  * while (b--) { // Loop
  *   a++;
  * }
+ * reset b;
  * return a;
  *
  * Tapes:
@@ -110,13 +111,13 @@ Definition Add_Step_Rel : Rel (tapes sigNat^+ 2) (option unit * tapes sigNat^+ 2
       | _, _ => False
       end.
 
-Lemma Add_Step_Sem : Add_Step ⊨c(11) Add_Step_Rel.
+Lemma Add_Step_Sem : Add_Step ⊨c(9) Add_Step_Rel.
 Proof.
   eapply RealiseIn_monotone.
   {
     unfold Add_Step. repeat TM_Correct.
   }
-  { cbn. omega. }
+  { cbn. reflexivity. }
   {
     intros tin (yout, tout) H. cbn. intros a b HEncA HEncB. TMSimp.
     destruct H; TMSimp inv_pair; clear_trivial_eqs.
@@ -214,7 +215,7 @@ Qed.
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 
-Definition Add_Loop_steps b := 11 + 12 * b.
+Definition Add_Loop_steps b := 9 + 10 * b.
 
 Lemma Add_Loop_Terminates :
   projT1 Add_Loop ↓
@@ -243,25 +244,25 @@ Proof.
         * exists (S a), b. repeat split; eauto. omega.
         * omega.
         *)
-    - exists 11. repeat split.
+    - exists 9. repeat split.
       + omega.
       + intros o tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn in *.
         destruct o; auto.
-    - exists 11. repeat split.
+    - exists 9. repeat split.
       + omega.
       + intros o tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn -[plus mult] in *.
         destruct o as [ () | ]; auto. destruct H.
-        exists (11 + b * 12). repeat split.
+        exists (9 + b * 10). repeat split.
         * do 2 eexists. repeat split; eauto. omega.
         * omega.
   }
 Qed.
 
 
-Definition Add_Main_steps m n := 87 + 12 * n + 24 * m.
+Definition Add_Main_steps m n := 85 + 12 * n + 22 * m.
 (* [37 + 12 * n] for [CopyValue] (n) *)
 (* [37 + 12 * m] for [CopyValue] (m) *)
-(* [11 + 12 * m] for [Add_Main] *)
+(* [9 + 10 * m] for [Add_Loop] *)
 
 Lemma Add_Main_Terminates :
   projT1 Add_Main ↓ Computes2_T Add_Main_steps.
@@ -277,7 +278,7 @@ Proof.
   }
   {
     intros tin k (m&n&HEncM&HEncN&HOut&HInt&Hk).
-    exists (37 + 12 * n), (49 + 24 * m). repeat split; cbn.
+    exists (37 + 12 * n), (47 + 22 * m). repeat split; cbn.
     - cbn. exists n. split; eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize. omega.
     - omega.
     - intros tmid ymid. intros (H1&H2). TMSimp.
@@ -293,7 +294,7 @@ Proof.
 Qed.
 
 
-Definition Add_steps m n := 100 + 12 * n + 24 * m.
+Definition Add_steps m n := 98 + 12 * n + 22 * m.
 (* Additional [12] steps for [Reset], and [1] for [Seq] *)
 
 Lemma Add_Terminates :
@@ -565,17 +566,15 @@ Proof.
 Qed.
 
 
-(* TODO *)
-
 (** ** Termination of Mult *)
 
 Definition Mult_Step_steps m' n c :=
   match m' with
   | O => 6
-  | _ => 170 + 33 * c + 41 * n
+  | _ => 168 + 33 * c + 39 * n
   end.
 (* [5] for [If] and [1] for [MatchNat] *)
-(* [100+12*n+24*c] for [Add_Main] *)
+(* [98+12*n+22*c] for [Add] *)
 (* [12+c] for [Reset] (c) *)
 (* [36+12*(c+n)] for [CopyValue] (c' = c + n) *)
 (* [12 + (c+n)] for [Reset] (c' = c + n) *)
@@ -609,7 +608,7 @@ Proof.
       intros tmid y (HComp&HInj). TMSimp.
       specialize (HComp _ HEncM'). cbn in *.
       destruct y; auto.
-    - exists 5, (164 + 33 * c + 41 * n); cbn in *; repeat split; eauto.
+    - exists 5, (162 + 33 * c + 39 * n); cbn in *; repeat split; eauto.
       intros tmid y (HComp&HInj). TMSimp.
       specialize (HComp _ HEncM'). cbn in *. destruct y; auto.
       exists (Add_steps n c), (63 + 21 * c + 17 * n); cbn in *; repeat split.
