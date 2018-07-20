@@ -150,7 +150,9 @@ This intuition is confirmed by the following lemma:
 \end{lemma}
 Note that the encoding on the left side is mapped with the retraction $f$.
 
-We write $\LiftAlphabet{M}{f}$ for $\LiftAlphabet{M}{(f, \MS{UNKNOWN})}$.
+We write $\LiftAlphabet{M}{f}$ for $\LiftAlphabet{M}{(f, \MS{UNKNOWN})}$.  Note that we also use the $\Uparrow$ notation for the tapes-lift.  However,
+it is always clear whether we mean the tape-lift or alphabet-lift.  We use the notation $\LiftBoth{M}{f}{I} := \LiftTapes{(\LiftAlphabet{M}{f})}{I}$,
+for first applying the alphabet-lift, and after that the tapes-lift.
 
 \section{Value-Manipulating Machines}
 \label{sec:value-manipulate}
