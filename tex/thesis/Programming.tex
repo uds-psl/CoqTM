@@ -386,7 +386,85 @@ For the $\None$ constructor, we simply use $\MS{WriteValue}$
   \]
 \end{lemma}
 
-\todo{More Matches and Constructors, e.g.\ lists, pairs etc.  Only informal description and correctness relations.}
+
+\subsubsection{Product Types}
+\label{sec:MatchPair}
+
+The deconstructor and constructor machines have to explicitly copy parts of values.  Thus, their runtime depends on the value.  We use the machines
+$\MS{MoveToSymbol}$ and $\MS{CopySymbols}$.
+
+Let $X$ and $Y$ be encodable on $\Sigma_X$ and $\Sigma_Y$.  The deconstructor $\MS{MatchPair} : \TM_{\Sigma_{X \times Y}}^2$ copies the first
+component of the pair $p:X \times Y$ to tape $1$, the second component remains on tape $0$.  The machine works as follows: first it writes the stop
+symbol on tape $1$.  Then, it seeks the last character of the encoding of $\pi_1(p)$, writes a stop symbol on tape $1$, copies this (including the
+start symbol) from right to left to tape $1$.  Then it moves again to the last symbol of the original encoding of $\pi_1(p)$ on tape $0$, and
+overwrites it with a new start symbol.
+
+\begin{definition}[$\MS{MatchPair}$]
+  \label{def:MatchPair}
+  ~
+  \begin{alignat*}{2}
+    &\MS{MatchPair}&~:=~& \LiftTapes{(\MS{WriteMove}~\MS{STOP}~L)}{\Vector{1}} \Seq \\
+    &              &    & \LiftTapes{(\MS{MoveToSymbol}~f~id \Seq \MS{Move}~L)}{\Vector{0}} \Seq \\
+    &              &    & \MS{CopySymbolsL}~g\Seq \\
+    &              &    & \LiftTapes{(\MS{MoveToSymbol}~f~id \Seq \MS{Move}~L \Seq \MS{Write}~\MS{START})}{\Vector{0}}
+  \end{alignat*}
+  Where $f : \Sigma_{X \times Y}^+ \to \Bool$ is true for symbols that are mapped from the alphabet $\Sigma_Y$.  $g(s)$ is $\true$ if and only if
+  $s=\MS{START}$.
+\end{definition}
+
+The correctness and termination proofs of $\MS{MatchPair}$ are quite technical.  We have lemmas about the tape-functions of $\MS{CopyValueL}$ and
+$\MS{MoveToSymbol}$.  However, it is interesting to note that we have to do a case-distinction, whether $\pi_2(p)$ is empty.  If it is empty, then the
+first $\MS{MoveToSymbol}~f~id$ moves to the stop symbol.  If it is not empty, it moves to the first symbol of the encoding of $\pi_2(p)$.  In both
+cases, $\MS{Move}~L$ moves to the last symbol of $\pi_1(p)$ (or to the start symbol, if $\pi_1(p)$ is empty).
+
+\begin{lemma}[Correctness of $\MS{MatchPair}$]
+  \label{lem:MatchPair_Realise}
+  $\MS{MatchPair} \Realise MatchPairRel$ with
+  \begin{multline*}
+    MatchPairRel := \\
+    \lambda t~t'.~\forall (p: X \times Y).~t[0] \simeq p \rightarrow isRight~t[1] \rightarrow t'[0] \simeq \pi_2(p) \land t'[1] \simeq \pi_1(p).
+  \end{multline*}
+\end{lemma}
+\begin{lemma}[Runtime of $\MS{MatchPair}$]
+  \label{lem:MatchPair_TerminatesIn}
+  $\MS{MatchPair} \TerminatesIn MatchPairT$ with
+  \[
+    MatchPairT := \lambda t~k.~\exists (p: X \times Y).~t[0] \simeq p \land 34 + 16 \cdot \size{\pi_1(p)} \leq k.
+  \]
+\end{lemma}
+
+The constructor copies the first component $x$ from tape $0$ to tape $1$, which initially contains the second component $y$, from right to left.  By
+that, it overwrites the start symbol on tape $1$ with last symbol of the encoding of $x$.
+
+\begin{definition}[$\MS{ConstrPair}$]
+  \label{def:Constr_pair}
+  ~
+  \[
+    \MS{ConstrPair} := \LiftTapes{(\MS{MoveToSymbol})}{\Vector{0}}~h~id \Seq \MS{CopySymbolsL}~g
+  \]
+  Where $g$ is the same function as in Definition~\ref{def:MatchPair}.  $h(s)$ is $\true$ if and only if $s=\MS{STOP}$.
+\end{definition}
+
+\begin{lemma}[Correctness of $\MS{ConstrPair}$]
+  \label{lem:Constr_pair_Realise}
+  $\MS{ConstrPair} \Realise ConstrPairRel$ with
+  \begin{multline*}
+    ConstrPairRel := \\
+    \lambda t~t'.~\forall (x:X)~(y:Y).~t[0] \simeq x \rightarrow t[1] \simeq y \rightarrow t'[0] \simeq x \land t'[1] (x,y).
+  \end{multline*}
+\end{lemma}
+\begin{lemma}[Runtime of $\MS{ConstrPair}$]
+  \label{lem:Constr_pair_TerminatesIn}
+  $\MS{ConstrPair} \TerminatesIn ConstrPairT$ with
+  \[
+    ConstrPairT := \lambda t~k.~\exists (x: X).~t[0] \simeq x \land 19 + 12 \cdot \size{x} \leq k.
+  \]
+\end{lemma}
+
+\subsubsection{List Types}
+\label{sec:MatchList}
+
+\todo{Matches and Constructors for list types.  The machines may be to complicated, so maybe leave the definitions out and only state the lemmas}
 
 
 \subsection{Copy Values}
@@ -830,10 +908,12 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
   \begin{align*}
     & \MS{MapSum}~:= \\
     &\quad \MS{If}~{\LiftBoth{\MS{MatchSum}}{f_{X+Y}}{\Vector{0}}} \\
-    &\quad \MS{Then}~ \LiftTapes{(\MS{Translate}~(RetrInl \circ f_{X+Y})~(f_X \circ f_M))}{\Vector{0}} \Seq \LiftAlphabet{M_1}{f_M} \Seq \\
+    &\quad \MS{Then}~ \LiftTapes{(\MS{Translate}~(RetrInl \circ f_{X+Y})~(f_X \circ f_M))}{\Vector{0}} \Seq \\
+    &\quad \phantom{\MS{Then}}~ \LiftAlphabet{M_1}{f_M} \Seq \\
     &\quad \phantom{\MS{Then}}~ \LiftTapes{(\MS{Translate}~(f_X \circ f_M)~(RetrInl \circ f_{X+Y}))}{\Vector{0}} \Seq \\
     &\quad \phantom{\MS{Then}}~ \LiftBoth{\MS{ConstrInl}}{f_{X+Y}}{\Vector{0}} \\
-    &\quad \MS{Else}~~~ \LiftTapes{(\MS{Translate}~(RetrInr \circ f_{X+Y})~(f_Y \circ f_M))}{\Vector{0}} \Seq \LiftAlphabet{M_2}{f_M} \Seq \\
+    &\quad \MS{Else}~~~ \LiftTapes{(\MS{Translate}~(RetrInr \circ f_{X+Y})~(f_Y \circ f_M))}{\Vector{0}} \Seq \\
+    &\quad \phantom{\MS{Then}}~ \LiftAlphabet{M_2}{f_M} \Seq \\
     &\quad \phantom{\MS{Then}}~ \LiftTapes{(\MS{Translate}~(f_Y \circ f_M)~(RetrInr \circ f_{X+Y}))}{\Vector{0}} \Seq \\
     &\quad \phantom{\MS{Then}}~ \LiftBoth{\MS{ConstrInr}}{f_{X+Y}}{\Vector{0}}.
   \end{align*}
@@ -859,9 +939,20 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
 \subsection{Machines Computing Functions on Lists}
 \label{sec:ListTM}
 
+In this section, we show how to implement machines that compute the function $nth : \List(X) \to \Nat \to \Option(X)$ and
+$length : \List(X) \to \Nat$.  Again, we use the technique to extend alphabets of Section~\ref{sec:extend-alphabet}.
+
+\subsubsection{$\MS{Nth}$}
+\label{sec:Nth}
+
+Let $X$ be encodable on $\Sigma_X$.  We implement a machine $\MS{Nth} : \TM_{\Sigma^+}^4$.  We assume retractions
+$f_{\List(X)} : \Sigma_{\List(X)} \hookrightarrow \Sigma$, $f_{\Option(X)} : \Sigma_{\Option(X)} \hookrightarrow \Sigma$, and
+$f_\Nat : \Sigma_\Nat \to \Sigma$.  Now there are two ways to encode $X$ on $\Sigma$, via $RetrOpt \circ f_{\Option(X)}$ and
+$RetrList \circ f_{\List(X)}$.
+
 
 \todo{Matches and constructors of lists are missing}
-\todo{Nth, (App), Length}
+\todo{Nth, Length}
 
 
 
