@@ -451,7 +451,7 @@ Although $\MS{CopyValue}$ terminates for all tapes, we restricted runtime relati
 actually have a symbol on $t[0]$.  The reason for that is, that we want to relate the value to the runtime.
 
 \subsection{Translate Values}
-\label{sec:translate-value}
+\label{sec:Translate}
 
 In Section~\ref{sec:value-containing}, we observed, that the containing relation is ambiguous: if $X$ is minimally encodable over $\Sigma$, there may
 be two retractions $f_1, f_2 : \Sigma \hookrightarrow \Tau$ on the alphabet $\Tau$.  In Section~\ref{sec:MoveToSymbol}, we gave the
@@ -792,6 +792,12 @@ sequence operator.  We accumulate the runtimes from down to top and have to add 
 Table~\ref{tab:runtime-Add}.
 
 
+\subsubsection{Multiplication}
+\label{sec:Mult}
+
+\todo{Multiplication machine}
+
+
 \subsection{Mapping of Sum Functions}
 \label{sec:SumTM}
 
@@ -800,14 +806,61 @@ Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function 
   (f+g)&~(\inl x)&~:=~& f(x) \\
   (f+g)&~(\inr y)&~:=~& g(y).
 \end{alignat*}
+We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a machine $\MS{MapSum}$ that
+computes the function $(f+g)$.
 
-We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a machine that computes the
-function $(f+g)$.
+First we have to define precisely, which machine has which alphabet.  We want to be as general as possible.  Let $X, Y$ be encodable over
+$\Sigma_X, \Sigma_Y$.  We assume $M_1, M_2 : \TM_{\Sigma_M}^{2+n}$, i.e.\ both machines have the same alphabet (if not, they can be alphabet-lifted)
+and they have at least two tapes (i.e.\ an input and output tape).  We assume that $\Sigma_M$ includes $\Sigma_X$, $\Sigma_Y$, and $\Sigma_Z$.
+Formally, this means that we assume retractions $f_X,f_Y,f_Z$ between $\Sigma_X, \Sigma_Y, \Sigma_Z$ and $\Sigma_M$.  Let $\Sigma$ be the alphabet for
+$\MS{MapSum}$, with a retraction $f_M : \Sigma_M \hookrightarrow \Sigma$.  Furthermore, it should be possible to encode $X+Y$ on $\Sigma$, so we
+assume a retraction $f_{X+Y} : \Sigma_{X+Y} \hookrightarrow \Sigma$.  We notice that there are now two possibilities how to encode $X$ (and dually
+$Y$) on $\Sigma$: via the retractions $f_X \circ f_M$ and $RetrInl \circ f_{X+Y}$.  These retractions might be extensionally equal for concrete
+choices of alphabets, but we want to be as general as possible.  As a consequence, we need to translate between these representations, using the
+$\MS{Translate}$ machine of Section~\ref{sec:Translate}.  Note that there is only one way to encode $Z$ on $\Sigma$, namely via $f_Z \circ f_M$.
+
+The machine $\MS{MapSum}$ first makes a case-distinction on the value $s:X+Y$ on the input tape $0$.  If it is $x$ (on the alphabet $\Sigma_{X+Y}$),
+it is translated to the alphabet of $M_1$.  Then we execute the alphabet-lifted machine $M_1$.  This writes the output $f_1(x)$ on the output tape $1$
+and leaves $x$ unchanged.  After that, $\MS{MapSum}$ translates $x$ back to the alphabet $\Sigma_{X+Y}$ and applies the constructor $\inl$, so the
+input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is symmetric.
+
+\begin{definition}[$\MS{MapSum}$]
+  \label{def:MapSum}
+  ~
+  \begin{align*}
+    & \MS{MapSum}~:= \\
+    &\quad \MS{If}~{\LiftBoth{\MS{MatchSum}}{f_{X+Y}}{\Vector{0}}} \\
+    &\quad \MS{Then}~ \LiftTapes{(\MS{Translate}~(RetrInl \circ f_{X+Y})~(f_X \circ f_M))}{\Vector{0}} \Seq \LiftAlphabet{M_1}{f_M} \Seq \\
+    &\quad \phantom{\MS{Then}}~ \LiftTapes{(\MS{Translate}~(f_X \circ f_M)~(RetrInl \circ f_{X+Y}))}{\Vector{0}} \Seq \\
+    &\quad \phantom{\MS{Then}}~ \LiftBoth{\MS{ConstrInl}}{f_{X+Y}}{\Vector{0}} \\
+    &\quad \MS{Else}~~~ \LiftTapes{(\MS{Translate}~(RetrInr \circ f_{X+Y})~(f_Y \circ f_M))}{\Vector{0}} \Seq \LiftAlphabet{M_2}{f_M} \Seq \\
+    &\quad \phantom{\MS{Then}}~ \LiftTapes{(\MS{Translate}~(f_Y \circ f_M)~(RetrInr \circ f_{X+Y}))}{\Vector{0}} \Seq \\
+    &\quad \phantom{\MS{Then}}~ \LiftBoth{\MS{ConstrInr}}{f_{X+Y}}{\Vector{0}}.
+  \end{align*}
+
+% \begin{lstlisting}[style=semicoqstyle]
+% $\MS{MapSum} :=$
+%   $\MS{If}$ $\LiftBoth{\MS{MatchSum}}{f_{X+Y}}{\Vector{0}}$
+%   $\MS{Then}$     $\LiftTapes{(\MS{Translate}~(RetrInl \circ f_{X+Y})~(f_X \circ f_M))}{\Vector{0}} \Seq \LiftAlphabet{M_1}{f_M} \Seq$
+%        $\LiftTapes{(\MS{Translate}~(f_X \circ f_M)~(RetrInl \circ f_{X+Y}))}{\Vector{0}} \Seq$
+%        $\LiftBoth{\MS{ConstrInl}}{f_{X+Y}}{\Vector{0}}$
+%   $\MS{Else}$     $\LiftTapes{(\MS{Translate}~(RetrInr \circ f_{X+Y})~(f_Y \circ f_M))}{\Vector{0}} \Seq \LiftAlphabet{M_2}{f_M} \Seq$
+%        $\LiftTapes{(\MS{Translate}~(f_Y \circ f_M)~(RetrInr \circ f_{X+Y}))}{\Vector{0}} \Seq$
+%        $\LiftBoth{\MS{ConstrInr}}{f_{X+Y}}{\Vector{0}}.$
+% \end{lstlisting}
+\end{definition}
+
+\begin{lemma}[Correctness of $\MS{MapSum}$]
+  \label{lem:MapSum_Computes}
+  If $M_1 \Realise FunRel(f_1)$ and $M_2 \Realise FunRel(f_2)$, then $\MS{MapSum} \Realise FunRel(f_1+f_2)$.
+\end{lemma}
 
 
 \subsection{Machines Computing Functions on Lists}
 \label{sec:ListTM}
 
+
+\todo{Matches and constructors of lists are missing}
 \todo{Nth, (App), Length}
 
 
