@@ -90,14 +90,14 @@ Section MatchPair.
     34 + 16 * size _ x.
 
   Definition MatchPair_T : tRel sigPair^+ 2 :=
-    fun tin k => exists (p : X * Y), tin[@Fin0] ≃ p /\ isRight tin[@Fin1] /\ MatchPair_steps (fst p) <= k.
+    fun tin k => exists (p : X * Y), tin[@Fin0] ≃ p /\ MatchPair_steps (fst p) <= k.
       
   Lemma MatchPair_Terminates : projT1 MatchPair ↓ MatchPair_T.
   Proof.
     eapply TerminatesIn_monotone.
     { unfold MatchPair. repeat TM_Correct. }
     {
-      intros tin k ((x&y)&HEncP&HRight&Hk). unfold MatchPair_steps in *. cbn in *.
+      intros tin k ((x&y)&HEncP&Hk). unfold MatchPair_steps in *. cbn in *.
       exists 1, (32 + 16 * size _ x). repeat split; try omega.
       intros tmid () ?; TMSimp.
       exists (10 + 4 * size _ x), (21 + 12 * size _ x). repeat split; try omega.
