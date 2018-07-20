@@ -46,52 +46,43 @@ For each type and type constructor, we have a distinct alphabet.  We define basi
   ~
   \begin{enumerate}
   \item We encode $\Unit$ over the empty alphabet $\False$:
-  \[ encode(\unit) := \nil
+  \[ encode~\unit := \nil
   \]
   \item The types $\Bool$ and $\Fin_k$ are encoded over them-self, i.e.\ $encode(x):=[x]$.
-  \item Let $X$ be encodable over $\Sigma$.  Then $\Option(X)$ is encodable over
-    \[ SigOpt~\Sigma ::= \MS{NONE} ~|~ \MS{SOME} ~|~ (x:\Sigma) \]
-    With the retraction $RetrOpt : \Sigma \hookrightarrow SigOpt~\Sigma$ and
+  \item Let $X$ be encodable over $\Sigma_X$.  Then $\Option(X)$ is encodable over
+    \[ \Sigma_{\Option(X)} ::= \MS{NONE} ~|~ \MS{SOME} ~|~ (x:\Sigma_X) \]
+    With the retraction $RetrOpt : \Sigma_X \hookrightarrow \Sigma_{\Option(X)}$ and
+    \begin{alignat*}{3}
+      &encode~&&\None  &~:=~& [\MS{NONE}] \\
+      &encode~&&\Some x&~:=~& \MS{SOME} \cons encode(x)
+    \end{alignat*}
+  \item Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then $X+Y$ is encodable over
+    \[ \Sigma_{X+Y} ::= \MS{INL} ~|~ \MS{INR} ~|~ (x:\Sigma_X) ~|~ (y:\Sigma_Y) \] With the retractions
+    $RetrInl : \Sigma_X \hookrightarrow \Sigma_{X+Y}$, $RetrLft : \Sigma_X \hookrightarrow \Sigma_{X+Y}$ and
+    \begin{alignat*}{3}
+      &encode~&&(\inl x)&~:=~& \MS{INL} \cons encode(x) \\
+      &encode~&&(\inr y)&~:=~& \MS{INR} \cons encode(y)
+    \end{alignat*}
+  \item Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then $X \times Y$ is encodable over
+    \[ \Sigma_{X \times Y} ::= (x:\Sigma_X) ~|~ (y:\Sigma_Y) \] With the retractions
+    $RetrFst : \Sigma_X \hookrightarrow \Sigma_{X \times Y}$, $RetrSnd : \Sigma_Y \hookrightarrow \Sigma_{X \times Y}$ and
     \[
-      encode(o) :=
-      \begin{cases}
-        [\MS{NONE}] & o=\None \\
-        \MS{SOME} \cons encode(x) & x=\Some{x}
-      \end{cases}
+      encode(x,y) := encode(x) \app encode(y)
     \]
-  \item Let $X$ be encodable over $\Sigma$ and $Y$ over $\Tau$.  Then $X+Y$ is encodable over
-    \[ SigSum~\Sigma~\Tau ::= \MS{INL} ~|~ \MS{INR} ~|~ (x:\Sigma) ~|~ (y:\Tau) \] With the retractions
-    $RetrOptX : \Sigma \hookrightarrow SigOpt~\Sigma~\Tau$, $RetrOptY : \Tau \hookrightarrow SigOpt~\Sigma~\Tau$ and
-    \[
-      encode(s) :=
-      \begin{cases}
-        \MS{INL} \cons encode(x) & s=\inl x \\
-        \MS{INR} \cons encode(y) & x=\inr y
-      \end{cases}
-    \]
-  \item Let $X$ be encodable over $\Sigma$ and $Y$ over $\Tau$.  Then $X \times Y$ is encodable over
-    \[ SigSum~\Sigma~\Tau ::= (x:\Sigma) ~|~ (y:\Tau) \] With the retractions
-    $RetrSumX : \Sigma \hookrightarrow SigSum~\Sigma~\Tau$, $RetrSumY : \Tau \hookrightarrow SigSum~\Sigma~\Tau$ and
-    \[
-      encode(s) :=
-      \begin{cases}
-        \MS{INL} \cons encode(x) & s=\inl x \\
-        \MS{INR} \cons encode(y) & s=\inr y
-      \end{cases}
-    \]
-  \item Let $X$ be encodable over $\Sigma$.  Then $\List(X)$ is encodable over
-    \[ SigList~\Sigma ::= \MS{NIL} ~|~ \MS{CONS} ~|~ (x:\Sigma) \]
-    With the retraction $RetrList : \Sigma \hookrightarrow SigList~\Sigma$ and
+  \item Let $X$ be encodable over $\Sigma_X$.  Then $\List(X)$ is encodable over
+    \[ \Sigma_{\List(X)} ::= \MS{NIL} ~|~ \MS{CONS} ~|~ (x:\Sigma_X) \]
+    With the retraction $RetrList : \Sigma_X \hookrightarrow \Sigma_{\List(X)}$ and
     \begin{alignat*}{3}
       &encode~&&(\nil      ) &~:=~& [\MS{NIL}] \\
       &encode~&&(l \cons ls) &~:=~& \MS{CONS} \cons encode(x) \app encode(ls)
     \end{alignat*}
-  \item Natural numbers $\Nat$ are encodable over $ SigNat ::= \MS{S} ~|~ \MS{0} $ with
+  \item Natural numbers $\Nat$ are encodable over $\Sigma_\Nat ::= \MS{S} ~|~ \MS{0} $ with
     \begin{alignat*}{3}
       &encode~&&(0  ) &~:=~& [\MS{O}] \\
       &encode~&&(S~n) &~:=~& \MS{S} \cons encode(n)
     \end{alignat*}
   \end{enumerate}
+  Note that we implicitly map the encoding functions in this definition.
 \end{definition}
 
 This are all encodings we need.  However, there is still a problem about ambiguity: Suppose $X$ is encodable over $\Sigma$.  Then the smallest
