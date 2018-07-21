@@ -464,7 +464,58 @@ that, it overwrites the start symbol on tape $1$ with last symbol of the encodin
 \subsubsection{List Types}
 \label{sec:MatchList}
 
-\todo{Matches and Constructors for list types.  The machines may be to complicated, so maybe leave the definitions out and only state the lemmas}
+The definition of $\MS{MatchList}$ is quite complex.  For brevity we only state the correctness statements of the match-machine here.  The machine
+$\MS{MatchList} : \TM_{\Sigma_{\List(X)}^+}^2(\Bool)$ expects a list on tape $0$.  If it is $\nil$, it terminates in the partition $\false$ and leaves
+the tapes unchanged.  If the list is $x \cons xs$, it copies $x$ to tape $1$ and removes $x$ from tape $0$, and terminates in the partition $\true$.
+
+\begin{lemma}[Correctness of $\MS{MatchList}$]
+  \label{lem:MatchList_Realise}
+  $\MS{MatchList} \simeq MatchListRel$ with
+\begin{lstlisting}[style=semicoqstyle]
+$MatchListRel :=$
+  $\lambda t~(y, t').~\forall (l:\List(X)).~t[0] \simeq l \rightarrow isRight~t[1] \rightarrow \MS{match}~y, l$
+      [$\false, \nil$ => $t'[0] \simeq \nil \land isRight~t'[1]$
+      |$\true, x \cons xs$ => $t'[0] \simeq xs \land t'[1] \simeq x$
+      |_,_ => $\False$
+      ].
+\end{lstlisting}
+\end{lemma}
+
+The $\nil$ constructor is defined using $\MS{WriteValue}$.
+\begin{definition}[$\MS{ConstrNil}$]
+  $\MS{ConstrNil} := \MS{WriteValue}~[\MS{NIL}]$.
+\end{definition}
+\begin{lemma}[Correctness of $\MS{ConstrNil}$]
+  $\MS{ConstrNil} \RealiseIn{5} ConstrNilRel$ with
+  \[
+    ConstrNilRel := \lambda t~t.~isRight~t[0] \rightarrow t'[0] \simeq \nil
+  \]
+\end{lemma}
+
+The $\cons$ constructor machine $\MS{ConstrCons}$ expects a list on tape $0$ and a value $x:X$ on tape $1$.  It moves the head of tape $1$ to the last
+symbol of the encoding of $x$ and copies them on tape $0$ from right to left.  Thereby, it overwrites the current start symbol on tape $1$, but also
+copies the start symbol from tape $1$ to tape $0$.  After that, the machine overwrites this start symbol with $\MS{CONS}$ and writes a new start
+symbol on tape $0$.
+
+\begin{definition}[$\MS{ConstrCons}$]
+  \label{def:Constr_cons}
+  \begin{alignat*}{2}
+    &\MS{ConstrCons}&~:=~& \LiftTapes{(\MS{MoveToSymbol}~h~id \Seq \MS{Move}~L)}{\Vector{1}} \Seq \\
+    &               &    & \LiftTapes{(\MS{CopySymbolsL~h'})}{\Vector{1;0}} \Seq \\
+    &               &    & \LiftTapes{(\MS{WriteMove}~\MS{CONS}~L \Seq \MS{Write}~\MS{START})}{\Vector{0}}
+  \end{alignat*}
+  With $h, h' : \Sigma_{List(X)}^+ \to \Bool$ such that $h(s)=\true$ if and only if $s=\MS{STOP}$, and $h'(s)=\false$ if and only if $s$ is mapped
+  from the alphabet $\Sigma_X$.
+\end{definition}
+
+\begin{lemma}[Correctness of $\MS{ConstrCons}$]
+  \label{lem:Constr_cons_Realise}
+  $\MS{ConstrCons} \Realise ConstrConsRel$ with
+  \[
+    ConstrCon := \lambda t~t'.~\forall (xs:\List(X))~(x:X).~t[0] \simeq xs \rightarrow t[1] \simeq x \rightarrow t'[0] \simeq x \cons xs \land t'[1]
+    \simeq x.
+  \]
+\end{lemma}
 
 
 \subsection{Copy Values}
