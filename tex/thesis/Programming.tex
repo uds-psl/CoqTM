@@ -632,6 +632,7 @@ write on a tape multiple times.  We must reset each ``used'' tape before writing
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{ResetTape}$]
+  \label{lem:Reset_Realise}
   $\MS{ResetTape} \Realise ResetTapeRel$ with
   \[
     ResetTapeRel := \lambda t~t'.~\forall(x:X).~t[0] \simeq x \rightarrow isRight(t'[0]).
@@ -991,20 +992,145 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
 \label{sec:ListTM}
 
 In this section, we show how to implement machines that compute the function $nth : \List(X) \to \Nat \to \Option(X)$ and
-$length : \List(X) \to \Nat$.  Again, we use the technique to extend alphabets of Section~\ref{sec:extend-alphabet}.
+$length : \List(X) \to \Nat$.  Again, we use the technique for extending alphabets of Section~\ref{sec:extend-alphabet}.  For brevity, we exclude most
+runtime relations and proofs, we refer to the Coq development.
 
 \subsubsection{$\MS{Nth}$}
 \label{sec:Nth}
 
-Let $X$ be encodable on $\Sigma_X$.  We implement a machine $\MS{Nth} : \TM_{\Sigma^+}^4$.  We assume retractions
-$f_{\List(X)} : \Sigma_{\List(X)} \hookrightarrow \Sigma$, $f_{\Option(X)} : \Sigma_{\Option(X)} \hookrightarrow \Sigma$, and
-$f_\Nat : \Sigma_\Nat \to \Sigma$.  Now there are two ways to encode $X$ on $\Sigma$, via $RetrOpt \circ f_{\Option(X)}$ and
-$RetrList \circ f_{\List(X)}$.
+Let $X$ be encodable on $\Sigma_X$.  We implement a machine $\MS{Nth} : \TM_{\Sigma^+}^4$ that computes the function
+$nth : \List(X) \to \Nat \to \Option(X)$.  We assume retractions $f_{\List(X)} : \Sigma_{\List(X)} \hookrightarrow \Sigma$,
+$f_{\Option(X)} : \Sigma_{\Option(X)} \hookrightarrow \Sigma$, and $f_\Nat : \Sigma_\Nat \hookrightarrow \Sigma$.  Now there are two ways to encode
+$X$ on $\Sigma$: via $RetrOpt \circ f_{\Option(X)}$ and $RetrList \circ f_{\List(X)}$.
+
+The algorithm of the step can be expressed with the pseudocode in figure \ref{fig:pseudo-NthStep}.  Note that in contrast to the design of $\MS{Add}$
+and $\MS{Mult}$, we do not use new variable names for the copies of $l:\List(X)$ and $n:\Nat$.  The tape assignment is visualised in
+Figure~\ref{fig:tapes-Nth}.  Tape $0$ holds the copy of $l$, $1$ the copy of $n$, and $2$ the output.
+
+\begin{figure}[!htb]
+  \begin{minipage}{0.3\textwidth}
+    \small
+\begin{lstlisting}[style=pseudocode]
+If $n--$ {
+  If $\exists x~l'.~l = x \cons l'$ {
+    $l$ := $l'$
+    Reset $x$
+    Continue
+  } Else {
+    $x$ := $\None$
+    Break
+  }
+} Else {
+  If $\exists x~l'.~l = x \cons l'$ {
+    $l$ := $l'$
+    $x$ := $\Some x$
+    Break
+  } Else {
+    $x$ := $\None$
+    Break
+  }
+}
+\end{lstlisting}
+    \caption{Pseudocode for $\MS{NthStep}$}
+    \label{fig:pseudo-NthStep}
+  \end{minipage}%
+  \begin{minipage}{0.7\textwidth}
+    \begin{tabular}{|l|l|l|l|}
+      \hline Tape of $\MS{Nth}$ & Variable & Role & Tape in $\MS{NthStep}$ \\ \hline \hline
+      $0$ & $l$        & Input    & --  \\ \hline
+      $1$ & $n$        & Input    & --  \\ \hline
+      $2$ & $x$        & Output   & $2$ \\ \hline
+      $2$ & $l$ (copy) & Internal & $0$ \\ \hline
+      $3$ & $n$ (copy) & Internal & $1$ \\ \hline
+    \end{tabular}
+    \caption{Tape assignment for $\MS{Nth}$ and $\MS{NthStep}$}
+    \label{fig:tapes-Nth}
+  \end{minipage}
+\end{figure}
 
 
-\todo{Matches and constructors of lists are missing}
-\todo{Nth, Length}
+The step machine first destructs $n$.  If it was $0$ and the list is empty, it writes $\None$ to the output tape.  Else, it applies the $\Some{\cdot}$
+constructor to the head.  Note that before we can apply the constructor, $x$ has first to be translated to the $\Sigma_{\Option(X)}$ alphabet.  In
+case $n$ was non-zero, if the list is empty, the machine applies the $\None$ constructor to the output tape.  Else, it deletes the head (which was on
+the output tape) and continues the loop.
 
+\begin{definition}[$\MS{NthStep}$]
+  \label{def:Nth_Step}
+  ~
+  \begin{align*}
+    & \MS{MapSum}~:= \\
+    &\quad \MS{If}~\LiftBoth{\MS{MatchNat}}{f_\Nat}{\Vector{1}} \\
+    &\quad \MS{Then}~ \MS{If}~\LiftBoth{\MS{MatchList}}{f_{\List(X)}}{\Vector{0;2}} \\
+    &\quad \phantom{\MS{Then}}~\MS{Then}~   \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\None} \\
+    &\quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{(\LiftBoth{\MS{ConstrNone}}{f_{\Option(X)}}{\Vector{2}})}{\Some\unit} \\
+    &\quad \MS{Else}~~~ \MS{If}~\LiftBoth{\MS{MatchList}}{f_{\List(X)}}{\Vector{0;2}} \\
+    &\quad \phantom{\MS{Then}}~\MS{Then}~   \Return{(\LiftTapes{(\MS{Translate}~(RetrList \circ f_{\List(X)})~(RetrOpt \circ f_{\Option(X)}) \Seq \\
+    &\quad \phantom{\phantom{\MS{Then}}~\MS{Then}~\MS{Return}}\quad\quad~~ \LiftAlphabet{\MS{ContrSome}}{f_{\Option(X)}})}{\Vector{2}})}{\Some\unit} \\
+    &\quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{(\LiftBoth{\MS{ConstrNone}}{f_{\Option(X)}}{\Vector{2}})}{\Some\unit}
+  \end{align*}
+\end{definition}
+
+The correctness relation of $\MS{NthStep}$ has to capture all four cases.
+
+\begin{lemma}[Correctness of $\MS{NthStep}$]
+  \label{lem:Nth_Step_Realise}
+  $\MS{NthStep} \Realise NthStepRel$ with
+  \small
+\begin{lstlisting}[style=semicoqstyle]
+$NthStepRel :=$
+  $\lambda t~(y, t').$
+    $\forall (l : \List(X))~(n : \Nat).$
+      $t[0] \simeq l \rightarrow t[1] \simeq n \rightarrow isRight~t[2]$ ->
+      $\MS{match}~y, n, l$
+      [$\None, S~n', x \cons l' \Rightarrow t'[0] \simeq l' \land t'[1] \simeq n' ~\land~ isRight~t'[2]$
+      |$\Some\unit, S~n', \nil \Rightarrow t'[0] \simeq l~ \land t'[1] \simeq n' \land t'[2] \simeq \None$
+      |$\Some\unit, 0, x \cons l' \Rightarrow t'[0] \simeq l' \land t'[1] \simeq 0 \land t'[2] \simeq \Some x$
+      |$\Some\unit, 0, \nil \Rightarrow t'[0] \simeq l \land t'[1] \simeq n \land t'[2] \simeq \None$
+      |_,_,_=>$\False$
+      ].
+\end{lstlisting}
+\end{lemma}
+
+Now, we can prove the correctness of the loop, $\MS{NthLoop} := \While~\MS{NthStep}$.  When the loop terminates, the value of the variable $n$ will be
+$n - (1 + \length{l})$.  The new value of $l$ will be $skipn~(S~n)~l$, where $skipn : \Nat \to \List(X) \to \List(X)$ applies $\tl$ $n$-times.  Note
+that if $n < \length{l}$, the new value of $n$ will be $0$ and the machine returns a $\Some\cdot$ value.
+
+\begin{lemma}[Correctness of $\MS{NthLoop}$]
+  \label{lem:Nth_Loop_Realise}
+  $\MS{NthLoop} \Realise NthLoopRel$ with
+  \begin{multline*}
+    NthLoopRel :=
+    \lambda t~t'.~\forall (l:\List(X))~(n:\Nat).~t[0] \simeq l \rightarrow t[1] \simeq n \rightarrow isRight~t[2] \rightarrow \\
+    t'[0] \simeq skipn~(S~n)~l \land t'[1] \simeq n-(1+\length{l}) \land t'[2] \simeq nth~l~n.
+  \end{multline*}
+\end{lemma}
+
+The full machine $\MS{Nth}$ makes copies of $n$ and $l$ and run $\MS{NthLoop}$ on the copies.  After that, it resets the internal tapes $2$ and $3$
+with the copies of $n$ and $l$.  Note that for the correctness of $\MS{Reset}$ it is only important that there is a value on the tape.  The runtime
+(which we omit here), does depend on the actual values.
+\begin{definition}[$\MS{Nth}$]
+  \[
+    \MS{Nth} := \LiftTapes{\MS{CopyValue}}{\Vector{0;3}} \Seq
+    \LiftTapes{\MS{CopyValue}}{\Vector{1;4}} \Seq
+    \LiftTapes{\MS{NthLoop}}{\Vector{3;4;2}} \Seq
+    \LiftTapes{\MS{Reset}}{\Vector{3}} \Seq
+    \LiftTapes{\MS{Reset}}{\Vector{4}}
+  \]
+\end{definition}
+Note that we copy and reset values of different types.  We have to insert this semantical information in the correctness proof, when we apply the
+respective correctness lemmas, in this case, Lemma~\ref{lem:CopyValue_Realise} and Lemma~\ref{lem:Reset_Realise}.
+
+It follows that $\MS{Nth}$ computes the function $nth$.
+\begin{lemma}[Correctness of $\MS{Nth}$]
+  \label{lem:Nth_Computes}
+  $\MS{Nth} \Realise FunRel nth$.
+\end{lemma}
+
+
+\subsubsection{$\MS{Length}$}
+\label{sec:Length}
+
+\todo{Length}
 
 
 %%% Local Variables:
