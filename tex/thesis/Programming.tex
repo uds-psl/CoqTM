@@ -775,13 +775,11 @@ While (b--) {
   a++
 }
 Reset b
-Return a
 \end{lstlisting}
-}
+}%
 The output tape is the tape that is represented by the variable $a$.  First, we copy the input $n$ to this tape, and the number $m$ to an internal
 tape.  In the loop, as long as we can decrease the copy of $m$, we increment $a$.  After the loop, we reset the copy $b$ and the machine terminates.
-The return statement in the pseudocode above only indicates, which variable stores the result after the program terminated.  The first step in the
-design of the machine is to specify, which tape contains which variable.  This is visualised in Table~\ref{tab:tapes-Add}.
+The first step in the design of the machine is to specify, which tape contains which variable.  This is visualised in Table~\ref{tab:tapes-Add}.
 
 \begin{table}[h]
   \centering
@@ -818,14 +816,12 @@ Because all parts of $\MS{AddStep}$ terminate in constant time, we get the const
 $AddStepRel$ :=
   $\lambda~t~(y, t').~ \forall (a~b:\Nat).$
       $t[0] \simeq a \rightarrow t[1] \simeq b \rightarrow$
-      match $y$, $b$
-      [ $\Some\unit$, $O$ =>
-        $t'[0] \simeq a ~\land~$
-        $t'[1] \simeq b$
-      | $\None$, $S~b'$ =>
-        $t'[0] \simeq S~a ~\land~$
-        $t'[1] \simeq b'$
-      | _, _ => $\False$
+      $\MS{match}~y, b$
+      [$\Some\unit, O$ =>
+        $t'[0] \simeq a ~\land~ t'[1] \simeq b$
+      |$\None, S~b'$ =>
+        $t'[0] \simeq S~a ~\land~ t'[1] \simeq b'$
+      |_,_ => $\False$
       ].
 \end{lstlisting}
 \end{lemma}
@@ -833,7 +829,7 @@ $AddStepRel$ :=
 According to the general design plan, we define $\MS{AddLoop} := \While~\MS{AddStep}$.  The correctness relation of $\MS{AddLoop}$ now says, that
 after the execution of the loop, $t'[0]$ contains $a+b$ and $t'[1]$ contains $0$:
 \begin{lemma}[Correctness of $\MS{AddLoop}$]
-  \label{lem:Add_Loop_Sem}
+  \label{lem:Add_Loop_Realise}
   $\MS{AddLoop} \Realise AddLoopRel$ with
   \[
     AddLoopRel := \lambda t~t'.~\forall (a~b:\Nat).~t[0] \simeq a \rightarrow t[1] \simeq b \rightarrow t'[0] \simeq a+b \land t'[1] \simeq 0.
@@ -925,8 +921,127 @@ Table~\ref{tab:runtime-Add}.
 \subsubsection{Multiplication}
 \label{sec:Mult}
 
-\todo{Multiplication machine}
+We use the machine $\MS{Add}$ to implement a machine $\MS{Mult}$ that computes the multiplication function $mult : \Nat\to\Nat\to\Nat$.  The machine
+$\MS{Mult}$ ``calls'' the machine $\MS{Add}$ $m$-times to add $n$ to a counter $c$ that is initiated with $0$.  The following pseudo code presents the
+algorithm that we implement: { \small
+\begin{lstlisting}[style=pseudocode]
+c := 0
+m' := m
+While (m'--) {
+  c' := Add(n, c)
+  Reset c
+  c := c'
+  Reset c'
+}
+Reset m'
+\end{lstlisting}
+}%
+Note that we do not have to copy $n$, since we do not write on $n$ and the machine $\MS{Add}$ does not change
+$n$.  Also note that we can not simply add $n$ to $c$, since input and output tapes are distinct.  Therefore, we have to store the result of the
+addition to an intermediate variable (i.e.\ internal tape), which has to be reseted afterwards.
 
+\begin{table}[t]
+  \centering
+  \begin{tabular}{|l|l|l|l|l|l|}
+    \hline Tape of $\MS{Mult}$ & Variable & Role & Tape in $\MS{MultStep}$ & Tape in $\MS{Add}$ \\ \hline\hline
+    $0$ & $m$  & Input    & --  & --  \\ \hline
+    $1$ & $n$  & Input    & $1$ & $0$ \\ \hline
+    $2$ & $c$  & Output   & $2$ & $1$ \\ \hline
+    $3$ & $c'$ & Internal & $3$ & $2$ \\ \hline
+    $4$ & --   & Internal & $4$ & $3$ \\ \hline
+    $5$ & $m'$ & Internal & $0$ & --  \\ \hline
+  \end{tabular}
+  \caption{Tape assignment for $\MS{Mult}$}
+  \label{tab:tapes-Mult}
+\end{table}
+\begin{table}[t]
+  \centering
+  \begin{tabular}{l||l|l|l|l|l}
+    Input          & $\MS{MatchNat}$ & $\MS{Add}$     & $\MS{Reset}$  & $\MS{CopyValue}$ & $\MS{Reset}$   \\ \hline
+    $0$ : $m$      & $0$ : $m'$      &                &               &                  &                \\
+    $1$ : $n$      &                 & $0$ : $n$      &               &                  &                \\
+    $2$ : $c$      &                 & $1$ : $c$      & $0$: $\dashv$ & $1$ : $n+c$      &                \\
+    $3$ : $\dashv$ &                 & $2$ : $n+c$    &               & $0$ : $n+c$      & $0$ : $\dashv$ \\
+    $4$ : $\dashv$ &                 & $3$ : $\dashv$ &               &                  &                \\
+  \end{tabular}
+  \caption{Execution protocol of $\MS{MultStep}$ for $m=S~m'$}
+  \label{tab:exec-MultStep}
+\end{table}
+
+The tape-assignment is depicted in Table~\ref{tab:tapes-Mult}.  Note that not for all tapes is explicitly named in the algorithm, e.g.\ tape $4$ is
+used as the internal tape for $\MS{Add}$ to save the first parameter, which is called $n$ in this case.  The step machine, $\MS{MultStep}$, has only
+access to the copy of $m$, which is mapped to tape $0$ of $\MS{MultStep}$.  In the following, we use also use the name $m$ for its copy in the context
+of $\MS{MultStep}$.
+\begin{definition}[$\MS{MultStep}$]
+  \label{def:Mult_Step}
+  \begin{alignat*}{2}
+    &\MS{MultStep} &~:=~&
+           \MS{If}~\LiftTapes{\MS{MatchNat}}{\Vector{0}} \\
+    &&& \MS{Then}  ~\Return{\left( \LiftTapes{\MS{Add}}{\Vector{1;2;3;4}} \Seq
+                                \LiftTapes{\MS{Reset}}{\Vector{2}} \Seq
+                                \LiftTapes{\MS{CopyValue}}{\Vector{3;2}} \Seq
+                                \LiftTapes{\MS{Reset}}{\Vector{3}} \right)}{\None} \\
+    &&& \MS{Else}~~~\Return{\MS{Nop}}{\Some\unit}.
+  \end{alignat*}
+\end{definition}
+An execution protocol of $\MS{MultStep}$ for the case $m=S~m'$ (where $m$ is the copy) is shown in Table~\ref{tab:exec-MultStep}.  The correctness
+relation of $\MS{MultStep}$ is analogous to $\MS{AddStep}$.
+\begin{lemma}[Correctness of $\MS{MultStep}$]
+  \label{lem:Mult_Step_Sem}
+  $\MS{MultStep} \RealiseIn{9} MultStepRel$ with
+  \small
+\begin{lstlisting}[style=semicoqstyle]
+$MultStepRel$ :=
+  $\lambda~t~(y, t').~ \forall (c~m~n:\Nat).$
+      $t[0] \simeq m \rightarrow t[1] \simeq n \rightarrow t[2] \simeq c \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow$
+      $\MS{match}~y, m$
+      [$\Some\unit, O \Rightarrow t'[0] \simeq 0 ~\land~ t'[1] \simeq n ~\land~ t'[2] \simeq c ~\land~ isRight~t'[3] ~\land~ isRight~t'[4]$
+      |$\None, S~m' \Rightarrow t'[0] \simeq m' ~\land~ t'[1] \simeq n ~\land~ t'[2] \simeq n+c ~\land~ isRight~t'[3] ~\land~ isRight~t'[4]$
+      |_,_ => $\False$
+      ].
+\end{lstlisting}
+\end{lemma}
+Note that in the correctness Lemma~\ref{lem:Add_Step_Sem}, we also prove termination in constant runtime.  This is not true for $\MS{MultStep}$,
+because it calls $\MS{Add}$, which has not constant runtime.
+
+As usual, we define $\MS{MultLoop} := \While~\MS{MultStep}$.  The correctness statement of $\MS{MultLoop}$ says that if the first three tapes contain
+$m$, $n$n and $c$ and all other tapes are right, then after the execution of the loop, the tapes contain $0$, $n$, and $m \cdot n + c$ and the other
+tapes are right.  Thus, when we instantiate the $c$-tape with the value $0$, the output tape contains $m \cdot n$.
+
+\begin{lemma}[Correctness of $\MS{MultLoop}$]
+  \label{lem:Mult_Loop_Realise}
+  \label{lem:Mult_Loop_Realise}
+  $\MS{MultLoop} \Realise MultLoopRel$ with
+  \begin{alignat*}{2}
+    & MultLoopRel ~&:=& \lambda t~t'.~\forall (c~m~n:\Nat). \\
+    &&& t[0] \simeq m \rightarrow t[1] \simeqnb \rightarrow t[2] \simeq c \rightarrow isRigth~t[3] \rightarrow isRight~t[4] \rightarrow \\
+    &&& t'[0] \simeq 0 \land t'[1] \simeq n \land t'[2] \simeq m \cdot n + c \land isRight~t'[3] \land isRight~t'[4]
+  \end{alignat*}
+\end{lemma}
+
+It is now easy to define the rest of $\MS{Mult}$.
+\begin{definition}{$\MS{Mult}$}
+  \label{def:Mult}
+  \[
+    \MS{Mult} :=
+    \LiftTapes{\MS{CopyValue}}{\Vector{0;5}} \Seq
+    \LiftTapes{\MS{ConstrO}}{\Vector{2}} \Seq
+    \LiftTapes{\MS{MultLoop}}{5;1;2;3;4} \Seq
+    \LiftTapes{\MS{Reset}}{\Vector{5}}.
+  \]
+\end{definition}
+
+It follows that $\MS{Mult}$ computes the function $mult$, w.r.t.\ Definition~\ref{def:Computes2_Rel}.
+\begin{lemma}[Correctness of $\MS{Mult}$]
+  \label{lem:Mult_Computes}
+  $\MS{Mult} \Realise FunRel(mult)$.
+\end{lemma}
+
+For brevity,  we omit the concrete runtime function here.  
+\begin{lemma}[Runtime of $\MS{Mult}$]
+  There is a function $MultSteps : \Nat\to\Nat\to\Nat \in \Option(m+n^2)$, such that
+  $\MS{Mult} \TerminatesIn MultSteps$.
+\end{lemma}
 
 \subsection{Mapping of Sum Functions}
 \label{sec:SumTM}
@@ -1123,7 +1238,7 @@ respective correctness lemmas, in this case, Lemma~\ref{lem:CopyValue_Realise} a
 It follows that $\MS{Nth}$ computes the function $nth$.
 \begin{lemma}[Correctness of $\MS{Nth}$]
   \label{lem:Nth_Computes}
-  $\MS{Nth} \Realise FunRel nth$.
+  $\MS{Nth} \Realise FunRel(nth)$.
 \end{lemma}
 
 
