@@ -756,14 +756,11 @@ runtime function.
 
 We implement the general design of the previous section for concrete functions.
 
-\subsection{Machines Computing Natural Functions}
-\label{sec:NatTM}
+\subsection{Addition}
+\label{sec:Add}
 
 We want to implement the functions $add,mult:\Nat\to\Nat\to\Nat$, according to Definition~\ref{def:Computes2_Rel}.  First we define the machine
 $\MS{Add}$ that computes the addition function.  We reuse this machine to implement a machine $\MS{Mult}$ that computes the multiplication function.
-
-\subsubsection{Addition}
-\label{sec:Add}
 
 The algorithm that our machine implements can be described with in the following pseudocode:
 {
@@ -918,7 +915,7 @@ sequence operator.  We accumulate the runtimes from down to top and have to add 
 Table~\ref{tab:runtime-Add}.
 
 
-\subsubsection{Multiplication}
+\subsection{Multiplication}
 \label{sec:Mult}
 
 We use the machine $\MS{Add}$ to implement a machine $\MS{Mult}$ that computes the multiplication function $mult : \Nat\to\Nat\to\Nat$.  The machine
@@ -1014,7 +1011,7 @@ tapes are right.  Thus, when we instantiate the $c$-tape with the value $0$, the
   $\MS{MultLoop} \Realise MultLoopRel$ with
   \begin{alignat*}{2}
     & MultLoopRel ~&:=& \lambda t~t'.~\forall (c~m~n:\Nat). \\
-    &&& t[0] \simeq m \rightarrow t[1] \simeqnb \rightarrow t[2] \simeq c \rightarrow isRigth~t[3] \rightarrow isRight~t[4] \rightarrow \\
+    &&& t[0] \simeq m \rightarrow t[1] \simeq \rightarrow t[2] \simeq c \rightarrow isRigth~t[3] \rightarrow isRight~t[4] \rightarrow \\
     &&& t'[0] \simeq 0 \land t'[1] \simeq n \land t'[2] \simeq m \cdot n + c \land isRight~t'[3] \land isRight~t'[4]
   \end{alignat*}
 \end{lemma}
@@ -1039,8 +1036,7 @@ It follows that $\MS{Mult}$ computes the function $mult$, w.r.t.\ Definition~\re
 
 For brevity,  we omit the concrete runtime function here.  
 \begin{lemma}[Runtime of $\MS{Mult}$]
-  There is a function $MultSteps : \Nat\to\Nat\to\Nat \in \Option(m+n^2)$, such that
-  $\MS{Mult} \TerminatesIn MultSteps$.
+  There is a function $MultSteps : \Nat\to\Nat\to\Nat$, such that $MultSteps \in \mathcal{O}(m \cdot n^2)$ and $\MS{Mult} \TerminatesIn MultSteps$.
 \end{lemma}
 
 \subsection{Mapping of Sum Functions}
@@ -1103,15 +1099,12 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
 \end{lemma}
 
 
-\subsection{Machines Computing Functions on Lists}
-\label{sec:ListTM}
-
-In this section, we show how to implement machines that compute the function $nth : \List(X) \to \Nat \to \Option(X)$ and
-$length : \List(X) \to \Nat$.  Again, we use the technique for extending alphabets of Section~\ref{sec:extend-alphabet}.  For brevity, we exclude most
-runtime relations and proofs, we refer to the Coq development.
-
-\subsubsection{$\MS{Nth}$}
+\subsection{List Access}
 \label{sec:Nth}
+
+In this section, we show how to implement machines that compute the function $nth : \List(X) \to \Nat \to \Option(X)$.  Again, we use the technique
+for extending alphabets of Section~\ref{sec:extend-alphabet}.  For brevity, we exclude most runtime relations and proofs, we refer to the Coq
+development.
 
 Let $X$ be encodable on $\Sigma_X$.  We implement a machine $\MS{Nth} : \TM_{\Sigma^+}^4$ that computes the function
 $nth : \List(X) \to \Nat \to \Option(X)$.  We assume retractions $f_{\List(X)} : \Sigma_{\List(X)} \hookrightarrow \Sigma$,
@@ -1241,11 +1234,11 @@ It follows that $\MS{Nth}$ computes the function $nth$.
   $\MS{Nth} \Realise FunRel(nth)$.
 \end{lemma}
 
-
-\subsubsection{$\MS{Length}$}
-\label{sec:Length}
-
-\todo{Length}
+For brevity, we omit the concrete runtime function.
+\begin{lemma}[Runtime of $\MS{Nth}$]
+  \label{lem:Nth_TerminatesIn}
+  There is a function $NthSteps:\List(X)\to\Nat\to\Nat$, such that $NthSteps \in \mathcal{O}(\size{ls})$ and $\MS{Nth} \TerminatesIn NthSteps$.
+\end{lemma}
 
 
 %%% Local Variables:
