@@ -48,7 +48,7 @@ For each type and type constructor, we have a distinct alphabet.  We define basi
   \item We encode $\Unit$ over the empty alphabet $\False$:
   \[ encode~\unit := \nil
   \]
-  \item The types $\Bool$ and $\Fin_k$ are encoded over them-self, i.e.\ $encode(x):=[x]$.
+  \item The types $\Bool$ and $\Fin_k$ are encoded over themself, i.e.\ $encode(x):=[x]$.
   \item Let $X$ be encodable over $\Sigma_X$.  Then $\Option(X)$ is encodable over
     \[ \Sigma_{\Option(X)} ::= \MS{NONE} ~|~ \MS{SOME} ~|~ (x:\Sigma_X) \]
     With the retraction $RetrOpt : \Sigma_X \hookrightarrow \Sigma_{\Option(X)}$ and
@@ -189,8 +189,8 @@ $\Sigma^+$ to encode $X$ on.  Constructor machines, informally, ``apply'' a cons
 For example, considering the inductive type $\Nat$, the constructor machine $\MS{O}$ writes the number $0$ to a right tape.  The constructor machine
 $\MS{S}$ assumes that $t[0]$ contains a number $n$, and increases that number.  The deconstructor for $\Nat$ reads a number of $t[0]$.  If it is $0$,
 it terminates in $\false$.  Else, it decreases the number and terminates in $\true$.  In general, we have a constructor machine for each constructor
-of the inductive type.  If the constructor has additional parameters, these are encodes on more input tapes $t[1], t[2], \cdots$.  On the other side,
-the deconstructor machine has a partition for each constructor and may have additional tapes for storing additional parameters.
+of the inductive type.  If the constructor has additional arguments, these are encodes on more input tapes $t[1], t[2], \cdots$.  On the other side,
+the deconstructor machine has a partition for each constructor and may have additional tapes for storing additional arguments.
 
 \subsubsection{Natural numbers}
 \label{sec:match-nat}
@@ -291,8 +291,8 @@ $\false$).
   \small
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchSum} :=$
-  Move R; 
-  Match ($\MS{ReadChar}$) 
+  $\MS{Move}$ R; 
+  $\Match$      ($\MS{ReadChar}$) 
         ($\lambda(o:\Option(sigSum~\Sigma_X~\Sigma_Y)).$ match $o$
            [$\Some {\MS{INL}}$ => $\Return{(\MS{Write}~\MS{START})}{\true}$
            |$\Some {\MS{INR}}$ => $\Return{(\MS{Write}~\MS{START})}{\false}$
@@ -352,9 +352,10 @@ the tape moves one step to the right:
   $\MS{MatchOption} \RealiseIn7 MatchOptionRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $MatchOptionRel :=$
-  $\lambda t~(y, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow$ match $y$, $o$
-      [false, $\None$ => $isRight(t'[0])$
-      |true, $\Some x$ => $t'[0] \simeq x$
+  $\lambda t~(y, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow$
+      $\MS{match}~y, o$
+      [$\false, \None$ => $isRight(t'[0])$
+      |$\true, \Some x$ => $t'[0] \simeq x$
       |_, _ => $\False$
       ].
 \end{lstlisting}
@@ -643,14 +644,14 @@ write on a tape multiple times.  We must reset each ``used'' tape before writing
 \section{Extending Alphabets}
 \label{sec:extend-alphabet}
 
-Consider that we have a machines $M_1 : \TM_{\Sigma_X}^{n_1}, M_2 : \TM_{\Sigma_Y}^{n_1}$ that operate on values of type $X$ and $Y$, where $X$ is
+Consider that we have machines $M_1 : \TM_{\Sigma_X}^{n_1}, M_2 : \TM_{\Sigma_Y}^{n_1}$ that operate on values of type $X$ and $Y$, where $X$ is
 encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then, we could combine this machines using sequential composition and the alphabet-lift and
-tapes-lift, to a machine $M : \TM_\Sigma^{n_1+n_2}$.  However, the choice of $\Sigma$ is relevant.  For example, we could chose
-$\Sigma := \Sigma_X + \Sigma_Y$.  If another machine $M' : \TM_{\Sigma'}^m$ ``uses'' $M$, it has to give a retraction
+tapes-lift, to a machine $M : \TM_\Sigma^{n_1+n_2}$.  However, the choice of $\Sigma$ is relevant.  For example, we could choose
+$\Sigma := \Sigma_X + \Sigma_Y$.  If another machine $M' : \TM_{\Sigma'}^m$ uses $M$, it has to give a retraction
 $f : \Sigma_X+\Sigma_Y \hookrightarrow \Sigma'$.  However, there is a problem of generality:
 \begin{fact}
-  Not for all $X, Y, Z : \Type$, if there is a retraction $f_1 : X \hookrightarrow Z$ and $f_2 : Y \hookrightarrow Z$, there is a retraction
-  $f_1+f_2 : X+Y \hookrightarrow Z$.
+  There exists types $X,Y,Z:\Type$ with retractions $f_1 : X \hookrightarrow Z$ and $f_2 : Y \hookrightarrow Z$, such that there is no retraction
+  $(f_1+f_2) : X+Y \hookrightarrow Z$.
 \end{fact}
 \begin{proof}
   There is no injective function $\Unit+\Unit\to\Unit$.
@@ -703,7 +704,7 @@ $t[1]$ are input tapes for $x$ and $y$, $t[2]$ is the output tape for $f~x~y$, a
     &\qquad t[0] \simeq x \rightarrow t[1] \simeq y \rightarrow \\
     &\qquad isRight~t[2] \rightarrow \\
     &\qquad \left(\forall (i:\Fin_n).~isRight~t[3+i] \right) \rightarrow \\
-    &\qquad t[0] \simeq x ~\land~ t[1] \simeq y \rightarrow ~\land~ \\
+    &\qquad t[0] \simeq x ~\land~ t[1] \simeq y ~\land~ \\
     &\qquad t[2] \simeq f~x~y ~\land~ \\
     &\qquad \left(\forall (i:\Fin_n).~isRight~t'[3+i] \right).
   \end{alignat*}
@@ -723,8 +724,9 @@ Similarly, we can define the runtime function of such a machine.
   \end{alignat*}
 \end{definition}
 
-Note that these definitions can be generalised to unary or functions with higher arity.  Also note that the preconditions encoded within $FunRel(f)$
-and $FunT(f)$ coincide, however, with swapped quantifiers.
+Note that these definitions can be generalised to unary functions or functions with higher arity.  Also note that the preconditions encoded within
+$FunRel(f)$ and \\
+$FunT(steps)$ coincide, however, with swapped quantifiers.
 
 Internal tapes may be used to copy input-values on, if they need to be changed, e.g.\ for loops.  Thus, the general design for implementing a machine
 $M$ that computes a binary function $f$, is the following:
@@ -792,7 +794,7 @@ The first step in the design of the machine is to specify, which tape contains w
   \label{tab:tapes-Add}
 \end{table}
 
-Because the machine only works on natural numbers, we chose $SigNat$ as the alphabet of $\MS{Add}$ and all its sub-machines.
+Because the machine only works on natural numbers, we choose $SigNat$ as the alphabet of $\MS{Add}$ and all its sub-machines.
 
 The next step is to implement the step machine.  $\MS{AddStep}$ has only access to the variables $a$ and $b$, that are stored on tape $0$ and $1$, as
 also visualised in Table~\ref{tab:tapes-Add}.  The decrement operation and test whether $b$ was $0$ is implemented using the deconstructor machine

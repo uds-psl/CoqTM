@@ -219,7 +219,7 @@ non-empty tape.  Formally, tapes are defined inductively:
   \label{def:tape}
   Let $\Sigma : \Type$.  Then $\Tape_\Sigma$ is defined as the inductive type:
   \begin{align*}
-    & \Tape_\Sigma := \\
+    & \Tape_\Sigma ::= \\
     & \quad | \quad \MS{niltape} \\
     & \quad | \quad \MS{leftof}  ~ (r:\Sigma) ~ (rs:\List(\Sigma)) \\
     & \quad | \quad \MS{midtape} ~ (ls:\List(\Sigma)) ~ (m:\Sigma) ~ (rs:\List(\Sigma)) \\
@@ -485,7 +485,7 @@ steps.
 
 \begin{definition}[Null]
   \label{def:Null}
-  $\MS{Nop}~f: \TM_\Sigma^{\mkern+3mu 0}$ is defined as follows:
+  $\MS{Nop}~f: \TM_\Sigma^{\mkern+1mu 0}$ is defined as follows:
   \begin{align*}
     Q          &:= \Unit \\
     start      &:= \unit \\
@@ -511,7 +511,7 @@ Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action
 terminate after this step.
 \begin{definition}[$\MS{DoAct}~a$]
   \label{def:DoAct}
-  Let $a:\MS{Act}$.
+  Let $a:\Act_\Sigma$.  Then $\MS{DoAct}~a : \TM_\Sigma^1$ is defined as follows:
   \begin{align*}
     Q          &:= \Bool \\
     start      &:= \false \\
@@ -519,7 +519,7 @@ terminate after this step.
     halt   ~ b &:= b
   \end{align*}
 \end{definition}
-The semantics of $\MS{DoAct}$ is easily expressed using $\MS{doAct}$ (see Definition~\ref{def:step}):
+The semantics of $\MS{DoAct}$ is easily expressed using the function $\MS{doAct}$ (see Definition~\ref{def:step}):
 \begin{lemma}[Correctness of $\MS{DoAct}$]
   \label{lem:DoAct_Sem} $\MS{DoAct}~a \RealiseIn1 DoActRel~a$ with
   \[
@@ -554,8 +554,8 @@ of the alphabet.  They read a symbol and terminate in the state that corresponds
 the current symbol is $\None$.
 
 \begin{definition}[$\MS{Read}$]
+  The machine $\MS{Read} : \TM_\Sigma^n(\Option(\Sigma))$ is defined as follows:
   \begin{align*}
-    F          &:= \Option(\Sigma) \\
     Q          &:= \Bool+\Sigma \\
     start      &:= \inl \false \\
     \delta (\_, s) &:=

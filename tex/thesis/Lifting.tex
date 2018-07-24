@@ -13,14 +13,13 @@ $m$-tape machine and yields an $n$-tape machine, where $m \le n$.
 
 The second part of this problem is how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that sums
 (encodings of) natural numbers, we could want to build a machine $\MS{Sum}$ that sums numbers in a list of numbers.  Consider an alphabet
-$\Sigma_\Nat$ where we could ``encode'' natural numbers on, and an alphabet $\Sigma_{\List(\Nat)}$ to ``encode'' lists of natural numbers.  If the
-alphabet $\Sigma_\Nat$ is ``included'' in $\Sigma_{\List(\Nat)}$, we would like to ``lift'' $\MS{Add}$ to the alphabet $\Sigma_{\List(\Nat)}$, to
-define $\MS{Sum}$.
+$\Sigma_\Nat$ where we could encode natural numbers on, and an alphabet $\Sigma_{\List(\Nat)}$ to encode lists of natural numbers.  If the alphabet
+$\Sigma_\Nat$ is included in $\Sigma_{\List(\Nat)}$, we would like to lift $\MS{Add}$ to the alphabet $\Sigma_{\List(\Nat)}$, to define $\MS{Sum}$.
 
-Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem.  They consider a fixed alphabet to ``encode'' all needed data on, to implement a
-universal Turing machine.  However, this approach does not scale.  When the alphabet has to be changed, for example because we have to add a new
-``data type'', they also must change the definitions of all involved ``smaller'' machines.  That is why we also introduce an operator that lifts a
-machine to a bigger alphabet.
+Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem.  They consider a fixed alphabet to encode all needed data on, to implement a
+universal Turing machine.  However, this approach does not scale.  When the alphabet has to be changed, for example because we have to add a new data
+type, they also must change the definitions of all involved ``smaller'' machines.  That is why we also introduce an operator that lifts a machine to a
+bigger alphabet.
 
 \todo{Maybe use another example for motivating the alphabet-lift, since this example is not implemented}
 
@@ -53,7 +52,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   Let $X:\Type$, $m,n:\Nat$,$I:\Fin_n^m$, $init:X^n$, and $V:X^m$:
   \begin{alignat*}{3}
     & fill~(\nil      )&& ~init~V &~:=~& init \\
-    & fill~(i \cons I')&& ~init~V &~:=~& \MS{replace}~(fill~I'~(\tl V))~i~(\hd V)
+    & fill~(i \cons I')&& ~init~V &~:=~& replace~(fill~I'~(\tl V))~i~(\hd V)
   \end{alignat*}
   Where $replace : X^n \to \Fin_n \to X \to X^n$ replaces the $i$th element of a vector.
 \end{definition}
@@ -72,12 +71,11 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 
 \begin{definition}[$\LiftTapes{M}{I}$]
   \label{def:LiftTapes}
-  Let $M:\TM_\Sigma^m(F)$.
+  Let $M:\TM_\Sigma^m(F)$ and $I : \Fin_n^m$.  We define $\LiftTapes{M}{I} : \TM_\Sigma^n(F)$.  All components are the same as in $M$, except:
   \begin{alignat*}{2}
     &\delta(q,s) &~:=~& \Let{(q', act) := \delta_M(q, select~I~sym)}{\\%
     &            &~  ~& (q', fill~I~(\None,N)^n~act)}
   \end{alignat*}
-  (All other components of $\LiftTapes{M}{I}$ are the same as $M$.)
 \end{definition}
 
 \begin{lemma}[Correctness of $\LiftTapes{M}{I}$]
@@ -125,9 +123,9 @@ We apply this lemma in the proof of Lemma~\ref{lem:LiftTapes_Realise} with $g :=
 \label{sec:sigma-Lift}
 
 Let $M : \TM_\Sigma^n(F)$ be a machine over the alphabet $\Sigma$, and $f : \Sigma \hookrightarrow \Tau$ a retraction on another alphabet $\Tau$.
-Note that then $\Tau$ has at least as many symbols as $\Sigma$.  We also need a symbol $def:\Sigma$, however, the choice is semantically relevant (in
-contrast to $def:F$ we needed to define $\While$).  This means that $def$ should be a symbol that $M$ does not expect to read.  The alphabet-lift
-$\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n$ is a machine over the bigger alphabet $\Tau$.
+Note that then $\Tau$ has at least as many symbols as $\Sigma$.  We need a default symbol $def:\Sigma$.  In contrast to the default partition we
+needed in the definition of $\While$, the choice of $def$ is semantically relevant.  This means that $def$ should be a symbol that $M$ does not expect
+to read.  The alphabet-lift $\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n$ is a machine over the bigger alphabet $\Tau$.
 
 The transition function of the lifted machine $\LiftAlphabet{M}{(f,def)}$ reads the symbols \\$s :
 (\Option(\Tape_\Tau))^n$.  It tries to translate these symbols to $s':(\Option(\Tape_\Sigma))^n$ using the partial inversion function $f^{-1} : \Tau
@@ -137,6 +135,8 @@ $def$ instead.  The transition function $\delta_M$ of $M$ yields the successor s
 
 \begin{definition}[$\LiftAlphabet{M}{(f,def)}$]
   \label{def:LiftAlphabet}
+  Let $f : \Sigma \Tau$, $def:\Sigma$, and $M : \TM_\Sigma^n(F)$.  We define the machine %
+  $\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n(F)$ with the same components as $M$, except:
   \begin{alignat*}{2}
     &\delta(q,s)    &~:=~& \Let{(q', act) := \delta_M(q, \map{(mapOpt~surject)}{s})}{\\%
     &               &~  ~& (q', \map{(mapAct~f)}{act})} \\

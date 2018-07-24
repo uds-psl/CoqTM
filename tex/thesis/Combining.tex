@@ -1,9 +1,26 @@
 \chapter{Combining Turing Machines}
 \label{chap:combining}
 
-In Chapter \ref{chap:definitions}, we have defined the notion of multi-tape Turing machines and basic machines.  In this chapter, we define control
-flow operators, like ``match'', ``if then else'', ``sequential composition'', and ``while''.  As a result, we get a shallow-embeded language for
-programming multi-tape Turing machines in an imperative way.
+In Chapter \ref{chap:definitions}, we have defined the notion of multi-tape Turing machines and we defined (classes of) basic machines.  In this
+chapter, we define control flow operators, like ``match'', ``if then else'', ``sequential composition'', and ``while''.  As a result, we get a
+\emph{shallow-embeded} language for programming multi-tape Turing machines in an imperative way.  This means that our combinators are first-class
+citizen in our meta-logic, i.e.\ the dependent type theory of Coq --- the calculus of inductive constructions.  Another possible approach, called
+\emph{deep embedding}, is to formalise a fixed syntax of a language as an inductive data type.  We then would need a compiler from abstract
+trees of Turing machine programs to actual Turing machines.  This compiler would have to be extended, whenever we add a new feature to our language.
+In our approach, we can just ``extend'' our language by defining a function, and we use the same verification technique (i.e.\ realisation of
+correctness relations and termination in runtime relations) on each stage of the development.
+
+% Advantages and disadvantages of shallow vs deep embedding
+% Shallow:
+% + Extensible
+% + All features of the meta logic (i.e. Coq)
+% + Thus, it is extendable, e.g. we can easily add new combinators without changing any other definitions
+% + We use the same verification techniques on every "stage" of the development
+% Deep:
+% + We can define meta-properties about programs, e.g. the size of the abstract syntax tree (needless)
+% - We had to implement a compiler from the abstract syntax tree to concrete Turing machines
+% - We had to prove that the combinators are correct with respect to the semantic of the compiled operators
+% - We have to amend the compiler, whenever we want to add a new feature to the language
 
 \section{Match}
 \label{sec:match}
@@ -15,24 +32,26 @@ terminated in a ``positive'' state (i.e. a state belonging to the partition $\tr
 $M_1$.  We observe that sequential composition and conditional can be defined as instances of a more general operator we call $\MS{Match}$.  We give
 proof scratches for the correctness and runtime in Subsection~\ref{sec:match-proofs}.
 
-Let $M : \TM_\Sigma^n(F)$ and $M' \from F \to \TM_\Sigma^n(F')$ be a function from partitions to machines.  We define
-$\MS{Match}~M~M' : \TM_\Sigma^n(F')$.
+Let $M : \TM_\Sigma^n(F)$ and $f \from F \to \TM_\Sigma^n(F')$ be a function from partitions to machines.  We define
+$\MS{Match}~M~f : \TM_\Sigma^n(F')$.
 
-\begin{definition}[$\MS{Match}~M~M'$]
+\begin{definition}[$\MS{Match}~M~f$]
   \label{def:Match}
+  Let $M : \TM_\Sigma^n(F)$ and $f : F \to \TM_\Sigma^n(F')$.  We define the machine $\MS{Match}~M~f : \TM_\Sigma^n(F')$ with the following
+  components:
   \begin{alignat*}{3}
-    & Q                  &~:=~& Q_M +  \sum_{y:F} Q_{M'(y)} \\
+    & Q                  &~:=~& Q_M +  \sum_{y:F} Q_{f(y)} \\
     & start              &~:=~& \inl start_M \\
     \delta ~&(\inl q, s) &~:=~&
     \begin{cases}
-      \bigl(\inr (part_M~q, start_{M' (part_M~q)}), (\None, N)^n \bigr) & halt_M(q) \\
+      \bigl(\inr (part_M~q, start_{f (part_M~q)}), (\None, N)^n \bigr) & halt_M(q) \\
       \Let{(q', a) := \delta_M(q, s)}{\left(\inl q', a \right)} & \lnot halt_M(q)
     \end{cases} \\
-    \delta ~&(\inr q, s) &~:=~& \Let{(q', a) := \delta_{M'(\pi_1 q)} (\pi_2 q, s)}{\bigl( \inr (\pi_1 q, q'), a \bigr)} \\
+    \delta ~&(\inr q, s) &~:=~& \Let{(q', a) := \delta_{f(\pi_1 q)} (\pi_2 q, s)}{\bigl( \inr (\pi_1 q, q'), a \bigr)} \\
     halt   ~&(\inl  q)   &~:=~& \false \\
-    halt   ~&(\inr  q)   &~:=~& halt_{M'(\pi_1~q)} (\pi_2~q) \\
+    halt   ~&(\inr  q)   &~:=~& halt_{f(\pi_1~q)} (\pi_2~q) \\
     part   ~&(\inl  q)   &~:=~& \_ \\
-    part   ~&(\inr  q)   &~:=~& part_{M'(\pi_1~q)} (\pi_2~q)
+    part   ~&(\inr  q)   &~:=~& part_{f(\pi_1~q)} (\pi_2~q)
   \end{alignat*}
 \end{definition}
 
@@ -49,16 +68,16 @@ canonical value.
   \label{fig:match}
 \end{figure}
 
-$\MS{Match}~M~M'$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
-to to the injection of the start state of the machine $M'(part~q)$.  When $\MS{Match}~M~M'$ reaches a state that is the injection of a final state of
-a machine $M'~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
+$\MS{Match}~M~f$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
+to to the injection of the start state of the machine $f(part~q)$.  When $\MS{Match}~M~f$ reaches a state that is the injection of a final state of
+a machine $f~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
 
-\begin{lemma}[Correctness of $\MS{Match}~M~M'$]
+\begin{lemma}[Correctness of $\MS{Match}~M~f$]
   \label{lem:Match_Realise}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$ and $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$ for all $y:F$.
-  If $M \Realise R$ and $M'~y \Realise R'~y$ for all $y:F$, then
+  If $M \Realise R$ and $f~y \Realise R'~y$ for all $y:F$, then
   \[
-    \MS{Match}~M~M' \Realise MatchRel~R~R'
+    \MS{Match}~M~f \Realise MatchRel~R~R'
   \]
   with
   \[
@@ -67,17 +86,17 @@ a machine $M'~y$, it terminates.  The correctness part of the semantics can be e
 \end{lemma}
 
 Note that in the relation $MatchRel$, we compose the unpartitioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the
-partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~M'$ terminates in a partition of
-$M'~y$, which has type $F'$.
+partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~f$ terminates in a partition of
+$f~y$, which has type $F'$.
 
-To specify the runtime of $\MS{Match}~M~M'$, we need to know the runtime relation in that $M$ terminates, and for each $y:F$ the runtime of $M'~y$.
-We also need to know the correctness of $M$, because the runtime of $M'~y$ depends on the output of $M$, which is the input of $M'~y$.
+To specify the runtime of $\MS{Match}~M~f$, we need to know the runtime relation in that $M$ terminates, and for each $y:F$ the runtime of $f~y$.
+We also need to know the correctness of $M$, because the runtime of $f~y$ depends on the output of $M$, which is the input of $f~y$.
 
-\begin{lemma}[Runtime of $\MS{Match}~M~M'$]
+\begin{lemma}[Runtime of $\MS{Match}~M~f$]
   \label{lem:Match_Terminates}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, $T \subseteq \Tape_\Sigma^n \times \Nat$, and
-  $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \Realise R$, $M \TerminatesIn T$, and $M'~y \TerminatesIn T'~y$ for all $y:F$, then
-  $\MS{Match}~M~M' \TerminatesIn \MS{MatchT}~R~T~T'$, where
+  $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \Realise R$, $M \TerminatesIn T$, and $f~y \TerminatesIn T'~y$ for all $y:F$, then
+  $\MS{Match}~M~f \TerminatesIn \MS{MatchT}~R~T~T'$, where
   \[
     \MS{MatchT}~R~T~T' :=
     \lambda~t~k.~ \exists~k_1~k_2.~T~t~k_1 \land 1+k_1+k_2 \le k \land
@@ -85,12 +104,12 @@ We also need to know the correctness of $M$, because the runtime of $M'~y$ depen
   \]
 \end{lemma}
 
-We can combine the correctness and runtime lemma, in case $M$ and every $M'~y$ terminates in constant time.
-\begin{lemma}[Correctness of $\MS{Match}~M~M'$ in constant time]
+We can combine the correctness and runtime lemma, in case $M$ and every $f~y$ terminates in constant time.
+\begin{lemma}[Correctness of $\MS{Match}~M~f$ in constant time]
   \label{lem:Match_RealiseIn}
   Let $k_1, k_2:\Nat$.\\
-  If $M \RealiseIn{k_1} R$ and $M'~y \RealiseIn{k_2} R'~y$ for every $y:F$, then
-  \[ \MS{Match}~M~M' \RealiseIn{1+k_1+k_2} MatchRel~R~R'. \]
+  If $M \RealiseIn{k_1} R$ and $f~y \RealiseIn{k_2} R'~y$ for every $y:F$, then
+  \[ \MS{Match}~M~f \RealiseIn{1+k_1+k_2} MatchRel~R~R'. \]
 \end{lemma}
 \begin{proof}
   Follows with the Lemmas~\ref{lem:Realise_total},~\ref{lem:Match_Realise}, and~\ref{lem:Match_Terminates}.
@@ -100,9 +119,52 @@ We can combine the correctness and runtime lemma, in case $M$ and every $M'~y$ t
 \subsection{Derived Operators}
 \label{sec:match-derived-operators}
 
-As mentioned above, conditional and sequential composition can be defined as instances of the Match operator.  For the conditional
-$\If{M_1}{M_2}{M_3}$ with $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F')$, $f$ simply maps $\true$ to $M_2$ and $\false$ to $M_3$.  For the
-sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$, $f$ maps all partitions of $F$ to $M_2$.
+As mentioned above, conditional and sequential composition can be defined as instances of the Match operator.  For the sequential composition
+$M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$, the function $f : F \to \TM_\Sigma^n(F')$ that is the second parameter of
+$\Match$, maps all partitions of $F$ to the machine $M_2$.
+\begin{definition}[Sequential composition]
+  \label{def:Seq}
+  Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
+  \[
+    M_1 \Seq M_2 := \Match~M_1~
+    \bigl(
+    \lambda~\_.~M_2
+    \bigr)
+  \]
+\end{definition}
+This means that regardless in which partition the machine $M_1$ terminated, the sequential composition $M_1 \Seq M_2$ continues its execution in the
+start state of $M_2$.  The following lemma is the correctness lemma of sequential composition, for constant-time termination.  The version without
+constant-time termination, i.e.\ the lemma we get notationally by removing the steps numbers, holds as well.
+
+\begin{lemma}[Correctness of sequential composition]
+  \label{lem:Seq_RealiseIn}
+  If $M_1 \RealiseIn{k_1} R_1$ and $R_1 \RealiseIn{k_2} R_2$, then
+  $
+  M_1 \Seq M_2 \RealiseIn{1+k_1+k_2} \left(\bigcup_{y:F} R_1\at y\right) \circ R_2.
+  $
+\end{lemma}
+
+We often have the case that the first machine $M_1$ is partitioned over the unit-type $F = \Unit$.  In this case, the relation is
+$\left(\bigcup_{y:F} R_1\at y\right) \circ R_2 \equiv R_1 \at \unit \circ R_2 = R_1 \circ R_2$ by the convention that we identify unit-partitioned
+relations with unpartitioned relations.  This means that sequential composition of two machines amounts to composing their relations.
+
+In case, either $M_1$ or $M_2$ do not have constant runtime, we need the runtime lemma, that can be derived from Lemma~\ref{lem:Match_Terminates}.
+\begin{lemma}[Runtime of sequential composition]
+  \label{lem:Seq_TerminatesIn}
+  If $M_1 \Realise R_1$, $M_1 \TerminatesIn T_1$, and $M_2 \TerminatesIn T_2$, then
+  \[
+    M_1 \Seq M_2 \TerminatesIn
+    \left(%
+      \lambda t~k.~\exists k_1~k_2.~T_1~t~k_1 ~\land~ 1 + k_1 + k_2 \leq k ~\land~ \forall t'~y.~R_1~t~(y,~t') \rightarrow T_2~t'~k_2 %
+    \right).
+  \]
+\end{lemma}
+
+
+For the conditional $\If{M_1}{M_2}{M_3}$ with $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F')$, the function
+$f : \Bool \to \TM_\Sigma^n(F')$ simply maps $\true$ to $M_2$ and $\false$ to $M_3$.  This means the states of $M_1$ are partitioned in positive
+($\true$) and negative ($\false$) states.  The machine $\If{M_1}{M_2}{M_3}$, as defined bellow, first executes $M_1$.  If terminated in a positive
+state, it continues the execution in $M_2$, else in $M_3$.
 
 \begin{definition}[Conditional]
   \label{def:If}
@@ -121,26 +183,28 @@ sequential composition $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \T
   $
 \end{lemma}
 
-\begin{definition}[Sequential composition]
-  \label{def:Seq}
-  Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
-  \[
-    M_1 \Seq M_2 := \Match~M_1~
-    \bigl(
-    \lambda~\_.~M_2
-    \bigr)
-  \]
-\end{definition}
+The correctness relation $(R_1\at\true \circ R_2) \cup (R_1\at\false \circ R_3)$ captures the idea of a case-distinction.  If the conditional machine
+terminated, than the copy of $M_1$ either terminated in the partition $\true$ or $\false$.  In the first case, the conditional continued in $M_2$,
+else in $M_3$.
 
-\begin{lemma}[Correctness of sequential composition]
-  \label{lem:Seq_RealiseIn}
-  If $M_1 \RealiseIn{k_1} R_1$ and $R_1 \RealiseIn{k_2} R_2$, then
-  $
-  M_1 \Seq M_2 \RealiseIn{1+k_1+k_2} \left(\bigcup_{y:F} R_1\at y\right) \circ R_2.
-  $
+The runtime lemma of the conditional can also be derived from Lemma~\ref{lem:Match_Terminates}.
+\begin{lemma}[Runtime of the conditional]
+  \label{lem:If_TerminatesIn}
+  If $M_1 \Realise R_1$, $M_1 \TerminatesIn T_1$, $M_2 \TerminatesIn T_2$, and $M_3 \TerminatesIn T_3$, then
+  \begin{multline*}
+    \If{M_1}{M_2}{M_3} \TerminatesIn \\
+    \left( \lambda t~k.~\exists k_1~k_2.~T_1~t~k_1 ~\land~ 1+k_1+k_2 \leq k ~\land~ \forall b~t'.~\cond{b}{T_2~t'~k_2}{T_3~t'~k_2} \right)
+  \end{multline*}
 \end{lemma}
 
-The versions of above lemmas without constant-time termination hold as well.
+
+Asperti and Ricciotti~\cite{asperti2015} also define sequential composition and a conditional operator.  However, they have two fundamental
+differences.  First, they define and verify each operator separately.  Secondly, they do not consider state partitioning functions.  Consequently,
+their conditional operator takes a concrete ``negative'' state, i.e.\ the machine $M_3$ is only executed if $M_1$ terminated in this state.  This
+makes programming and reasoning about concrete machines tedious, because complex machines also have many states.  By introducing state-partitioned
+machines and implementing the more general $\Match$ combinator, we solve both problems.  Moreover, we often exploit the convenient generality of the
+$\Match$ operator.  For example, it can be used to implement a machine that copies a symbol from one tape to another tape, as demonstrated in
+Chapter~\ref{chap:combining}.
 
 
 \subsection{Proof of $\Match$}
@@ -324,9 +388,8 @@ terminated in $\Some{y}$, the loop breaks and $\While~M$ terminates in $y$.  Whe
 
 \begin{definition}[$\MS{While}~M$]
   \label{def:While}
-  Let $M : \TM_\Sigma^n(\Option(F))$ and $def:F$.
+  Let $M : \TM_\Sigma^n(\Option(F))$ and $def:F$.  We define $\MS{While}~M : \TM_\Sigma^n(F)$ with the following components.
   \begin{alignat*}{3}
-    & F              &~:=~& F \\
     & Q              &~:=~& Q_M \\
     & start          &~:=~& start_M \\
     \delta ~& (q, s) &~:=~&
@@ -410,8 +473,8 @@ runtime relation in that $M$ terminates.
   \]
 \end{lemma}
 
-When we want to show $\While~M \TerminatesIn T$, this is dual to show $\While~M \Realise R$.  We apply the anti-monotonicity
-Lemma~\ref{lem:TerminatesIn_monotone} and the above runtime lemma, and have to show $T \subseteq WhileT~R~T'$.  Therefore, we use the co-induction
+When we want to show $\While~M \TerminatesIn T$, this is dual to showing $\While~M \Realise R$.  We apply the anti-monotonicity
+Lemma~\ref{lem:TerminatesIn_monotone} and the above runtime lemma, and have to show $T \subseteq WhileT~R~T'$.  For that, we use the co-induction
 lemma of $WhileT$:
 \begin{lemma}[$WhileT$ co-induction]
   \label{lem:WhileCoInduction}
@@ -539,7 +602,7 @@ to the right instead.  For example, we define a machine $MoveToSymbol$ below, th
 Using this operator, we get a machine ``for free'' that moves the head to the left instead.  However, we still have to copy or parametrise the
 correctness and runtime relations.
 
-Using the proving techniques developed in the previous sections, verifying this $Mirror$ operator is very easy.
+Using the proving techniques developed in the previous sections, verifying this $\MS{Mirror}$ operator is very easy.
 
 \begin{definition}[Mirror tape]
   \label{def:mirror_tape}
@@ -553,10 +616,10 @@ Using the proving techniques developed in the previous sections, verifying this 
 \end{definition}
 \begin{lemma}[Correctness of $\MS{mirror}$]
   \label{lem:mirror}
-  Let $t,t':\Tape_\Sigma$.
+  Let $t:\Tape_\Sigma$.
   \begin{enumerate}
   \item \label{lem:mirror_tape_injective}
-    $\MS{mirror}$ is injective, i.e.\ if $\MS{mirror}(t)=\MS{mirror}(t')$, then $t=t'$,
+    $\MS{mirror}$ is injective,
   \item \label{lem:mirror_tape_involution}
     $\MS{mirror}$ is an involution, i.e.\ $\MS{mirror}(\MS{mirror}(t))=t$,
   \item \label{lem:mirror_left}
@@ -576,12 +639,11 @@ To define $\MS{Mirror}~M$, we assume an injective and involutive function $swap:
 
 \begin{definition}[$\MS{Mirror}~M$]
   \label{def:Mirror}
-  Let $M:\TM_\Sigma^n(F)$.
+  Let $M:\TM_\Sigma^n(F)$.  The machine $\MS{Mirror}~M : \TM_\Sigma^n(F)$ has the same components as $M$, except:
   \[
     \delta(q, s) :=~
     \Let{(q', a) := \delta_M(q,s)}{\bigl(q', \map{(\lambda(w, m).~(w, swap(m)))}{a} \bigr)}
   \]
-  (All other components are the same as $M$.)
 \end{definition}
 
 The correctness and termination proofs are similar to the proofs of $\MS{Match}$ and $\MS{While}$.  The ``lifting'' between configurations of $M$ and

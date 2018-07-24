@@ -7,7 +7,7 @@ Chapter~\ref{chap:lifting}.  However, we do not use the alphabet lift in this ch
 The general approach, when we prove correctness of a machine $M$, i.e.\ if we want to show $M \Realise R$, is to first define a relation $R'$ that $M$
 realises.  For that, we use the correctness lemmas of the combinators, lifts, and all concrete machines ``involved''.  The main part of the proof is
 applying Lemma~\ref{lem:Realise_monotone} and showing $R' \subseteq R$.  Note that the first part of the proof, i.e.\ generating the relation $R'$
-such that $M \Realise R'$, is mechanical.  Indeed, we can automatise this step in Coq, see more in Chapter~\ref{chap:implementation}.
+such that $M \Realise R'$, is mechanical.  Indeed, we can automate this step in Coq, see more in Chapter~\ref{chap:implementation}.
 
 When $M$ always terminates in constant time $k$, we show $M \RealiseIn{k} R$ instead.  Using the monotonicity Lemma~\ref{lem:RealiseIn_monotone}, we
 can prove correctness and (constant) runtime at once.  For (non-constant) runtime, we use the dual approach, using the anti-monotonicity
@@ -38,9 +38,9 @@ Note that the correctness relation of $\Nop$ can also be expressed using the ide
 \[
   NopRel \equiv Id.
 \]
-However, we have the convention to define relations of concrete machines in $\lambda$-notation, i.e.\ not using relational operators.  Also note that
+We have the convention to define relations of concrete machines in $\lambda$-notation, i.e.\ not using relational operators.  Also note that
 the tape $t'$ is per convention always on the left side of the equality.  This convention makes rewriting of tapes uniform; therefore, rewriting of
-tapes can be automatised in Coq.
+tapes can be automated in Coq.
 
 \section{$\MS{WriteString}$}
 \label{sec:WriteString}
@@ -54,7 +54,7 @@ The machine $\MS{WriteString}~d~str$ writes a fixed string $str:\List(\Sigma)$ i
   \end{alignat*}
 \end{definition}
 
-Note that this is the our only machine we define per recursion.  However, the way we prove correctness in constant time (depending on the length of
+Note that this is the our only machine we define per recursion.  The way we prove correctness in constant time (depending on the length of
 $str$) is still the same.
 
 The machine writes all symbols of the string $str$ to the tape and moves in the tape in direction $d$ after each (but the last) symbol.  When it
@@ -94,8 +94,8 @@ We define the actual relation of $\MS{WriteString}$ in terms of a function on ta
   $R'~d~str \subseteq WriteStringRel~d~str$.  This can be shown by induction on $str$.
 \end{proof}
 
-Note that we could as well use the $\MS{Mirror}$ operator instead of parametrising the machine $\MS{WritingString}$ over the direction.  However, in
-this particular example, this approach seems to be easier.
+Note that we could as well use the $\MS{Mirror}$ operator instead of parametrising the machine $\MS{WritingString}$ over the direction.  In this
+particular example, the former approach seems to be easier.
 
 \section{$\MS{MovePar}$}
 \label{sec:MovePar}
@@ -124,7 +124,7 @@ that the $1$st tape in direction $d'$.
   we know $t'[0]=\MS{mv}~d_1~t[0]$ and $t'[1]=t[1]$ (because $1 \notin \Vector{0}$).  We also know $t''[1]=\MS{mv}~d_2~t'[1]$ and $t''[0]=t'[0]$
   (because $0 \notin \Vector{1}$).  The goal follows trivially.
 \end{proof}
-Note that this kind of proof is very mechanical: We only need to unfold the relations, and rewrite tapes.  Indeed, these steps are automatised in Coq.
+Note that this kind of proof is very mechanical: We only need to unfold the relations, and rewrite tapes.  Indeed, these steps are automated in Coq.
 Thus, we also do not more proofs of this kind on paper.
 
 \section{$\MS{CopySymbols}$}
@@ -170,9 +170,10 @@ $\MS{CopySymbolsStep}~h :=$
   \label{lem:CopySymbols_Step_Sem}
   ~
   \[
-    \MS{CopySymbolsStep} \RealiseIn7 CopySymbolsStepRel
+    \MS{CopySymbolsStep} \RealiseIn{7} CopySymbolsStepRel
   \]
   with
+  \small
   \begin{multline*}
     CopySymbolsStepRel := \lambda t~(y, t').~\\
     \begin{cases}
@@ -197,14 +198,17 @@ The correctness of $\MS{CopySymbols}$ can be expressed using a recursive functio
   \label{lem:CopySymbols_Realise}
   $\MS{CopySymbols}~h \Realise CopySymbolsRel~h$
   with $CopySymbolsRel~h := \lambda t~t' = CopySymbolsFun~h~t$ and
-  \begin{multline*}
-    CopySymbolsFun~h~t :=\\
-    \begin{cases}
-      \Vector{t[0]; \MS{wr}~t[1]~(\Some{x})}                                  & \MS{current}~t[0]=\Some{x} \land h(x) \\
-      CopySymbolsFun~h~\Vector{\MS{mv}~R~t[0]; \MS{doAct}~t[1]~(\Some{x}, R)} & \MS{current}~t[0]=\Some{x} \land \lnot h(x) \\
-      t                                                                       & \MS{current}~t[0]=\None
-    \end{cases}
-  \end{multline*}
+  {
+    \small
+    \begin{multline*}
+      CopySymbolsFun~h~t :=\\
+      \begin{cases}
+        \Vector{t[0]; \MS{wr}~t[1]~(\Some{x})}                                  & \MS{current}~t[0]=\Some{x} \land h(x) \\
+        CopySymbolsFun~h~\Vector{\MS{mv}~R~t[0]; \MS{doAct}~t[1]~(\Some{x}, R)} & \MS{current}~t[0]=\Some{x} \land \lnot h(x) \\
+        t                                                                       & \MS{current}~t[0]=\None
+      \end{cases}
+    \end{multline*}
+  }
   Note that the function $CopySymbolsFun$ is not structural recursive.  It terminates because tapes have only finitely many symbols.
 \end{lemma}
 \begin{proof}
@@ -220,9 +224,8 @@ $\While$ requires one additional step for each repeat of the loop.
   \begin{multline*}
     CopySymbolsSteps (t) := \\
     \begin{cases}
-      8                                & \MS{current}(t)=\Some{x} \land h(x) \\
       8 + CopySymbolSteps(\MS{mv}~R~t) & \MS{current}(t)=\Some{x} \land \lnot h(x) \\
-      8                                & \MS{current}(t)=\None
+      8                                & \text{otherwise}
     \end{cases}
   \end{multline*}
 \end{lemma}
@@ -241,8 +244,8 @@ $\While$ requires one additional step for each repeat of the loop.
 \end{proof}
 % Note that we see in the proof that we could replace the $8$s in the non-recursive parts of the runtime functions with $7$s.
 
-Using the $\MS{Mirror}$ operator, we can define a machine $\MS{CopySymbolsL}$ that copies and goes to the left instead.  However, we also have to
-``mirror'' the correctness relations and their respective functions.  We do not repeat the definitions here.
+Using the $\MS{Mirror}$ operator, we can define a machine $\MS{CopySymbolsL}$ that copies and goes to the left instead.  We also have to ``mirror''
+the correctness relations and their respective functions.  We do not repeat the definitions here.
 \begin{definition}[$\MS{CopySymbolsL}$]
   $\MS{CopySymbolsL}~h := \MS{Mirror}(\MS{CopySymbols}~h).$
 \end{definition}
@@ -251,7 +254,7 @@ Using the $\MS{Mirror}$ operator, we can define a machine $\MS{CopySymbolsL}$ th
 \label{sec:MoveToSymbol}
 
 We can define a machine $\MS{MoveToSymbol}~h~f : \TM_\Sigma^1$, where $h:\Sigma\to\Bool$ and $f:\Sigma\to\Sigma$.  This machine behaves similarly like
-$\MS{CopySymbols}~h$.  However, instead of copying the symbols from one tape to another tape, it ``translates'' the symbols it read, until it reads a
+$\MS{CopySymbols}~h$.  Instead of copying the symbols from one tape to another tape, it ``translates'' the symbols it read, until it reads a
 symbol that satisfies the boolean predicate $h$.  We leave out the correctness and runtime statements, as they can be derived from the statements
 about $\MS{CopySymbols}$ above.
 
