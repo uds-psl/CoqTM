@@ -1,17 +1,20 @@
 \chapter{Simulating a Heap Machine}
 \label{chap:heap}
 
-In this chapter, we use all techniques, to implement a Turing machine that simulates an abstract heap machine.  First, we define the semantics of this
-abstract machine.  After that, we implement a Turing machine that simulates this abstract machine and prove their correctness and polynomial runtime.
+In this chapter, we use all techniques, to implement a Turing machine that simulates an abstract heap machine.  First, we briefly define the semantics
+of this abstract machine.  After that, we implement a Turing machine that simulates this machine and prove its correctness and polynomial runtime
+overhead.  We show that this machine reduces the halting problem of the heap machine to the halting problem of multi-tape Turing machines.
 
 \section{Heap Machine}
 \label{sec:heap-def}
 
-\todo{Citation for this machine}
+The abstract machine we present here is a variant of the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  Idem show that terms of the weak
+call-by-value lambda-calculus can be refined to states of said abstract machine and formalise their results in Coq.
+\todo{Should I include the compilation function $\gamma$ from lambda-terms to programs?}
 
-Definition of the heap machine.
-
-\begin{definition}[Types of the abstract machine]
+Values of this machines are closures.  A closure is a program and a pointer to the environment of bindings.  This environment is implemented as a
+linked list of closures.  Programs are lists of tokens, as defined below.
+\begin{definition}[Programs, closures, and heaps]
   ~
   \begin{alignat*}{2}
     &Tok  &~::=~& \MS{VAR}(n:\Nat) ~|~ \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET} \\
@@ -21,24 +24,28 @@ Definition of the heap machine.
     &Entr &~:=~& \Option(Clos \times Add) \\
     &Heap &~:=~& \List(Entr)
   \end{alignat*}
-  The configurations of the abstract machine are triples:
-  \[
-    \Conf := \List(Clos) \times \List(Clos) \times Heap.
-  \]
 \end{definition}
 
+The states of the abstract machine are triples:
+\[
+  \Conf := \List(Clos) \times \List(Clos) \times Heap.
+\]
+The first list is the control stack and the second list is the value stack.  We define the small-step operational semantics of this machine as a
+binary relation $\succ$ between states of the machine.
 \begin{definition}[Semantics of the heap machine]
-  We define the relation $\succ$ over configurations, as an inductive predicate:
-  \begin{alignat*}{2}
-    & \inferrule{\phi~0~\nil~P = \Some{(Q, P')}}{\left((a, (\MS{LAM} \cons P)) \cons T, V, H\right) \succ \left((a, P') \cons_{tr} T, (a,Q) \cons V, H\right) }
-    \qquad& \MS{LAM} & \\
-    & \inferrule{put~H~\Some{(g,b)} = (c,H')}{\left((a, (\MS{APP} \cons P)) \cons T, g \cons (b, Q) \cons V, H\right) \succ \left((c, Q) \cons (a,P) \cons_{tr} T, V, H'\right)}
-    \qquad& \MS{APP} \\
-    & \inferrule{H[a,n]=\Some{g}}{\left((a, (\MS{VAR}(n) \cons P)) \cons T, V, H\right) \succ \left((a, P) \cons_{tr} T, g \cons V, H\right)}
-    \qquad& \MS{VAR} &
-  \end{alignat*}
-  with $ put~H~c := (\length{H}, H \app [c]) $. $\phi~P :=~ \phi'~0~\nil~P$ is defined with the helping function
-  $\phi' : \Nat \to Pro \to Pro \to \Option(Pro \times Pro)$, which is defined by recursion on $P:Pro$.
+  {\small
+    \begin{alignat*}{4}
+      & \left((a, (\MS{LAM} \cons P)) \cons T, V, H\right)                      &~\succ~& \left((a, P') \cons_{tr} T, (a,Q) \cons V, H\right)
+      \quad&& \text{if $\phi~P = \Some{(Q, P')}$} & \\
+      & \left((a, (\MS{APP} \cons P)) \cons T, g \cons (b, Q) \cons V, H\right) &~\succ~& \left((c, Q) \cons (a,P) \cons_{tr} T, V, H'\right)
+      \quad&& \text{if $put~H~\Some{(g,b)} = (c,H')$} \\
+      & \left((a, (\MS{VAR}(n) \cons P)) \cons T, V, H\right)                   &~\succ~& \left((a, P) \cons_{tr} T, g \cons V, H\right)
+      \quad&& \text{if $H[a,n]=\Some{g}$} &
+    \end{alignat*}
+  }
+  with $put~H~c := (\length{H}, H \app [c]) $.\\
+  We define $\phi~P :=~ \phi'~0~\nil~P$ with the auxiliary function $\phi' : \Nat \to Pro \to Pro \to \Option(Pro \times Pro)$, which is defined by
+  recursion on $P:Pro$.
   \begin{alignat*}{4}
     &\phi'&~0~   &~Q&~(\MS{RET} \cons P) &&~:=~& \Some{(Q,P')} \\
     &\phi'&~(S~k)&~Q&~(\MS{RET} \cons P) &&~:=~& \phi'~k~(Q \app [\MS{RET}])~P \\
@@ -46,28 +53,52 @@ Definition of the heap machine.
     &\phi'&~k    &~Q&~(t        \cons P) &&~:=~& \phi'~k~(Q \app [t])~P \\
     &\phi'&~k    &~Q&~              \nil &&~:=~& \None \\
   \end{alignat*}
-  The heap lookup function $H[a,n] : \Option(Clos)$ is defined by recursion over $n$.
+  The heap lookup function $H[a,n] : \Option(Clos)$ is defined by recursion on $n$.
   \[
     H[a,n] :=
     \begin{cases}
       \Some{g}  & H[a]=\Some{\Some{(g,b)}} \land n=0 \\
       H[b, n-1] & H[a]=\Some{\Some{(g,b)}} \land n>0 \\
-      \None     & H[a]=\None
+      \None     & \text{else}
     \end{cases}
   \]
-  where $H[\cdot] : \Option(\Nat)$ is the list lookup function.
+  where $H[\cdot] : \Option(Entr)$ is the list lookup function. \\
+  The tail-recursion optimised cons operation $\cons_{tr}$ is defined as follows:
+  \begin{alignat*}{3}
+    & (a, \nil) &~\cons_{tr}~& H &~:=~& H \\
+    & (a, P   ) &~\cons_{tr}~& H &~:=~& (a, P) \cons H \qquad\text{if $P \neq \nil$}
+  \end{alignat*}
 \end{definition}
+
+We write $\succ^k$ for the relational power (cf.\ Definition~\ref{def:pow}) and $\succ^*$ for the reflexive transitive closure of $\succ$ (cf.\
+Definition~\ref{def:Kleene}).
+
+The function $\phi$ matches $\MS{LAM}$ with $\MS{RET}$.  It splits the program into two parts, the first part is the ``body'' of a linearised lambda
+expression and the second part the rest of the program, for example:%
+{\small
+  \[
+    \phi[\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}; \MS{RET}; \MS{VAR}(1)] = \Some{([\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}], [\MS{VAR}(1)])}.
+  \]
+}%
+The first $\MS{RET}$ matches to the $\MS{LAM}$ in the program above, so it is part of the first partition.  When the heap machine has a $\MS{LAM}$
+token as first control token, it finds the rest of the program using $\phi$ and pushes the body on the control stack.
+
+When the first control token is $\MS{App}$, the machine fetches two closures from the value stack.  The first closure, $g$, corresponds to the
+parameter of the application.  The second closure, $(b,Q)$, corresponds to the called function.  The machine pushes $g$ on the heap.  After that it
+continues executing $Q$, by adding a new closure $(c,Q)$ to the control stack, where $c$ is the updated head of the heap.
+
+If the first control token is $\MS{VAR}(n)$, the machine looks up the $n$th entry in the environment on the heap at the address $a$, and pushes this
+closure to the value stack.
 
 
 \section{Implementation As Turing Machine}
 \label{sec:heap-implementation}
 
-We use the ``programming'' techniques from Chapter~\ref{chap:programming}.  However, for simplicity, we do not use the strict definition of functional
-computation.  The machines only save the input-values that the caller machines really need.  For example, we have a machine $\MS{Nth'}$ that saves the
+We use the ``programming'' techniques from Chapter~\ref{chap:programming}.  For simplicity, we do not use the strict definition of functional
+computation.  The machines only save the input-values that the caller machines need again.  For example, we have a machine $\MS{Nth'}$ that saves the
 list, but not the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the alphabet with
-$SigOpt~\Sigma_X$.  Instead we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the output is $\None$,
-the machine terminates in $\false$ and the output tape stays right.  Note however, that these changes are only made for simplicity, because the
-machine we present in this chapter is fairly complex.
+$Sigma_{\Option(X)}$.  Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the output is
+$\None$, the machine terminates in $\false$ and the output tape stays right.
 
 
 
@@ -75,8 +106,8 @@ machine we present in this chapter is fairly complex.
 \section{Reduction of the Halting Problem}
 \label{sec:halting-problem}
 
-We can refine terms of closed lambda expressions to states of the abstract heap machine.  Hence, the halting problemm of lambda terms reduces to the
-halting problem of multi-tape Turing machines.
+% We can refine terms of closed lambda expressions to states of the abstract heap machine.  Hence, the halting problemm of lambda terms reduces to the
+% halting problem of multi-tape Turing machines.
 
 
 

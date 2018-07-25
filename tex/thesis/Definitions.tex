@@ -55,6 +55,17 @@ relations, also known as relational Kleene star:
   \]
 \end{definition}
 
+The relational power operator composes a relation $k$ times.
+\begin{definition}[Relational power]
+  \label{def:pow}
+  Let $R \subseteq A \times A$.  The relation $R^k$ is defined inductively:
+  \[
+    \inferrule{ }{R^0~x~x}
+    \qquad
+    \inferrule{R~x~y \and R^k~y~z}{R^{(S~k)}~x~z}
+  \]
+\end{definition}
+
 We have an operator that restricts the partition $B$ of a partitioned relation and yields a binary relation:
 \begin{definition}[Relational restriction]
   \label{def:rel-restrict}
