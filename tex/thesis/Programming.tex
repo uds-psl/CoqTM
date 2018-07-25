@@ -17,11 +17,14 @@ We first want to define what it means that a tape $t$ \emph{contains} a value $x
 Definition~\ref{def:tape}, are essentially a list of symbols, so we have to linearise values to strings.
 
 \begin{definition}[Encodable types]
-  We say that a type $X$ is \emph{encodable} over $\Sigma$, if there is a function $encode : X \to \List(\Sigma)$.
+  \label{def:encodable}
+  We say that a type $X$ is encodable over a finite alphabet $\Sigma_X$, if there is a function $encode : X \to \List(\Sigma_X)$.
 \end{definition}
 
-Morally, the encoding functions should be injective and there also should be a decoding function, such that the encoding and decoding functions is a
-retraction on $\List(\Sigma)$.  However, we do not need this strict definition.
+Morally, the encoding function should be functional.  There should also be a decoding function, such that the encoding and decoding functions is a
+retraction on $\List(\Sigma)$.  As we do not need any of these facts, we leave them out of this definition.
+% Implementation detail: We implement encodable types as a type class.  We do not include proofs in the type class that the alphabet is finite.  Thus,
+% we have to be careful when we define new type class instances.
 
 We may encode a type $X$ on any alphabet $\Tau$, if $\Sigma$ is a retraction on $\Tau$:
 \begin{definition}[Map encodings]
