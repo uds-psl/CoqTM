@@ -15,10 +15,11 @@ call-by-value lambda-calculus can be refined to states of said abstract machine 
 Values of this machines are closures.  A closure is a program and a pointer to the environment of bindings.  This environment is implemented as a
 linked list of closures.  Programs are lists of tokens, as defined below.
 \begin{definition}[Programs, closures, and heaps]
+  \label{def:Heap}
   ~
   \begin{alignat*}{2}
     &Tok  &~::=~& \MS{VAR}(n:\Nat) ~|~ \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET} \\
-    &Pro  &~:=~& \List(Pro) \\
+    &Pro  &~:=~& \List(Tok) \\
     &Add  &~:=~& \Nat \\
     &Clos &~:=~& Add \times Pro \\
     &Entr &~:=~& \Option(Clos \times Add) \\
@@ -94,17 +95,31 @@ closure to the value stack.
 \section{Implementation As Turing Machine}
 \label{sec:heap-implementation}
 
-We use the programming techniques from Chapter~\ref{chap:programming}.  For simplicity, we do not use the strict definition of functional computation.
-The machines only save the input-values that the caller machines need again.  For example, we have a machine $\MS{Nth'}$ that saves the list, but not
-the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the alphabet with $\Sigma_{\Option(X)}$.
-Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the output is $\None$, the machine
-terminates in $\false$ and the output tape stays right.
+First, we notice that all types in Definition~\ref{def:Heap}, except program Tokens ($Tok$), are encodable over canonical alphabets, according to
+Definition~\ref{def:basic-encodings}.
+\begin{definition}[Encoding of heaps]
+  \label{def:Heap-encode}
+  The type of tokens ($Tok$) is isomorphic to the sum of $ATok := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $\Nat$.  $ATok$ is encodable on itself
+  (since it is finite), and $\Nat$ is encodable on $\Sigma_\Nat$.  Then $Tok$ is encodable on $\Sigma_{Tok} := \Sigma_{ATok+\Nat}$.
+  All other types are encodable according to Definition~\ref{def:basic-encodings}.  For completeness, the alphabets are:\\
+  $\Sigma_{Pro} := \Sigma_{\List(Tok)}$, $\Sigma_{Add} := \Sigma_\Nat$, $\Sigma_{Clos}:=\Sigma_{Add \times Pro}$,
+  $\Sigma_{Entr} := \Sigma_{\Option(Clos \times Add)}$, and $\Sigma_{Heap} := \Sigma_{\List(Entr)}$.
+\end{definition}
 
+For the functions $\phi$ and heap lookup ($H[\cdot, \cdot]$), we define machines that compute these function in a lesser strict sense as
+Definition~\ref{def:Computes2_Rel}.  The Turing machines only save the input-values that a caller machine needs again.  For example, we have a machine
+$\MS{Nth'}$ that saves the list, but not the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the
+alphabet with $\Sigma_{\Option(X)}$.  Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the
+output is $\None$, the machine terminates in $\false$ and the output tape stays right.
 
+We define a machine $\MS{Step}$ (we specify the alphabet and the tape number later) that simulates steps of the heap machine.  The tapes $0$, $1$, and
+$2$ encode the control stack, the value stack, and the heap, respectively.  If the heap machine does a step $s \succ s'$, then if the tapes contain
+$s$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $s'$.  Otherwise, if $s$ is a terminating state, $\MS{Step}$ terminates in the
+partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we define
+$\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  We
+include execution protocols but omit definitions of machines and correctness relations, as they can be derived from the execution protocols.  This
+means that we prove that the halting problem of the heap machine reduces to the halting problem of $n$-tape Turing machines.
 
-
-\section{Reduction of the Halting Problem}
-\label{sec:halting-problem}
 
 % We can refine terms of closed lambda expressions to states of the abstract heap machine.  Hence, the halting problemm of lambda terms reduces to the
 % halting problem of multi-tape Turing machines.
