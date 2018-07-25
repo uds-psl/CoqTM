@@ -94,11 +94,11 @@ closure to the value stack.
 \section{Implementation As Turing Machine}
 \label{sec:heap-implementation}
 
-We use the ``programming'' techniques from Chapter~\ref{chap:programming}.  For simplicity, we do not use the strict definition of functional
-computation.  The machines only save the input-values that the caller machines need again.  For example, we have a machine $\MS{Nth'}$ that saves the
-list, but not the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the alphabet with
-$Sigma_{\Option(X)}$.  Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the output is
-$\None$, the machine terminates in $\false$ and the output tape stays right.
+We use the programming techniques from Chapter~\ref{chap:programming}.  For simplicity, we do not use the strict definition of functional computation.
+The machines only save the input-values that the caller machines need again.  For example, we have a machine $\MS{Nth'}$ that saves the list, but not
+the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the alphabet with $\Sigma_{\Option(X)}$.
+Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the output is $\None$, the machine
+terminates in $\false$ and the output tape stays right.
 
 
 

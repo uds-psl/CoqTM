@@ -13,8 +13,8 @@ complex case studies.
 \section{Value-Containing}
 \label{sec:value-containing}
 
-We first want to define what it means that a tape $t$ \emph{contains} a value $x$, written as $t \simeq x$.  Tapes, as defined in \ref{def:tape}, are
-essentially a list of symbols, so we have to linearise values to strings.
+We first want to define what it means that a tape $t$ \emph{contains} a value $x$, written as $t \simeq x$.  Tapes, as defined in
+Definition~\ref{def:tape}, are essentially a list of symbols, so we have to linearise values to strings.
 
 \begin{definition}[Encodable types]
   We say that a type $X$ is \emph{encodable} over $\Sigma$, if there is a function $encode : X \to \List(\Sigma)$.
@@ -551,9 +551,9 @@ Then it copies the symbols, from the stop symbol to the start symbol, to tape $1
   ~
   \begin{multline*}
     \MS{CopyValue} := \\
-    \LiftTapes{(\MS{MoveToSymbol}~(\lambda x. x=\MS{STOP})~~id)}{\Vector{0}}
+    \LiftTapes{(\MS{MoveToSymbol}~(\lambda x.~x=\MS{STOP})~~id)}{\Vector{0}}
     \Seq
-    \MS{CopySymbolsL}~(\lambda x. x=\MS{START})
+    \MS{CopySymbolsL}~(\lambda x.~x=\MS{START})
   \end{multline*}
 \end{definition}
 
@@ -573,7 +573,7 @@ The runtime of $\MS{CopyValue}$ is linear in size of the encoding of $x$.
   \label{lem:CopyValue_TerminatesIn}
   ~
   \[
-    \MS{CopyValue} \TerminatesIn (\lambda t~k.~\exists(x:X).~t[0] \simeq x \land 25 + 12 \cdot \size{x} \leq k).
+    \MS{CopyValue} \TerminatesIn (\lambda t~k.~\exists(x:X).~t[0] \simeq x \land 25 + 12 \cdot \size{~} \leq k).
   \]
 \end{lemma}
 
@@ -1113,7 +1113,7 @@ $nth : \List(X) \to \Nat \to \Option(X)$.  We assume retractions $f_{\List(X)} :
 $f_{\Option(X)} : \Sigma_{\Option(X)} \hookrightarrow \Sigma$, and $f_\Nat : \Sigma_\Nat \hookrightarrow \Sigma$.  Now there are two ways to encode
 $X$ on $\Sigma$: via $RetrOpt \circ f_{\Option(X)}$ and $RetrList \circ f_{\List(X)}$.
 
-The algorithm of the step can be expressed with the pseudocode in figure \ref{fig:pseudo-NthStep}.  Note that in contrast to the design of $\MS{Add}$
+The algorithm of the step can be expressed with the pseudocode in Figure~\ref{fig:pseudo-NthStep}.  Note that in contrast to the design of $\MS{Add}$
 and $\MS{Mult}$, we do not use new variable names for the copies of $l:\List(X)$ and $n:\Nat$.  The tape assignment is visualised in
 Figure~\ref{fig:tapes-Nth}.  Tape $0$ holds the copy of $l$, $1$ the copy of $n$, and $2$ the output.
 

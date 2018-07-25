@@ -273,7 +273,7 @@ Under these two assumptions we can show two lemmas that essentially say that the
   \label{fig:loop_lift_lemmas}
 \end{figure}
 
-The Lemmas~\ref{lem:loop_lift} and~\ref{lem:loop_unlift} are visualised in Figure \ref{fig:loop_lift_lemmas}.
+The Lemmas~\ref{lem:loop_lift} and~\ref{lem:loop_unlift} are visualised in Figure~\ref{fig:loop_lift_lemmas}.
 
 For the second feature, \emph{sequencing}, we assume a type $A$ with the step function $f \from A \to A$ and two halting functions
 $h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume
@@ -333,7 +333,7 @@ For the sequential part, we also have to define the lifted halting function of \
   \end{alignat*}
 \end{definition}
 
-Using Lemma \ref{lem:loop_merge} and \ref{lem:loop_lift}, we can show the lemma we need for runtime:
+Using Lemma~\ref{lem:loop_merge} and~\ref{lem:loop_lift}, we can show the lemma we need for runtime:
 \begin{lemma}[Merging parts of executions of $\Match$]
   \label{lem:Match_merge}
   Let $t : \Tape_\Sigma^n$, $k_1, k_2:\Nat$, $c_1 : \Conf_M$ and $c_2 : \Conf_{M'(part_M~q_1)}$.
@@ -344,7 +344,7 @@ Using Lemma \ref{lem:loop_merge} and \ref{lem:loop_lift}, we can show the lemma 
   \end{alignat*}
 \end{lemma}
 \begin{proof}
-  We apply \ref{lem:loop_merge} and have to show:
+  We apply Lemma~\ref{lem:loop_merge} and have to show:
   \begin{enumerate}
   \item $\forall a:\Conf_\Match.~ \lnot haltConfL~a \rightarrow \lnot \MS{haltConf}~a$.  This holds trivially by definition.
   \item $\Loop~step_\Match~haltConfL~(\MS{initConf}_\Match~t)~k_1 =

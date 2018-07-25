@@ -269,7 +269,7 @@ The function $\MS{mv} \from \Move \to \Tape_\Sigma \to \Tape_\Sigma$ moves a tap
   \begin{alignat*}{4}
     & \MS{mv}~L~(\MS{leftof}~r~rs)                &&:= \MS{leftof}~r~rs
     && \MS{mv}~R~(\MS{leftof}~r~rs)               &&:= \MS{midtape}~\nil~r~rs \\
-    & \MS{mv}~L~(\MS{midtape}~\nil~m~rs           &&:= \MS{leftof}~m~rs
+    & \MS{mv}~L~(\MS{midtape})~\nil~m~rs          &&:= \MS{leftof}~m~rs
     && \MS{mv}~R~(\MS{midtape}~ls~m~\nil          &&:= \MS{rightof}~m~ls \\
     & \MS{mv}~L~(\MS{midtape}~(l \cons ls)~m~rs)  &&:= \MS{midtape}~ls~l~(m \cons rs)
     && \MS{mv}~R~(\MS{midtape}~ls~m~(r \cons rs)) &&:= \MS{midtape}~(m \cons ls)~r~rs \\
@@ -382,8 +382,8 @@ We can show some basic facts about $\Loop$.
   \end{enumerate}
 \end{lemma}
 \begin{proof}
-  Claims~\ref{lem:loop_monotone},~\ref{lem:loop_injective}, and~\ref{lem:loop_fulfills} follow by induction on $k : \Nat$.  Claim \ref{lem:loop_0}
-  follows by Definition.  Claim \ref{lem:loop_eq_0} is a direct consequence of claim \ref{lem:loop_0}.
+  Claims~\ref{lem:loop_monotone},~\ref{lem:loop_injective}, and~\ref{lem:loop_fulfills} follow by induction on $k : \Nat$.  Claim~\ref{lem:loop_0}
+  follows by Definition.  Claim~\ref{lem:loop_eq_0} is a direct consequence of claim~\ref{lem:loop_0}.
 \end{proof}
 
 
