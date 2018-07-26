@@ -18,13 +18,15 @@ linked list of closures.  Programs are lists of tokens, as defined below.
   \label{def:Heap}
   ~
   \begin{alignat*}{2}
-    &Tok  &~::=~& \MS{VAR}(n:\Nat) ~|~ \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET} \\
+    &Var  &~:=~& \Nat \\
+    &Tok  &~::=~& \MS{VAR}(n:Var) ~|~ \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET} \\
     &Pro  &~:=~& \List(Tok) \\
     &Add  &~:=~& \Nat \\
     &Clos &~:=~& Add \times Pro \\
     &Entr &~:=~& \Option(Clos \times Add) \\
     &Heap &~:=~& \List(Entr)
   \end{alignat*}
+  We use the letters $n:Var$, $t:Tok$, $P,Q:Pro$, $a,b:Var$, $g:Clos$, $e:Entr$, and $H:Heap$.
 \end{definition}
 
 The states of the abstract machine are triples:
@@ -56,14 +58,14 @@ binary relation $\succ$ between states of the machine.
   \end{alignat*}
   The heap lookup function $H[a,n] : \Option(Clos)$ is defined by recursion on $n$.
   \[
-    H[a,n] :=
+    lookup~H~a~n :=
     \begin{cases}
-      \Some{g}  & H[a]=\Some{\Some{(g,b)}} \land n=0 \\
-      H[b, n-1] & H[a]=\Some{\Some{(g,b)}} \land n>0 \\
-      \None     & \text{else}
+      \Some{g} & H[a]=\Some{\Some{(g,b)}} \land n=0 \\
+      lookup~H~b~(n-1) & H[a]=\Some{\Some{(g,b)}} \land n>0 \\
+      \None & \text{else}
     \end{cases}
   \]
-  where $H[\cdot] : \Option(Entr)$ is the list lookup function. \\
+  where $H[\cdot] : \Option(Entr)$ is the list lookup function.  We write $H[a,n] := lookup~H~n$. \\
   The tail-recursion optimised cons operation $\cons_{tr}$ is defined as follows:
   \begin{alignat*}{3}
     & (a, \nil) &~\cons_{tr}~& H &~:=~& H \\
@@ -100,29 +102,126 @@ Definition~\ref{def:basic-encodings}.
 \begin{definition}[Encoding of heaps]
   \label{def:Heap-encode}
   The type of tokens ($Tok$) is isomorphic to the sum of $ATok := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $\Nat$.  $ATok$ is encodable on itself
-  (since it is finite), and $\Nat$ is encodable on $\Sigma_\Nat$.  Then $Tok$ is encodable on $\Sigma_{Tok} := \Sigma_{ATok+\Nat}$.
-  All other types are encodable according to Definition~\ref{def:basic-encodings}.  For completeness, the alphabets are:\\
+  (since it is finite), and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Tok$ is encodable on
+  $\Sigma_{Tok} := \Sigma_{ATok+\Nat}$.  All other types are encodable according to Definition~\ref{def:basic-encodings}.
+  For completeness, the alphabets are:\\
   $\Sigma_{Pro} := \Sigma_{\List(Tok)}$, $\Sigma_{Add} := \Sigma_\Nat$, $\Sigma_{Clos}:=\Sigma_{Add \times Pro}$,
   $\Sigma_{Entr} := \Sigma_{\Option(Clos \times Add)}$, and $\Sigma_{Heap} := \Sigma_{\List(Entr)}$.
 \end{definition}
 
-For the functions $\phi$ and heap lookup ($H[\cdot, \cdot]$), we define machines that compute these function in a lesser strict sense as
+For the functions $\phi$ and $lookup$, we define machines that compute these function in a lesser strict sense than
 Definition~\ref{def:Computes2_Rel}.  The Turing machines only save the input-values that a caller machine needs again.  For example, we have a machine
 $\MS{Nth'}$ that saves the list, but not the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the
 alphabet with $\Sigma_{\Option(X)}$.  Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the
 output is $\None$, the machine terminates in $\false$ and the output tape stays right.
 
-We define a machine $\MS{Step}$ (we specify the alphabet and the tape number later) that simulates steps of the heap machine.  The tapes $0$, $1$, and
-$2$ encode the control stack, the value stack, and the heap, respectively.  If the heap machine does a step $s \succ s'$, then if the tapes contain
-$s$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $s'$.  Otherwise, if $s$ is a terminating state, $\MS{Step}$ terminates in the
-partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we define
+We define a machine $\MS{Step} : \TM(\Option(\Unit))$ (we specify the alphabet and the tape number later) that simulates steps of the heap machine.
+The tapes $0$, $1$, and $2$ encode the control stack, the value stack, and the heap, respectively.  If the heap machine does a step $s \succ s'$, then
+if the tapes contain $s$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $s'$.  Otherwise, if $s$ is a terminating state,
+$\MS{Step}$ terminates in the partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we define
 $\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  We
 include execution protocols but omit definitions of machines and correctness relations, as they can be derived from the execution protocols.  This
 means that we prove that the halting problem of the heap machine reduces to the halting problem of $n$-tape Turing machines.
 
 
-% We can refine terms of closed lambda expressions to states of the abstract heap machine.  Hence, the halting problemm of lambda terms reduces to the
-% halting problem of multi-tape Turing machines.
+\subsection{$\MS{Lookup}$}
+\label{sec:Lookup}
+
+The machine $\MS{Lookup} : \TM_\Sigma^5(\Bool)$ realises the heap $lookup$ function.  Note, that the heap is just a linked list of closures, where the
+pointers in this linked lists are indices.  It uses that machine $\MS{Nth}' : \TM_\Sigma^4(\Bool)$, which is $\MS{Nth}$ from Section~\ref{sec:Nth}
+with the two changes mentioned above.
+
+First we consider the alphabet of $\MS{Lookup}$.  We can encode closures on the heap alphabet $\Sigma_{Heap}$, but when $\MS{Step}$ calls $H[a,n]$,
+$a$ is the current heap address from the first closure on the control stack, and $n$ is the variable the first variable token of the program of that
+closure.  Thus, $a$ and $n$ are encoded on a different closure alphabet, than the closures on the heap.  We define $\MS{Lookup}$ on an alphabet
+$\Sigma$, with retractions $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$ and $f_{Clos} : \Sigma_{Clos} \hookrightarrow \Sigma$.  The second
+retraction correspond to the encoding of $a$ and $n$.  The retraction
+\[ f_{Clos'} : \Sigma_{Clos} \hookrightarrow \Sigma := RetrFst \circ RetrOpt \circ RetrList \circ f_{Heap} \]%
+is the canonical retraction of closures from the heap.
+
+There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depending on whether the number is an heap pointer in the heap alphabet,
+or a variable or heap pointer from the stack alphabet.
+\begin{enumerate}
+\item Address of the pointer of an heap on the stack alphabet:
+  \[
+    f_{add} := RetrFst \circ f_{Clos'}
+  \]
+\item Variable in a token of a closure on the stack alphabet:
+  \[
+    f_{var} := RetrRgt \circ RetrList \circ RetrSnd \circ f_{Clos'}
+  \]
+  Note that $RetrRgt : \Sigma_\Nat \hookrightarrow \Sigma_{Tok}$.
+\item Pointer to the next heap entry:
+  \[
+    f_{next} := RetrSnd \circ RetrOpt \circ RetrList \circ f_{Heap}
+  \]
+\end{enumerate}
+
+Since the function $lookup$ is tail-recursive, we define the step machine with the type $LookupStep : \TM_\Sigma^5(\Option(\Bool))$.  It first calls
+the list lookup machine ($\MS{Nth'}$).  If it failed, $\MS{Lookup}$ immediately terminates $\false$.  Else, it makes a case-distinction on the heap
+entry $e : \Option(Clos \times Add)$.  In case it is $\None$, $\MS{Lookup}$ terminates in $\false$.  Else it destructs the closure $g = (g,b)$ and
+makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ resets the tapes for $b$ and $n$, translates $g$ from $f_{Clos'}$ to $f_{Clos}$ and
+returns $\true$.  Else it translates $b$ from $f_{next}$ to $f_{add}$, moves it to the tape that contained $a$, and repeats the loop.  We visualise
+the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~\ref{tab:exec-LookupStep-0}.
+
+\begin{table}[t]
+  \centering
+  \scriptsize
+  \begin{tabular}{l||l|l|l|l|l|l|l|l}
+    Input      & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{CopyValue}$  & $\MS{Translate}$ & $\MS{Reset}$ & $\MS{Reset}$ \\ \hline
+    $0:H$      & $0:H$            &                       &                      &                 &                   &                  &              &              \\
+    $1:a$      & $1:\dashv$       &                       &                      &                 & $1:b$             & $0:b$            &              &              \\
+    $2:n$      &                  &                       &                      & $0:n'$          &                   &                  &              &              \\
+    $3:\dashv$ &                  &                       & $1: g$               &                 &                   &                  &              & $0:\dashv$   \\
+    $4:\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:b$             &                  & $0:\dashv$   &              \\
+  \end{tabular}
+  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=S~n'$.  It terminates in the partition $\None$.  The
+    translation is from $f_{next}$ to $f_{add}$.}
+  \label{tab:exec-LookupStep-S}
+\end{table}
+\begin{table}[t]
+  \centering
+  \scriptsize
+  \begin{tabular}{l||l|l|l|l|l|l|l}
+    Input      & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{Reset}$ & $\MS{Reset}$ & $\MS{Translate}$ \\ \hline
+    $0:H$      & $0:H$            &                       &                      &                 &              &              &                  \\
+    $1:a$      & $1:\dashv$       &                       &                      &                 &              &              &                  \\
+    $2:n$      &                  &                       &                      & $0:n'$          &              & $0:\dashv$   &                  \\
+    $3:\dashv$ &                  &                       & $1: g$               &                 &              &              & $0:g$            \\
+    $4:\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:\dashv$   &              &                  \\
+  \end{tabular}
+  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0'$.  It terminates in the partition $\Some\true$.  The
+    translation is from $f_{Clos'}$ to $f_{Clos}$.}
+  \label{tab:exec-LookupStep-0}
+\end{table}
+
+The step machine terminates in $\Some\false$ in two cases.  Either the list lookup failed, or it returned the empty heap entry $H[a]=\Some\None$.  In
+the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}, $\MS{LookupStep}$ resets the afterwards unneeded tapes, especially $n$, of
+which the value may have been overwritten.
+
+Because no initialisation or clean-up is needed before or after the loop, we can define $\MS{Lookup} := \While~\MS{LookupStep}$.  The correctness
+relation of $\MS{Lookup}$ says that if it terminated in the partition $\true$, we have $H[a,n] = \Some{g}$ for some closure $g$, and tape~$3$ contains
+$g$ w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still contains $H$ and all other tapes are reseted.  In case $\MS{Lookup}$
+terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there two possible reasons for that: Either $H[a]=\None$, or
+$H[a]=\Some\None$.  We do not distinct these two failure cases, because we then know that the state of the heap machine is a terminating state.  In
+this case, $\MS{Step}$ only needs to terminate in $\Some\unit$.
+
+\begin{lemma}[Correctness of $\MS{Lookup}$]
+  \label{lem:Lookup_Realise}
+  $\MS{Lookup} \Realise LookupRel$
+  with
+  \small
+  \begin{alignat*}{1}
+    & LookupRel := \\
+    &\quad \lambda t~(y, t').~\forall H~a~n.~ t[0] \simeq H \rightarrow t[1] \simeq_{f_{add}} a \rightarrow t[2] \simeq_{f_{var}} n \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow \\
+    &\quad\quad \MS{if}~y~\MS{then}~\bigl(\exists g.~H[a,n] = \Some{g} \land \\
+    &\quad\quad \phantom{\MS{if}~y~\MS{then}~\bigl(\exists g.~} t'[0] \simeq H \land isRight~t'[1] \land isRight~t'[2] \land t'[3] \simeq_{f_{Clos}} g \land isRight~t[4]\bigr) \\
+    &\quad\quad \MS{else}~ H[a,n] = \None.
+\end{alignat*}
+\end{lemma}
+
+\todo{How to present runtime here?}
+
 
 
 
