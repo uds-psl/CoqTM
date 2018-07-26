@@ -522,6 +522,32 @@ symbol on tape $0$.
 \end{lemma}
 
 
+\subsubsection{Finite Types}
+
+All finite types $\Sigma$ can be encoded on themself, i.e.\ $encode(x)=[x]$ for $x:\Sigma$.  The deconstructor machine for finite types moves the head
+from the starting symbol to the symbol and reads it.  After that, it moves the head one further so that the tape is right and terminates in the
+partition corresponding to the read symbol.
+
+\begin{definition}[$\MS{MatchFin}$]
+  \label{def:MatchFin}
+  Let $def:\Sigma$.
+  \small
+\begin{lstlisting}[style=semicoqstyle]
+$\MS{MatchFin} := \Match~\MS{ReadChar}~(\lambda s.$ $\MS{match}~s$[$\Some{x} \Rightarrow \Return{(\MS{Move}~R)}{x}$|_$\Rightarrow\Return{\Nop}{def}$].
+\end{lstlisting}
+\end{definition}
+
+\begin{lemma}[Correctness of $\MS{MatchFin}$]
+  \label{lem:MatchFin_Sem}
+  $\MS{MatchFin} \RealiseIn{5} MatchFinRel$ with
+  \[
+    MatchFinRel := \lambda t~(y,t').~\forall(x:\Sigma).~t[0] \simeq x \rightarrow isRight~t'[0] ~\land~ y=x.
+  \]
+\end{lemma}
+
+
+
+
 \subsection{Copy Values}
 \label{sec:copy}
 
