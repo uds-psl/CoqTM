@@ -195,8 +195,33 @@ the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~
   \label{tab:exec-LookupStep-0}
 \end{table}
 
+\begin{definition}[$\MS{LookupStep}$]
+  \label{def:Lookup_Step}
+  ~
+  \begin{align*}
+    & \MS{LookupStep} := \\
+    & \quad \MS{If}~(\MS{Nth'}~f_{heap}~f_{add}) \\
+    & \quad \MS{Then}~\MS{If}~(\LiftBoth{\MS{MatchOption}}{RetrList ~\circ~ f_{heap}}{\Vector{4}}) \\
+    & \quad \phantom{\MS{Then}}~\MS{Then}~\LiftBoth{\MS{MatchPair}}{RetrOpt \circ RetrList ~\circ~ f_{heap}}{\Vector{4;3}} \Seq \\
+    & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{var}}{\Vector{2}}) \\
+    & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}}~\MS{Then}~ \MS{Return}~\bigl(
+      \LiftTapes{\MS{CopyValue}}{\Vector{4;1}} \Seq
+      \LiftTapes{\MS{Translate}~f_{next}~f_{ad}}{\Vector{1}} \Seq \\
+    & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}~\MS{Then}~\MS{Return}\bigl(}
+      \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq
+      \LiftTapes{\MS{Reset}}{\Vector{3}}
+      \bigr)~{\None} \\
+    & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}}~\MS{Else}~~~ \MS{Return}~\bigl(
+      \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq
+      \LiftTapes{\MS{Reset}}{\Vector{2}}
+      \bigr)~{\Some\true} \\
+    & \quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{\Nop}{\Some\false} \\
+    & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}
+  \end{align*}
+\end{definition}
+
 The step machine terminates in $\Some\false$ in two cases.  Either the list lookup failed, or it returned the empty heap entry $H[a]=\Some\None$.  In
-the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}, $\MS{LookupStep}$ resets the afterwards unneeded tapes, especially $n$, of
+the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}), $\MS{LookupStep}$ resets the afterwards unneeded tapes, especially $n$, of
 which the value may have been overwritten.
 
 Because no initialisation or clean-up is needed before or after the loop, we can define $\MS{Lookup} := \While~\MS{LookupStep}$.  The correctness
