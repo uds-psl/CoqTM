@@ -184,27 +184,45 @@ Definition~\ref{def:basic-encodings}.
   $\Sigma_{Entr} := \Sigma_{\Option(Clos \times Add)}$, and $\Sigma_{Heap} := \Sigma_{\List(Entr)}$.
 \end{definition}
 
-For the functions $\phi$ and $lookup$, we define machines that compute these function in a lesser strict sense than
+First, we derive constructor and deconstructor machines for tokens.  As tokens are defined as the sum type of two encodable types ($ATok$ and $\Nat$),
+we only have to combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
+\begin{definition}[$\MS{MatchTok}$]
+  $\MS{MatchTok} : \TM_{\Sigma^+_{Tok}}^1(\Option(ATok))$ is defined by
+  \begin{alignat*}{2}
+    & \MS{MatchTok} &~:=~& \MS{If}~\MS{MatchSum} \\
+    &               &    & \MS{Then}~   \Return{\Nop}{\None} \\
+    &               &    & \MS{Else}~~~ \MS{ChangePartition}~(\LiftAlphabet{\MS{MatchFin}}{RetrRgt})~(\Some\cdot)
+  \end{alignat*}
+\end{definition}
+\begin{lemma}[Correctness of $\MS{MatchTok}$]
+  \label{lem:MatchTok_Realise}
+  $\MS{MatchTok} \RealiseIn{11} MatchTokRel$ with
+\begin{lstlisting}[style=semicoqstyle]
+$MatchTokRel :=$
+  $\lambda t~(y, t').~\forall (T:Tok).~ t[0] \simeq s \rightarrow \MS{match}~y,T$
+      [$\Some{\MS{APP}}, APP \Rightarrow isRight~t'[0]$
+      |$\Some{\MS{LAM}}, LAM \Rightarrow isRight~t'[0]$
+      |$\Some{\MS{RET}}, RET \Rightarrow isRight~t'[0]$
+      |$\None, n \Rightarrow t'[0] \simeq n$
+      |_,_=>$\False$
+      ].
+\end{lstlisting}
+\end{lemma}
+The $\MS{VAR}$ constructor is defined with $\MS{ConstrInr}$ and the constructor for $ATok$ is defined with $\MS{WriteSymbol}$.
+
+For the functions $\phi$ and $lookup$, we define machines that \textit{compute} these functions in a lesser strict sense than
 Definition~\ref{def:Computes2_Rel}.  The Turing machines only save the input-values that a caller machine needs again.  For example, we have a machine
 $\MS{Nth'}$ that saves the list, but not the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the
 alphabet with $\Sigma_{\Option(X)}$.  Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the
 output is $\None$, the machine terminates in $\false$ and the output tape stays right.
 
-We define a machine $\MS{Step} : \TM(\Option(\Unit))$ (we specify the alphabet and the tape number later) that simulates steps of the heap machine.
-The tapes $0$, $1$, and $2$ encode the control stack, the value stack, and the heap, respectively.  If the heap machine does a step $s \red s'$, then
-if the tapes contain $s$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $s'$.  Otherwise, if $s$ is a terminating state,
-$\MS{Step}$ terminates in the partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we define
-$\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  We
-include execution protocols but omit definitions of machines and correctness relations, as they can be derived from the execution protocols.  This
-means that we prove that the halting problem of the heap machine reduces to the halting problem of $n$-tape Turing machines.
-
 
 \subsection{$\MS{Lookup}$}
 \label{sec:Lookup}
 
-The machine $\MS{Lookup} : \TM_\Sigma^5(\Bool)$ realises the heap $lookup$ function.  Note, that the heap is just a linked list of closures, where the
-pointers in this linked lists are indices.  It uses that machine $\MS{Nth}' : \TM_\Sigma^4(\Bool)$, which is $\MS{Nth}$ from Section~\ref{sec:Nth}
-with the two changes mentioned above.
+The machine $\MS{Lookup} : \TM_{\Sigma^+}^5(\Bool)$ realises the heap $lookup$ function.  Note, that the heap is just a linked list of closures, where
+the pointers in this linked lists are indices.  It uses that machine $\MS{Nth}' : \TM_{\Sigma^+}^4(\Bool)$, which is $\MS{Nth}$ from
+Section~\ref{sec:Nth} with the two changes mentioned above.
 
 First we consider the alphabet of $\MS{Lookup}$.  We can encode closures on the heap alphabet $\Sigma_{Heap}$, but when $\MS{Step}$ calls $H[a,n]$,
 $a$ is the current heap address from the first closure on the control stack, and $n$ is the variable the first variable token of the program of that
@@ -232,12 +250,12 @@ or a variable or heap pointer from the stack alphabet.
   \]
 \end{enumerate}
 
-Since the function $lookup$ is tail-recursive, we define the step machine with the type $LookupStep : \TM_\Sigma^5(\Option(\Bool))$.  It first calls
-the list lookup machine ($\MS{Nth'}$).  If it failed, $\MS{Lookup}$ immediately terminates $\false$.  Else, it makes a case-distinction on the heap
-entry $e : \Option(Clos \times Add)$.  In case it is $\None$, $\MS{Lookup}$ terminates in $\false$.  Else it destructs the closure $g = (g,b)$ and
-makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ resets the tapes for $b$ and $n$, translates $g$ from $f_{Clos'}$ to $f_{Clos}$ and
-returns $\true$.  Else it translates $b$ from $f_{next}$ to $f_{add}$, moves it to the tape that contained $a$, and repeats the loop.  We visualise
-the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~\ref{tab:exec-LookupStep-0}.
+Since the function $lookup$ is tail-recursive, we define the step machine with the type $LookupStep : \TM_{\Sigma^+}^5(\Option(\Bool))$.  It first
+calls the list lookup machine ($\MS{Nth'}$).  If it failed, $\MS{Lookup}$ immediately terminates $\false$.  Else, it makes a case-distinction on the
+heap entry $e : \Option(Clos \times Add)$.  In case it is $\None$, $\MS{Lookup}$ terminates in $\false$.  Else it destructs the closure $g = (g,b)$
+and makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ resets the tapes for $b$ and $n$, translates $g$ from $f_{Clos'}$ to $f_{Clos}$
+and returns $\true$.  Else it translates $b$ from $f_{next}$ to $f_{add}$, moves it to the tape that contained $a$, and repeats the loop.  We
+visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~\ref{tab:exec-LookupStep-0}.
 
 \begin{table}[t]
   \centering
@@ -322,16 +340,84 @@ this case, $\MS{Step}$ only needs to terminate in $\Some\unit$.
 
 \todo{How to present runtime here?}
 
-\subsection{$\MS{JumpTarget}$}
-\label{sec:JumpTarget}
+\subsection{$\MS{SplitBody}$}
+\label{sec:SplitBody}
 
-\todo{I need to find a better name: This machine actually splits a program into two halves. It matches lambdas with returns and splits the program on the first unmatched return}
+The machine $\MS{SplitBody} : \TM_{\Sigma^+_{Pro}}^5(\Bool)$ computes the function $\phi$ (cf.\ Definition~\ref{def:jumpTarget}).  The
+implementation of this machine is straight-forward, because $\phi'$ is defined tail-recursively.  The machine
+$\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$ computes $\phi'$, and $\MS{SplitBody}$ initialises the accumulators before executing the loop.
 
-The machine $\MS{JumpTarget}$ realises the function $\phi$.  $\phi$, as defined in Definition~\ref{def:Heap}, splits the program into two halves at
-the first $\MS{RET}$ token that does not match with a $\MS{LAM}$ token.
+The step machine $\MS{SplitBodyStep} : \TM_{\Sigma^+_{Pro}}^5(\Option(\Bool))$ first makes a case-distinction over the program on tape $0$.  In the
+$\nil$ case, it returns $\Some{\false}$ so that the loop returns $\false$.  In the cons-case, it makes a case-distinction over the token, using
+$\MS{MatchTok}$.  In the case the head token is $\MS{RET}$, it does another case-distinction over $k$.  In the case that the head token is
+$\MS{VAR}(n)$, the machine again applies the $\MS{VAR}$ constructor to $n$ and appends this token to $Q$.  The case-machines use the auxiliary
+parametrised machine $\MS{AppATok}~t$ that appends a finite token (i.e.\ $t$ is either $\MS{APP}$, $\MS{LAM}$, or $\MS{RET}$) to the token list, and
+the machine $AppTok$ that appends a token on a tape to $Q$.
 
-First, we derive constructor and deconstructor machines for tokens.  As tokens are defined as the sum type of two encodable types, we only have to
-combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
+
+\begin{definition}[$\MS{SplitBody}$]
+  \label{def:JumpTarget}
+  We define the canonical retraction $f_{Var} : Var \to \Sigma_{Pro}$ by $f_{Var} := RetrRgt \circ RetrList$.
+  %% This is a bad hack, but I think it looks nice...
+  %% This hack assumes that $\MS{LAM}$ is the wider than of $\MS{RET}$ and $\MS{APP}$
+  \begin{alignat*}{1}
+    & \MS{SplitBodyStep} := \\
+    & \quad \MS{If}~(\LiftTapes{\MS{MatchList}}{\Vector{0;3}}) \\
+    & \quad \MS{Then}~\Match~(\LiftBoth{\MS{MatchTok}}{RetrList}{\Vector{3}}) \\
+    & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ATok)).~\MS{match}~y\\
+    & \quad \phantom{\MS{Then}~(\lambda}~[~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{RET}}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{Var}}{\Vector{2}}) \\
+    & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppAtok~\MS{RET}}}{\Vector{1;4}})}{\None} \\
+    & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Else}~~~ \Return{\Nop}{\Some\true} \\
+    & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{LAM}}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{f_{Var}}{\Vector{2}} \Seq \MS{AppATok}~\MS{LAM})}{\None} \\
+    & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{APP}}} \Rightarrow \Return{(\MS{AppATok}~\MS{APP})}{\None} \\
+    & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\None} \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{f_{Var}}{\Vector{3}} \Seq \LiftTapes{\MS{AppTok}}{1;3;4})}{\None} \\
+    & \quad \phantom{\MS{Then}~(\lambda}~]) \\
+    & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}.
+  \end{alignat*}
+  % Ok version, without the hack for aligning the "=>"s
+  % \begin{alignat*}{1}
+  %   & \MS{SplitBodyStep} := \\
+  %   & \quad \MS{If}~(\LiftTapes{\MS{MatchList}}{\Vector{0;3}}) \\
+  %   & \quad \MS{Then}~\Match~(\LiftBoth{\MS{MatchTok}}{RetrList}{\Vector{3}}) \\
+  %   & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ATok)).~\MS{match}~y\\
+  %   & \quad \phantom{\MS{Then}~(\lambda}~[~ \Some{\MS{RET}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{RetrRgt \circ RetrList}{\Vector{2}}) \\
+  %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppAtok~\MS{RET}}}{\Vector{1;4}})}{\None} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Else}~~~ \Return{\Nop}{\Some\true} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{LAM}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{RetrRgt \circ RetrList}{\Vector{2}} \Seq \MS{AppATok}~\MS{LAM})}{\None} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{APP}} \Rightarrow \Return{(\MS{AppATok}~\MS{APP})}{\None} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \None \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{RetrRgt \circ RetrList}{\Vector{3}} \Seq \LiftTapes{\MS{AppTok}}{1;3;4})}{\None} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda}~]) \\
+  %   & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}.
+  % \end{alignat*}
+  We define $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$.
+  % \[
+  %   \MS{SplitBody} :=
+  %   \LiftTapes{\MS{ConstrNil}}{\Vector{2}} \Seq
+  %   \LiftBoth{\MS{ConstrO}}{f_{Var}}{\Vector{2}} \Seq
+  %   \If{\MS{SplitBodyLoop}}{\Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\true}}{\Return{\Nop}{\false}}
+  % \]
+  % Constr_nil _ @ [|Fin1|];;
+  % Constr_O ⇑ _ @ [|Fin2|];;
+  % If (JumpTarget_Loop)
+  %    (Return (Reset _ @ [|Fin2|]) true)
+  %    (Return Nop false)
+\end{definition}
+
+\todo{Other definitions, execution protocols, correctness, etc.}
+
+
+\subsection{Simulator}
+\label{sec:HeapSim}
+
+
+We define a machine $\MS{Step} : \TM(\Option(\Unit))$ (we specify the alphabet and the tape number later) that simulates steps of the heap machine.
+The tapes $0$, $1$, and $2$ encode the control stack, the argument stack, and the heap, respectively.  If the heap machine does a step $s \red s'$,
+then if the tapes contain $s$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $s'$.  Otherwise, if $s$ is a terminating state,
+$\MS{Step}$ terminates in the partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we define
+$\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  We
+include execution protocols but omit definitions of machines and correctness relations, as they can be derived from the execution protocols.  This
+means that we prove that the halting problem of the heap machine reduces to the halting problem of $n$-tape Turing machines.
+
 
 
 
@@ -342,3 +428,5 @@ combine constructors and deconstructors from Section~\ref{sec:constructors-decon
 %%% mode: LaTeX
 %%% TeX-master: "thesis"
 %%% End:
+
+% LocalWords:  isRight
