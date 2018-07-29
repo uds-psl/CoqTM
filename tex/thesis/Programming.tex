@@ -294,13 +294,13 @@ $\false$).
   \small
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchSum} :=$
-  $\MS{Move}$ R; 
-  $\Match$      ($\MS{ReadChar}$) 
-        ($\lambda(o:\Option(sigSum~\Sigma_X~\Sigma_Y)).$ match $o$
-           [$\Some {\MS{INL}}$ => $\Return{(\MS{Write}~\MS{START})}{\true}$
-           |$\Some {\MS{INR}}$ => $\Return{(\MS{Write}~\MS{START})}{\false}$
-           | _ => _ 
-           ]).
+  $\MS{Move}~R$;
+  $\Match~\MS{ReadChar}$
+       ($\lambda(o:\Option(sigSum~\Sigma_X~\Sigma_Y)).$ match $o$
+         [$\Some {\MS{INL}}$=>$\Return{(\MS{Write}~\MS{START})}{\true}$
+         |$\Some {\MS{INR}}$=>$\Return{(\MS{Write}~\MS{START})}{\false}$
+         | _ => _
+         ]).
 \end{lstlisting}
 \end{definition}
 
@@ -310,10 +310,10 @@ $\MS{MatchSum} :=$
 \begin{lstlisting}[style=semicoqstyle]
 $MatchSumRel :=$
   $\lambda t~(y, t').$ $\forall (s:X+Y).$ $t[0] \simeq s \rightarrow$ match $y$, $s$
-      [$\false$, $\inl x$ => $t'[0] \simeq x$
-      |$\true$, $\inr y$ => $t'[0] \simeq y$
-      | _, _ => $\False$
-      ].
+    [$\false$, $\inl x$ => $t'[0] \simeq x$
+    |$\true$, $\inr y$ => $t'[0] \simeq y$
+    | _, _ => $\False$
+    ].
 \end{lstlisting}
 \end{lemma}
 
@@ -356,11 +356,11 @@ the tape moves one step to the right:
 \begin{lstlisting}[style=semicoqstyle]
 $MatchOptionRel :=$
   $\lambda t~(y, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow$
-      $\MS{match}~y, o$
-      [$\false, \None$ => $isRight(t'[0])$
-      |$\true, \Some x$ => $t'[0] \simeq x$
-      |_, _ => $\False$
-      ].
+    $\MS{match}~y, o$
+    [$\false, \None$ => $isRight(t'[0])$
+    |$\true, \Some x$ => $t'[0] \simeq x$
+    |_, _ => $\False$
+    ].
 \end{lstlisting}
 \end{lemma}
 Note that we have to add $2$ extra steps: one for the conditional and one for the $\MS{Move}$ in the $\None$-case.
@@ -478,10 +478,10 @@ the tapes unchanged.  If the list is $x \cons xs$, it copies $x$ to tape $1$ and
 \begin{lstlisting}[style=semicoqstyle]
 $MatchListRel :=$
   $\lambda t~(y, t').~\forall (l:\List(X)).~t[0] \simeq l \rightarrow isRight~t[1] \rightarrow \MS{match}~y, l$
-      [$\false, \nil$ => $t'[0] \simeq \nil \land isRight~t'[1]$
-      |$\true, x \cons xs$ => $t'[0] \simeq xs \land t'[1] \simeq x$
-      |_,_ => $\False$
-      ].
+    [$\false, \nil$ => $t'[0] \simeq \nil \land isRight~t'[1]$
+    |$\true, x \cons xs$ => $t'[0] \simeq xs \land t'[1] \simeq x$
+    |_,_ => $\False$
+    ].
 \end{lstlisting}
 \end{lemma}
 
@@ -840,14 +840,12 @@ Because all parts of $\MS{AddStep}$ terminate in constant time, we get the const
 \begin{lstlisting}[style=semicoqstyle]
 $AddStepRel$ :=
   $\lambda~t~(y, t').~ \forall (a~b:\Nat).$
-      $t[0] \simeq a \rightarrow t[1] \simeq b \rightarrow$
-      $\MS{match}~y, b$
-      [$\Some\unit, O$ =>
-        $t'[0] \simeq a ~\land~ t'[1] \simeq b$
-      |$\None, S~b'$ =>
-        $t'[0] \simeq S~a ~\land~ t'[1] \simeq b'$
-      |_,_ => $\False$
-      ].
+    $t[0] \simeq a \rightarrow t[1] \simeq b \rightarrow$
+    $\MS{match}~y, b$
+    [$\Some\unit, O$=>$t'[0] \simeq a ~\land~ t'[1] \simeq b$
+    |$\None, S~b'$=>$t'[0] \simeq S~a ~\land~ t'[1] \simeq b'$
+    |_,_=>$\False$
+    ].
 \end{lstlisting}
 \end{lemma}
 
@@ -1018,12 +1016,12 @@ relation of $\MS{MultStep}$ is analogous to $\MS{AddStep}$.
 \begin{lstlisting}[style=semicoqstyle]
 $MultStepRel$ :=
   $\lambda~t~(y, t').~ \forall (c~m~n:\Nat).$
-      $t[0] \simeq m \rightarrow t[1] \simeq n \rightarrow t[2] \simeq c \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow$
-      $\MS{match}~y, m$
-      [$\Some\unit, O \Rightarrow t'[0] \simeq 0 ~\land~ t'[1] \simeq n ~\land~ t'[2] \simeq c ~\land~ isRight~t'[3] ~\land~ isRight~t'[4]$
-      |$\None, S~m' \Rightarrow t'[0] \simeq m' ~\land~ t'[1] \simeq n ~\land~ t'[2] \simeq n+c ~\land~ isRight~t'[3] ~\land~ isRight~t'[4]$
-      |_,_ => $\False$
-      ].
+    $t[0] \simeq m \rightarrow t[1] \simeq n \rightarrow t[2] \simeq c \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow$
+    $\MS{match}~y, m$
+    [$\Some\unit, O \Rightarrow t'[0] \simeq 0 ~\land~ t'[1] \simeq n ~\land~ t'[2] \simeq c ~\land~ isRight~t'[3] ~\land~ isRight~t'[4]$
+    |$\None, S~m' \Rightarrow t'[0] \simeq m' ~\land~ t'[1] \simeq n ~\land~ t'[2] \simeq n+c ~\land~ isRight~t'[3] ~\land~ isRight~t'[4]$
+    |_,_ => $\False$
+    ].
 \end{lstlisting}
 \end{lemma}
 Note that in the correctness Lemma~\ref{lem:Add_Step_Sem}, we also prove termination in constant runtime.  This is not true for $\MS{MultStep}$,
@@ -1070,13 +1068,9 @@ For brevity,  we omit the concrete runtime function here.
 \subsection{Mapping of Sum Functions}
 \label{sec:SumTM}
 
-Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function $(f+g) : X+Y \to Z$ by
-\begin{alignat*}{2}
-  (f+g)&~(\inl x)&~:=~& f(x) \\
-  (f+g)&~(\inr y)&~:=~& g(y).
-\end{alignat*}
-We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a machine $\MS{MapSum}$ that
-computes the function $(f+g)$.
+Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function $(f+g) : X+Y \to Z$ by $(f+g)(\inl x):=f(x)$ and
+$(f+g)(\inr y):=g(y)$.  We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a
+machine $\MS{MapSum}$ that computes the function $(f+g)$.
 
 First we have to define precisely, which machine has which alphabet.  We want to be as general as possible.  Let $X, Y$ be encodable over
 $\Sigma_X, \Sigma_Y$.  We assume $M_1, M_2 : \TM_{\Sigma_M}^{2+n}$, i.e.\ both machines have the same alphabet (if not, they can be alphabet-lifted)

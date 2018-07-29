@@ -187,6 +187,15 @@
   comment=[s]{(*}{*)},
 }
 
+%% Overlap #2 over phantom #1, e.g.
+%% % XX\phalign{abcdefg}{YY}XX \\
+%% % XXabcdefgXX
+%% gets
+%% XXYY     XX
+%% XXabcdefgXX
+%% Idea from https://tex.stackexchange.com/questions/212710/fill-space-created-by-phantom-with-other-text
+\newcommand{\phalign}[2]{\makebox[0pt][l]{\ensuremath{#2}}\phantom{#1}}
+
 \lstdefinestyle{semicoqstyle}{
   mathescape=true,
   keywordstyle=\textsf,
@@ -206,14 +215,19 @@
     {<}{{$\lt$}}{1}
     {>=}{{$\ge$}}{1}
     {>}{{$\gt$}}{1}
-    % {Match}{$\mathsf{Match}$}{5}
-    % {match}{$\textsf{match}$}{5}
-    % {If}{$\MS{If}$}{5}
-    % {if}{$\MS{if}$}{5}
-    % {Then}{$\MS{Then}$}{5}
-    % {then}{$\MS{then}$}{5}
-    % {Else}{$\MS{Else}$}{5}
-    % {else}{$\MS{else}$}{5}
+    {[}{{$[$}}{1}
+    {|}{{$|$}}{1}
+    {]}{{$]$}}{1}
+    {])}{{$])$}}{2}
+    {(}{{$($}}{1}
+    {)}{{$)$}}{1}
+    {match}{{$\MS{match}$}}5
+    {if}{{$\MS{if}$}}2
+    {then}{{$\phalign{\MS{else}}{{\MS{then}}}$}}3
+    {else}{{$\phalign{\MS{else}}{{\MS{else}}}$}}3
+    {If}{{$\MS{If}$}}2
+    {Then}{{$\phalign{\MS{Else}}{{\MS{Then}}}$}}4
+    {Else}{{$\phalign{\MS{Else}}{{\MS{Else}}}$}}4
   }
 }
 

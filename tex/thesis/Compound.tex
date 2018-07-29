@@ -19,7 +19,7 @@ Lemma~\ref{lem:TerminatesIn_monotone}.
 Using the alphabet-lift (Definition~\ref{def:LiftAlphabet}) and $\MS{Null}$ (Definition~\ref{def:Null}), it is easy to define an $n$-tape machine
 $\Nop : \TM_\Sigma^n$ for every alphabet $\Sigma$ and number of tapes $n$:
 \begin{definition}[$\Nop$]
-  $\Nop \defop \LiftTapes{\MS{Null}}{\nil}$.
+  $\Nop \defop \LiftTapes{\MS{Null}}{\nil}$
 \end{definition}
 Note that because $\MS{Null}$ is a 0-tape machine, and $\Nop$ is supposed to be an $n$-tape machine, the index-vector must be the vector
 $\nil : \Fin_n^0$.
@@ -156,9 +156,9 @@ $\Option(\Unit)$.  $\Some\unit$ means break out of the loop and $\None$ means re
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{CopySymbolsStep}~h :=$
   Match ($\LiftTapes{\MS{Read}}{\Vector{0}}$)
-        ($\lambda (s:\Option(\Sigma)).$ match $s$
+        ($\lambda (s:\Option(\Sigma)).~\MS{match}~s$
            [$\Some{x}$ =>
-             if $h(x)$
+             if$h(x)$
              then $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit}$ 
              else $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None}$ 
            |$\None$ => $\Return{\Nop}{\Some\unit}$ 
@@ -265,7 +265,7 @@ $\MS{MoveToSymbolStep}~h~f :=$
   Match ($\MS{Read}$)
         ($\lambda (s:\Option(\Sigma)).$ match $s$
            [$\Some{x}$ => 
-             if $h(x)$
+             if$h(x)$
              then $\Return{\bigl(\MS{Write}~(f~x)       \bigr)}{\Some\unit}$ 
              else $\Return{\bigl(\MS{WriteMove}~(f~x)~R \bigr)}{\None}$ 
            |$\None$ => $\Return{\Nop}{\Some\unit}$ 
