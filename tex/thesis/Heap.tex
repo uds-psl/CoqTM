@@ -1,52 +1,113 @@
 \chapter{Simulating a Heap Machine}
 \label{chap:heap}
 
-In this chapter, we use all techniques, to implement a Turing machine that simulates an abstract heap machine.  First, we briefly define the semantics
-of this abstract machine.  After that, we implement a Turing machine that simulates this machine and prove its correctness and polynomial runtime
-overhead.  We show that this machine reduces the halting problem of the heap machine to the halting problem of multi-tape Turing machines.
+\newcommand{\subst}[3]{{#1}^{#2}_{#3}}
+\newcommand{\Ter}{\MS{Ter}}
+\newcommand{\red}{\succ}
+
+
+In this chapter, we use all our developed techniques to implement a multi-tape Turing machine that simulates another abstract machine.  First, we
+define and motivate the semantics of this abstract machine.  After that, we implement the machine and prove its correctness and runtime.  We show that
+this machine reduces the halting problem of the abstract machine to the halting problem of multi-tape Turing machines.
 
 \section{Heap Machine}
+\label{sec:heap}
+
+The abstract machine we present here is a variant of the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  They show that states of their
+abstract machine can be refined to terms of the weak call-by-value $\lambda$-calculus.  From that it follows that the halting problem of closed terms
+of the weak $\lambda$-calculus reduces to the halting problem of their machine.  They also formalise their results in Coq.
+
+\subsubsection{Weak Call-By-Value $\lambda$-Calculus}
+\label{sec:L}
+
+To motivate the heap machine, we briefly define the language $L$, which implements a subset of the $\lambda$-calculus called weak call-by-value
+$\lambda$-calculus.  For more a more thoughtful treatment of this language, we refer to~\cite{ForsterSmolka17} and~\cite{KunzeEtAl:2018:Formal}.
+Terms of this language are De~Bruijn terms, and are inductively defined by:
+\begin{align*}
+  s,t,u,v &~:~\Ter~::=~ (n:\Nat) ~|~ s~t ~|~ \lambda s
+\end{align*}
+The language $L$ uses simple substitution:
+\begin{align*}
+  \subst kku &~:=~u \\
+  \subst nku &~:=~n &&\text{if}~n\neq k \\
+  \subst{(st)}ku &~:=~(\subst sku)(\subst tku) \\
+  \subst{(\lambda s)}ku &~:=~\lambda(\subst s{Sk}u)
+\end{align*}
+The reduction relation $s \red t$ is defined inductively on terms:
+\begin{mathpar}
+  \inferrule*{~}{(\lambda s) (\lambda t)\red\subst s0{\lambda t}} \and%
+  \inferrule*{s\red s'} {st\red s't} \and%
+  \inferrule* {t\red t'} {(\lambda s)t\red(\lambda s)t'}%
+\end{mathpar}
+
+
+\subsubsection{Heap Machine}
 \label{sec:heap-def}
 
-The abstract machine we present here is a variant of the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  Idem show that terms of the weak
-call-by-value lambda-calculus can be refined to states of said abstract machine and formalise their results in Coq.
-\todo{Should I include the compilation function $\gamma$ from lambda-terms to programs?}
-
-Values of this machines are closures.  A closure is a program and a pointer to the environment of bindings.  This environment is implemented as a
-linked list of closures.  Programs are lists of tokens, as defined below.
-\begin{definition}[Programs, closures, and heaps]
-  \label{def:Heap}
-  ~
+Instead of substituting expressions, the heap machine works with closures.  A closure is a program together with a variable binding.  Variable
+bindings are implemented as pointers to a linked list, called \emph{heap}, of closures.  Programs are lists of tokens:
+\begin{definition}[Program]
+  \label{def:Tok}
   \begin{alignat*}{2}
     &Var  &~:=~& \Nat \\
     &Tok  &~::=~& \MS{VAR}(n:Var) ~|~ \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET} \\
-    &Pro  &~:=~& \List(Tok) \\
+    &Pro  &~:=~& \List(Tok)
+  \end{alignat*}
+\end{definition}
+
+Programs essentially are linearised expressions of $L$.  The function $\gamma$ translates terms of $L$ to programs of the heap machine:
+\begin{definition}[Compiling $L$ expressions]
+  ~
+  \begin{alignat*}{2}
+    &\gamma&~n           &:= [\MS{VAR}~n] \\
+    &\gamma&~(s~t)       &:= \gamma~s \app \gamma~t \app [\MS{APP}] \\
+    &\gamma&~(\lambda s) &:= \MS{LAM} \cons \gamma~s
+  \end{alignat*}
+\end{definition}
+
+The heap is implemented as a list of heap entries.  A heap entry may be empty or contain a closure and a pointer to the next heap entry.  Pointers are
+implemented as list indices on the heap entry list.
+\begin{definition}[Closures and heaps]
+  \label{def:Heap}
+  ~
+  \begin{alignat*}{2}
     &Add  &~:=~& \Nat \\
     &Clos &~:=~& Add \times Pro \\
     &Entr &~:=~& \Option(Clos \times Add) \\
     &Heap &~:=~& \List(Entr)
   \end{alignat*}
-  We use the letters $n:Var$, $t:Tok$, $P,Q:Pro$, $a,b:Var$, $g:Clos$, $e:Entr$, and $H:Heap$.
 \end{definition}
+We use the letters $n:Var$, $t:Tok$, $P,Q:Pro$, $a,b:Var$, $g:Clos$, $e:Entr$, and $H:Heap$.
 
-The states of the abstract machine are triples:
+States of the abstract machine are triples of two closure lists and a heap:
 \[
-  \Conf := \List(Clos) \times \List(Clos) \times Heap.
+  (T, V, H) \quad:\quad \List(Clos) \times \List(Clos) \times Heap.
 \]
-The first list is the control stack and the second list is the value stack.  We define the small-step operational semantics of this machine as a
-binary relation $\succ$ between states of the machine.
-\begin{definition}[Semantics of the heap machine]
-  {\small
-    \begin{alignat*}{4}
-      & \left((a, (\MS{LAM} \cons P)) \cons T, V, H\right)                      &~\succ~& \left((a, P') \cons_{tr} T, (a,Q) \cons V, H\right)
-      \quad&& \text{if $\phi~P = \Some{(Q, P')}$} & \\
-      & \left((a, (\MS{APP} \cons P)) \cons T, g \cons (b, Q) \cons V, H\right) &~\succ~& \left((c, Q) \cons (a,P) \cons_{tr} T, V, H'\right)
-      \quad&& \text{if $put~H~\Some{(g,b)} = (c,H')$} \\
-      & \left((a, (\MS{VAR}(n) \cons P)) \cons T, V, H\right)                   &~\succ~& \left((a, P) \cons_{tr} T, g \cons V, H\right)
-      \quad&& \text{if $H[a,n]=\Some{g}$} &
-    \end{alignat*}
-  }
-  with $put~H~c := (\length{H}, H \app [c]) $.\\
+$T$ is called the control stack.  It contains the closures that the machine has to process.  The second stack $V$ is called the argument stack.  The
+$\MS{APP}$ command fetches the functions and arguments from that stack.
+
+
+We first explain what each rule does, and then define the reduction predicate\\$(T,V,H) \succ (T',V',H')$ formally.
+
+
+When the first closure on the control stack is $(a, \MS{\textbf{APP}} \cons P)$, the machine fetches two closures $g$ and
+$(b,Q)$ from the argument stack.  The closure $g$ corresponds to the argument of the application.  The second closure
+$(b,Q)$ corresponds to the called function, where $b$ is the pointer to environment in that the argument is free.  It binds the argument to
+$g$, by putting a new heap entry $(g,b)$ on the heap.  The heap machine continues executing $(c,Q)$ and the ``rest closure'' $(a,P)$, where
+$c$ is the pointer to the new heap entry.
+
+
+If the head control closure is $(a, \MS{\mathbf{LAM}} \cons P)$, the machine splits the linearised program $P$ into body $Q$ of the
+$\lambda$-expression and the rest program $P'$.  Then it pushes the closure of the rest program $(a,P')$ on the control stack, and the ``body
+closure'' $(a,Q)$ on the argument stack.  The splitting is realised with the function $\phi : Pro \to \Option(Pro \times Pro)$.  For example, {\small
+  \[
+    \phi[\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}; \MS{RET}; \MS{VAR}(1)] = \Some{([\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}], [\MS{VAR}(1)])}.
+  \]
+}%
+The first $\MS{RET}$ matches to the $\MS{LAM}$ in the program above, so it is part of the first partition.  $\phi$ is formally defined with a
+tail-recursive auxiliary function:
+\begin{definition}[$\phi$]
+  \label{def:jumpTarget}
   We define $\phi~P :=~ \phi'~0~\nil~P$ with the auxiliary function $\phi' : \Nat \to Pro \to Pro \to \Option(Pro \times Pro)$, which is defined by
   recursion on $P:Pro$.
   \begin{alignat*}{4}
@@ -54,47 +115,61 @@ binary relation $\succ$ between states of the machine.
     &\phi'&~(S~k)&~Q&~(\MS{RET} \cons P) &&~:=~& \phi'~k~(Q \app [\MS{RET}])~P \\
     &\phi'&~k    &~Q&~(\MS{LAM} \cons P) &&~:=~& \phi'~(S~k)~(Q \app [\MS{LAM}])~P \\
     &\phi'&~k    &~Q&~(t        \cons P) &&~:=~& \phi'~k~(Q \app [t])~P \\
-    &\phi'&~k    &~Q&~              \nil &&~:=~& \None \\
+    &\phi'&~k    &~Q&~              \nil &&~:=~& \None
   \end{alignat*}
-  The heap lookup function $H[a,n] : \Option(Clos)$ is defined by recursion on $n$.
+\end{definition}
+
+
+If the first token on the first closure of the control stack is $\MS{\mathbf{VAR}}(n)$, the machine looks up the
+$n$th entry in the environment on the heap at the address $a$.  Then, it pushes this closure to the value stack.  The function $lookup : Heap \to Add
+\to Var \to \Option(Clos)$ starts at the heap entry at the address $a$, and gets the $n$th entry. We write $H[a,n]$ for
+$lookup~H~a~n$.  The function is defined by recursion on $n$:
+\begin{definition}[$lookup$]
+  \label{def:lookup}
+  $H[a,n]$ is defined by recursion on $n$:
   \[
-    lookup~H~a~n :=
+    H[a,n] :=
     \begin{cases}
       \Some{g} & H[a]=\Some{\Some{(g,b)}} \land n=0 \\
-      lookup~H~b~(n-1) & H[a]=\Some{\Some{(g,b)}} \land n>0 \\
+      H[b,n-1] & H[a]=\Some{\Some{(g,b)}} \land n>0 \\
       \None & \text{else}
     \end{cases}
   \]
-  where $H[\cdot] : \Option(Entr)$ is the list lookup function.  We write $H[a,n] := lookup~H~n$. \\
-  The tail-recursion optimised cons operation $\cons_{tr}$ is defined as follows:
+  where $H[\cdot] : \Option(Entr)$ is the standard list lookup function.
+\end{definition}
+
+
+
+We formally define the reduction rules.  Note that there is no reduction rule for $\MS{RET}$, because the purpose of the token $\MS{RET}$ is solely to
+mark the end of the encoding of the body of a $\lambda$-expression.
+\begin{definition}[Semantics of the heap machine]
+  {\small
+    \begin{alignat*}{4}
+      & \left((a, (\MS{APP} \cons P)) \cons T, g \cons (b, Q) \cons V, H\right) &~\red~& \left((c, Q) \cons (a,P) \cons_{tr} T, V, H'\right)
+      \quad&& \text{if $put~H~\Some{(g,b)} = (c,H')$} \\
+      & \left((a, (\MS{LAM} \cons P)) \cons T, V, H\right)                      &~\red~& \left((a, P') \cons_{tr} T, (a,Q) \cons V, H\right)
+      \quad&& \text{if $\phi~P = \Some{(Q, P')}$} & \\
+      & \left((a, (\MS{VAR}(n) \cons P)) \cons T, V, H\right)                   &~\red~& \left((a, P) \cons_{tr} T, g \cons V, H\right)
+      \quad&& \text{if $H[a,n]=\Some{g}$} &
+    \end{alignat*}
+  }
+  with $put~H~c := (\length{H}, H \app [c]) $.\\
+  The tail-recursion optimised $\cons_{tr}$ is defined as follows:
   \begin{alignat*}{3}
     & (a, \nil) &~\cons_{tr}~& H &~:=~& H \\
     & (a, P   ) &~\cons_{tr}~& H &~:=~& (a, P) \cons H \qquad\text{if $P \neq \nil$}
   \end{alignat*}
+
+  We write $\red^k$ for the relational power (cf.\ Definition~\ref{def:pow}) and $\red^*$ for the reflexive transitive closure of $\red$ (cf.\
+  Definition~\ref{def:Kleene}).
 \end{definition}
 
-We write $\succ^k$ for the relational power (cf.\ Definition~\ref{def:pow}) and $\succ^*$ for the reflexive transitive closure of $\succ$ (cf.\
-Definition~\ref{def:Kleene}).
-
-The function $\phi$ matches $\MS{LAM}$ with $\MS{RET}$.  It splits the program into two parts, the first part is the ``body'' of a linearised lambda
-expression and the second part the rest of the program, for example:%
-{\small
-  \[
-    \phi[\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}; \MS{RET}; \MS{VAR}(1)] = \Some{([\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}], [\MS{VAR}(1)])}.
-  \]
-}%
-The first $\MS{RET}$ matches to the $\MS{LAM}$ in the program above, so it is part of the first partition.  When the heap machine has a $\MS{LAM}$
-token as first control token, it finds the rest of the program using $\phi$ and pushes the body on the control stack.
-
-When the first control token is $\MS{App}$, the machine fetches two closures from the value stack.  The first closure, $g$, corresponds to the
-parameter of the application.  The second closure, $(b,Q)$, corresponds to the called function.  The machine pushes $g$ on the heap.  After that it
-continues executing $Q$, by adding a new closure $(c,Q)$ to the control stack, where $c$ is the updated head of the heap.
-
-If the first control token is $\MS{VAR}(n)$, the machine looks up the $n$th entry in the environment on the heap at the address $a$, and pushes this
-closure to the value stack.
+The tail-recursion optimised cons ($\cons_{tr}$) makes sure that no empty closures are\\ pushed on a closure stack.
 
 
-\section{Implementation As Turing Machine}
+
+
+\section{Implementation of a Simulator}
 \label{sec:heap-implementation}
 
 First, we notice that all types in Definition~\ref{def:Heap}, except program Tokens ($Tok$), are encodable over canonical alphabets, according to
@@ -116,7 +191,7 @@ alphabet with $\Sigma_{\Option(X)}$.  Instead, we encode whether the output is $
 output is $\None$, the machine terminates in $\false$ and the output tape stays right.
 
 We define a machine $\MS{Step} : \TM(\Option(\Unit))$ (we specify the alphabet and the tape number later) that simulates steps of the heap machine.
-The tapes $0$, $1$, and $2$ encode the control stack, the value stack, and the heap, respectively.  If the heap machine does a step $s \succ s'$, then
+The tapes $0$, $1$, and $2$ encode the control stack, the value stack, and the heap, respectively.  If the heap machine does a step $s \red s'$, then
 if the tapes contain $s$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $s'$.  Otherwise, if $s$ is a terminating state,
 $\MS{Step}$ terminates in the partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we define
 $\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  We
@@ -246,6 +321,19 @@ this case, $\MS{Step}$ only needs to terminate in $\Some\unit$.
 \end{lemma}
 
 \todo{How to present runtime here?}
+
+\subsection{$\MS{JumpTarget}$}
+\label{sec:JumpTarget}
+
+\todo{I need to find a better name: This machine actually splits a program into two halves. It matches lambdas with returns and splits the program on the first unmatched return}
+
+The machine $\MS{JumpTarget}$ realises the function $\phi$.  $\phi$, as defined in Definition~\ref{def:Heap}, splits the program into two halves at
+the first $\MS{RET}$ token that does not match with a $\MS{LAM}$ token.
+
+First, we derive constructor and deconstructor machines for tokens.  As tokens are defined as the sum type of two encodable types, we only have to
+combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
+
+
 
 
 
