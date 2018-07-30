@@ -16,7 +16,6 @@ Local Arguments Encode_nat : simpl never.
 Section Nth.
 
   Variable (sig sigX : finType) (X : Type) (cX : codable sigX X).
-  (* Hypothesis (defX: inhabitedC sigX). *)
 
   Variable (retr1 : Retract (sigList sigX) sig) (retr2 : Retract sigNat sig) (retr3 : Retract (sigOption sigX ) sig).
   Local Instance retr_X_list : Retract sigX sig := ComposeRetract (Retract_sigList_X _) retr1.
@@ -34,7 +33,6 @@ Section Nth.
    *     reset x
    *     continue
    *   } else {
-   *     reset x
    *     x = None
    *     return
    *   }
@@ -43,7 +41,6 @@ Section Nth.
    *     x = Some x
    *     return
    *   } else {
-   *     reset x
    *     x = None
    *     return
    *   }

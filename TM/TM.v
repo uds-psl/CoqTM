@@ -763,7 +763,7 @@ Section Semantics.
 
   (** *** Termination/Runtime *)
 
-  (** A machine is said to "terminate in" a relation [T : Rel (tapes sig n) nat], if for every pair of input tape vectors [t] and step numbers [k], there exists an output configuration [cout] that [M] reaches from [t] in [k] steps. *)
+  (** A machine is said to "terminate in" a relation [T : Rel (tapes sig n) nat], if for every pair of input tape vectors [t] and step numbers [k] such that T t k, there exists an output configuration [cout] that [M] reaches from [t] in [k] steps. *)
 
   Definition tRel n := Rel (tapes sig n) nat.
 

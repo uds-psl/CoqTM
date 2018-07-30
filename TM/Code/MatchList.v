@@ -42,7 +42,7 @@ Section MatchList.
                    M1;; 
                    LiftTapes Skip_cons [|Fin0|];;
                    Return (LiftTapes (Move L;; Write (inl START)) [|Fin0|]) true
-                 | _ => Return Nop true (* invalid input *)
+                 | _ => Return Nop default (* invalid input *)
                  end).
 
 

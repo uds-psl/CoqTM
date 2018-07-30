@@ -336,13 +336,13 @@ Qed.
  *
  * Pseudocode:
  * c := 0
- * m' := m
  * while (m--) {
  *   ADD(n, c, c')
+ *   Reset c
  *   c := c'
- *   reset c'
+ *   Reset c'
  * }
- * reset m'
+ * Reset m'
  *)
 
 (*
@@ -353,7 +353,7 @@ Qed.
  * t1: n  (for Add: INP t0)
  * t2: c  (for Add: INP t1)
  * t3: c' (for Add: OUT t2)
- * t4:    (for Add: INT t4)
+ * t4:    (for Add: INT t3)
  *
  * if (m'--) {
  *   Add(n, c, c')

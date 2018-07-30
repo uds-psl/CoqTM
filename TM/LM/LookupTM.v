@@ -29,8 +29,8 @@ We could define [Lookup] over the alphabet [sigHeap], however, in the step machi
 There are (more than) three possible ways how to encode [nat] on the [Heap] alphabet [sigLookup]:
 
 - 1: as an adress of a closure in an entry
-- 2: as the "next" address of an entry
-- 3: as a variable of a token inside a closure of the closure input alphabet
+- 2: as a variable of a token inside a closure of the closure input alphabet
+- 3: as the "next" address of an entry
 
 [a] is stored in the second way and [n] in the third way.
 *)
@@ -42,16 +42,16 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
     ComposeRetract retr_nat_clos_ad retr_clos_lookup.
 
   (* No 2 *)
-  Definition retr_nat_heap_entry : Retract sigNat sigHeap :=
-    Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_Y _ (Retract_id _))).
-  Local Definition retr_nat_lookup_entry : Retract sigNat sigLookup :=
-    ComposeRetract retr_nat_heap_entry retr_heap_lookup.
-
-  (* No 3 *)
   Definition retr_nat_clos_var : Retract sigNat sigHClos :=
     Retract_sigPair_Y _ _.
   Definition retr_nat_lookup_clos_var : Retract sigNat sigLookup :=
     ComposeRetract retr_nat_clos_var retr_clos_lookup.
+
+  (* No 3 *)
+  Definition retr_nat_heap_entry : Retract sigNat sigHeap :=
+    Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_Y _ (Retract_id _))).
+  Local Definition retr_nat_lookup_entry : Retract sigNat sigLookup :=
+    ComposeRetract retr_nat_heap_entry retr_heap_lookup.
 
   
   (** Encoding of a closure on the heap alphabet *)
