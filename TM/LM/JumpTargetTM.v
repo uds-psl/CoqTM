@@ -185,7 +185,7 @@ Definition JumpTarget_Step : pTM sigPro^+ (option bool) 5 :=
                 | Some retAT =>
                   If (MatchNat ⇑ retr_nat_prog @ [|Fin2|])
                      (Return (App_ATok retAT @ [|Fin1; Fin4|]) None) (* continue *)
-                     (Return (ResetEmpty1 _ ⇑ retr_nat_prog @ [|Fin2|]) (Some true)) (* return true *)
+                     (Return (ResetEmpty1 _ @ [|Fin2|]) (Some true)) (* return true *)
                 | Some lamAT =>
                   Return (Constr_S ⇑ retr_nat_prog @ [|Fin2|];;
                           App_ATok lamAT @ [|Fin1; Fin4|])
