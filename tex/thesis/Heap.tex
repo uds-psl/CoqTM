@@ -261,12 +261,12 @@ visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupSt
   \centering
   \scriptsize
   \begin{tabular}{l||l|l|l|l|l|l|l|l}
-    Input      & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{CopyValue}$  & $\MS{Translate}$ & $\MS{Reset}$ & $\MS{Reset}$ \\ \hline
-    $0:H$      & $0:H$            &                       &                      &                 &                   &                  &              &              \\
-    $1:a$      & $1:\dashv$       &                       &                      &                 & $1:b$             & $0:b$            &              &              \\
-    $2:n$      &                  &                       &                      & $0:n'$          &                   &                  &              &              \\
-    $3:\dashv$ &                  &                       & $1: g$               &                 &                   &                  &              & $0:\dashv$   \\
-    $4:\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:b$             &                  & $0:\dashv$   &              \\
+    Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{CopyValue}$  & $\MS{Translate}$ & $\MS{Reset}$ & $\MS{Reset}$ \\ \hline
+    $0:H$       & $0:H$            &                       &                      &                 &                   &                  &              &              \\
+    $1:a$       & $1:~\dashv$      &                       &                      &                 & $1:b$             & $0:b$            &              &              \\
+    $2:n$       &                  &                       &                      & $0:n'$          &                   &                  &              &              \\
+    $3:~\dashv$ &                  &                       & $1: g$               &                 &                   &                  &              & $0:~\dashv$  \\
+    $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:b$             &                  & $0:~\dashv$  &              \\
   \end{tabular}
   \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=S~n'$.  It terminates in the partition $\None$.  The
     translation is from $f_{next}$ to $f_{add}$.}
@@ -276,12 +276,12 @@ visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupSt
   \centering
   \scriptsize
   \begin{tabular}{l||l|l|l|l|l|l|l}
-    Input      & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{Reset}$ & $\MS{Reset}$ & $\MS{Translate}$ \\ \hline
-    $0:H$      & $0:H$            &                       &                      &                 &              &              &                  \\
-    $1:a$      & $1:\dashv$       &                       &                      &                 &              &              &                  \\
-    $2:n$      &                  &                       &                      & $0:n'$          &              & $0:\dashv$   &                  \\
-    $3:\dashv$ &                  &                       & $1: g$               &                 &              &              & $0:g$            \\
-    $4:\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:\dashv$   &              &                  \\
+    Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{Reset}$ & $\MS{Reset}$ & $\MS{Translate}$ \\ \hline
+    $0:H$       & $0:H$            &                       &                      &                 &              &              &                  \\
+    $1:a$       & $1:~\dashv$      &                       &                      &                 &              &              &                  \\
+    $2:n$       &                  &                       &                      & $0:n'$          &              & $0:~\dashv$  &                  \\
+    $3:~\dashv$ &                  &                       & $1: g$               &                 &              &              & $0:g$            \\
+    $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:~\dashv$  &              &                  \\
   \end{tabular}
   \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0'$.  It terminates in the partition $\Some\true$.  The
     translation is from $f_{Clos'}$ to $f_{Clos}$.}
