@@ -299,7 +299,7 @@ visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupSt
     & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{var}}{\Vector{2}}) \\
     & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}}~\MS{Then}~ \MS{Return}~\bigl(
       \LiftTapes{\MS{CopyValue}}{\Vector{4;1}} \Seq
-      \LiftTapes{\MS{Translate}~f_{next}~f_{ad}}{\Vector{1}} \Seq \\
+      \LiftTapes{\MS{Translate}~f_{next}~f_{add}}{\Vector{1}} \Seq \\
     & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}~\MS{Then}~\MS{Return}\bigl(}
       \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq
       \LiftTapes{\MS{Reset}}{\Vector{3}}
@@ -367,14 +367,14 @@ the machine $AppTok$ that appends a token on a tape to $Q$.
     & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ATok)).~\MS{match}~y\\
     & \quad \phantom{\MS{Then}~(\lambda}~[~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{RET}}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{Var}}{\Vector{2}}) \\
     & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppAtok~\MS{RET}}}{\Vector{1;4}})}{\None} \\
-    & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Else}~~~ \Return{\Nop}{\Some\true} \\
+    & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Else}~~~ \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\Some\true} \\
     & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{LAM}}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{f_{Var}}{\Vector{2}} \Seq \MS{AppATok}~\MS{LAM})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{APP}}} \Rightarrow \Return{(\MS{AppATok}~\MS{APP})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\None} \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{f_{Var}}{\Vector{3}} \Seq \LiftTapes{\MS{AppTok}}{1;3;4})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda}~]) \\
     & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}.
   \end{alignat*}
-  % Ok version, without the hack for aligning the "=>"s
+  % Ok-ish version, without the hack for aligning the "=>"s
   % \begin{alignat*}{1}
   %   & \MS{SplitBodyStep} := \\
   %   & \quad \MS{If}~(\LiftTapes{\MS{MatchList}}{\Vector{0;3}}) \\
@@ -382,28 +382,77 @@ the machine $AppTok$ that appends a token on a tape to $Q$.
   %   & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ATok)).~\MS{match}~y\\
   %   & \quad \phantom{\MS{Then}~(\lambda}~[~ \Some{\MS{RET}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{RetrRgt \circ RetrList}{\Vector{2}}) \\
   %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppAtok~\MS{RET}}}{\Vector{1;4}})}{\None} \\
-  %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Else}~~~ \Return{\Nop}{\Some\true} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Else}~~~ \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\Some\true} \\
   %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{LAM}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{RetrRgt \circ RetrList}{\Vector{2}} \Seq \MS{AppATok}~\MS{LAM})}{\None} \\
   %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{APP}} \Rightarrow \Return{(\MS{AppATok}~\MS{APP})}{\None} \\
   %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \None \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{RetrRgt \circ RetrList}{\Vector{3}} \Seq \LiftTapes{\MS{AppTok}}{1;3;4})}{\None} \\
   %   & \quad \phantom{\MS{Then}~(\lambda}~]) \\
   %   & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}.
   % \end{alignat*}
-  We define $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$.
-  % \[
-  %   \MS{SplitBody} :=
-  %   \LiftTapes{\MS{ConstrNil}}{\Vector{2}} \Seq
-  %   \LiftBoth{\MS{ConstrO}}{f_{Var}}{\Vector{2}} \Seq
-  %   \If{\MS{SplitBodyLoop}}{\Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\true}}{\Return{\Nop}{\false}}
-  % \]
-  % Constr_nil _ @ [|Fin1|];;
-  % Constr_O ⇑ _ @ [|Fin2|];;
-  % If (JumpTarget_Loop)
-  %    (Return (Reset _ @ [|Fin2|]) true)
-  %    (Return Nop false)
+  We furthermore define $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$ and
+  \[
+    \MS{SplitBody} := \LiftTapes{\MS{ConstrNil}}{\Vector{1}} \Seq \LiftBoth{\MS{ConstrO}}{f_{Var}}{\Vector{2}} \Seq \MS{SplitBodyLoop}.
+  \]
 \end{definition}
 
-\todo{Other definitions, execution protocols, correctness, etc.}
+\begin{table}[t]
+  \centering
+  \begin{tabular}{l||l|l|l|l}
+    Input       & $\MS{MatchList}$ & $\MS{MatchTok}$ & $\MS{MatchNat}$ & $\MS{AppATok}~\MS{RET}$ \\ \hline
+    $0:P$       & $0:P'$           &                 &                 &                         \\
+    $1:Q$       &                  &                 &                 & $0: Q \app [\MS{RET}]$  \\
+    $2:k$       &                  &                 & $0: k'$         &                         \\
+    $3:~\dashv$ & $1: \MS{RET}$    & $0: \dashv$     &                 &                         \\
+    $4:~\dashv$ &                  &                 &                 & $1: \dashv$             \\
+  \end{tabular}
+  \caption{Execution protocol of $\MS{SplitBodyStep}$ for $P=\MS{RET} \cons P'$ and $k=S~k'$.  The step machine terminates in the partition $\None$,
+    thus the loop continues.  Note that tape $4$ is only used as an internal tape for $\MS{AppATok}$.}
+  \label{tab:exec-JumpTarget-RET}
+\end{table}
+
+\begin{table}
+  \centering
+  \begin{tabular}{l||l|l|l|l}
+    Input       & $\MS{MatchList}$ & $\MS{MatchTok}$ & $\MS{ConstrVar}$ & $\MS{AppTok}$              \\ \hline
+    $0:P$       & $0:P'$           &                 &                  &                            \\
+    $1:Q$       &                  &                 &                  & $0: Q \app [\MS{VAR}(n)]$  \\
+    $2:k$       &                  &                 &                  &                            \\
+    $3:~\dashv$ & $1: \MS{VAR}(n)$ & $0: n$          & $0: \MS{VAR}(n)$ & $1: \dashv$                \\
+    $4:~\dashv$ &                  &                 &                  & $2: \dashv$                \\
+  \end{tabular}
+  \caption{Execution protocol of $MS{SplitBodyStep}$ for $P=\MS{VAR}(n) \cons P'$.  The step machine terminates in the partition $\None$.}
+  \label{tab:exec-JumpTarget-VAR}
+\end{table}
+
+An execution protocol for the step machine are depicted in Table~\ref{tab:exec-JumpTarget-RET} and Table~\ref{tab:exec-JumpTarget-VAR}.
+
+Note that the step machine resets the tape for $k$ before it brakes out of the loop and returns $\true$.  Thus, no resetting is needed after the loop.
+The loop machine halts in $\true$ if and only if $\phi'~k~Q~P$ is not $\None$.  If it is $\Some{(P',Q')}$, then after the execution the first two
+tapes contain $P'$ and $Q$, and the other tapes are right.  However, $\phi'~k~Q~P = \None$, the correctness relation only commits that the machine
+terminates in the partition $\false$.
+\begin{lemma}[Correctness of $\MS{SplitBodyLoop}$]
+  $\MS{SplitBodyLoop} \Realise SplitBodyLoopRel$.
+  \begin{alignat*}{1}
+    & SplitBodyLoopRel := \\
+    &\quad \lambda t~(y, t').~\forall P~Q~k.~t[0] \simeq P \rightarrow t[1] \simeq Q \rightarrow t[2] \simeq k \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow \\
+    &\quad\quad \MS{if}~y~\MS{then}~\exists P'~Q'.~ \phi'~k~Q~P = \Some{(Q', P')} \land \\
+    &\quad\quad \phantom{\MS{if}~y~\MS{then}}~t'[0] \simeq P' \land t'[1] \simeq Q' \land \forall(i:\Fin_3).~isRigth~t'[2+i] \\
+    &\quad\quad \MS{else}~\phi'~k~Q~P=\None.
+\end{alignat*}
+\end{lemma}
+
+Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$.
+\begin{lemma}[Correctness of $\MS{SplitBodyLoop}$]
+  $\MS{SplitBody} \Realise SplitLoopRel$ with
+  \begin{alignat*}{1}
+    & SplitBodyRel := \\
+    &\quad \lambda t~(y, t').~\forall P.~t[0] \simeq P \rightarrow isRigth~t[1] \rightarrow (\forall(i:\Fin_3).~isRigth~t[2+i]) \rightarrow \\
+    &\quad\quad \MS{if}~y~\MS{then}~\exists P'~Q.~ \phi~P = \Some{(Q, P')} \land \\
+    &\quad\quad \phantom{\MS{if}~y~\MS{then}}~t'[0] \simeq P' \land t'[1] \simeq Q \land \forall(i:\Fin_3).~isRigth~t'[2+i] \\
+    &\quad\quad \MS{else}~\phi~P=\None.
+\end{alignat*}
+\end{lemma}
+
 
 
 \subsection{Simulator}
@@ -414,8 +463,7 @@ We define a machine $\MS{Step} : \TM(\Option(\Unit))$ (we specify the alphabet a
 The tapes $0$, $1$, and $2$ encode the control stack, the argument stack, and the heap, respectively.  If the heap machine does a step $s \red s'$,
 then if the tapes contain $s$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $s'$.  Otherwise, if $s$ is a terminating state,
 $\MS{Step}$ terminates in the partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we define
-$\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  We
-include execution protocols but omit definitions of machines and correctness relations, as they can be derived from the execution protocols.  This
+$\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  This
 means that we prove that the halting problem of the heap machine reduces to the halting problem of $n$-tape Turing machines.
 
 
