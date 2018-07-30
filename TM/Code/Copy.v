@@ -467,7 +467,9 @@ Section Move.
             isRight tout[@Fin0]
         ).
 
-  Lemma ResetEmpty_Sem : ResetEmpty ⊨c(1) ResetEmpty_Rel.
+  Definition ResetEmpty_steps := 1.
+
+  Lemma ResetEmpty_Sem : ResetEmpty ⊨c(ResetEmpty_steps) ResetEmpty_Rel.
   Proof.
     eapply RealiseIn_monotone.
     { unfold ResetEmpty. repeat TM_Correct. }
@@ -490,7 +492,9 @@ Section Move.
             isRight tout[@Fin0]
         ).
 
-  Lemma ResetEmpty1_Sem : ResetEmpty1 ⊨c(3) ResetEmpty1_Rel.
+  Definition ResetEmpty1_steps := 3.
+
+  Lemma ResetEmpty1_Sem : ResetEmpty1 ⊨c(ResetEmpty1_steps) ResetEmpty1_Rel.
   Proof.
     eapply RealiseIn_monotone.
     { unfold ResetEmpty1. repeat TM_Correct. }

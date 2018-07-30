@@ -185,7 +185,7 @@ Definition JumpTarget_Step : pTM sigPro^+ (option bool) 5 :=
                 | Some retAT =>
                   If (MatchNat ⇑ retr_nat_prog @ [|Fin2|])
                      (Return (App_ATok retAT @ [|Fin1; Fin4|]) None) (* continue *)
-                     (Return Nop (Some true)) (* return true *)
+                     (Return (ResetEmpty1 _ ⇑ retr_nat_prog @ [|Fin2|]) (Some true)) (* return true *)
                 | Some lamAT =>
                   Return (Constr_S ⇑ retr_nat_prog @ [|Fin2|];;
                           App_ATok lamAT @ [|Fin1; Fin4|])
@@ -215,7 +215,7 @@ Definition JumpTarget_Step_Rel : pRel sigPro^+ (option bool) 5 :=
         | Some true, O => (* return true *)
           tout[@Fin0] ≃ P /\
           tout[@Fin1] ≃ Q /\
-          tout[@Fin2] ≃ 0
+          isRight tout[@Fin2]
         | None, S k' => (* continue *)
           tout[@Fin0] ≃ P /\
           tout[@Fin1] ≃ Q ++ [retT] /\
@@ -249,6 +249,7 @@ Proof.
   { unfold JumpTarget_Step. repeat TM_Correct.
     - eapply RealiseIn_Realise. apply MatchTok_Sem.
     - apply App_ATok_Realise.
+    - eapply RealiseIn_Realise. apply ResetEmpty1_Sem with (X := nat).
     - apply App_ATok_Realise.
     - apply App_ATok_Realise.
     - eapply RealiseIn_Realise. apply Constr_varT_Sem.
@@ -269,8 +270,8 @@ Proof.
           modpon HApp.
           repeat split; auto.
         }
-        { (* k = 0 *) rename H into HMatchNat.
-          modpon HMatchNat. destruct k as [ | k']; auto; modpon HMatchNat.
+        { (* k = 0 *) rename H into HMatchNat. rename H0 into HReset.
+          modpon HMatchNat. destruct k as [ | k']; auto; modpon HMatchNat. modpon HReset .
           repeat split; auto.
         }
       }
@@ -302,7 +303,7 @@ Local Definition JumpTarget_Step_steps_MatchTok (Q: Pro) (k: nat) (t: Tok) :=
   | retT =>
     match k with
     | S _ => 1 + MatchNat_steps + App_ATok_steps Q retAT
-    | 0 => 1 + MatchNat_steps
+    | 0 => 2 + MatchNat_steps + ResetEmpty1_steps
     end
   | lamT => 1 + Constr_S_steps + App_ATok_steps Q lamAT
   | appT => App_ATok_steps Q appAT
@@ -337,6 +338,7 @@ Proof.
     - eapply RealiseIn_Realise. apply MatchTok_Sem.
     - eapply RealiseIn_TerminatesIn. apply MatchTok_Sem.
     - apply App_ATok_Terminates.
+    - eapply RealiseIn_TerminatesIn. apply ResetEmpty1_Sem with (X := nat).
     - apply App_ATok_Terminates.
     - apply App_ATok_Terminates.
     - eapply RealiseIn_Realise. apply Constr_varT_Sem.
@@ -357,7 +359,7 @@ Proof.
         exists MatchNat_steps.
         destruct k as [ | k'].
         - (* k = 0 *)
-          exists 0. repeat split; try omega.
+          exists ResetEmpty1_steps. repeat split; try omega.
           intros tmid2 bMatchNat (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct bMatchNat; auto.
         - (* k = S k' *)
           exists (App_ATok_steps Q retAT). repeat split; try omega.
@@ -378,16 +380,27 @@ Qed.
 
 
 
-Fixpoint jumpTarget_k (k:nat) (Q:Pro) (P:Pro) : nat :=
+Fixpoint jumpTarget_k (k:nat) (P:Pro) : nat :=
   match P with
   | retT :: P' => match k with
                  | 0 => 0
-                 | S k' => jumpTarget_k k' (Q++[retT]) P'
+                 | S k' => jumpTarget_k k' P'
                  end
-  | lamT :: P' => jumpTarget_k (S k) (Q++[lamT]) P'
-  | t :: P'    => jumpTarget_k k (Q++[t]) P' (* either [varT n] or [appT] *)
+  | lamT :: P' => jumpTarget_k (S k) P'
+  | t :: P'    => jumpTarget_k k P' (* either [varT n] or [appT] *)
   | []         => k
   end.
+
+Goal forall k P, jumpTarget_k k P <= k + |P|.
+Proof.
+  intros k P. revert k. induction P as [ | t P IH]; intros; cbn in *.
+  - omega.
+  - destruct t; cbn.
+    + rewrite IH. omega.
+    + rewrite IH. omega.
+    + rewrite IH. omega.
+    + destruct k. omega. rewrite IH. omega.
+Qed.
 
 
 Definition JumpTarget_Loop := WHILE JumpTarget_Step.
@@ -406,12 +419,11 @@ Definition JumpTarget_Loop_Rel : pRel sigPro^+ bool 5 :=
         jumpTarget k Q P = Some (Q', P') /\
         tout[@Fin0] ≃ P' /\
         tout[@Fin1] ≃ Q' /\
-        tout[@Fin2] ≃ jumpTarget_k k Q P /\
+        isRight tout[@Fin2] /\
         isRight tout[@Fin3] /\ isRight tout[@Fin4]
       | false =>
         jumpTarget k Q P = None
       end.
-
 
 
 
@@ -509,10 +521,7 @@ Qed.
 Definition JumpTarget : pTM sigPro^+ bool 5 :=
   Constr_nil _ @ [|Fin1|];;
   Constr_O ⇑ _ @ [|Fin2|];;
-  If (JumpTarget_Loop)
-     (Return (Reset _ @ [|Fin2|]) true)
-     (Return Nop false)
-.
+  JumpTarget_Loop.
 
 
 Definition JumpTarget_Rel : pRel sigPro^+ bool 5 :=
@@ -538,34 +547,21 @@ Proof.
   eapply Realise_monotone.
   { unfold JumpTarget. repeat TM_Correct.
     - apply JumpTarget_Loop_Realise.
-    - apply Reset_Realise with (X := nat).
   }
   {
     intros tin (yout, tout) H. cbn. intros P HEncP HOut HInt.
-    TMSimp ( unfold sigPro, sigTok in * ). rename H into HWriteNil, H0 into HWriteO, H1 into HIf.
-    modpon HWriteNil. modpon HWriteO.
-    destruct HIf; TMSimp.
-    { (* Then, i.e. [jumpTarget k Q P = Some (Q', P') *) rename H into HLoop, H0 into HReset.
-      modpon HLoop. destruct HLoop as (P'&Q'&HLoop); modpon HLoop.
-      modpon HReset. do 2 eexists; repeat split; eauto. intros i; destruct_fin i; TMSimp_goal; auto.
-    }
-    { (* Else, i.e. [jumpTarget k Q P = None *)
-      now modpon H.
-    }
+    TMSimp ( unfold sigPro, sigTok in * ). rename H into HWriteNil, H0 into HWriteO, H1 into HLoop.
+    modpon HWriteNil. modpon HWriteO. modpon HLoop.
+    destruct yout.
+    - destruct HLoop as (P'&Q'&HLoop); modpon HLoop. do 2 eexists; repeat split; eauto.
+      intros i; destruct_fin i; TMSimp_goal; auto.
+    - eauto.
   }
 Qed.
 
 
-(* Steps after [JumpTarget_Loop] depend on the output of [JumpTarget_Loop]. *)
-Local Definition JumpTarget_steps_Loop (P : Pro) :=
-  match jumpTarget 0 nil P with
-  | None => 0 (* Nop *)
-  | Some _ => Reset_steps _ (jumpTarget_k 0 nil P)
-  end.
-
-
 Definition JumpTarget_steps (P : Pro) :=
-  3 + Constr_nil_steps + Constr_O_steps + JumpTarget_Loop_steps P nil 0 + JumpTarget_steps_Loop P.
+  3 + Constr_nil_steps + Constr_O_steps + JumpTarget_Loop_steps P nil 0.
 
 
 Definition JumpTarget_T : tRel sigPro^+ 5 :=
@@ -581,25 +577,16 @@ Lemma JumpTarget_Terminates : projT1 JumpTarget ↓ JumpTarget_T.
 Proof.
   eapply TerminatesIn_monotone.
   { unfold JumpTarget. repeat TM_Correct.
-    - apply JumpTarget_Loop_Realise.
     - apply JumpTarget_Loop_Terminates.
-    - apply Reset_Terminates with (X := nat).
   }
   {
     intros tin k (P&HEncP&Hout&HInt&Hk). unfold JumpTarget_steps in Hk.
-    exists (Constr_nil_steps), (1 + Constr_O_steps + 1 + JumpTarget_Loop_steps P nil 0 + JumpTarget_steps_Loop P).
+    exists (Constr_nil_steps), (1 + Constr_O_steps + 1 + JumpTarget_Loop_steps P nil 0).
     cbn; repeat split; try omega.
     intros tmid () (HWrite&HWriteInj); TMSimp. modpon HWrite.
-    exists (Constr_O_steps), (1 + JumpTarget_Loop_steps P nil 0 + JumpTarget_steps_Loop P).
+    exists (Constr_O_steps), (1 + JumpTarget_Loop_steps P nil 0).
     cbn; repeat split; try omega.
     unfold sigPro in *. intros tmid1 () (HWrite'&HWriteInj'); TMSimp. modpon HWrite'.
-    exists (JumpTarget_Loop_steps P nil 0), (JumpTarget_steps_Loop P).
-    TMSimp. cbn; repeat split; try omega. cbn in *.
-    { hnf. do 3 eexists; repeat split; unfold sigPro in *; unfold eqType_X in *; cbn in *; TMSimp_goal; eauto. }
-    intros tmid2 ymid HLoop. modpon HLoop. destruct ymid.
-    - (* true *) destruct HLoop as (P'&Q'&HLoop); modpon HLoop. eexists; repeat split; eauto.
-      setoid_rewrite Reset_steps_comp.
-      unfold JumpTarget_steps_Loop. now rewrite HLoop.
-    - (* false *) omega.
+    hnf. do 3 eexists; repeat split; unfold eqType_X, sigPro in *; cbn in *; TMSimp_goal; eauto.
   }
 Qed.
