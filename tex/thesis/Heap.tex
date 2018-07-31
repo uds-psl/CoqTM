@@ -45,7 +45,7 @@ The reduction relation $s \red t$ is defined inductively on terms:
 \label{sec:heap-def}
 
 Instead of substituting expressions, the heap machine works with closures.  A closure is a program together with a variable binding.  Variable
-bindings are implemented as pointers to a linked list, called \emph{heap}, of closures.  Programs are lists of tokens:
+bindings are implemented as pointers to a linked list of closures, called \emph{heap}.  Programs are lists of tokens:
 \begin{definition}[Program]
   \label{def:Tok}
   \begin{alignat*}{2}
@@ -87,7 +87,7 @@ $T$ is called the control stack.  It contains the closures that the machine has 
 $\MS{APP}$ command fetches the functions and arguments from that stack.
 
 
-We first explain what each rule does, and then define the reduction predicate\\$(T,V,H) \succ (T',V',H')$ formally.
+We first explain what each rule of the reduction predicate $(T,V,H) \succ (T',V',H')$ does, and then we define it formally.
 
 
 When the first closure on the control stack is $(a, \MS{\textbf{APP}} \cons P)$, the machine fetches two closures $g$ and
@@ -114,7 +114,7 @@ tail-recursive auxiliary function:
     &\phi'&~0~   &~Q&~(\MS{RET} \cons P) &&~:=~& \Some{(Q,P')} \\
     &\phi'&~(S~k)&~Q&~(\MS{RET} \cons P) &&~:=~& \phi'~k~(Q \app [\MS{RET}])~P \\
     &\phi'&~k    &~Q&~(\MS{LAM} \cons P) &&~:=~& \phi'~(S~k)~(Q \app [\MS{LAM}])~P \\
-    &\phi'&~k    &~Q&~(t        \cons P) &&~:=~& \phi'~k~(Q \app [t])~P \\
+    &\phi'&~k    &~Q&~(t        \cons P) &&~:=~& \phi'~k~(Q \app [t])~P \qquad \text{if $t \neq \MS{RET} \neq \MS{LAM}$} \\
     &\phi'&~k    &~Q&~              \nil &&~:=~& \None
   \end{alignat*}
 \end{definition}
@@ -139,8 +139,7 @@ $lookup~H~a~n$.  The function is defined by recursion on $n$:
 \end{definition}
 
 
-
-We formally define the reduction rules.  Note that there is no reduction rule for $\MS{RET}$, because the purpose of the token $\MS{RET}$ is solely to
+We formally define the reduction rules.  Note that there is no reduction rule for the token $\MS{RET}$, because the purpose of $\MS{RET}$ is solely to
 mark the end of the encoding of the body of a $\lambda$-expression.
 \begin{definition}[Semantics of the heap machine]
   {\small
@@ -160,12 +159,12 @@ mark the end of the encoding of the body of a $\lambda$-expression.
     & (a, P   ) &~\cons_{tr}~& H &~:=~& (a, P) \cons H \qquad\text{if $P \neq \nil$}
   \end{alignat*}
 
-  We write $\red^k$ for the relational power (cf.\ Definition~\ref{def:pow}) and $\red^*$ for the reflexive transitive closure of $\red$ (cf.\
-  Definition~\ref{def:Kleene}).
+  We write for $\red^*$ for the reflexive transitive closure of $\red$ (cf.\ Definition~\ref{def:Kleene}) and $\red^k$ for the relational power (cf.\
+  Definition~\ref{def:pow}).
 \end{definition}
 
-The tail-recursion optimised cons ($\cons_{tr}$) makes sure that no empty closures are\\ pushed on a closure stack.
-
+The tail-recursion optimised cons ($\cons_{tr}$) makes sure that no closures with empty closures are\\ pushed on a closure stack.  This is an
+optimisation for space usage with tail recursive programs.
 
 
 
@@ -176,16 +175,16 @@ First, we notice that all types in Definition~\ref{def:Heap}, except program Tok
 Definition~\ref{def:basic-encodings}.
 \begin{definition}[Encoding of heaps]
   \label{def:Heap-encode}
-  The type of tokens ($Tok$) is isomorphic to the sum of $ATok := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $\Nat$.  $ATok$ is encodable on itself
-  (since it is finite), and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Tok$ is encodable on
-  $\Sigma_{Tok} := \Sigma_{ATok+\Nat}$.  All other types are encodable according to Definition~\ref{def:basic-encodings}.
+  The type of tokens ($Tok$) is isomorphic to the sum of $ATok := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $Var$.  $ATok$ is encodable on itself (since
+  it is finite), and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Tok$ is encodable on $\Sigma_{Tok} := \Sigma_{ATok+\Nat}$.
+  All other types are encodable according to Definition~\ref{def:basic-encodings}.
   For completeness, the alphabets are:\\
   $\Sigma_{Pro} := \Sigma_{\List(Tok)}$, $\Sigma_{Add} := \Sigma_\Nat$, $\Sigma_{Clos}:=\Sigma_{Add \times Pro}$,
   $\Sigma_{Entr} := \Sigma_{\Option(Clos \times Add)}$, and $\Sigma_{Heap} := \Sigma_{\List(Entr)}$.
 \end{definition}
 
-First, we derive constructor and deconstructor machines for tokens.  As tokens are defined as the sum type of two encodable types ($ATok$ and $\Nat$),
-we only have to combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
+First, we derive constructor and deconstructor machines for tokens.  As the type of tokens essentially is the sum of two encodable types ($ATok$ and
+$\Nat$), we can combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
 \begin{definition}[$\MS{MatchTok}$]
   $\MS{MatchTok} : \TM_{\Sigma^+_{Tok}}^1(\Option(ATok))$ is defined by
   \begin{alignat*}{2}
@@ -200,9 +199,9 @@ we only have to combine constructors and deconstructors from Section~\ref{sec:co
 \begin{lstlisting}[style=semicoqstyle]
 $MatchTokRel :=$
   $\lambda t~(y, t').~\forall (T:Tok).~ t[0] \simeq s \rightarrow \MS{match}~y,T$
-      [$\Some{\MS{APP}}, APP \Rightarrow isRight~t'[0]$
-      |$\Some{\MS{LAM}}, LAM \Rightarrow isRight~t'[0]$
-      |$\Some{\MS{RET}}, RET \Rightarrow isRight~t'[0]$
+      [$\Some{\MS{APP}}, \MS{APP} \Rightarrow isRight~t'[0]$
+      |$\Some{\MS{LAM}}, \MS{LAM} \Rightarrow isRight~t'[0]$
+      |$\Some{\MS{RET}}, \MS{RET} \Rightarrow isRight~t'[0]$
       |$\None, n \Rightarrow t'[0] \simeq n$
       |_,_=>$\False$
       ].
@@ -216,24 +215,26 @@ $\MS{Nth'}$ that saves the list, but not the index.  The second change is that f
 alphabet with $\Sigma_{\Option(X)}$.  Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the
 output is $\None$, the machine terminates in $\false$ and the output tape stays right.
 
+After we have defined and verified machines that compute $\phi$ and $lookup$, we define a machine $\MS{Step}$ that simulates a single step of the heap
+machine.
+
 
 \subsection{$\MS{Lookup}$}
 \label{sec:Lookup}
 
 The machine $\MS{Lookup} : \TM_{\Sigma^+}^5(\Bool)$ realises the heap $lookup$ function.  Note, that the heap is just a linked list of closures, where
-the pointers in this linked lists are indices.  It uses that machine $\MS{Nth}' : \TM_{\Sigma^+}^4(\Bool)$, which is $\MS{Nth}$ from
-Section~\ref{sec:Nth} with the two changes mentioned above.
+the pointers are indices.  It uses the machine $\MS{Nth}' : \TM_{\Sigma^+}^4(\Bool)$ which is like $\MS{Nth}$ from Section~\ref{sec:Nth}, but with the
+two changes mentioned above.
 
-First we consider the alphabet of $\MS{Lookup}$.  We can encode closures on the heap alphabet $\Sigma_{Heap}$, but when $\MS{Step}$ calls $H[a,n]$,
-$a$ is the current heap address from the first closure on the control stack, and $n$ is the variable the first variable token of the program of that
-closure.  Thus, $a$ and $n$ are encoded on a different closure alphabet, than the closures on the heap.  We define $\MS{Lookup}$ on an alphabet
-$\Sigma$, with retractions $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$ and $f_{Clos} : \Sigma_{Clos} \hookrightarrow \Sigma$.  The second
-retraction correspond to the encoding of $a$ and $n$.  The retraction
+First we consider the alphabet of $\MS{Lookup}$.  We can encode closures on the heap alphabet $\Sigma_{Heap}$.  However when $\MS{Step}$ calls
+$H[a,n]$, $a$ and $n$ are encoded alphabet of the closures in the stack.  Thus, we define $\MS{Lookup}$ on an alphabet $\Sigma$, with retractions
+$f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$ and $f_{Clos} : \Sigma_{Clos} \hookrightarrow \Sigma$.  The second retraction correspond to the
+closure alphabet where $a$ and $n$ are encoded.  The retraction
 \[ f_{Clos'} : \Sigma_{Clos} \hookrightarrow \Sigma := RetrFst \circ RetrOpt \circ RetrList \circ f_{Heap} \]%
 is the canonical retraction of closures from the heap.
 
 There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depending on whether the number is an heap pointer in the heap alphabet,
-or a variable or heap pointer from the stack alphabet.
+or a variable or heap pointer from the stack alphabet or heap alphabet.
 \begin{enumerate}
 \item Address of the pointer of an heap on the stack alphabet:
   \[
@@ -257,7 +258,7 @@ and makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ resets the t
 and returns $\true$.  Else it translates $b$ from $f_{next}$ to $f_{add}$, moves it to the tape that contained $a$, and repeats the loop.  We
 visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~\ref{tab:exec-LookupStep-0}.
 
-\begin{table}[t]
+\begin{table}[t!]
   \centering
   \scriptsize
   \begin{tabular}{l||l|l|l|l|l|l|l|l}
@@ -272,25 +273,28 @@ visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupSt
     translation is from $f_{next}$ to $f_{add}$.}
   \label{tab:exec-LookupStep-S}
 \end{table}
-\begin{table}[t]
+\begin{table}[t!]
   \centering
   \scriptsize
   \begin{tabular}{l||l|l|l|l|l|l|l}
     Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{Reset}$ & $\MS{Reset}$ & $\MS{Translate}$ \\ \hline
     $0:H$       & $0:H$            &                       &                      &                 &              &              &                  \\
     $1:a$       & $1:~\dashv$      &                       &                      &                 &              &              &                  \\
-    $2:n$       &                  &                       &                      & $0:n'$          &              & $0:~\dashv$  &                  \\
+    $2:n$       &                  &                       &                      & $0:0$           &              & $0:~\dashv$  &                  \\
     $3:~\dashv$ &                  &                       & $1: g$               &                 &              &              & $0:g$            \\
     $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:~\dashv$  &              &                  \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0'$.  It terminates in the partition $\Some\true$.  The
+  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0$.  It terminates in the partition $\Some\true$.  The
     translation is from $f_{Clos'}$ to $f_{Clos}$.}
   \label{tab:exec-LookupStep-0}
 \end{table}
 
-\begin{definition}[$\MS{LookupStep}$]
-  \label{def:Lookup_Step}
-  ~
+%% BUG! The extra space between the definition and align is a bug! It has something to with tables.
+%% When I move the tables together to this page, each \[...\] retractions gets this awful extra space!!!
+%% THIS SUCKS!!!
+% \begin{definition}[$\MS{LookupStep}$]
+%   \label{def:Lookup_Step}
+  We define the machine $\MS{LookupStep} : \TM_{\Sigma^+}^5(\Option(\Bool))$.
   \begin{align*}
     & \MS{LookupStep} := \\
     & \quad \MS{If}~(\MS{Nth'}~f_{heap}~f_{add}) \\
@@ -306,23 +310,23 @@ visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupSt
       \bigr)~{\None} \\
     & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}}~\MS{Else}~~~ \MS{Return}~\bigl(
       \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq
-      \LiftTapes{\MS{Reset}}{\Vector{2}}
+      \LiftTapes{\MS{Reset}}{\Vector{2}} \Seq \\
+    & \quad \phantom{\phantom{\MS{Then}~\MS{Then}~\MS{Then}}~\MS{Else}~~~ \MS{Return}~\bigl(}
+      \LiftTapes{\MS{Translate}~f_{Clos'}~f_{Clos}}{\Vector{3}}
       \bigr)~{\Some\true} \\
     & \quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{\Nop}{\Some\false} \\
     & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}
   \end{align*}
-\end{definition}
+% \end{definition}
 
 The step machine terminates in $\Some\false$ in two cases.  Either the list lookup failed, or it returned the empty heap entry $H[a]=\Some\None$.  In
-the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}), $\MS{LookupStep}$ resets the afterwards unneeded tapes, especially $n$, of
-which the value may have been overwritten.
+the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}), $\MS{LookupStep}$ resets the afterwards unneeded tapes.
 
 Because no initialisation or clean-up is needed before or after the loop, we can define $\MS{Lookup} := \While~\MS{LookupStep}$.  The correctness
 relation of $\MS{Lookup}$ says that if it terminated in the partition $\true$, we have $H[a,n] = \Some{g}$ for some closure $g$, and tape~$3$ contains
 $g$ w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still contains $H$ and all other tapes are reseted.  In case $\MS{Lookup}$
-terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there two possible reasons for that: Either $H[a]=\None$, or
-$H[a]=\Some\None$.  We do not distinct these two failure cases, because we then know that the state of the heap machine is a terminating state.  In
-this case, $\MS{Step}$ only needs to terminate in $\Some\unit$.
+terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there two possible reasons for that: Either $H[a]=\None$ or
+$H[a]=\Some\None$, but we do not distinct these two failure cases.
 
 \begin{lemma}[Correctness of $\MS{Lookup}$]
   \label{lem:Lookup_Realise}
@@ -424,11 +428,11 @@ the machine $AppTok$ that appends a token on a tape to $Q$.
   \label{tab:exec-JumpTarget-VAR}
 \end{table}
 
-An execution protocol for the step machine are depicted in Table~\ref{tab:exec-JumpTarget-RET} and Table~\ref{tab:exec-JumpTarget-VAR}.
+Execution protocols for the step machine are depicted in Table~\ref{tab:exec-JumpTarget-RET} and Table~\ref{tab:exec-JumpTarget-VAR}.
 
 Note that the step machine resets the tape for $k$ before it brakes out of the loop and returns $\true$.  Thus, no resetting is needed after the loop.
 The loop machine halts in $\true$ if and only if $\phi'~k~Q~P$ is not $\None$.  If it is $\Some{(P',Q')}$, then after the execution the first two
-tapes contain $P'$ and $Q$, and the other tapes are right.  However, $\phi'~k~Q~P = \None$, the correctness relation only commits that the machine
+tapes contain $P'$ and $Q$, and the other tapes are right.  If $\phi'~k~Q~P = \None$, the correctness relation only commits that the machine
 terminates in the partition $\false$.
 \begin{lemma}[Correctness of $\MS{SplitBodyLoop}$]
   $\MS{SplitBodyLoop} \Realise SplitBodyLoopRel$.
@@ -460,11 +464,11 @@ Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$.
 
 
 We define a machine $\MS{Step} : \TM(\Option(\Unit))$ (we specify the alphabet and the tape number later) that simulates steps of the heap machine.
-The tapes $0$, $1$, and $2$ encode the control stack, the argument stack, and the heap, respectively.  If the heap machine does a step $s \red s'$,
-then if the tapes contain $s$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $s'$.  Otherwise, if $s$ is a terminating state,
-$\MS{Step}$ terminates in the partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we define
-$\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  This
-means that we prove that the halting problem of the heap machine reduces to the halting problem of $n$-tape Turing machines.
+The tapes $0$, $1$, and $2$ encode the control stack $T$, the argument stack $V$, and the heap $H$, respectively.  If the heap machine does a step
+$(T,V,H) \red (T',V',H')$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $T',V',H'$.  Otherwise, if $(T,V,H)$ is a terminating
+state, $\MS{Step}$ terminates in the partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we
+define $\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.
+This means that we prove that the halting problem of the heap machine reduces to the halting problem of $n$-tape Turing machines.
 
 
 
@@ -476,5 +480,3 @@ means that we prove that the halting problem of the heap machine reduces to the 
 %%% mode: LaTeX
 %%% TeX-master: "thesis"
 %%% End:
-
-% LocalWords:  isRight
