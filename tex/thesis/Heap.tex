@@ -4,6 +4,7 @@
 \newcommand{\subst}[3]{{#1}^{#2}_{#3}}
 \newcommand{\Ter}{\MS{Ter}}
 \newcommand{\red}{\succ}
+\newcommand{\nred}{\nsucc}
 
 
 In this chapter, we use all our developed techniques to implement a multi-tape Turing machine that simulates another abstract machine.  First, we
@@ -160,7 +161,7 @@ mark the end of the encoding of the body of a $\lambda$-expression.
   \end{alignat*}
 
   We write for $\red^*$ for the reflexive transitive closure of $\red$ (cf.\ Definition~\ref{def:Kleene}) and $\red^k$ for the relational power (cf.\
-  Definition~\ref{def:pow}).
+  Definition~\ref{def:pow}).  We write $(T,V,H) \nsucc$ if the state is a terminating state.
 \end{definition}
 
 The tail-recursion optimised cons ($\cons_{tr}$) makes sure that no closures with empty closures are\\ pushed on a closure stack.  This is an
@@ -458,17 +459,61 @@ Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$.
 \end{lemma}
 
 
+\subsection{$\MS{Step}$}
+\label{sec:heap-Step}
 
-\subsection{Simulator}
-\label{sec:HeapSim}
+
+We define a machine $\MS{Step}_\Sigma^{11} : \TM(\Option(\Unit))$ that simulates steps of the heap machine.  The tapes $0$, $1$, and $2$ contain the
+control stack $T$, the argument stack $V$, and the heap $H$, respectively.  If the heap machine does a step $(T,V,H) \red (T',V',H')$, $\MS{Step}$
+terminates in $\None$ and the resulting tapes contain $T',V',H'$.  Otherwise, if $(T,V,H)$ is a terminating state, $\MS{Step}$ terminates in the
+partition $\Some\unit$.  Furthermore, if $\MS{Step}$ terminates in $\None$, there is a successor state $(T',V',H')$.
+
+We implement auxiliary machines for each of the three step rules.  $\MS{Step}$ first destructs $T$.  For example, in the case that
+$T=(a, (\MS{APP} \cons P)) \cons T'$, the auxiliary machine for $\MS{APP}$ destructs $V$ further and then calls a machine $\MS{App}$ that realise
+list-appending and a machine $\MS{Lenght}$ that computes the length of a list.  After that, it pushes the new closures to $T$ and $V$.  As another
+example, if $T=(a, (\MS{VAR}(n) \cons P)) \cons T'$, the auxiliary machine for $\MS{VAR}$ calls $\MS{Lookup}$ and pushes the output closure to the
+argument stack and the reset closure to the control stack.  If $Lookup$ failed, $\MS{Step}$ immediately terminates in $\Some\unit$, indicating that
+the state was an halting state.
+
+The machine $\MS{Step} : \TM_\Sigma^{11}(\Option(\Unit))$ is defined on an arbitrary alphabet $\Sigma$ with retractions
+$f_{Stack} : \Sigma_{List(Clos)} \hookrightarrow \Sigma$ and $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$.  We omit the definition of $\MS{Step}$
+here, since it is quite complex although it is straight-forward.
+
+\begin{lemma}[Correctness of $\MS{Step}$]
+  \label{lem:Step_Realise}
+  $\MS{Step} \Realise StepRel$ with
+  \begin{alignat*}{1}
+    & StepRel := \\
+    &\quad \lambda t~(y, t').~\forall T~V~H.~ t[0] \simeq T \rightarrow t[1] \simeq V \rightarrow t[2] \simeq H \rightarrow \left(\forall (i:\Fin_8).~isRight~t[3+i]\right) \rightarrow \\
+    &\quad \MS{if}~y=\None~\MS{then}~\exists T'~V'~H'.~(T,V,H) \red (T',H',V') ~\land~ \\
+    &\quad \phantom{\MS{if}~y=\None~\MS{then}}~ t'[0] \simeq H' \land t'[1] \simeq V' \land t'[2] \simeq H' \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right) \\
+    &\quad \MS{else}~ (T,V,H) \nsucc ~\land~ \\
+    &\quad \phantom{\MS{else}}~T=\nil \rightarrow t'[0] \simeq \nil \land t'[1] \simeq V \land t'[2] \simeq H \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right)
+  \end{alignat*}
+\end{lemma}
+
+For each developed machine, we also have runtime proofs, but we omitted the runtime lemmas for shortness.  We have a function
+\[
+  stepSteps : \List(HClos) \to \List(HClos) \to Heap \to \Nat
+\]
+such that $\MS{Step}$ terminates in $stepSteps~T~V~H$ steps when the first three tapes contain $T$, $V$, $H$, and the internal tapes are right.
+\begin{lemma}[Runtime of $\MS{Step}$]
+  \label{lem:Step_Terminates}
+  $\MS{Step} \TerminatesIn StepT$ with
+  \begin{alignat*}{3}
+    & StepT &~:=~& \lambda t~k.~\exists T~V~H.~t[0] \simeq H \land t[1] \simeq V \land t[2] \simeq H \land \left(\forall i:\Fin_8.~isRight~t[3+i]\right) \land \\
+    &       &    & \phantom{\lambda t~k.}~stepSteps~T~V~H \leq k
+  \end{alignat*}
+\end{lemma}
 
 
-We define a machine $\MS{Step} : \TM(\Option(\Unit))$ (we specify the alphabet and the tape number later) that simulates steps of the heap machine.
-The tapes $0$, $1$, and $2$ encode the control stack $T$, the argument stack $V$, and the heap $H$, respectively.  If the heap machine does a step
-$(T,V,H) \red (T',V',H')$, $\MS{Step}$ terminates in $\None$ and the resulting tapes contain $T',V',H'$.  Otherwise, if $(T,V,H)$ is a terminating
-state, $\MS{Step}$ terminates in the partition $\Some\unit$.  For that, we implement auxiliary machines for each of the three step rules.  Lastly, we
-define $\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if the heap state that is encoded on the tape of $\MS{Loop}$ terminates.
-This means that we prove that the halting problem of the heap machine reduces to the halting problem of $n$-tape Turing machines.
+\subsection{$\MS{Loop}$}
+\label{sec:heap-Loop}
+
+We instantiate $\Sigma := \Sigma_{\List(Clos)} + \Sigma_{Heap}$ and define $\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if
+the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  Moreover, if the heap state terminates with an empty control stack
+$(\nil, V', H')$, the tapes of $\MS{Loop}$ after the execution contain $(\nil, V', H')$.
+
 
 
 
