@@ -161,12 +161,28 @@ mark the end of the encoding of the body of a $\lambda$-expression.
   \end{alignat*}
 
   We write for $\red^*$ for the reflexive transitive closure of $\red$ (cf.\ Definition~\ref{def:Kleene}) and $\red^k$ for the relational power (cf.\
-  Definition~\ref{def:pow}).  We write $(T,V,H) \nsucc$ if the state is a terminating state.
+  Definition~\ref{def:pow}).  We write $(T,V,H) \nred$ if the state is a terminating state.
 \end{definition}
 
-The tail-recursion optimised cons ($\cons_{tr}$) makes sure that no closures with empty closures are\\ pushed on a closure stack.  This is an
+The tail-recursion optimised cons ($\cons_{tr}$) makes sure that no closures with empty closures are pushed on a closure stack.  This is an
 optimisation for space usage with tail recursive programs.
 
+\begin{lemma}[Basic properties about $\red$]
+  \label{lem:heap-red}
+  ~
+  \begin{enumerate}
+  \item \label{lem:halt_state_dec}%
+    $(T,V,H)\nred$ is decidable, i.e.\ there is a function $halt$ such that
+    \[
+      (T,V,H) \nred ~\iff~ halt(T,V,H) = \true
+    \]
+  \item \label{lem:step-iff}%
+    The relation $\red$ is functional and computable, i.e.\ there is a function $step$, such that
+    \[
+      (T,V,H) \red (T',V',H') ~\iff~ step(T,V,H)=\Some{(T',V',H')}
+    \]
+  \end{enumerate}
+\end{lemma}
 
 
 \section{Implementation of a Simulator}
@@ -259,7 +275,7 @@ and makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ resets the t
 and returns $\true$.  Else it translates $b$ from $f_{next}$ to $f_{add}$, moves it to the tape that contained $a$, and repeats the loop.  We
 visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~\ref{tab:exec-LookupStep-0}.
 
-\begin{table}[t!]
+\begin{table}[t]
   \centering
   \scriptsize
   \begin{tabular}{l||l|l|l|l|l|l|l|l}
@@ -270,13 +286,14 @@ visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupSt
     $3:~\dashv$ &                  &                       & $1: g$               &                 &                   &                  &              & $0:~\dashv$  \\
     $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:b$             &                  & $0:~\dashv$  &              \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=S~n'$.  It terminates in the partition $\None$.  The
+  \caption{Execution protocol of $\MS{LookupStep}$ %in case $H[a] = \Some{\Some{(g,b)}}$ and $n=S~n'$.  It terminates in the partition $\None$.  The
     translation is from $f_{next}$ to $f_{add}$.}
   \label{tab:exec-LookupStep-S}
 \end{table}
-\begin{table}[t!]
-  \centering
+\begin{table}[t]
+  {
   \scriptsize
+  \centering
   \begin{tabular}{l||l|l|l|l|l|l|l}
     Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{Reset}$ & $\MS{Reset}$ & $\MS{Translate}$ \\ \hline
     $0:H$       & $0:H$            &                       &                      &                 &              &              &                  \\
@@ -285,7 +302,8 @@ visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupSt
     $3:~\dashv$ &                  &                       & $1: g$               &                 &              &              & $0:g$            \\
     $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:~\dashv$  &              &                  \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0$.  It terminates in the partition $\Some\true$.  The
+  }
+  \caption{Execution protocol of $\MS{LookupStep}$ %in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0$.  It terminates in the partition $Some\true$.  The
     translation is from $f_{Clos'}$ to $f_{Clos}$.}
   \label{tab:exec-LookupStep-0}
 \end{table}
@@ -293,8 +311,8 @@ visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupSt
 %% BUG! The extra space between the definition and align is a bug! It has something to with tables.
 %% When I move the tables together to this page, each \[...\] retractions gets this awful extra space!!!
 %% THIS SUCKS!!!
-% \begin{definition}[$\MS{LookupStep}$]
-%   \label{def:Lookup_Step}
+\begin{definition}[$\MS{LookupStep}$]
+  \label{def:Lookup_Step}
   We define the machine $\MS{LookupStep} : \TM_{\Sigma^+}^5(\Option(\Bool))$.
   \begin{align*}
     & \MS{LookupStep} := \\
@@ -318,7 +336,7 @@ visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupSt
     & \quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{\Nop}{\Some\false} \\
     & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}
   \end{align*}
-% \end{definition}
+\end{definition}
 
 The step machine terminates in $\Some\false$ in two cases.  Either the list lookup failed, or it returned the empty heap entry $H[a]=\Some\None$.  In
 the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}), $\MS{LookupStep}$ resets the afterwards unneeded tapes.
@@ -486,8 +504,8 @@ here, since it is quite complex although it is straight-forward.
     & StepRel := \\
     &\quad \lambda t~(y, t').~\forall T~V~H.~ t[0] \simeq T \rightarrow t[1] \simeq V \rightarrow t[2] \simeq H \rightarrow \left(\forall (i:\Fin_8).~isRight~t[3+i]\right) \rightarrow \\
     &\quad \MS{if}~y=\None~\MS{then}~\exists T'~V'~H'.~(T,V,H) \red (T',H',V') ~\land~ \\
-    &\quad \phantom{\MS{if}~y=\None~\MS{then}}~ t'[0] \simeq H' \land t'[1] \simeq V' \land t'[2] \simeq H' \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right) \\
-    &\quad \MS{else}~ (T,V,H) \nsucc ~\land~ \\
+    &\quad \phantom{\MS{if}~y=\None~\MS{then}}~ t'[0] \simeq T' \land t'[1] \simeq V' \land t'[2] \simeq H' \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right) \\
+    &\quad \MS{else}~ (T,V,H) \nred ~\land~ \\
     &\quad \phantom{\MS{else}}~T=\nil \rightarrow t'[0] \simeq \nil \land t'[1] \simeq V \land t'[2] \simeq H \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right)
   \end{alignat*}
 \end{lemma}
@@ -501,7 +519,7 @@ such that $\MS{Step}$ terminates in $stepSteps~T~V~H$ steps when the first three
   \label{lem:Step_Terminates}
   $\MS{Step} \TerminatesIn StepT$ with
   \begin{alignat*}{3}
-    & StepT &~:=~& \lambda t~k.~\exists T~V~H.~t[0] \simeq H \land t[1] \simeq V \land t[2] \simeq H \land \left(\forall i:\Fin_8.~isRight~t[3+i]\right) \land \\
+    & StepT &~:=~& \lambda t~k.~\exists T~V~H.~t[0] \simeq V \land t[1] \simeq T \land t[2] \simeq H \land \left(\forall i:\Fin_8.~isRight~t[3+i]\right) \land \\
     &       &    & \phantom{\lambda t~k.}~stepSteps~T~V~H \leq k
   \end{alignat*}
 \end{lemma}
@@ -514,6 +532,71 @@ We instantiate $\Sigma := \Sigma_{\List(Clos)} + \Sigma_{Heap}$ and define $\MS{
 the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  Moreover, if the heap state terminates with an empty control stack
 $(\nil, V', H')$, the tapes of $\MS{Loop}$ after the execution contain $(\nil, V', H')$.
 
+\begin{lemma}[Correctness of $\MS{Loop}$]
+  \label{lem:Loop_Realise}
+  $\MS{Loop} \Realise LoopRel$ with
+  \begin{alignat*}{1}
+    & LoopRel := \\
+    &\quad \lambda t~t'.~\forall T~V~H.~ t[0] \simeq T \rightarrow t[1] \simeq V \rightarrow t[2] \simeq H \rightarrow \left(\forall (i:\Fin_8).~isRight~t[3+i]\right) \rightarrow \\
+    &\qquad \exists T'~V'~H'.~ \left(T,V,H\right) \red^* \left(T',V',H'\right) \nred \land \\ 
+    &\qquad T' = nil \rightarrow t'[0] \simeq \nil \rightarrow t'[1] \simeq V' \rightarrow t'[2] \simeq H' \rightarrow \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right)
+  \end{alignat*}
+\end{lemma}
+
+For the runtime function $loopSteps$, we need the $step$ and $halt$ functions from Lemma~\ref{lem:heap-red}.  The steps-function is defined per
+recursion over the number $k'$ of reduction steps of the heap machine.
+\begin{lemma}[Runtime of $\MS{Loop}$]
+  \label{lem:Loop_Terminates}
+  $\MS{Loop} \TerminatesIn LoopT$ with
+  \begin{alignat*}{2}
+    &LoopT &~:=~& \lambda t~k.~\exists T~V~H.~\exists T'~V'~H'~k'.~ \left(T,V,H\right) \red^{k'} \left(T',V',H'\right) \nred \land \\
+    &      &    & \phantom{\lambda t~k.}~t[0] \simeq T \land t[1] \simeq V \land t[2] \simeq H \land \left(\forall i:\Fin_8.~isRight~t[3+i]\right) \land \\
+    &      &    & \phantom{\lambda t~k.}~loopSteps~T~V~H~k' \leq k
+  \end{alignat*}
+  with
+  \small
+\begin{lstlisting}[style=semicoqstyle]
+$loopSteps~T~V~H~k := ~$
+  match$k$
+  [$0$ => $stepSteps~T~V~H$
+  |$S~k'$ =>
+   match$step(T, V, H)$
+   [$\Some{(T',V',H')}$ =>
+    if $halt(T',V',H')$
+    then $1 + stepSteps~T~V~H + stepSteps~T'~V'~H'$
+    else $1 + stepSteps~T~V~H + loopSteps~T'~V'~H'~k'$
+   |$\None$ => $stepSteps~T~V~H$
+   ]
+  ].
+\end{lstlisting}
+\end{lemma}
+
+Lemma~\ref{lem:Loop_Realise} says that if $\MS{Loop}$ with tapes that encode $(T,V,H)$ terminates, then heap machine also terminates.  Dually,
+Lemma~\ref{lem:Loop_Terminates} says that if heap machine terminates, so does $\MS{Loop}$ when we encode $(T,V,H)$ on the tapes.
+
+The last step of the reduction of the halting problem of the heap machine to the halting problem of multi-tape Turing machines is, that we need a
+function
+\[
+  initTapes : \left(\List(Clos) \times \List(Clos) \times Heap\right) \to \Tape_\Sigma^{11}
+\]
+such that the first three tapes of $initTape(T,V,H)$ contain $T$, $V$, or $H$, respectively, and the rest tapes are right.
+
+\begin{definition}[$initTapes$]
+  \label{def:initTapes}
+  ~
+  \[
+    initTapes(T,V,H) := initValue(T) \cons initValue(V) \cons initValue(H) \cons initRight^8
+  \]
+  With $initValue(x) := \MS{midtape}~\nil~\MS{START}~(encode(x) \app [\MS{STOP}])$ and $initRight := \MS{midtape}~\nil~\MS{STOP}~\nil$.
+\end{definition}
+
+\begin{theorem}[Halting problem reduction]
+  \label{lem:HaltingProblem}
+  Let $(T,V,H)$ be a heap state.  Then
+  \[
+    \left(\exists (T',V',H').~(T,V,H) \red^* (T',V',H') \nred\left) \iff \left(\exists c~k.~\MS{Loop}(initTapes(T,V,H)) \terminates^k c)\right)
+  \]
+\end{theorem}
 
 
 

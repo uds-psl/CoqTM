@@ -158,7 +158,7 @@ $\MS{CopySymbolsStep}~h :=$
   Match ($\LiftTapes{\MS{Read}}{\Vector{0}}$)
         ($\lambda (s:\Option(\Sigma)).~\MS{match}~s$
            [$\Some{x}$ =>
-             if$h(x)$
+             if $h(x)$
              then $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit}$ 
              else $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None}$ 
            |$\None$ => $\Return{\Nop}{\Some\unit}$ 
@@ -265,7 +265,7 @@ $\MS{MoveToSymbolStep}~h~f :=$
   Match ($\MS{Read}$)
         ($\lambda (s:\Option(\Sigma)).$ match $s$
            [$\Some{x}$ => 
-             if$h(x)$
+             if $h(x)$
              then $\Return{\bigl(\MS{Write}~(f~x)       \bigr)}{\Some\unit}$ 
              else $\Return{\bigl(\MS{WriteMove}~(f~x)~R \bigr)}{\None}$ 
            |$\None$ => $\Return{\Nop}{\Some\unit}$ 
