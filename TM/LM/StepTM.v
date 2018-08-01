@@ -861,8 +861,6 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Qed.
 
 
-  (* TODO: Termination *)
-
 
   Definition Step_steps_MatchTok a t P' T' V H :=
     match t with

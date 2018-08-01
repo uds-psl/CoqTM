@@ -586,7 +586,7 @@ Proof.
     intros tmid () (HWrite&HWriteInj); TMSimp. modpon HWrite.
     exists (Constr_O_steps), (1 + JumpTarget_Loop_steps P nil 0).
     cbn; repeat split; try omega.
-    unfold sigPro in *. intros tmid1 () (HWrite'&HWriteInj'); TMSimp. modpon HWrite'.
-    hnf. do 3 eexists; repeat split; unfold eqType_X, sigPro in *; cbn in *; TMSimp_goal; eauto.
+    cbn in *. unfold sigPro in *. intros tmid1 () (HWrite'&HWriteInj'); TMSimp. modpon HWrite'.
+    hnf. do 3 eexists; repeat split; cbn in *; unfold sigPro in *; cbn in *; TMSimp_goal; eauto.
   }
 Qed.
