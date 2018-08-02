@@ -1,8 +1,30 @@
 \chapter{Introduction}
 \label{chap:intro}
 
+
+Turing machines are the foundation of complexity theory.  However, reasoning about Turing machines 
+
+
 \section{Related Work}
 \label{sec:relatedwork}
+
+\todo{``et~al.'' or ``et~al''?}
+
+Asperti and Ricciotti \cite{asperti2012} formalise single-tape Turing machines over arbitrary alphabets in the proof assistant \textit{Matita}.  They
+also \cite{asperti2015} formalise multi-tape Turing machines in Matita.  They use the notion of \textit{realisation} of relations for specifying
+semantics of Turing machines.
+
+Xu, Zhang, and Urban \cite{Xu:2013:MTM:2529315.2529331} formalise single-tape Turing machines over a binary alphabet in Isabelle/HOL.  They follow the
+textbook of Boolos et~al~\cite{boolos2007computability} and use Hoare-logic to specify the semantics of Turing machines.  They translate
+\textit{abacus programs} to Turing machines and prove the undecidable of the halting problem of Turing machines.
+
+Ciaffaglione et~al~\cite{Ciaffaglione:2016:TTC:2956213.2956306} define tapes of Turing machines as infinite streams.  They certify Turing machines
+using induction and co-induction in Coq.
+
+\todo{she? How to properly cite bachelor's theses?}
+In her bachelor thesis, Heiter~\cite{Heiter} reduces the halting problem of single-tape to the \textit{Post correspondence problem} in Coq.  She uses
+the same definition of single-tape Turing machines as in \cite{asperti2012}.
+
 
 \section{Contributions}
 \label{sec:contributions}
