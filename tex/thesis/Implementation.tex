@@ -3,6 +3,13 @@
 
 \lstset{style=coq}
 
+
+
+% A full chapter for the implementation might not be worse it.  I think it is more important which libraries/plugins we use and how many lines of code
+% do we need.  Does it really matter how we implement, e.g. tapes or Turing machines in Coq, because all definitions can be translated
+% straight-forwardly to Coq.  The reader of the thesis can click on the theorems to read the source code, if he is interested.
+
+
 In this chapter\todo{or section?}, we outline our implementation of the framework of this thesis in the theorem prover Coq.  We do not assume
 additional axioms.  The implementation compiles with the Coq versions 8.7 and 8.8.
 
@@ -85,7 +92,7 @@ Class inhabitedC (X : Type) :=
 
 We use the type constructors \lstinline!Vector.t! and \lstinline!Fin.t! from Coq's standard library.  However, many basic lemmas and functions are
 missing for this type.  We have a small library that adds the missing functions and lemmas.  It also provides some tactics, for example to make case
-distinctions over \lstinline!Fin.t (S n)!.
+distinctions over \lstinline!Fin.t (S n)!.  We also introduce a notation for elements of $\Fin_k$.
 
 \paragraph{smpl}
 
@@ -93,6 +100,36 @@ We use Sigurd~Schneider's smpl plugin \cite{SMPL}.  I lets the user add tactics 
 applicable tactic from the database.  We use this plugin for proof automation, more on that below.
 
 
+\section{Lines of Code}
+\label{sec:coq-lines}
+
+\begin{table}[h]
+  \centering
+  \begin{tabular}{l|r|r}
+    Module                          & Spec & Proof \\ \hline
+    Preliminary                     &  228 &   197 \\
+    Definition of Turing machines   &  448 &   180 \\
+    Basic Machines                  &  122 &    34 \\
+    Combinators                     &  422 &   383 \\
+    Lifting                         &  361 &   193 \\
+    Compound Machines               &  378 &   278 \\
+    Value containing                &  424 &   119 \\
+    Copying and writing values      &  411 &   288 \\
+    Alphabet-Lift with values       &  134 &   269 \\
+    Deconstructors and constructors &  492 &   492 \\
+    $\MS{MapSum}$                   &   47 &   298 \\
+    Addition and Multiplication     &  181 &   298 \\
+    List functions                  &  329 &   456 \\
+    Heap Machine Simulator          &  989 &  1057 \\
+  \end{tabular}
+  \caption{Lines of specification and proof code for the ``modules'' (with several source files)}
+  \label{tab:coq-lines}
+\end{table}
+
+% XXX: This table excludes:
+% - Retracts, Inhabited, FinType, Vectors, Base
+% - Prelim, Rel
+% - TMTac, ProgrammingTools
 
 
 
