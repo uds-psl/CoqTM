@@ -1,8 +1,100 @@
 \chapter{Implementation in Coq}
 \label{chap:implementation}
 
-In this chapter, I will discuss some technical difficulties we faced, while implementing the theorems of this thesis in Coq.
-Note that the definitions, lemmas and theorems are hyperlinked to the online coq sources in the PDF version of this thesis.
+\lstset{style=coq}
+
+In this chapter\todo{or section?}, we outline our implementation of the framework of this thesis in the theorem prover Coq.  We do not assume
+additional axioms.  The implementation compiles with the Coq versions 8.7 and 8.8.
+
+\section{Used Libraries}
+\label{sec:coq-libraries}
+
+\paragraph{Base Library and Finite Types}
+
+We use a modified version of the library for the lecture \textit{Introduction to Computational Logic} by Prof.\ Smolka.  This library extends the
+standard library of Coq with additional functions and automation for lists and decidable predicates.  On top of this library, we use the library of
+finite types that was developed by Jan Menz in his bachelor's thesis \cite{JanMenz}.  The following listing outlines the definition of decidable
+predicates and finite types:
+
+\begin{lstlisting}
+Definition dec (P:Prop) := {P} + {~ P}.
+Definition eq_dec (X:Type) := forall x y, dec (x=y).
+Structure eqType := EqType {
+  eqtype :> Type;
+  decide_eq : eq_dec eqtype
+}.
+Canonical Structure eqType_CS X (A: eq_dec X) := EqType X.
+Class finTypeC (type: eqType) : Type := FinTypeC {
+  enum : list type;
+  enum_ok : forall x : type, count enum x = 1
+}.
+Structure finType : Type := FinType {
+  type :> eqType;
+  class : finTypeC type
+}.
+Canonical Structure finType_CS (X:Type) {p : eq_dec X} {class : finTypeC (EqType X)} : finType := FinType (EqType X).
+\end{lstlisting}%
+
+The coercions (\lstinline!:>!) make it possible to use finite types \lstinline{F:finType} as types, i.e.\ we can write \lstinline!x:F!.  The canonical
+structures enable automatic inference of the structure, for example we have a function \lstinline!index : forall F:finType, F -> nat! and we can write
+\lstinline!index true!.
+
+\paragraph{Retraction Library}
+
+We implemented a library for retractions.  We use a typeclass for the existence of retractions between two types.
+\begin{lstlisting}
+Section Retract.
+  Variable X Y : Type.
+  Definition retract (f : X -> Y) (g : Y -> option X) :=
+    forall x y, g y = Some x <-> y = f x.
+  Class Retract :=
+    {
+      Retr_f : X -> Y;
+      Retr_g : Y -> option X;
+      Retr_retr : retract Retr_f Retr_g;
+    }.
+End Retract.
+Arguments Retr_f { _ _ _ }.
+Arguments Retr_g { _ _ _ }.
+\end{lstlisting}
+The \lstinline!Arguments! \textit{venacular} command makes $X$, $Y$, and the instance contextual implicit.  This means that
+\lstinline!Retr_f : X -> Y!, where \lstinline!X! and \lstinline!Y! are inferred from the context.  We define instances for the retractions in
+Section~\ref{sec:retracts}.  It is important for the termination of typeclass inference, to not declare retraction composition as an instance.
+Instead, we embed the composition into retractions, i.e.\ instead of defining a retraction like $RetrLft : X \hookrightarrow X+Y$, we define and
+declare as an instance an operator
+\begin{lstlisting}
+Retract_inl : forall A B C : Type, Retract A B -> Retract A (B + C)
+\end{lstlisting}
+We also define (but not declare as an instance) the retraction composition operator
+\begin{lstlisting}
+ComposeRetract : forall A B C : Type, Retract A B -> Retract B C -> Retract A C
+\end{lstlisting}
+
+\paragraph{Inhabited Types}
+
+We also have a library for inhabited types.  Whenever we need a semantically irrelevant value, we can just write \lstinline!default! and Coq infers
+the type and inserts a value with the following typeclass:
+\begin{lstlisting}
+Class inhabitedC (X : Type) :=
+  {
+    default : X;
+  }.
+\end{lstlisting}
+
+\paragraph{Vectors and $\Fin_k$}
+
+We use the type constructors \lstinline!Vector.t! and \lstinline!Fin.t! from Coq's standard library.  However, many basic lemmas and functions are
+missing for this type.  We have a small library that adds the missing functions and lemmas.  It also provides some tactics, for example to make case
+distinctions over \lstinline!Fin.t (S n)!.
+
+\paragraph{smpl}
+
+We use Sigurd~Schneider's smpl plugin \cite{SMPL}.  I lets the user add tactics to a tactic database and provides a tactic that applies the first
+applicable tactic from the database.  We use this plugin for proof automation, more on that below.
+
+
+
+
 
 %%% Local Variables:
 %%% TeX-master: "thesis"

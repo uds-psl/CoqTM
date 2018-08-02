@@ -244,8 +244,44 @@
     {<=}{{$\leq$}}{1}
     {<}{{$\lt$}}{1}
     {>=}{{$\ge$}}{1}
-    {>}{{$\gt$}}{1}
   }
+}
+
+
+\lstdefinelanguage{coq}{%
+  keywords={if,then,else,match,fix,fun,cofix,forall,exists},%
+  morekeywords={*,Goal,Definition,Lemma,Proof,Qed,Defined,Inductive,CoInductive,Canonical,Structure,%
+    Class,Instance,Variable,Axiom,Parameter,Section,Module,End,Arguments,Print,Check,Compute,Eval,*}%
+  comment=[s]{(*}{*)},%
+}
+
+% TODO: maybe use a font that supports bold text with \ttfamily.
+\lstdefinestyle{coq}{%
+  showstringspaces=false,%
+  basicstyle=\small,%
+  % basicstyle=\footnotesize\ttfamily,%
+  % keywordstyle=\bfseries\color{black},%
+  % commentstyle=\itshape\color{black},%
+  % identifierstyle=\color{black},%
+  % stringstyle=\color{orange},%
+  mathescape=true,%
+  language=coq,%
+  breaklines=true,%
+  literate={%
+    {->}{{$\rightarrow$}}1%
+    {=>}{{$\Rightarrow$}}2%
+    {>->}{{$\rightarrowtail\,$}}2%
+    {<->}{{$\leftrightarrow$ }}2%
+    {->}{{$\to{}$}}1%
+    {~}{{$\lnot$}}1%
+    {/\\}{{$\land$}}2%
+    {\\/}{{$\lor$}}2%
+    {forall}{{$\forall$}}1%
+    {exists}{{$\exists$}}1%
+    {<>}{{$\not =$}}{1}%
+    {<=}{{$\leq$}}{1}%
+    {>=}{{$\ge$}}{1}%
+  }%
 }
 
 
