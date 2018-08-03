@@ -464,7 +464,8 @@ The runtime lemma of $\While$ is dual.  We define a co-inductive relation $While
 runtime relation in that $M$ terminates.
 \begin{lemma}[Runtime of $\While~M$]
   \label{lem:While_TerminatesIn}
-  If $M \Realise R$ and $M \TerminatesIn T'$.  Then $\While~M \TerminatesIn\\ WhileT~R~T'$, which is defined as a co-inductive predicate:
+  If $M \Realise R$ and $M \TerminatesIn T'$.\\Then $\While~M \TerminatesIn WhileT~R~T'$, where $WhileT~R~T'$ is defined as the following co-inductive
+  runtime relation:
   \[
     \inferrule{T~t~k_1 \\
       \forall t'~y.~R~t~(\Some{y}, t') \rightarrow k_1 \leq k \\
