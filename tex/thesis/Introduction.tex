@@ -2,54 +2,62 @@
 \label{chap:intro}
 
 
-Turing machines are the foundation of complexity theory.  However, reasoning about Turing machines 
-
-
-\section{Related Work}
-\label{sec:relatedwork}
-
-\todo{``et~al.'' or ``et~al''?}
-
-Asperti and Ricciotti \cite{asperti2012} formalise single-tape Turing machines over arbitrary alphabets in the proof assistant \textit{Matita}.  They
-also \cite{asperti2015} formalise multi-tape Turing machines in Matita.  They use the notion of \textit{realisation} of relations for specifying
-semantics of Turing machines.
-
-Xu, Zhang, and Urban \cite{Xu:2013:MTM:2529315.2529331} formalise single-tape Turing machines over a binary alphabet in Isabelle/HOL.  They follow the
-textbook of Boolos et~al~\cite{boolos2007computability} and use Hoare-logic to specify the semantics of Turing machines.  They translate
-\textit{abacus programs} to Turing machines and prove the undecidable of the halting problem of Turing machines.
-
-Ciaffaglione et~al~\cite{Ciaffaglione:2016:TTC:2956213.2956306} define tapes of Turing machines as infinite streams.  They certify Turing machines
-using induction and co-induction in Coq.
-
-\todo{she? How to properly cite bachelor's theses?}
-In her bachelor thesis, Heiter~\cite{Heiter} reduces the halting problem of single-tape to the \textit{Post correspondence problem} in Coq.  She uses
-the same definition of single-tape Turing machines as in \cite{asperti2012}.
+Turing machines are the foundation of complexity theory.  However, reasoning about Turing machines can be tedious because their semantic is
+unstructured: from each state of the machine, the execution can continue in each other state, similar to the infamous \textit{goto} statement
+\cite{dijkstra2002go}.  Textbooks like Boolos et~al.~\cite{boolos2007computability} leave out formal proofs of correctness.  To establish that a
+function is Turing-computable, authors often give an informal description of the algorithm and conclude with the \textit{Church-Turing thesis} that
+the function is Turing-computable.  Proofs of equivalence of Turing-computability and computability w.r.t.\ other abstract machine models are often
+informal.  They leave out invariants and other rigorous details.  It can also happen that inconsistencies are discovered
+\cite{Xu:2013:MTM:2529315.2529331}.  Informal proofs are not enough for us.  We want proofs that are (1)~understandable by humans, and (2)~rigorous
+enough that even computers accept the proof.  Formal proofs often involve a lot of little details that a human can easily oversee.  However, computers
+can help in this aspect, using automated proof search, filling in \textit{boring details}, so that the user can focus on the interesting details of
+proofs.  A vital aspect to ease the formalisation of complex but low-level abstract machines is the introduction of structure and composability.
 
 
 \section{Contributions}
 \label{sec:contributions}
 
+We formalise a variant of deterministic Turing machines --- multi-tape Turing machines --- in the interactive theorem prover Coq.  We build a
+framework for programming and verifying Turing machines, that means giving a correctness, runtime, and termination certificate that is verified by
+Coq.  Our framework extends the framework by Asperti and Ricciotti~\cite{asperti2015} in the interactive theorem prover Matita.  We make it easier to
+reason about Turing machines by eliminating the need to reason about concrete machine states, and introduce more general control-flow operators.  We
+increase the level of programming abstraction to values of arbitrary encodable types.  As a case-study, we show that our framework is strong enough to
+implement a Turing machine that simulates a two-stack machine.  We formally prove that the halting problem of this two-stack machine reduces to the
+halting problem of multi-tape Turing machines.
+
+\section{Related Work}
+\label{sec:relatedwork}
+
+Asperti and Ricciotti~\cite{asperti2012} formalise single-tape Turing machines over arbitrary alphabets in the interactive theorem prover Matita.
+Matita uses the same constructive type theoretic foundation as Coq, the calculus of (co)inductive constructions.  In~\cite{asperti2015}, they
+formalise multi-tape Turing machines in Matita.  They use the notion of \textit{realisation} of relations for specifying semantics of Turing machines.
+They define and verify a universal Turing machine and also formalise the reduction from multi-tape Turing machines to single-tape Turing machines.
+Furthermore, they propose the formalisation of Turing machines as a benchmark for comparing proof assistants.
+
+Xu, Zhang, and Urban~\cite{Xu:2013:MTM:2529315.2529331} formalise single-tape Turing machines over a binary alphabet in Isabelle/HOL.  They follow the
+textbook of Boolos et~al.~\cite{boolos2007computability} and use Hoare-logic to specify the semantics of Turing machines.  They translate
+\textit{abacus programs} and \textit{partial recursive functions} to Turing machines and prove the undecidability of the halting problem of Turing
+machines.
+
+Ciaffaglione et~al.~\cite{Ciaffaglione:2016:TTC:2956213.2956306} define tapes of Turing machines as infinite streams.  They certify Turing machines
+using induction and co-induction in Coq.
+
+In her bachelor thesis, Heiter~\cite{Heiter} reduces the halting problem of single-tape to the \textit{Post correspondence problem} in Coq.  They use
+the same definition of single-tape Turing machines as in \cite{asperti2012}.
+
+
+
 \section{Outline}
 \label{sec:outline}
 
-In Chapter \ref{chap:definitions}, the notion of multi-tape Turing machines is defined.  We also introduce means to specify the semantics of machines,
-and define some basic machines.
-
-Chapter \ref{chap:combining} defines control-flow operators and shows how we can combine machines.  We also show how to build some not-so-complex
-machine.
-
-In Chapter \ref{chap:programming}, we introduce abstractions, like value-containing and computation of functions.  We introduce a general pattern, how
-to program multi-tape Turing machines; this pattern is followed in some case-studies.
-
-In Chapter \ref{chap:heap}, we use all technics developed in this thesis, to build a machine that simulates an abstract heap machine.  From the
-correctness of this Turing machine, we conclude that the halting problem of the abstract machine reduces to the halting problem of multi-tape Turing
-machines.
-
-We discuss some technical difficulties of our Coq-implementation in Chapter \ref{chap:implementation}.
-
-Chapter \ref{chap:conclusion} concludes, and lists possibilities for future work.
-
-\todo{Continuity, hierarchy}
+In Chapter~\ref{chap:definitions}, we define the notion of multi-tape Turing machines.  We also introduce means to specify the semantics of machines,
+and define basic machines, on which all our machines are based.  In Chapter~\ref{chap:combining} defines control-flow operators.  In
+Chapter~\ref{chap:lifting} we show how to combine machines with different alphabets and number of tapes.  We combine simple machines in
+Chapter~\ref{chap:compound}.  In Chapter~\ref{chap:programming}, we introduce abstractions that enable the programmer to directly manipulate values,
+and show complex case-studies.  In Chapter~\ref{chap:heap} we develop our final case-study where we implement and verify a Turing machine that
+simulates a two-stack machine and show that the halting problem of this machine reduces to the halting problem of multi-tape Turing machines.  We
+conclude and discuss possible future work in Chapter~\ref{chap:conclusion}.  In the appendix, we present some pearls of the Coq development of this
+thesis.  Note that in the PDF version of this thesis, all definitions and lemmas are hyperlinked to the documented online source code.
 
 
 %%% Local Variables:
