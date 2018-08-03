@@ -1,7 +1,79 @@
 \chapter{Conclusion}
 \label{chap:conclusion}
 
-We conclude\dots
+% What we did and what others did
+We have formalised multi-tape Turing machines in Coq.  We developed a framework for programming and proving correctness and runtime of multi-tape
+Turing machines.  We have demonstrated the power of this framework by implementing a multi-tape Turing machine that simulates a two-stack abstract
+machine.  This abstract machine is a variation from the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  The two variants of the heap
+machine differ in that the programs in our version are linearised lists of tokens.  In~\cite{KunzeEtAl:2018:Formal}, the authors show that the states
+of the heap machine can be \textit{refined} to terms of the programming language $L$, which is a subset of the call-by-value
+$\lambda$-calculus\todo{Check!}.  It should be easy to formalise the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our version of
+the heap machine.  By that, we formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing machines.  This is,
+however, outside the scope of this thesis.  Further possible future work include the formalisation of the reduction from multi-tape Turing machines to
+single-tape Turing machines, and from single-tape Turing machines with arbitrary alphabet to single-tape Turing machines with a binary alphabet.  It
+is an ongoing research project~\cite{ForsterLOLA}, to implement a Coq library of undecidability reductions, and this thesis provides one step towards
+this goal.  The reduction from the Post correspondence problem (PCP) to the halting problem of single-tape Turing machines has already been formalised
+in Coq in Heiter`s bachelor`s thesis~\cite{Heiter}.
+
+\todo{The ``big picture'' from Yannick maybe would fit nice here}
+
+% Differences and improvements to Asperti and other implementations
+We build on Asperti and Ricciotti`s framework from~\cite{asperti2015} inside the theorem prover Matita and initially ported their definitions of tapes
+and Turing machines to Coq.  We found their inductive definition of the tape in particular practical, because of its symmetric and final nature.  This
+is in contrast to the implementation of tapes in~\cite{Xu:2013:MTM:2529315.2529331}, where tapes are split into two halves and the right half contains
+the current symbol.  Because of the symmetric nature of tapes, it was extremely easy to define an operator $\MS{Mirror}$ that mirrors the transition
+function.  The finite nature made it possible to define an always terminating machine that moves the head two the right (or using $\MS{Mirror}$ to the
+left) end of the tape.  This is in contrast to~\cite{Ciaffaglione:2016:TTC:2956213.2956306}, where tapes are implemented as infinite streams of
+symbols.  Our framework implements five major improvements on~\cite{asperti2015}.  (1) By introducing partitioned machines we make it unnecessary to
+reason about concrete states of machines.  \cite{asperti2015} already note that reasoning about internal states is tedious and therefore do not
+include the terminating state in their definition of realisation.  (2) We have introduced a notation of runtime.  Asperti and Ricciotti had two notion
+of realisation, a strong and a weak one, where the former implies termination.  However, it made no commitments over the concrete number of steps
+needed.  We use a variant of their weak notion of realisation and have introduced a new notion of runtime that relates the inputs to the number of
+steps needed for the computation.  (3) By introducing an operator $\MS{Match}$ that generalises sequential composition and conditional, we simplified
+the verification of both operators and also introduced a useful operator that was used throughout the thesis.  (4) We implemented general lifting
+operators that make it possible to compose small machines (w.r.t.\ the alphabet and number of tapes) to fairly complex machines.  At this point,
+composing compound machines is reasonable easy, but we (5) have introduced another layer of abstraction.  We have made it possible to directly
+manipulate values of encodable types.  The on-paper design and implementation in Coq of the heap machine simulator was straight-forward.
+
+% Duality Correctness and runtime
+We noted that realisation and termination/runtime are dual in a sense.  The weak notion of realisation says that \textit{if} the machine terminates,
+then the output is correct w.r.t.\ a correctness relation $R$.  On the other side, a machine terminates in a termination relation $T$ if all pairs of
+input tapes $t$ and step numbers $k$, the machine terminates in $k$ with the input $t$.  Realisation is monotone (cf.\
+Lemma~\ref{lem:Realise_monotone}) and termination is anti-monotone (cf.\ Lemma~\ref{lem:TerminatesIn_monotone}).  We found it remarkable that we use
+an inductive correctness relation for $\MS{While}$ (cf.\ Lemma~\ref{lem:While_Realise} and a co-inductive termination relation (cf.\
+Lemma~\ref{lem:While_TerminatesIn}).  We use induction show correctness and co-induction for termination of instances of $\While$.  Co-induction can
+be however be avoided.  In fact, we introduced the co-inductive termination relation of $\While$ only for streamlines.
+
+% Similarity of Realisation and weak Hoare triples
+As already noted by~\cite{Ciaffaglione:2016:TTC:2956213.2956306}, the notion of realisation is similar to the classic Hoare logic widely used in
+program verification.  For example, consider the classic Hoare proof rule for sequential composition:
+\[
+  \inferrule{\{A\}~P_1~\{B\} \and \{B\}~P_2~\{C\}}{\{A\}~P_1 \mathop; P_2~\{C\}}
+\]
+We encode preconditions and postconditions inside correctness relations.  This means that if the precondition is not true for the input tape $t$, then
+$R~t~(y,t')$ is logically equivalent to $\True$.  We noted that sequential composition of machines amounts to relational composition of correctness
+relations (cf.\ Lemma~\ref{lem:Seq_RealiseIn}).  However, we are not aware of a Hoare-style logical calculus for reasoning about termination in a
+concrete number of steps and that is dual to classical Hoare logic, like in our duality between realisation and termination.
+
+% Problems of the framework
+The biggest problem of this framework is that encoding of types can be ambiguous.  For example, there are more than three ways how to encode natural
+numbers on the alphabet of the heap machine simulator (cf.\ Section~\ref{sec:Lookup}).  We had to mentally keep track of in which encoding a value is
+encoded on a tape, and to translate values from one encoding to another.
+
+% Future work
+When we defined the notion of value-containing (cf.\ Section~\ref{sec:value-containing}), we had \emph{future work} in mind where we formalise
+space-usage of machines.  We can strengthen the correctness relations with assertions about the space-usage of each tape.  Asperti and Ricciotti`s
+inductive definition of tapes is very helpful in this regard, because tapes never decrease the number of symbols.  This means that the total space
+usage of a tape is just the number of symbols on the tape.  Our idea is that we parametrise the notion of value-containing over the length $l$ of the
+``rest list'' on the left, and write $t \simeq_{l} x$.  Note that, by definition, there are no symbols beyond the stop symbol on the right side of the
+tape, so the total size of the tape only depends of the length of the encoding and the length of the left rest.  For example, $\MS{MatchNat}$ does
+change the amount of totally allocate memory, but decreases the length of the encoding and increases the length of the rest by one.  On the other
+side, $\MS{ConstrS}$ ``consumes'' on rest symbol, i.e.\ decreases the length of the rest by one, and increases the length of the encoding by one.
+Thus, if the rest is empty, $\MS{ConstrS}$ allocates one symbol.
+
+Further future work could be to show that the runtime function of the simulator is polynomial w.r.t.\ the number of steps and the length of the
+encoding of the initial heap machine state.
+
 
 %%% Local Variables:
 %%% TeX-master: "thesis"

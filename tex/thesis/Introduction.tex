@@ -1,7 +1,6 @@
 \chapter{Introduction}
 \label{chap:intro}
 
-
 Turing machines are the foundation of complexity theory.  However, reasoning about Turing machines can be tedious because their semantic is
 unstructured: from each state of the machine, the execution can continue in each other state, similar to the infamous \textit{goto} statement
 \cite{dijkstra2002go}.  Textbooks like Boolos et~al.~\cite{boolos2007computability} leave out formal proofs of correctness.  To establish that a
@@ -17,13 +16,13 @@ proofs.  A vital aspect to ease the formalisation of complex but low-level abstr
 \section{Contributions}
 \label{sec:contributions}
 
-We formalise a variant of deterministic Turing machines --- multi-tape Turing machines --- in the interactive theorem prover Coq.  We build a
-framework for programming and verifying Turing machines, that means giving a correctness, runtime, and termination certificate that is verified by
-Coq.  Our framework extends the framework by Asperti and Ricciotti~\cite{asperti2015} in the interactive theorem prover Matita.  We make it easier to
-reason about Turing machines by eliminating the need to reason about concrete machine states, and introduce more general control-flow operators.  We
-increase the level of programming abstraction to values of arbitrary encodable types.  As a case-study, we show that our framework is strong enough to
-implement a Turing machine that simulates a two-stack machine.  We formally prove that the halting problem of this two-stack machine reduces to the
-halting problem of multi-tape Turing machines.
+We formalise a variant of deterministic Turing machines --- multi-tape Turing machines --- in the interactive theorem prover Coq~\cite{Coq}.  We build
+a framework for programming and verifying Turing machines, that means giving a correctness, runtime, and termination certificate that is verified by
+Coq.  Our framework extends the framework by Asperti and Ricciotti~\cite{asperti2015} in the interactive theorem prover
+Matita~\cite{asperti2011matita}.  We make it easier to reason about Turing machines by eliminating the need to reason about concrete machine states,
+and introduce more general control-flow operators.  We increase the level of programming abstraction to values of arbitrary encodable types.  As a
+case-study, we show that our framework is strong enough to implement a Turing machine that simulates a two-stack machine.  We formally prove that the
+halting problem of this two-stack machine reduces to the halting problem of multi-tape Turing machines.
 
 \section{Related Work}
 \label{sec:relatedwork}
@@ -34,10 +33,10 @@ formalise multi-tape Turing machines in Matita.  They use the notion of \textit{
 They define and verify a universal Turing machine and also formalise the reduction from multi-tape Turing machines to single-tape Turing machines.
 Furthermore, they propose the formalisation of Turing machines as a benchmark for comparing proof assistants.
 
-Xu, Zhang, and Urban~\cite{Xu:2013:MTM:2529315.2529331} formalise single-tape Turing machines over a binary alphabet in Isabelle/HOL.  They follow the
-textbook of Boolos et~al.~\cite{boolos2007computability} and use Hoare-logic to specify the semantics of Turing machines.  They translate
-\textit{abacus programs} and \textit{partial recursive functions} to Turing machines and prove the undecidability of the halting problem of Turing
-machines.
+Xu, Zhang, and Urban~\cite{Xu:2013:MTM:2529315.2529331} formalise single-tape Turing machines over a binary alphabet in
+Isabelle/HOL~\cite{nipkow2002isabelle}.  They follow the textbook of Boolos et~al.~\cite{boolos2007computability} and use Hoare-logic to specify the
+semantics of Turing machines.  They translate \textit{abacus programs} and \textit{partial recursive functions} to Turing machines and prove the
+undecidability of the halting problem of Turing machines.
 
 Ciaffaglione et~al.~\cite{Ciaffaglione:2016:TTC:2956213.2956306} define tapes of Turing machines as infinite streams.  They certify Turing machines
 using induction and co-induction in Coq.
@@ -58,6 +57,11 @@ and show complex case-studies.  In Chapter~\ref{chap:heap} we develop our final 
 simulates a two-stack machine and show that the halting problem of this machine reduces to the halting problem of multi-tape Turing machines.  We
 conclude and discuss possible future work in Chapter~\ref{chap:conclusion}.  In the appendix, we present some pearls of the Coq development of this
 thesis.  Note that in the PDF version of this thesis, all definitions and lemmas are hyperlinked to the documented online source code.
+
+The source code of the implementation is available online at:
+\begin{center}
+  \url{https://www.ps.uni-saarland.de/~wuttke/bachelor.php}
+\end{center}
 
 
 %%% Local Variables:
