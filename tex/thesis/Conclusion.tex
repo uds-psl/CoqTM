@@ -46,14 +46,17 @@ be however be avoided.  In fact, we introduced the co-inductive termination rela
 
 % Similarity of Realisation and weak Hoare triples
 As already noted by~\cite{Ciaffaglione:2016:TTC:2956213.2956306}, the notion of realisation is similar to the classic Hoare logic widely used in
-program verification.  For example, consider the classic Hoare proof rule for sequential composition:
+program verification.  For example, consider the classic Hoare proof rule for sequential composition, and the corresponding relational rule
+(for unpartitioned machines $M_1,M_2 : \TM_\Sigma^n$):
 \[
-  \inferrule{\{A\}~P_1~\{B\} \and \{B\}~P_2~\{C\}}{\{A\}~P_1 \mathop; P_2~\{C\}}
+  \inferrule{\{A\}~P_1~\{B\} \and \{B\}~P_2~\{C\}}{\{A\}~P_1 \Seq P_2~\{C\}}
+  \qquad
+  \inferrule{M_1 \Realise R_1 \and M_2 \Realise R_2}{M_1 \Seq M_2 \Realise R_1 \circ R_2}
 \]
 We encode preconditions and postconditions inside correctness relations.  This means that if the precondition is not true for the input tape $t$, then
-$R~t~(y,t')$ is logically equivalent to $\True$.  We noted that sequential composition of machines amounts to relational composition of correctness
-relations (cf.\ Lemma~\ref{lem:Seq_RealiseIn}).  However, we are not aware of a Hoare-style logical calculus for reasoning about termination in a
-concrete number of steps and that is dual to classical Hoare logic, like in our duality between realisation and termination.
+$R~t~(y,t')$ is logically equivalent to $\True$.  Sequential composition of machines amounts to relational composition of correctness relations (cf.\
+Lemma~\ref{lem:Seq_RealiseIn}).  However, we are not aware of a Hoare-style logical calculus for reasoning about termination in a concrete number of
+steps and that is dual to classical Hoare logic, like in our duality between realisation and termination.
 
 % Problems of the framework
 The biggest problem of this framework is that encoding of types can be ambiguous.  For example, there are more than three ways how to encode natural
