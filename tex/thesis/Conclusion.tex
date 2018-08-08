@@ -5,15 +5,13 @@
 We have formalised multi-tape Turing machines in Coq.  We developed a framework for programming and proving correctness and runtime of multi-tape
 Turing machines.  We have demonstrated the power of this framework by implementing a multi-tape Turing machine that simulates a two-stack abstract
 machine.  This abstract machine is a variation from the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  The two variants of the heap
-machine differ in that the programs in our version are linearised lists of tokens.  In~\cite{KunzeEtAl:2018:Formal}, the authors show that the states
-of the heap machine can be \textit{refined} to terms of the programming language $L$, which is a subset of the call-by-value
-$\lambda$-calculus\todo{Check!}.  It should be easy to formalise the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our version of
-the heap machine.  By that, we formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing machines.  This is,
-however, outside the scope of this thesis.  Further possible future work include the formalisation of the reduction from multi-tape Turing machines to
-single-tape Turing machines, and from single-tape Turing machines with arbitrary alphabet to single-tape Turing machines with a binary alphabet.  It
-is an ongoing research project~\cite{ForsterLOLA}, to implement a Coq library of undecidability reductions, and this thesis provides one step towards
-this goal.  The reduction from the Post correspondence problem (PCP) to the halting problem of single-tape Turing machines has already been formalised
-in Coq in Heiter`s bachelor`s thesis~\cite{Heiter}.
+machine differ in that the programs in our version are linearised lists of tokens.  In~\cite{KunzeEtAl:2018:Formal}, the authors show that heap
+machine can simulate terms of the programming language $L$, which is a subset of the call-by-value $\lambda$-calculus.  It should be easy to formalise
+the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our version of the heap machine.  By that, we would formalise the reduction
+from the halting problem of $L$ to the halting problem of multi-tape Turing machines.  This is, however, outside the scope of this thesis.  It is an
+ongoing research project~\cite{ForsterLOLA}, to implement a Coq library of undecidability reductions, and this thesis provides one step towards this
+goal.  The reduction from the Post correspondence problem (PCP) to the halting problem of single-tape Turing machines has already been formalised in
+Coq in Heiter`s bachelor`s thesis~\cite{Heiter}.
 
 \todo{The ``big picture'' from Yannick maybe would fit nice here}
 
@@ -75,7 +73,8 @@ side, $\MS{ConstrS}$ ``consumes'' on rest symbol, i.e.\ decreases the length of 
 Thus, if the rest is empty, $\MS{ConstrS}$ allocates one symbol.
 
 Further future work could be to show that the runtime function of the simulator is polynomial w.r.t.\ the number of steps and the length of the
-encoding of the initial heap machine state.
+encoding of the initial heap machine state.  We could also formalise in Coq, the reduction from multi-tape Turing machines to single-tape Turing
+machines, and from single-tape Turing machines with arbitrary alphabet to single-tape Turing machines with a binary alphabet.
 
 
 %%% Local Variables:

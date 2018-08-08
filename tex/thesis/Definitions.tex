@@ -1,9 +1,9 @@
 \chapter{Definitions}
 \label{chap:definitions}
 
-In this chapter, we formally define the notion of multi-tape Turing machines.  We take the definition of multi-tape Turing machines and their tapes
-from Asperti and Ricciotti \cite{asperti2015}.  We introduce notions for specifying the semantics of machines, which are also based on Asperti and
-Ricciotti \cite{asperti2015}.  We define basic machines and prove their correctness.
+In this chapter, we formally define multi-tape Turing machines.  We take the definition of multi-tape Turing machines and their tapes from Asperti and
+Ricciotti \cite{asperti2015}.  We introduce notions for specifying the semantics of machines, which are also based on Asperti and Ricciotti
+\cite{asperti2015}.  We define basic machines and prove their correctness.
 
 \section{Preliminary Definitions}
 \label{sec:prelim}
@@ -13,10 +13,10 @@ Ricciotti \cite{asperti2015}.  We define basic machines and prove their correctn
 \label{sec:notational-conventions}
 
 The symbols $\Unit$, $\Bool$, $\Nat$, $X \times Y$, $X + Y$, $\Option(X)$, and $\List(X)$ stand for the well-known standard types.  $\Type$ stands for
-the type of types and $\Prop$ for the type of propositions.  The unit element $\unit$ is the only element of $\Unit$.  $\sum_{a:A} B(a)$ denote sigma
+the type of types and $\Prop$ for the type of propositions.  The unit element $\unit$ is the only element of $\Unit$.  $\sum_{a:A} B(a)$ denotes sigma
 types, i.e.\ depended pairs, with the projections $\pi_1$ and $\pi_2$.  We write $(a,b)$ for elements of sigma types.  For tuples
-$A = (a, b, c, \cdots)$, we use subscripts ($a_A$) for the projections.  We use the symbols $\None$ and $\Some x$ as elements of the type
-$\Option(X)$.  $\Fin_n := \setOf{0, \dots, n-1}$ is the type with $k$ elements.  We use indices $i:\Fin_n$ for vector-access $x[i]$ with $x:X^n$,
+$A = (a, b, c, \cdots)$, we use subscripts, i.e.\ $a_A$, for the projections.  We use the symbols $\None$ and $\Some x$ as elements of the type
+$\Option(X)$.  $\Fin_n := \setOf{0, \dots, n-1}$ is the type with $n$ elements.  We use indices $i:\Fin_n$ for vector-access $x[i]$ with $x:X^n$,
 where $X^n$ denotes the type of vectors over $X$ of size $n$.  We usually leave subscripts out if they are clear from the context.
 
 
@@ -33,9 +33,9 @@ We use the following standard relational operators:
 \begin{definition}[Relational operators]
   Let $R, S \subseteq A \times B$ and $T \subseteq B \times C$.
   \begin{align*}
-    R \cap S  &:= \lambda (x~y).~R~x~y \land S~x~y \\
-    R \cup S  &:= \lambda (x~y).~R~x~y \lor S~x~y \\
-    R \circ T &:= \lambda (x~z).~\exists y.~R~x~y \land S~y~z
+    R \cap S  &:= \lambda x~y.~R~x~y \land S~x~y \\
+    R \cup S  &:= \lambda x~y.~R~x~y \lor S~x~y \\
+    R \circ T &:= \lambda x~z.~\exists y.~R~x~y \land T~y~z
   \end{align*}
 \end{definition}
 
@@ -80,12 +80,12 @@ Similarly, we can define an operator that takes a binary relation and yields a p
   \label{def:rel-fix}
   Let $R \subseteq A \times A$ and $y : B$.
   \[
-    R \att y := \lambda x~(y', z).~R~x~z \land y'=y
+    R \att y := \lambda x~(y, z).~R~x~z \land y'=y
   \]
 \end{definition}
 
 \begin{definition}[Relational inclusion and equivalence]
-  Let $R,S \subseteq A \times B$.
+  Let $R,S \subseteq A \times A$.
   \begin{align*}
     R \subseteq S &:= \forall x~y.~R~x~y \rightarrow S~x~y \\
     R \equiv S    &:= R \subseteq S ~\land~ S \subseteq R
@@ -113,9 +113,10 @@ diagram:
   \end{tikzcd}
 \]
 The direction from left to right of Definition~\ref{def:retract} means that $f^{-1}$ only maps values back that are in the image of $f$.  This
-property is called \emph{tightness}.
+property is called \textit{tightness}.
 
-We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is a retraction.
+We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is a retraction.  Note that this notation introduces two variables ($f$
+and $f^{-1}$), but we also overload $f$ with the tuple of both functions.
 
 
 \begin{lemma}[Basic properties of retractions]
@@ -183,13 +184,6 @@ We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is
 
 We use the definition of multi-tape Turing machines and their tapes and semantics from Asperti and Ricciotti~\cite{asperti2015}.
 
-\begin{definition}[Movement]
-  \label{def:movement}
-  There are three possible movements:
-  $$\MS{Move} ::= L ~|~ R ~|~ N.$$
-\end{definition}
-
-
 \begin{definition}[Multi-tape Turing machine]
   \label{def:mTM}
   An \emph{$n$-tape Turing machine}\footnote{Asperti and Ricciotti~\cite{asperti2015} restrict this definition to machines with $n>0$.  We do not have
@@ -201,11 +195,12 @@ We use the definition of multi-tape Turing machines and their tapes and semantic
   \item $start:Q$
   \item $halt \from Q \to \Bool$ 
   \end{itemize}
+  There are three possible movements: $\MS{Move} ::= L ~|~ R ~|~ N.$
 \end{definition}
 
 We write $\MS{TM}_\Sigma^n$ for the type of $n$-tape Turing machines over the alphabet $\Sigma$.
 
-While we parametrised Definition~\ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, we hide the finite type $Q$ of \emph{states}.
+While we parametrise Definition~\ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, we hide the finite type $Q$ of \emph{states}.
 The transition function $\delta$ yields for every state and vector of $n$ read symbols the new state and a vector of $n$ (optional) symbols to write,
 and a direction to move.  The read symbols are optional, since it can be the case that there is no symbol under the head of a tape.  $start$ is the
 start state of the machine and $halt$ represents the subset of halting states.  Tuples of the type $\Option(\Sigma) \times \Move$ are called
@@ -214,16 +209,17 @@ because $\delta$ is a function.
 
 When we want to verify complex machines, we do not want to reason about internal states.  We rather want to reason about partitions of states, e.g.\
 positive or negative states.  In general, if $F$ is a finite type, then $M = (M', part)$ is a \emph{partitioned} machine, where $M'$ is an
-unpartitioned machine and $part \from Q_M \to F$ the partitioning function.  We write $\MS{TM}_\Sigma^n(F)$ for the type of partitioned machines over
-$F$\footnote{Formally, it could be defined as a sigma type: $\MS{TM}_\Sigma^n(F) := \sum_{M:\MS{TM}_\Sigma^n}\bigl(Q_M \to F\bigr)$}.  For brevity, we
-will make no distinction between unit-partitioned machines $\TM_\Sigma^n(\Unit)$ and unpartitioned machines $\TM_\Sigma^n$.  We use the symbol $M$ for
-both partitioned and unpartitioned machines $\TM_\Sigma^n$.  It should however be always clear from the context, whether $M$ is a partitioned or
-unpartitioned machine.
+unpartitioned machine and $part \from Q_M \to F$ the partitioning function.  We write $\MS{TM}_\Sigma^n(F)$ for the type%
+\footnote{Formally, it is defined as a sigma type: $\MS{TM}_\Sigma^n(F) := \sum_{M:\MS{TM}_\Sigma^n}\bigl(Q_M \to F\bigr)$.  We use the projections
+  $\pi_1$ and $\pi_2$ implicitly.}%
+of partitioned machines over $F$.  We identify unit-partitioned machines $\TM_\Sigma^n(\Unit)$ with unpartitioned machines $\TM_\Sigma^n$.  We use the
+symbol $M$ for both partitioned and unpartitioned machines $\TM_\Sigma^n$.  It should however be always clear from the context, whether $M$ is a
+partitioned or unpartitioned machine.
 
 On a \emph{tape}, arbitrary much memory can be allocated.  However every tape has only finitely many symbols, i.e.\ there is a left-most and a
 right-most symbol.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol under which the (read/write) head of tape is.  It
-is convenient that the symbol lists are ordered such that the head of the list is the symbol next to the symbol $m$.  With other words, $ls$ is stored
-in reversed order.
+is convenient that the symbol lists ($ls$ and $rs$) are ordered such that the head of the list is the symbol next to the symbol $m$.  When we think of
+tapes as a finite sequence of symbols from left to right, this means that $ls$ is stored in reversed order.
 
 There are three cases where there is no current symbol: the tape can be completely empty, or the head can be to the left (or right) outermost of the
 non-empty tape.  Formally, tapes are defined inductively:
@@ -301,9 +297,9 @@ The functions $\MS{left},~\MS{right} \from \Tape \to \List(\Sigma)$ return the s
 % Note that as a consequence of the informal notation, we have
 % $$\MS{left}(\midtape{ls}{m}{rs}) = \MS{left}(\MS{midtape}~(\rev{ls})~{m}~{rs}) = \rev{ls}.$$
 
-Now we can define the function $\MS{wr} \from \Tape \to \Option(\Move) \to \Tape$, that writes an optional symbol to a tape.  When we write $\None$,
-the tape remains unchanged.  But if we write $\Some a$, we get a $\MS{midtape}$, where the left and right symbols remain unchanged and $a$ is now in
-the middle.
+Now we can define the function $\MS{wr} \from \Tape \to \Option(\Move) \to \Tape$, that writes an optional symbol to a tape.  When we write $\Some a$,
+we get a $\MS{midtape}$, where the left and right symbols remain unchanged and $a$ is now in the middle.  For $\None$, the tape remains unchanged.
+Note that there is no way to decrease the number of symbols on a tape, or to write ``blank'' symbols.
 
 \begin{definition}[$\MS{wr}$]
   \begin{alignat*}{3}
@@ -340,7 +336,7 @@ We can state a correctness lemma of the function $\MS{wr}$:
 \end{proof}
 
 We can now define the function $\MS{step} \from \Conf \to \Conf$.  First, the machine reads all the currents symbols from the tapes.  It inserts this
-vector and the current state into the transition function $\delta$.  Then, each tape writes the symbol and moves its head into the direction which
+vector and the current state into the transition function $\delta$.  Then, each tape writes the symbol and moves its head into the direction that
 $\delta$ yielded for it.  The machine ends up in a new step $q'$.
 
 \begin{definition}[$\MS{step}$]
@@ -402,7 +398,7 @@ machine:
 We write $M(c) \terminates^k c'$ for $\MS{loopM}~c~k = \Some {c'}$ and $M(t) \terminates^k c$ for $M(\MS{initConf}~t) \terminates^k c$.
 
 All definitions, except partitioned machines are from Asperti and Ricciotti \cite{asperti2015}, with similar names.  However, the $\Loop$ function
-was slightly changed for convenience, so that it needs zero steps when the (abstract) state is a halting state.
+was slightly changed for convenience, so that it needs zero steps when the (abstract) starting state is a halting state.
 
 \section{Specification of Semantics}
 \label{sec:spec_semantics}
@@ -423,8 +419,8 @@ The correctness part is captured by \emph{realisation} of a (partitioned) relati
   Where $part_M \from Q_M \to F$ is the partitioning function of $M$.
 \end{definition}
 
-If $M \Realise R$, we say that $M$ realises the relation $R$.  Informally, this means that the output of the machine is correct (i.e.\ is in the
-relation), if the machine terminates.
+If $M \Realise R$, we say that $M$ realises the relation $R$.  Informally, this means that the output of the machine is correct w.r.t.\ the relation,
+if the machine terminates.
 
 The runtime part of the semantics implies termination of the machine on certain inputs.  It links the input $t:\Tape_\Sigma^n$ to the number of steps
 the machine needs for the computation.
@@ -468,7 +464,7 @@ For machines that always terminate in a constant number of steps, it is useful t
     M \RealiseIn{k} R
     \quad\iff\quad
     M \Realise R ~\land~
-    M \TerminatesIn (\lambda \_~i.~k \le i)
+    M \TerminatesIn (\lambda \_~k'.~k \le k')
   \]
 \end{lemma}
 
@@ -486,10 +482,10 @@ notion of runtime.
 \section{Basic Machines}
 \label{sec:basic_machines}
 
-We define several classes of \emph{basic} machines.  All complex machines we build are based on these basic machines.  In the next chapter, we show
-how to combine these basic machines and build complex machines.
+We define several classes of \textit{basic} machines.  All complex machines we build are based on these basic machines.  In the following chapters, we
+show how to combine these basic machines and build complex machines.
 
-\subsection{Null}
+\subsection{$\MS{Null}$}
 \label{sec:Null}
 
 A very simple class of machine is the zero-tape $\MS{Null}$ machine.  The class $\MS{Null}_\Sigma$ is parametrised over the alphabet, however,
@@ -517,7 +513,7 @@ The correctness relation is the universal relation, because empty vectors do not
   By execution.  The machine terminates after zero steps in the start state.
 \end{proof}
 
-\subsection{DoAct}
+\subsection{$\MS{DoAct}$}
 \label{sec:DoAct}
 
 Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action $a:\Act$ (i.e.\ they optionally write a symbol and move the tape) and
@@ -542,24 +538,18 @@ The semantics of $\MS{DoAct}$ is easily expressed using the function $\MS{doAct}
 \begin{proof}
   By execution.
 \end{proof}
-
-
 We define some abbreviations:
-
 \begin{definition}[Machine classes derived from $\MS{DoAct}$]
  \label{def:DoAct-derived} 
-
  \begin{align*}
    \MS{Move}       ~d &:= \MS{DoAct} (\None, d) \\
    \MS{Write}    ~s   &:= \MS{DoAct} (\Some{s}, N) \\
    \MS{WriteMove}~s~d &:= \MS{DoAct} (\Some{s}, d)
  \end{align*}
- 
 \end{definition}
 
 
-
-\subsection{Read}
+\subsection{$\MS{Read}$}
 \label{sec:basic_machines-Read}
 
 $Read : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of partitioned machines.  The machines of this class have one state for each character
@@ -591,7 +581,7 @@ the current symbol is $\None$.
   \]
 \end{lemma}
 \begin{proof}
-  Case distinction over $\MS{current t[0]}$.  Both cases by executing the machine one step.
+  Case distinction over $\MS{current}~t[0]$.  Both cases by executing the machine one step.
 \end{proof}
 
 

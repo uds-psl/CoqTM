@@ -21,12 +21,12 @@ Definition~\ref{def:tape}, are essentially a list of symbols, so we have to line
   We say that a type $X$ is encodable over a finite alphabet $\Sigma_X$, if there is a function $encode : X \to \List(\Sigma_X)$.
 \end{definition}
 
-Morally, the encoding function should be functional.  There should also be a decoding function, such that the encoding and decoding functions is a
-retraction on $\List(\Sigma)$.  As we do not need any of these facts, we leave them out of this definition.
+Morally, the encoding function should be injective.  There should also be a decoding function, such that the pair $(encode, decode)$ is a retraction
+on $\List(\Sigma)$.  As we do not need any of these facts, we leave them out of this definition.
 % Implementation detail: We implement encodable types as a type class.  We do not include proofs in the type class that the alphabet is finite.  Thus,
 % we have to be careful when we define new type class instances.
 
-We may encode a type $X$ on any alphabet $\Tau$, if $\Sigma$ is a retraction on $\Tau$:
+We can map encodings with retractions:
 \begin{definition}[Map encodings]
   \label{def:Encode_map}
   Let $X$ be encodable over $\Sigma$ and $f : \Sigma \hookrightarrow \Tau$ be a retraction.  Then $X$ is also encodable over $\Tau$ with the following
@@ -48,9 +48,7 @@ For each type and type constructor, we have a distinct alphabet.  We define basi
   \label{def:basic-encodings}
   ~
   \begin{enumerate}
-  \item We encode $\Unit$ over the empty alphabet $\False$:
-  \[ encode~\unit := \nil
-  \]
+  \item We encode $\Unit$ over the empty alphabet $\False$: $encode~\unit := \nil$
   \item The types $\Bool$ and $\Fin_k$ are encoded over themself, i.e.\ $encode(x):=[x]$.
   \item Let $X$ be encodable over $\Sigma_X$.  Then $\Option(X)$ is encodable over
     \[ \Sigma_{\Option(X)} ::= \MS{NONE} ~|~ \MS{SOME} ~|~ (x:\Sigma_X) \]
@@ -88,10 +86,11 @@ For each type and type constructor, we have a distinct alphabet.  We define basi
   Note that we implicitly map the encoding functions in this definition.
 \end{definition}
 
-This are all encodings we need.  However, there is still a problem about ambiguity: Suppose $X$ is encodable over $\Sigma$.  Then the smallest
-alphabet on which we can encode the type $X+X$ is $\Tau := SigSum~\Sigma~\Sigma$.  However, now there are two possibilities how to encode $X$ on
-$\Tau$: using the retraction $RetrSigX$ and $RetrSigY$.  We must deal with this problem, when we program and prove Turing machines, by explicitely
-giving the right retractions.
+This are all encodings we need.  Generally, we say that $X$ is minimally encodable over $\Sigma_X$, if $X$ is encodable over $\Sigma_X$ according to
+Definition~\ref{def:basic-encodings}.  The mapping encodings introduces ambiguity: It is not only possible to encode multiple types on the same
+alphabet, but there may be several ways how to encode the same type on the same alphabet.  For example, the minimal alphabet of the type $X+X$ is
+$\Sigma_{X+X}$.  Now there are two possibilities how to encode $X$ on $\Sigma_{X+X}$: using the retraction $RetrSigX$ and $RetrSigY$.  We must deal
+with this problem, when we program and verify Turing machines, by explicitly specifying the right retractions.
 
 If $X$ is encodable over $\Sigma$, we encode values of $x$ on tapes with an extended alphabet $\Sigma^+$ that has an additional start and stop symbol.
 \begin{definition}[$\Sigma^+$] Let $\Sigma$ be an alphabet.
@@ -108,36 +107,36 @@ The $\MS{UNKNOWN}$ symbol is important later. We define what $t \simeq x$ means:
     t \simeq x := \exists~ls.~
     t = \MS{midtape}~ls~(\MS{START})~(encode(x) \app [\MS{STOP}])
   \]
-  In case the encoding is not clear, we write $t \simeq_{f} x$ with $t:\Tape_{\Tau^+}$ and $x:X$, when $X$ is encodable on $\Sigma$ according to
-  Definition~\ref{def:basic-encodings}, and we map this encoding to $\Tau$ using the retraction $f: \Sigma \hookrightarrow \Tau$.
+  In case the encoding is not clear, we write $t \simeq_f x$ with $t:\Tape_{\Tau^+}$ and $x:X$, when $X$ is minimal encodable on $\Sigma$ and
+  $f: \Sigma \hookrightarrow \Tau$.
 \end{definition}
 
-Note that in Definition~\ref{def:tape_contains}, we have to map the encoding of $x$ to the extended alphabet $\Sigma^+$.  If $t \simeq x$, the head of
-$t$ stands on the start symbol.  To the right, there is the encoding terminated by the stop-symbol.  To the left of the head, there may be arbitrary
-many ``rest'' symbols.
+Note that in Definition~\ref{def:tape_contains}, we have to map the encoding of $x$ to the extended alphabet $\Sigma^+$, using $RetrPlus$.  If
+$t \simeq x$, the head of $t$ stands on the start symbol.  To the right, there is the encoding terminated by the stop-symbol.  To the left of the
+head, there may be arbitrary many ``rest'' symbols.
 
 We find the convention useful, that there are no further symbols beyond the stop symbol.  In future work we also want to reason about space usage of
 machines.  If a tape contains a value, the size of the tape (i.e.\ the number of symbols on it), only depends on the length of the encoding and the
-number of rest symbols $ls$ to the left.  We have the convention to only add symbols to the left of a tape.  We also only write on tapes, if the head
-of the tape is on the right-most symbol.
+number of rest symbols $ls$ to the left.  To avoid data leaks, we have the convention to only add symbols on the left side.  We also only write on
+tapes, if the head of the tape is on the right-most symbol.
 
 \begin{definition}[Right tape]
   \label{def:isRght}
-  A tape $t$ is \emph{right}, if $\MS{current}(t) \neq \None$ and $\MS{left}~t=\nil$.  With other words, $t = \MS{midtape}~ls~m~\nil$ for some
-  $m:\Sigma$ and $ls:\List(\Sigma)$.
+  A tape $t$ is right, if $\MS{current}(t) \neq \None$ and $\MS{left}~t=\nil$.  With other words, $t = \MS{midtape}~ls~m~\nil$ for some $m:\Sigma$ and
+  $ls:\List(\Sigma)$.
 \end{definition}
 
 \section{Alphabet-Lifting}
 \label{sec:LiftAlphabet-UNKNOWN}
 
-In Section~\ref{sec:sigma-Lift}, we defined the alphabet-lift operator.  However, we noted that we need a semantically relevant default symbol in the
-``smaller'' alphabet $\Sigma$.  All ``programmed'' Turing machines are defined over an extended alphabet $\Sigma^+$.  Therefore, we use the
-$\MS{UNKNOWN}$ symbol as the default symbol.  Intuitively, nothing can go wrong, because, by definition, $\MS{UNKNOWN}$ is not part of any encoding.
-This intuition is confirmed by the following lemma:
+In Section~\ref{sec:sigma-Lift}, we defined the alphabet-lift operator.  However, we noted that we need a semantically \textit{relevant} default
+symbol in the smaller alphabet $\Sigma$.  All ``programmed'' Turing machines are defined over an extended alphabet $\Sigma^+$.  It seems therefore
+useful, to introduce a uniform default symbol $\MS{UNKNOWN}$ to $\Sigma^+$.  Intuitively, nothing can go wrong, because, by definition, $\MS{UNKNOWN}$
+is not part of any encoding.  This intuition is confirmed by the following lemma:
 \begin{lemma}[$surject$ and value-containing]
   \label{lem:contains_translate_tau}
   Let $f: \Sigma \hookrightarrow \Tau$ be a retraction between two alphabets.  Let $x:X$, where $X$ is encodable over $\Sigma$. Then, for
-  $t:\Tape_\Tau$
+  $t:\Tape_{\Tau^+}$
   \[
     t \simeq_f x \iff mapTape~(surject~f)~t \simeq x.
   \]
@@ -151,16 +150,17 @@ for first applying the alphabet-lift, and after that the tapes-lift.
 \section{Value-Manipulating Machines}
 \label{sec:value-manipulate}
 
-We defined what it means that a tape contains a value.  Now we want to define machines that manipulate values, e.g.\ increase or increase a number.
-Also, a very useful operation is to copy a value from one tape to another tape.
+We have defined what it means that a tape contains a value.  Now we want to define machines that manipulate values, e.g.\ increase or increase a
+number.  An also very useful operation is to copy a value from one tape to another tape.
 
 \subsection{Write Value}
 \label{sec:WriteValue}
 
 We define a wrapper around the machine class $\MS{WriteString}$ from Section~\ref{sec:WriteString}.  Instead of a string $str : \Sigma^+$, the machine
-$\MS{WriteValue}~str : \TM_{\Sigma^+}^1$ gets an encoding $str:\List(\Sigma)$ of a value as parameter.%
+$\MS{WriteValue}~str : \TM_{\Sigma^+}^1$ gets an encoding $str:\List(\Sigma)$ of a value as parameter%
 \footnote{The reason why $\MS{WriteValue}$ is not parametrised over values $x:X$ is, that we would also need to parametrise $\MS{WriteString}$ over
-  the encoding function of $X$.}%
+  the encoding function of $X$.  With this approach, only the correctness Lemma~\ref{lem:WriteValue_Sem} is parametrised over the encoding.}%
+.
 \begin{definition}[$\MS{WriteValue}$]
   \label{def:WriteValue}
   Let $str:\List(\Sigma)$
@@ -178,7 +178,7 @@ then after the execution the tape contains the value $x$ that has the encoding $
     \MS{WriteValue}(str) \RealiseIn{3 + 2 \cdot \length{str}} WriteValueRel(str)
   \]
   \[
-    WriteValueRel(str) := \lambda t~t'. \forall (x:X).~encode(x) = str \rightarrow isRight(t[0]) \rightarrow t'[0] \simeq x.
+    WriteValueRel(str) := \lambda t~t'.~\forall (x:X).~encode(x) = str \rightarrow isRight(t[0]) \rightarrow t'[0] \simeq x.
   \]
 \end{lemma}
 
@@ -187,13 +187,13 @@ then after the execution the tape contains the value $x$ that has the encoding $
 \label{sec:constructors-deconstructors}
 
 
-For each encodable type $X:\Type$, there is a set of machines: constructors and a matching machine.  These are machines over the least alphabet
-$\Sigma^+$ to encode $X$ on.  Constructor machines, informally, ``apply'' a constructor of the inductive type $X$ to the value on the tape $t[0]$.
-For example, considering the inductive type $\Nat$, the constructor machine $\MS{O}$ writes the number $0$ to a right tape.  The constructor machine
-$\MS{S}$ assumes that $t[0]$ contains a number $n$, and increases that number.  The deconstructor for $\Nat$ reads a number of $t[0]$.  If it is $0$,
-it terminates in $\false$.  Else, it decreases the number and terminates in $\true$.  In general, we have a constructor machine for each constructor
-of the inductive type.  If the constructor has additional arguments, these are encodes on more input tapes $t[1], t[2], \cdots$.  On the other side,
-the deconstructor machine has a partition for each constructor and may have additional tapes for storing additional arguments.
+For each encodable type $X$, there is a set of machines: constructor and a deconstructor/matching machines.  These are machines over the minimal
+alphabet $\Sigma_X^+$.  Constructor machines, informally, ``apply'' a constructor of the inductive type $X$ to the value on the tape $t[0]$.  For
+example, considering the inductive type $\Nat$, the constructor machine $\MS{ConstrO}$ writes the number $0$ on a right tape.  The constructor machine
+$\MS{ConstrS}$ assumes that $t[0]$ contains a number $n$, and increases that number.  The deconstructor for $\Nat$ reads a number of $t[0]$.  If it is
+$0$, it terminates in $\false$.  Else, it decreases the number and terminates in $\true$.  In general, we have a constructor machine for each
+constructor of the inductive type.  If the constructor has additional arguments, these are encoded on more input tapes $t[1], t[2], \cdots$.  On the
+other side, a deconstructor machine has a partition for each constructor and may have additional tapes for storing additional arguments.
 
 \subsubsection{Natural numbers}
 \label{sec:match-nat}
@@ -221,10 +221,10 @@ alphabet-lift with the retraction $f$, we would otherwise get assumptions like $
 would have to apply a lemma to show that $t'[0]$ still contains $0$, which we get for free using this convention.
 
 Initially, the tape $t[0]$ contains some number $n$.  So the head of $t[0]$ must be on the start symbol.  The machine moves one step right and reads
-the first symbol of the encoding.  This symbol may either be $\MS{S}$ or $\MS{O}$.  If the machine reads $\MS{O}$, this means that the number $n$ is
-$0$, so the machine moves back to the start symbol and terminates in the partition $\false$, indicating that the number was $0$.  On the other side,
-if the machine reads $\MS{S}$, this means the number $n$ is the successor of some number $n'$.  To decrement $n$, it overwrites the current $\MS{S}$
-with a new start symbol and terminates on this symbol in the partition $\true$.
+the first symbol of the encoding.  This symbol either is $\MS{S}$ or $\MS{O}$.  If the machine reads $\MS{O}$, this means that the number $n$ is $0$,
+so the machine moves back to the start symbol and terminates in the partition $\false$, indicating that the number was $0$.  On the other side, if the
+machine reads $\MS{S}$, this means the number $n$ is the successor of some number $n'$.  To decrement $n$, it overwrites the current $\MS{S}$ with a
+new start symbol and terminates on this symbol in the partition $\true$.
 
 \begin{definition}[$\MS{MatchNat}$]
   \label{def:MatchNat}
@@ -243,7 +243,7 @@ $\MS{MatchNat} :=$
 
 Note, that the placeholder $\_$ stands for some unspecified machine, e.g.\ in this case $\Return{\Nop}{b}$ where $b:\Bool$ is arbitrary.  This part of
 the machine is not explicitly given, because the premise of the correctness relation of $\MS{MatchNat}$ guaranties that there must be a symbol under
-the head which is either $\MS{S}$ or $\MS{O}$, so this part of the machine must never execute.
+the head that is either $\MS{S}$ or $\MS{O}$, so this part of the machine must never execute.
 
 \begin{lemma}[Correctness of $\MS{MatchNat}$]
   $\MS{MatchNat} \RealiseIn{5} MatchNatRel$.
@@ -284,9 +284,8 @@ The $S$ constructor overwrites the current symbol (which is the start symbol) wi
 \subsubsection{Sum Types}
 \label{sec:match-sum}
 
-Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  $\MS{MatchSum} : \TM_{\left(SigSum~\Sigma_X~\Sigma_Y\right)^+}^1(\Bool)$ reads a value
-$s:X+Y$.  If it is $\inl x$ (or $\inr~y$), it replaces the $\MS{INL}$ (or $\MS{INR}$) symbol with a new start symbol and terminates in $\true$ (or
-$\false$).
+Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  $\MS{MatchSum} : \TM_{\Sigma_{X+Y}^+}^1(\Bool)$ reads a value $s:X+Y$.  If it is
+$\inl x$ (or $\inr~y$), it replaces the $\MS{INL}$ (or $\MS{INR}$) symbol with a new start symbol and terminates in $\true$ (or $\false$).
 
 \begin{definition}[$\MS{MatchSum}$]
   \label{def:MatchSum}
@@ -299,7 +298,7 @@ $\MS{MatchSum} :=$
        ($\lambda(o:\Option(sigSum~\Sigma_X~\Sigma_Y)).$ match $o$
          [$\Some {\MS{INL}}$=>$\Return{(\MS{Write}~\MS{START})}{\true}$
          |$\Some {\MS{INR}}$=>$\Return{(\MS{Write}~\MS{START})}{\false}$
-         | _ => _
+         |_=>_
          ]).
 \end{lstlisting}
 \end{definition}
@@ -309,16 +308,16 @@ $\MS{MatchSum} :=$
   $\MS{MatchSum} \RealiseIn{5} MatchSumRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $MatchSumRel :=$
-  $\lambda t~(y, t').$ $\forall (s:X+Y).$ $t[0] \simeq s \rightarrow$ match $y$, $s$
-    [$\false$, $\inl x$ => $t'[0] \simeq x$
-    |$\true$, $\inr y$ => $t'[0] \simeq y$
-    | _, _ => $\False$
+  $\lambda t~(y, t').$ $\forall (s:X+Y).$ $t[0] \simeq s \rightarrow \MS{match}~y,s$
+    [$\false$, $\inl x$=>$t'[0] \simeq x$
+    |$\true$, $\inr y$=>$t'[0] \simeq y$
+    |_,_=>$\False$
     ].
 \end{lstlisting}
 \end{lemma}
 
 We have one constructor machine for $\inl$ and $\inr$.  They are both analogous.  They overwrite the start symbol with $\MS{INL}$ or $\MS{INR}$ and
-write a new start symbol on step further left.
+write a new start symbol one step further left.
 \begin{definition}[$\MS{ConstrInl}$]
   \label{def:Constr_inl}
   $\MS{ConstrInl} := \MS{WriteMove}~\MS{INL}~L \Seq \MS{Write}~\MS{START}$.
@@ -334,12 +333,12 @@ write a new start symbol on step further left.
 \subsubsection{Option Types}
 \label{sec:match-option}
 
-The types $\Option(X)$ and $X+\Unit$ are isomorphic.  Furthermore, the alphabets to encode these types on, $SigOpt~\Sigma$ and $SigSum~\Sigma~\False$,
+The types $\Option(X)$ and $X+\Unit$ are isomorphic.  Furthermore, the alphabets to encode these types on, $\Sigma_{\Option(X)}$ and $\Sigma_{X+1}$,
 are also isomorphic.  We can use this fact to derive a match machine and constructor machines for the type $\Option(X)$.  Let
-$f : SigSum~\Sigma~\False \hookrightarrow SigOpt~\Sigma$ be the canonical retraction.  Then, we can define $\MS{MatchOption}$ as
+$f : \Sigma_{X+\Unit} \hookrightarrow \Sigma_{\Option(X)}$ be the canonical retraction.  Then, we can define $\MS{MatchOption}$ as
 $\LiftAlphabet{\MS{MatchSum}}{f}$.  However, in the case that $o=\None$, the surjected output tape $t'$ contains $\unit$.  Thus, the tape has form
 (for some $ls$)
-\[ t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]. \] However, we want that the tape is right in this case.  That is because $\Option(X)$ is not a
+\[ t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]. \] However, we want that the tape is right in this case.  That is, because $\Option(X)$ is not a
 recursive data type and the information that $o=\None$ is already encoded in the partition in which $\MS{MatchOption}$ terminates.  So in this case,
 the tape moves one step to the right:
 \begin{definition}[$\MS{MatchOption}$]
@@ -352,14 +351,13 @@ the tape moves one step to the right:
 
 \begin{lemma}[Correctness of $\MS{MatchOption}$]
   \label{lem:MatchSum_Realise}
-  $\MS{MatchOption} \RealiseIn7 MatchOptionRel$ with
+  $\MS{MatchOption} \RealiseIn{7} MatchOptionRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $MatchOptionRel :=$
-  $\lambda t~(y, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow$
-    $\MS{match}~y, o$
-    [$\false, \None$ => $isRight(t'[0])$
-    |$\true, \Some x$ => $t'[0] \simeq x$
-    |_, _ => $\False$
+  $\lambda t~(y, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow \MS{match}~y, o$
+    [$\false$, $\None$     =>$isRight(t'[0])$
+    |$\true$, $\Some x$=>$t'[0] \simeq x$
+    |_,_=>$\False$
     ].
 \end{lstlisting}
 \end{lemma}
@@ -368,7 +366,7 @@ Note that we have to add $2$ extra steps: one for the conditional and one for th
 We can also derive the $\Some{\cdot}$ constructor of $\Option(X)$ from the $\inl$ constructor of $X+\Unit$.
 \begin{definition}[$\MS{ConstrSome}$]
   \label{def:Constr_Some}
-  $\MS{ConstrSome} := \LiftAlphabet{\MS{ConstrInl}}{f}$
+  $\MS{ConstrSome} := \LiftAlphabet{\MS{ConstrInl}}{f}$.
 \end{definition}
 \begin{lemma}[Correctness of $\MS{ConstrSome}$]
   \label{lem:Constr_Some_Sem}
@@ -380,13 +378,13 @@ We can also derive the $\Some{\cdot}$ constructor of $\Option(X)$ from the $\inl
 For the $\None$ constructor, we simply use $\MS{WriteValue}$
 \begin{definition}[$\MS{ConstrNone}$]
   \label{def:Constr_None}
-  $\MS{ConstrNone} := \MS{WriteValue}~[\MS{NONE}]$
+  $\MS{ConstrNone} := \MS{WriteValue}~[\MS{NONE}]$.
 \end{definition}
 \begin{lemma}[Correctness of $\MS{ConstrNone}$]
   \label{lem:Constr_None_Sem}
   $\MS{ConstrNone} \RealiseIn{3} ConstrNoneRel$ with
   \[
-    ConstrNoneRel := \lambda t~t'.~isRight~t[0] \simeq x \rightarrow t'[0] \simeq \None
+    ConstrNoneRel := \lambda t~t'.~isRight~t[0] \rightarrow t'[0] \simeq \None
   \]
 \end{lemma}
 
@@ -394,13 +392,13 @@ For the $\None$ constructor, we simply use $\MS{WriteValue}$
 \subsubsection{Product Types}
 \label{sec:MatchPair}
 
-The deconstructor and constructor machines have to explicitly copy parts of values.  Thus, their runtime depends on the value.  We use the machines
-$\MS{MoveToSymbol}$ and $\MS{CopySymbols}$.
+The deconstructor and constructor machines for product types have to explicitly copy parts of values.  Thus, their runtime depends on the value.  We
+use the machines $\MS{MoveToSymbol}$ and $\MS{CopySymbols}$.
 
-Let $X$ and $Y$ be encodable on $\Sigma_X$ and $\Sigma_Y$.  The deconstructor $\MS{MatchPair} : \TM_{\Sigma_{X \times Y}}^2$ copies the first
-component of the pair $p:X \times Y$ to tape $1$, the second component remains on tape $0$.  The machine works as follows: first it writes the stop
-symbol on tape $1$.  Then, it seeks the last character of the encoding of $\pi_1(p)$, writes a stop symbol on tape $1$, copies this (including the
-start symbol) from right to left to tape $1$.  Then it moves again to the last symbol of the original encoding of $\pi_1(p)$ on tape $0$, and
+Let $X$ and $Y$ be encodable on $\Sigma_X$ and $\Sigma_Y$.  The deconstructor $\MS{MatchPair} : \TM_{\Sigma_{X \times Y}^+}^2$ copies the first
+component of the pair $p:X \times Y$ to tape~$1$, the second component remains on tape~$0$.  The machine works as follows: first it writes the stop
+symbol on tape~$1$.  Then, it seeks the last character of the encoding of $\pi_1(p)$, writes a stop symbol on tape~$1$, copies this (including the
+start symbol) from right to left to tape~$1$.  Then it moves again to the last symbol of the original encoding of $\pi_1(p)$ on tape~$0$, and
 overwrites it with a new start symbol.
 
 \begin{definition}[$\MS{MatchPair}$]
@@ -416,10 +414,11 @@ overwrites it with a new start symbol.
   $s=\MS{START}$.
 \end{definition}
 
-The correctness and termination proofs of $\MS{MatchPair}$ are quite technical.  We have lemmas about the tape-functions of $\MS{CopyValueL}$ and
-$\MS{MoveToSymbol}$.  However, it is interesting to note that we have to do a case-distinction, whether $\pi_2(p)$ is empty.  If it is empty, then the
-first $\MS{MoveToSymbol}~f~id$ moves to the stop symbol.  If it is not empty, it moves to the first symbol of the encoding of $\pi_2(p)$.  In both
-cases, $\MS{Move}~L$ moves to the last symbol of $\pi_1(p)$ (or to the start symbol, if $\pi_1(p)$ is empty).
+The correctness and termination proofs of $\MS{MatchPair}$ are quite technical.  We have lemmas about the tape-functions of $\MS{CopyValueL}$,
+$\MS{MoveToSymbol}$, and the respective runtime functions.  However, it is interesting to note that we have to do a case-distinction, whether
+$\pi_2(p)$ is empty.  If it is empty, then the first $\MS{MoveToSymbol}~f~id$ moves to the stop symbol.  If it is not empty, it moves to the first
+symbol of the encoding of $\pi_2(p)$.  In both cases, $\MS{Move}~L$ moves to the last symbol of $\pi_1(p)$ (or to the start symbol, if $\pi_1(p)$ is
+empty).
 
 \begin{lemma}[Correctness of $\MS{MatchPair}$]
   \label{lem:MatchPair_Realise}
@@ -438,7 +437,7 @@ cases, $\MS{Move}~L$ moves to the last symbol of $\pi_1(p)$ (or to the start sym
 \end{lemma}
 
 The constructor copies the first component $x$ from tape $0$ to tape $1$, which initially contains the second component $y$, from right to left.  By
-that, it overwrites the start symbol on tape $1$ with last symbol of the encoding of $x$.
+that, it overwrites the start symbol on tape $1$ with the last symbol of the encoding of $x$.
 
 \begin{definition}[$\MS{ConstrPair}$]
   \label{def:Constr_pair}
@@ -515,10 +514,10 @@ symbol on tape $0$.
 \begin{lemma}[Correctness of $\MS{ConstrCons}$]
   \label{lem:Constr_cons_Realise}
   $\MS{ConstrCons} \Realise ConstrConsRel$ with
-  \[
-    ConstrCon := \lambda t~t'.~\forall (xs:\List(X))~(x:X).~t[0] \simeq xs \rightarrow t[1] \simeq x \rightarrow t'[0] \simeq x \cons xs \land t'[1]
-    \simeq x.
-  \]
+  \begin{align*}
+    & ConstrConRel := \\
+    & \quad \lambda t~t'.~\forall (xs:\List(X))~(x:X).~t[0] \simeq xs \rightarrow t[1] \simeq x \rightarrow t'[0] \simeq x \cons xs \land t'[1] \simeq x.
+  \end{align*}
 \end{lemma}
 
 
@@ -553,14 +552,14 @@ $\MS{MatchFin} := \Match~\MS{ReadChar}~(\lambda s.$ $\MS{match}~s$[$\Some{x} \Ri
 
 In Section~\ref{sec:CopySymbols}, we defined a machine that copies symbols until a certain symbol from one tape to another tape.  In
 Section~\ref{sec:MoveToSymbol}, we also defined a machine that moves the head to a certain symbol.  We want to use these machines to define a machine
-that copies a value from tape $t[0]$ to tape $t[1]$.  By the convention we set up in Section~\ref{sec:value-containing}), if we write new symbols to a
+that copies a value from tape $t[0]$ on tape $t[1]$.  By the convention we set up in Section~\ref{sec:value-containing}), if we write new symbols on a
 tape, this tape must be right.  With other words, the machine $\MS{CopySymbols}$ can assume that the ``target'' tape is right.  Formally, the
 correctness relation is defined as:
 \begin{definition}[Correctness relation of $\MS{CopyValue}$]
   \label{def:CopyValue_Rel}
   ~
   \[
-    CopyValueRel := \lambda t~t'. \forall (x:X).~t[0] \simeq x \rightarrow isRight~t[1] \rightarrow t'[0] \simeq x \land t'[1] \simeq x.
+    CopyValueRel := \lambda t~t'.~\forall (x:X).~t[0] \simeq x \rightarrow isRight~t[1] \rightarrow t'[0] \simeq x \land t'[1] \simeq x.
   \]
 % \begin{lstlisting}[style=semicoqstyle]
 % CopyValueRel :=
@@ -572,7 +571,7 @@ correctness relation is defined as:
 % \end{lstlisting}
 \end{definition}
 
-The algorithm of $\MS{CopyValue}$ works as follows.  First, the machine moves the head of tape $0$ to right, from the start symbol to the stop symbol.
+The algorithm of $\MS{CopyValue}$ works as follows.  First, the machine moves the head of tape $0$ right, from the start symbol to the stop symbol.
 Then it copies the symbols, from the stop symbol to the start symbol, to tape $1$.
 
 \begin{definition}[$\MS{CopyValue}$]
@@ -592,15 +591,12 @@ unchanged.
   $\MS{CopyValue} \Realise CopyValueRel$.
 \end{lemma}
 
-The proof of Lemma~\ref{lem:CopyValue_Realise} is technical.  We have several lemmas about the functions $CopySymbolFun$ and $MoveToSymbolFun$, and
-the corresponding runtime functions.
-
 The runtime of $\MS{CopyValue}$ is linear in size of the encoding of $x$.
 \begin{lemma}[Runtime of $\MS{CopyValue}$]
   \label{lem:CopyValue_TerminatesIn}
   ~
   \[
-    \MS{CopyValue} \TerminatesIn (\lambda t~k.~\exists(x:X).~t[0] \simeq x \land 25 + 12 \cdot \size{~} \leq k).
+    \MS{CopyValue} \TerminatesIn (\lambda t~k.~\exists(x:X).~t[0] \simeq x \land 25 + 12 \cdot \size{x} \leq k).
   \]
 \end{lemma}
 
@@ -619,12 +615,12 @@ possibilities of the encoding of $X$ on $\Tau$.  Therefore we have to define a f
   \label{def:translate}
   Let $f_1, f_2 : \Sigma \hookrightarrow \Tau$ be two retractions on $\Tau$.
   \begin{alignat*}{2}
+    & translate~f_1~f_2~(\tau) &~:=~& \tau \qquad\text{(if $\tau \in \{\MS{UNKNOWN}, \MS{START}, \MS{STOP}\}$)} \\
     & translate~f_1~f_2~(\tau) &~:=~&
     \begin{cases}
       f_2(\sigma)  & f_1^{-1}(\tau) = \Some{\sigma} \\
       \MS{UNKNOWN} & f_1^{-1}(\tau) = \None
-    \end{cases} \\
-    & translate~f_1~f_2~(\tau) &~:=~& \tau \qquad\text{(if $\tau \in \{\MS{UNKNOWN}, \MS{START}, \MS{STOP}\}$)} 
+    \end{cases}
   \end{alignat*}
 \end{definition}
 
@@ -671,11 +667,11 @@ write on a tape multiple times.  We must reset each ``used'' tape before writing
 \section{Extending Alphabets}
 \label{sec:extend-alphabet}
 
-Consider that we have machines $M_1 : \TM_{\Sigma_X}^{n_1}, M_2 : \TM_{\Sigma_Y}^{n_1}$ that operate on values of type $X$ and $Y$, where $X$ is
-encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then, we could combine this machines using sequential composition and the alphabet-lift and
-tapes-lift, to a machine $M : \TM_\Sigma^{n_1+n_2}$.  However, the choice of $\Sigma$ is relevant.  For example, we could choose
-$\Sigma := \Sigma_X + \Sigma_Y$.  If another machine $M' : \TM_{\Sigma'}^m$ uses $M$, it has to give a retraction
-$f : \Sigma_X+\Sigma_Y \hookrightarrow \Sigma'$.  However, there is a problem of generality:
+Consider that we have machines $M_1 : \TM_{\Sigma_X^+}^n, M_2 : \TM_{\Sigma_Y^+}^n$ that operate on values of type $X$ and $Y$, where $X$ is encodable
+over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then, we could combine this machines using sequential composition and the alphabet-lift and tapes-lift, to a
+machine $M : \TM_{\Sigma^+}^n$.  However, the choice of $\Sigma$ is relevant.  For example, we could choose $\Sigma := \Sigma_X + \Sigma_Y$.
+If another machine $M' : \TM_{\Sigma'^+}^n$ uses $M$, it has to give a retraction $f : \Sigma_X+\Sigma_Y \hookrightarrow \Sigma'$.  However, there is
+a problem of generality:
 \begin{fact}
   There exists types $X,Y,Z:\Type$ with retractions $f_1 : X \hookrightarrow Z$ and $f_2 : Y \hookrightarrow Z$, such that there is no retraction
   $(f_1+f_2) : X+Y \hookrightarrow Z$.
@@ -684,7 +680,7 @@ $f : \Sigma_X+\Sigma_Y \hookrightarrow \Sigma'$.  However, there is a problem of
   There is no injective function $\Unit+\Unit\to\Unit$.
 \end{proof}
 
-That means that we have to show a precondition to combine two retractions $f_1 : \Sigma_X \hookrightarrow \Sigma'$ and
+That means that we would have to show a precondition to combine two retractions $f_1 : \Sigma_X \hookrightarrow \Sigma'$ and
 $f_2 : \Sigma_Y \hookrightarrow \Sigma'$ and get a retraction $f_1+f_2 : \Sigma_X + \Sigma_Y \hookrightarrow \Sigma'$:
 \begin{fact}
   If the retractions $f_1 : X \hookrightarrow Z$ and $f_2 : Y \hookrightarrow Z$ have disjoint images, then we can define a retraction
@@ -701,9 +697,9 @@ the tapes-lift on $M_1$ and $M_2$ with the retractions $f_1$ and $f_2$.
 \section{Designing Machines}
 \label{sec:programming-design}
 
-As noted above, when we speak of ``programming'' Turing machines, we mean that we use tapes as registers, and use the combinators and lift to compose
-machines.  Moreover, we only use machines that directly change the values of registers (tapes).  We have machines that do a case-distinction on
-values, and machines that apply constructors to the value that a tape contains.
+As noted above, when we speak of ``programming'' Turing machines, we mean that we use tapes as registers, and use the combinators and lifting
+operators to compose machines.  Moreover, we only use machines that directly change the values of registers (tapes).  We have machines that do a
+case-distinction on values, and machines that apply constructors to the value that a tape contains.
 
 Our $\While$ operator corresponds to ``do-while'' in imperative languages, i.e.\ the machine $M$ has to decide at the end of its execution whether to
 continue or break out of the loop.  Tail-recursive functions can easily be transformed into ``do-while'' loops.  Therefore, when we translate
@@ -735,7 +731,7 @@ $t[1]$ are input tapes for $x$ and $y$, $t[2]$ is the output tape for $f~x~y$, a
     &\qquad t[2] \simeq f~x~y ~\land~ \\
     &\qquad \left(\forall (i:\Fin_n).~isRight~t'[3+i] \right).
   \end{alignat*}
-  We say that a machine $M$ computes the function $f$, if $M \Realise f$.
+  We say that a machine $M$ computes the function $f$, if $M \Realise FunRel~f$.
 \end{definition}
 
 Similarly, we can define the runtime function of such a machine.
@@ -755,8 +751,8 @@ Note that these definitions can be generalised to unary functions or functions w
 $FunRel(f)$ and \\
 $FunT(steps)$ coincide, however, with swapped quantifiers.
 
-Internal tapes may be used to copy input-values on, if they need to be changed, e.g.\ for loops.  Thus, the general design for implementing a machine
-$M$ that computes a binary function $f$, is the following:
+Internal tapes may be used to copy input-values on, if their value changes in the loop.  The general design for implementing a machine $M$ that
+computes a binary function $f$, is the following:
 \begin{align*}
   M := & \LiftTapes{\MS{CopyValue}}{\Vector{0; 3}} \Seq \LiftTapes{\MS{CopyValue}}{\Vector{1; 4}} \Seq \\
        & \LiftTapes{\MS{WriteValue}~\cdots}{\Vector{\cdots}} \Seq \\
@@ -764,10 +760,10 @@ $M$ that computes a binary function $f$, is the following:
        & \LiftTapes{\MS{Reset}}{\Vector{3}} \Seq \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq \LiftTapes{\MS{Reset}}{\Vector{5}} \Seq \cdots
 \end{align*}
 with $\MS{Loop} := \While(\MS{Step})$.  $\MS{Step}$ is partitioned over $\Option(\Unit)$, $\Some\unit$ means to break out of the loop and $\None$ to
-continue.  Note that the $\MS{Step}$ and $\MS{Loop}$ have only ``access'' to the copies of $x$ and $y$, but not to the ``original'' on $t[0]$ and
-$t[1]$ of $M$.  This also means that $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $y$ is on the $0$st and $1$st tape of $\MS{Step}$,
-the output is on tape $2$, all further tapes are internal tapes.  Before the loop, some tapes may be initialised with values.  After the loop, all
-tapes that $\MS{Step}$ did not reset, including the tapes to contain the copies of $x$ and $y$ and additional tapes, are reseted by $M$.
+continue.  Note that $\MS{Step}$ and $\MS{Loop}$ have only ``access'' to the copies of $x$ and $y$, but not to the ``original'' on $t[0]$ and $t[1]$
+of $M$.  This also means that $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $y$ is on the $0$st and $1$st tape of $\MS{Step}$, the
+output is on tape $2$, all further tapes are internal tapes.  Before the loop, some tapes may be initialised with values.  After the loop, all tapes
+that $\MS{Step}$ did not reset, including the tapes to contain the copies of $x$ and $y$ and additional tapes, are reseted by $M$.
 
 Before we can define the machine $M$, we first have to decide on which alphabet $M$ is defined.  If the machine operates on only one data type, then
 we define $M$ over the smallest alphabet to encode this type on.  On the other hand, if $M$ operates on more alphabets, we use the technique in
@@ -820,7 +816,7 @@ The first step in the design of the machine is to specify, which tape contains w
   \label{tab:tapes-Add}
 \end{table}
 
-Because the machine only works on natural numbers, we choose $SigNat$ as the alphabet of $\MS{Add}$ and all its sub-machines.
+Because the machine only works on natural numbers, we choose $\Sigma_\Nat$ as the alphabet of $\MS{Add}$ and all its sub-machines.
 
 The next step is to implement the step machine.  $\MS{AddStep}$ has only access to the variables $a$ and $b$, that are stored on tape $0$ and $1$, as
 also visualised in Table~\ref{tab:tapes-Add}.  The decrement operation and test whether $b$ was $0$ is implemented using the deconstructor machine
@@ -901,7 +897,7 @@ execution protocol for $\MS{Add}$.
     $0: m$      &                  & $0 : m$          &                &              \\
     $1: n$      & $0 : n$          &                  &                &              \\
     $2:~\dashv$ & $1 : n$          &                  & $0: m+n$       &              \\
-    $3:~\dashv$ &                  & $1 :$            & $1: 0$         & $0:~ \dashv$ \\
+    $3:~\dashv$ &                  & $1 : m$          & $1: 0$         & $0:~ \dashv$ \\
   \end{tabular}
   \caption{Execution protocol of $\MS{Add}$}
   \label{tab:exec-Add}
@@ -1028,7 +1024,7 @@ Note that in the correctness Lemma~\ref{lem:Add_Step_Sem}, we also prove termina
 because it calls $\MS{Add}$, which has not constant runtime.
 
 As usual, we define $\MS{MultLoop} := \While~\MS{MultStep}$.  The correctness statement of $\MS{MultLoop}$ says that if the first three tapes contain
-$m$, $n$n and $c$ and all other tapes are right, then after the execution of the loop, the tapes contain $0$, $n$, and $m \cdot n + c$ and the other
+$m$, $n$, $c$, and all other tapes are right, then after the execution of the loop, the tapes contain $0$, $n$, and $m \cdot n + c$ and the other
 tapes are right.  Thus, when we instantiate the $c$-tape with the value $0$, the output tape contains $m \cdot n$.
 
 \begin{lemma}[Correctness of $\MS{MultLoop}$]
@@ -1062,7 +1058,8 @@ It follows that $\MS{Mult}$ computes the function $mult$, w.r.t.\ Definition~\re
 
 For brevity,  we omit the concrete runtime function here.  
 \begin{lemma}[Runtime of $\MS{Mult}$]
-  There is a function $MultSteps : \Nat\to\Nat\to\Nat$, such that $MultSteps \in \mathcal{O}(m \cdot n^2)$ and $\MS{Mult} \TerminatesIn MultSteps$.
+  There is a function $multSteps : \Nat\to\Nat\to\Nat$, such that $multSteps \in \mathcal{O}(m \cdot n^2)$ and
+  $\MS{Mult} \TerminatesIn FunT(multSteps)$.
 \end{lemma}
 
 \subsection{Mapping of Sum Functions}
@@ -1072,15 +1069,15 @@ Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function 
 $(f+g)(\inr y):=g(y)$.  We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a
 machine $\MS{MapSum}$ that computes the function $(f+g)$.
 
-First we have to define precisely, which machine has which alphabet.  We want to be as general as possible.  Let $X, Y$ be encodable over
-$\Sigma_X, \Sigma_Y$.  We assume $M_1, M_2 : \TM_{\Sigma_M}^{2+n}$, i.e.\ both machines have the same alphabet (if not, they can be alphabet-lifted)
-and they have at least two tapes (i.e.\ an input and output tape).  We assume that $\Sigma_M$ includes $\Sigma_X$, $\Sigma_Y$, and $\Sigma_Z$.
-Formally, this means that we assume retractions $f_X,f_Y,f_Z$ between $\Sigma_X, \Sigma_Y, \Sigma_Z$ and $\Sigma_M$.  Let $\Sigma$ be the alphabet for
-$\MS{MapSum}$, with a retraction $f_M : \Sigma_M \hookrightarrow \Sigma$.  Furthermore, it should be possible to encode $X+Y$ on $\Sigma$, so we
-assume a retraction $f_{X+Y} : \Sigma_{X+Y} \hookrightarrow \Sigma$.  We notice that there are now two possibilities how to encode $X$ (and dually
-$Y$) on $\Sigma$: via the retractions $f_X \circ f_M$ and $RetrInl \circ f_{X+Y}$.  These retractions might be extensionally equal for concrete
-choices of alphabets, but we want to be as general as possible.  As a consequence, we need to translate between these representations, using the
-$\MS{Translate}$ machine of Section~\ref{sec:Translate}.  Note that there is only one way to encode $Z$ on $\Sigma$, namely via $f_Z \circ f_M$.
+First we have to define precisely, which machine has which alphabet.  Let $X, Y$ be encodable over $\Sigma_X, \Sigma_Y$.  We assume
+$M_1, M_2 : \TM_{\Sigma_M}^{2+n}$, i.e.\ both machines have the same alphabet and they have at least two tapes (i.e.\ an input and output tape).  We
+assume that $\Sigma_M$ includes $\Sigma_X$, $\Sigma_Y$, and $\Sigma_Z$.  Formally, this means that we assume retractions $f_X,f_Y,f_Z$ between
+$\Sigma_X, \Sigma_Y, \Sigma_Z$ and $\Sigma_M$.  Let $\Sigma$ be the alphabet for $\MS{MapSum}$, with a retraction
+$f_M : \Sigma_M \hookrightarrow \Sigma$.  Furthermore, it should be possible to encode $X+Y$ on $\Sigma$, so we assume a retraction
+$f_{X+Y} : \Sigma_{X+Y} \hookrightarrow \Sigma$.  We notice that there are now two possibilities how to encode $X$ (and dually $Y$) on $\Sigma$: via
+the retractions $f_X \circ f_M$ and $RetrInl \circ f_{X+Y}$.  These retractions might be extensionally equal for concrete choices of alphabets, but we
+want to be as general as possible.  As a consequence, we need to translate between these representations, using the $\MS{Translate}$ machine of
+Section~\ref{sec:Translate}.  Note that there is only one way to encode $Z$ on $\Sigma$, namely via $f_Z \circ f_M$.
 
 The machine $\MS{MapSum}$ first makes a case-distinction on the value $s:X+Y$ on the input tape $0$.  If it is $x$ (on the alphabet $\Sigma_{X+Y}$),
 it is translated to the alphabet of $M_1$.  Then we execute the alphabet-lifted machine $M_1$.  This writes the output $f_1(x)$ on the output tape $1$
@@ -1133,9 +1130,8 @@ $nth : \List(X) \to \Nat \to \Option(X)$.  We assume retractions $f_{\List(X)} :
 $f_{\Option(X)} : \Sigma_{\Option(X)} \hookrightarrow \Sigma$, and $f_\Nat : \Sigma_\Nat \hookrightarrow \Sigma$.  Now there are two ways to encode
 $X$ on $\Sigma$: via $RetrOpt \circ f_{\Option(X)}$ and $RetrList \circ f_{\List(X)}$.
 
-The algorithm of the step can be expressed with the pseudocode in Figure~\ref{fig:pseudo-NthStep}.  Note that in contrast to the design of $\MS{Add}$
-and $\MS{Mult}$, we do not use new variable names for the copies of $l:\List(X)$ and $n:\Nat$.  The tape assignment is visualised in
-Figure~\ref{fig:tapes-Nth}.  Tape $0$ holds the copy of $l$, $1$ the copy of $n$, and $2$ the output.
+The algorithm of the step can be expressed with the pseudocode in Figure~\ref{fig:pseudo-NthStep}.  Note that we do not use new variable names for the
+copies of $l:\List(X)$ and $n:\Nat$.  The tape assignment is visualised in Figure~\ref{fig:tapes-Nth}.
 
 \begin{figure}[!htb]
   \begin{minipage}{0.3\textwidth}

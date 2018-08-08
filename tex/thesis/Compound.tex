@@ -5,9 +5,9 @@ In this chapter, we build complex machines, using the combinators developed in C
 Chapter~\ref{chap:lifting}.  However, we do not use the alphabet lift in this chapter.  We also prove correctness and runtime of these machines.
 
 The general approach, when we prove correctness of a machine $M$, i.e.\ if we want to show $M \Realise R$, is to first define a relation $R'$ that $M$
-realises.  For that, we use the correctness lemmas of the combinators, lifts, and all concrete machines ``involved''.  The main part of the proof is
-applying Lemma~\ref{lem:Realise_monotone} and showing $R' \subseteq R$.  Note that the first part of the proof, i.e.\ generating the relation $R'$
-such that $M \Realise R'$, is mechanical.  Indeed, we can automate this step in Coq, see more in Chapter~\ref{chap:implementation}.
+realises.  For that, we use the correctness lemmas of the combinators, lifts, and concrete machines.  We applying Lemma~\ref{lem:Realise_monotone} and
+have to show $R' \subseteq R$.  Note that the first part of the proof, i.e.\ generating the relation $R'$ such that $M \Realise R'$, is mechanical.
+Indeed, we can automate this step in Coq, see more in Chapter~\ref{chap:implementation}.
 
 When $M$ always terminates in constant time $k$, we show $M \RealiseIn{k} R$ instead.  Using the monotonicity Lemma~\ref{lem:RealiseIn_monotone}, we
 can prove correctness and (constant) runtime at once.  For (non-constant) runtime, we use the dual approach, using the anti-monotonicity
@@ -54,8 +54,8 @@ The machine $\MS{WriteString}~d~str$ writes a fixed string $str:\List(\Sigma)$ i
   \end{alignat*}
 \end{definition}
 
-Note that this is the our only machine we define per recursion.  The way we prove correctness in constant time (depending on the length of
-$str$) is still the same.
+Note that this is our only machine we define per recursion.  The way we prove correctness in constant time (depending on the length of $str$) is still
+the same.
 
 The machine writes all symbols of the string $str$ to the tape and moves in the tape in direction $d$ after each (but the last) symbol.  When it
 terminates, the head of the tape is under the last written symbol, which is the last symbol of $str$.  It terminates in constant time, after
@@ -63,7 +63,7 @@ $2\cdot\length{str}-1$ steps.
 
 The relation that $\MS{WriteString}$ ``automatically'' realises, is also defined per recursion over the string:
 \begin{lemma}
-  $\MS{WriteString}~d~str \RealiseIn{3 \cdot \length{str}} R'~d~str$ with
+  $\MS{WriteString}~d~str \RealiseIn{2 \cdot \length{str} - 1} R'~d~str$ with
   \begin{alignat*}{3}
     &\MS{R'}~d~&&(\nil        ) &~:=~& NopRel \\
     &\MS{R'}~d~&&(s \cons \nil) &~:=~& DoActRel(\Some{s}, N) \\
@@ -130,12 +130,12 @@ Thus, we also do not more proofs of this kind on paper.
 \section{$\MS{CopySymbols}$}
 \label{sec:CopySymbols}
 
-The machine $\MS{CopySymbols}~h : \TM_\Sigma^2$, where $h:\Sigma\to\Bool$, is a compound machine involving a $\While$-loop.  The machine reads the
-symbol on tape $0$.  It reads the symbol on tape $0$ and writes it to tape $1$.  If the symbol satisfies $h$, the machine halts.  Else it moves both
-tapes right and continues the loop.  The machine also halts if there was no current symbol to read from tape $0$.
+The machine $\MS{CopySymbols}~h : \TM_\Sigma^2$, where $h:\Sigma\to\Bool$, is a compound machine involving a $\While$-loop.  It reads a symbol on tape
+$0$, writes it to tape $1$, and moves both tapes to right, until the read symbol satisfies $h$.  If there was no current symbol on tape $0$, it also
+terminates.
 
 We first define the machine for the step.  Since we want to apply the $\While$ operator on the step machine, it must be partitioned over
-$\Option(\Unit)$.  $\Some\unit$ means break out of the loop and $\None$ means repeat the loop.
+$\Option(\Unit)$.  $\Some\unit$ means to break out of the loop and $\None$ means to repeat the loop.
 \begin{definition}[$\MS{CopySymbolsStep}$]
   \label{CopySymbols_Step}
   % \begin{multline*}
@@ -155,14 +155,14 @@ $\Option(\Unit)$.  $\Some\unit$ means break out of the loop and $\None$ means re
   % \todo{Decide!}
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{CopySymbolsStep}~h :=$
-  Match ($\LiftTapes{\MS{Read}}{\Vector{0}}$)
-        ($\lambda (s:\Option(\Sigma)).~\MS{match}~s$
-           [$\Some{x}$ =>
-             if $h(x)$
-             then $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit}$ 
-             else $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None}$ 
-           |$\None$ => $\Return{\Nop}{\Some\unit}$ 
-           ]).
+  Match($\LiftTapes{\MS{Read}}{\Vector{0}}$)
+       ($\lambda (s:\Option(\Sigma)).~\MS{match}~s$
+          [$\Some{x}$ =>
+            if $h(x)$
+            then $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit}$ 
+            else $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None}$ 
+          |$\None$ => $\Return{\Nop}{\Some\unit}$ 
+          ]).
 \end{lstlisting}
 \end{definition}
 
@@ -184,10 +184,10 @@ $\MS{CopySymbolsStep}~h :=$
   \end{multline*}
 \end{lemma}
 \begin{proof}
-  Mechanical, with case-analysis over $t[0]$.
+  Mechanical, with case-analysis over $\MS{current}~t[0]$.
 \end{proof}
 
-Now, to define $\MS{CopySymbols}$, we apply the $\While$ operator to the step machine:
+We define $\MS{CopySymbol}$ by applying the $\While$ combinator to $\MS{CopySymbolsStep}$:
 \begin{definition}[$\MS{CopySymbols}$]
   \label{def:CopySymbols}
   $\MS{CopySymbols}~h := \While(\MS{CopySymbolsStep}~h)$.

@@ -3,12 +3,12 @@
 
 In Chapter \ref{chap:definitions}, we have defined the notion of multi-tape Turing machines and we defined (classes of) basic machines.  In this
 chapter, we define control flow operators, like ``match'', ``if then else'', ``sequential composition'', and ``while''.  As a result, we get a
-\emph{shallow-embeded} language for programming multi-tape Turing machines in an imperative way.  This means that our combinators are first-class
-citizen in our meta-logic, i.e.\ the dependent type theory of Coq --- the calculus of inductive constructions.  Another possible approach, called
-\emph{deep embedding}, is to formalise a fixed syntax of a language as an inductive data type.  We then would need a compiler from abstract
-trees of Turing machine programs to actual Turing machines.  This compiler would have to be extended, whenever we add a new feature to our language.
-In our approach, we can just ``extend'' our language by defining a function, and we use the same verification technique (i.e.\ realisation of
-correctness relations and termination in runtime relations) on each stage of the development.
+\textit{shallow-embeded} language for programming multi-tape Turing machines in an imperative way.  This means that our combinators are first-class
+citizen in our meta-logic, i.e.\ the dependent type theory of Coq --- the calculus of (co-)~inductive constructions.  Another possible approach, called
+\textit{deep embedding}, is to formalise a fixed syntax of a language as an inductive data type.  We then would need a compiler from abstract trees of
+Turing machine programs to actual Turing machines.  This compiler would have to be extended, whenever we add a new feature to our language.  In our
+approach, we can just ``extend'' our language by defining a function in the meta-logic, and we use the same verification technique (i.e.\ realisation
+and termination) on each stage of the development.
 
 % Advantages and disadvantages of shallow vs deep embedding
 % Shallow:
@@ -22,7 +22,7 @@ correctness relations and termination in runtime relations) on each stage of the
 % - We had to prove that the combinators are correct with respect to the semantic of the compiled operators
 % - We have to amend the compiler, whenever we want to add a new feature to the language
 
-\section{Match}
+\section{$\MS{Match}$}
 \label{sec:match}
 
 Asperti and Ricciotti~\cite{asperti2015} define the control flow operators sequential composition, conditional, and while.  However, for the
@@ -69,8 +69,8 @@ canonical value.
 \end{figure}
 
 $\MS{Match}~M~f$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
-to to the injection of the start state of the machine $f(part~q)$.  When $\MS{Match}~M~f$ reaches a state that is the injection of a final state of
-a machine $f~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
+to the injection of the start state of the machine $f(part~q)$.  When $\MS{Match}~M~f$ reaches a state that is the injection of a final state of a
+machine $f~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
 
 \begin{lemma}[Correctness of $\MS{Match}~M~f$]
   \label{lem:Match_Realise}
@@ -120,8 +120,8 @@ We can combine the correctness and runtime lemma, in case $M$ and every $f~y$ te
 \label{sec:match-derived-operators}
 
 As mentioned above, conditional and sequential composition can be defined as instances of the Match operator.  For the sequential composition
-$M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$, the function $f : F \to \TM_\Sigma^n(F')$ that is the second parameter of
-$\Match$, maps all partitions of $F$ to the machine $M_2$.
+$M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$, the function $f : F \to \TM_\Sigma^n(F')$, maps all partitions of $F$ to the
+machine $M_2$.
 \begin{definition}[Sequential composition]
   \label{def:Seq}
   Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
@@ -146,7 +146,7 @@ constant-time termination, i.e.\ the lemma we get notationally by removing the s
 
 We often have the case that the first machine $M_1$ is partitioned over the unit-type $F = \Unit$.  In this case, the relation is
 $\left(\bigcup_{y:F} R_1\at y\right) \circ R_2 \equiv R_1 \at \unit \circ R_2 = R_1 \circ R_2$ by the convention that we identify unit-partitioned
-relations with unpartitioned relations.  This means that sequential composition of two machines amounts to composing their relations.
+relations with unpartitioned relations.  This means that sequential composition of two machines amounts to composing their correctness relations.
 
 In case, either $M_1$ or $M_2$ do not have constant runtime, we need the runtime lemma, that can be derived from Lemma~\ref{lem:Match_Terminates}.
 \begin{lemma}[Runtime of sequential composition]
@@ -161,14 +161,14 @@ In case, either $M_1$ or $M_2$ do not have constant runtime, we need the runtime
 \end{lemma}
 
 
-For the conditional $\If{M_1}{M_2}{M_3}$ with $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F')$, the function
-$f : \Bool \to \TM_\Sigma^n(F')$ simply maps $\true$ to $M_2$ and $\false$ to $M_3$.  This means the states of $M_1$ are partitioned in positive
+For the conditional $\If{M_1}{M_2}{M_3}$ with $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F)$, the function
+$f : \Bool \to \TM_\Sigma^n(F)$ simply maps $\true$ to $M_2$ and $\false$ to $M_3$.  This means the states of $M_1$ are partitioned in positive
 ($\true$) and negative ($\false$) states.  The machine $\If{M_1}{M_2}{M_3}$, as defined bellow, first executes $M_1$.  If terminated in a positive
 state, it continues the execution in $M_2$, else in $M_3$.
 
 \begin{definition}[Conditional]
   \label{def:If}
-  Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F')$.
+  Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F)$.
   \[
     \If{M_1}{M_2}{M_3} := \Match~M_1~
     \left(\lambda b.~\cond{b}{M_2}{M_3} \right)
@@ -191,10 +191,11 @@ The runtime lemma of the conditional can also be derived from Lemma~\ref{lem:Mat
 \begin{lemma}[Runtime of the conditional]
   \label{lem:If_TerminatesIn}
   If $M_1 \Realise R_1$, $M_1 \TerminatesIn T_1$, $M_2 \TerminatesIn T_2$, and $M_3 \TerminatesIn T_3$, then
-  \begin{multline*}
-    \If{M_1}{M_2}{M_3} \TerminatesIn \\
-    \left( \lambda t~k.~\exists k_1~k_2.~T_1~t~k_1 ~\land~ 1+k_1+k_2 \leq k ~\land~ \forall b~t'.~\cond{b}{T_2~t'~k_2}{T_3~t'~k_2} \right)
-  \end{multline*}
+  \begin{align*}
+    & \If{M_1}{M_2}{M_3} \TerminatesIn \\
+    &\quad \bigl( \lambda t~k.~\exists k_1~k_2.~T_1~t~k_1 ~\land~ 1+k_1+k_2 \leq k ~\land~ \\
+    &\quad \phantom{\bigl( \lambda t~k.~\exists k_1~k_2.}~\forall b~t'.~R_1~t~(b, t') \rightarrow \cond{b}{T_2~t'~k_2}{T_3~t'~k_2} \bigr)
+  \end{align*}
 \end{lemma}
 
 
@@ -204,7 +205,8 @@ their conditional operator takes a concrete ``negative'' state, i.e.\ the machin
 makes programming and reasoning about concrete machines tedious, because complex machines also have many states.  By introducing state-partitioned
 machines and implementing the more general $\Match$ combinator, we solve both problems.  Moreover, we often exploit the convenient generality of the
 $\Match$ operator.  For example, it can be used to implement a machine that copies a symbol from one tape to another tape, as demonstrated in
-Chapter~\ref{chap:combining}.
+Chapter~\ref{chap:combining}.  Also note, that Asperti and Ricciotti~\cite{asperti2015} have no notion of runtime, their strong notion of correctness
+only implies termination in an uncertain number of steps.
 
 
 \subsection{Proof of $\Match$}
@@ -219,13 +221,13 @@ $f : A \to A$, $f' : B \to B$, and two halting function $h : A \to \Bool$, $h' :
 compatible with $lift$ in non-halting states of $A$.  Formally, this means
 \begin{equation}
   \label{eq:loop_lift_assumption1}
-  \forall a:A.~\lnot h(x) \rightarrow f' (lift~x) = lift (f~x).
+  \forall a:A.~\lnot h(x) \rightarrow f' (lift~x) = lift (f~x)
 \end{equation}
 
 The second assumption is that $h'$ and $h$ are compatible w.r.t.\ $lift$; formally:
 \begin{equation}
   \label{eq:loop_lift_assumption2}
-  \forall a:A.~h'(lift~x)=h(x).
+  \forall a:A.~h'(lift~x)=h(x)
 \end{equation}
 
 Under these two assumptions we can show two lemmas that essentially say that the second abstract machine $B$ simulates the first machine $A$.
@@ -276,12 +278,12 @@ Under these two assumptions we can show two lemmas that essentially say that the
 The Lemmas~\ref{lem:loop_lift} and~\ref{lem:loop_unlift} are visualised in Figure~\ref{fig:loop_lift_lemmas}.
 
 For the second feature, \emph{sequencing}, we assume a type $A$ with the step function $f \from A \to A$ and two halting functions
-$h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume
+$h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume:
 \begin{equation}
   \label{eq:loop_merge_assumption}
-  \forall(a:A).~h~a = \false \rightarrow h'~a = \false,
+  \forall(a:A).~h~a = \false \rightarrow h'~a = \false
 \end{equation}
-i.e.,\ either $a$ is a halting state w.r.t.\ $h'$, or $a$ is a non-halting state w.r.t.\ $h$.
+
 \begin{lemma}[Loop merging]
   \label{lem:loop_merge}
   Under assumption~(\ref{eq:loop_merge_assumption}):
@@ -346,7 +348,7 @@ Using Lemma~\ref{lem:loop_merge} and~\ref{lem:loop_lift}, we can show the lemma 
 \begin{proof}
   We apply Lemma~\ref{lem:loop_merge} and have to show:
   \begin{enumerate}
-  \item $\forall a:\Conf_\Match.~ \lnot haltConfL~a \rightarrow \lnot \MS{haltConf}~a$.  This holds trivially by definition.
+  \item $\forall a:\Conf_\Match.~ \lnot haltConfL~a \rightarrow \lnot \MS{haltConf}~a$.  This holds trivially case-analysis over $a$.
   \item $\Loop~step_\Match~haltConfL~(\MS{initConf}_\Match~t)~k_1 =
     \Some{liftL~c_1}$.  By definition, we have $\MS{initConf}_\Match~t=liftL(\MS{initConf}_M~t)$.  The claim follows with Lemma~\ref{lem:loop_lift}.
   \item $\Loop~step_\Match~haltConf_\Match~(liftL~c1)~(1+k_2) =
@@ -378,7 +380,7 @@ The correctness Lemma~\ref{lem:Match_Realise} follows directly from Lemma~\ref{l
 
 Asperti and Ricciotti~\cite{asperti2015} have a version of Lemma~\ref{lem:loop_lift} and Lemma~\ref{lem:loop_merge}.
 
-\section{While}
+\section{$\MS{While}$}
 \label{sec:While}
 
 
@@ -397,7 +399,7 @@ terminated in $\Some{y}$, the loop breaks and $\While~M$ terminates in $y$.  Whe
       (start_M, (\None, N)^n) & halt_M(q) \\
       \delta_M (q,s)    & \lnot halt_M(q)
     \end{cases} \\
-    halt ~& q      &~:=~& halt_M(q) \land \MS{isSome}(part_M(q)) \\
+    halt ~& q      &~:=~& halt_M(q) \land part_M(q) \neq \None \\
     part ~& q      &~:=~&
     \begin{cases}
       y   & part_M(q) = \Some y \\
@@ -409,9 +411,9 @@ terminated in $\Some{y}$, the loop breaks and $\While~M$ terminates in $y$.  Whe
 \begin{figure}
   \center
   \input{fig-WhileExample}
-  \caption{Example for $\While~M$ with $M:\TM_\Sigma^n(\Option(\Bool))$.  When the $M$ reaches the state $q_1$, the loop is continued, because $q_1$
-    is in the partition $\None$ of $M$.  $q_2$ and $q_3$ are in the partition $\Some{\true}$ and $\Some{\false}$.  Therefore $\While~M$ terminates in
-    its partition $\true$ or $\false$, when $M$ terminated in $q_2$ or $q_3$.}
+  \caption{Example for $\While~M$ with $M:\TM_\Sigma^n(\Option(\Bool))$.  When $M$ reaches the state $q_1$, the loop is continued, because $q_1$ is in
+    the partition $\None$ of $M$.  $q_2$ and $q_3$ are in the partition $\Some{\true}$ and $\Some{\false}$.  Therefore $\While~M$ terminates in its
+    partition $\true$ or $\false$, when $M$ terminated in $q_2$ or $q_3$, respectively.}
   \label{fig:while-example}
 \end{figure}
 
@@ -434,21 +436,22 @@ The correctness of $\MS{While}$ can be expressed using the following relation:
 \end{lemma}
 
 We can also express the correctness relation of $\While$ using the Kleene star:
-\begin{lemma}[Alternative specification of $\While~M$]
+\begin{fact}[Alternative specification of $\While~M$]
   ~
   \[
     WhileRel~R \equiv (R \at \None)^* \circ \Bigl( \bigcup_{y:F} \bigl( R \at {\Some y} \bigr) \att y \Bigr)
   \]
-\end{lemma}
+\end{fact}
 
-Both definitions of $WhileRel$ should make clear what $\While~M$ does: It repeats the execution of $M$ as long as it terminated in $\None$, and
-after it terminated in $\Some y$, it terminates in the partition $y$.  This is visualised in Figure~\ref{fig:while-example}.  However, the inductive
-definition is more practical when we prove correctness of concrete $\MS{While}$ machines, because we can just do induction on the inductive predicate.
+Both definitions of $WhileRel$ should make clear what $\While~M$ does: It repeats the execution of $M$ as long as it terminated in $\None$, and after
+$M$ terminated in $\Some y$, it terminates in the partition $y$.  This is visualised in Figure~\ref{fig:while-example}.  The inductive definition is
+more practical when we prove correctness of concrete $\MS{While}$ machines, because we can just do induction on the inductive predicate.
 
 When we want to prove $\While~M \Realise R$ for some machine $M:\TM_\Sigma^n(F)$ and relation
-$R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, we must of course have proven that $M \Realise R'$ for some relation
+$R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, we must of course have already proven that $M \Realise R'$ for some relation
 $R' \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.  Then we apply Lemma~\ref{lem:Realise_monotone} and~\ref{lem:While_Realise},
-and have to show $WhileRel~R' \subseteq R$.  We can prove this by induction on the inductive predicate, which is equivalent to applying the following lemma:
+and have to show $WhileRel~R' \subseteq R$.  We can prove this by induction on the inductive predicate, which is equivalent to apply the following
+lemma:
 \begin{lemma}[Induction for $WhileRel$]
   \label{lem:WhileInduction}
   ~
@@ -699,9 +702,8 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
 \section{Partition Operators}
 \label{sec:partition-op}
 
-The operators of the above sections of this Chapter modified the behaviour of the machine.  However, we can also define simple operators that modify
-the partitioning function $part : Q \to F$.  This is for example useful, if we want some (partitioned) machine to terminate in one particular
-partition.
+The operators of the above sections of this Chapter modified the behaviour of the machine.  We can also define simple operators that modify the
+partitioning function $part : Q \to F$.  This is for example useful, if we want some (partitioned) machine to terminate in one particular partition.
 
 \begin{definition}[$\MS{ChangePartition}$]
   Let $M:\TM_\Sigma^n(F)$ and $g : F \to F'$.
