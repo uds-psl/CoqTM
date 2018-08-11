@@ -90,7 +90,7 @@ End MatchNat.
 
 
 Ltac smpl_TM_MatchNat :=
-  match goal with
+  lazymatch goal with
   | [ |- MatchNat ⊨ _ ] => eapply RealiseIn_Realise; apply MatchNat_Sem
   | [ |- MatchNat ⊨c(_) _ ] => apply MatchNat_Sem
   | [ |- projT1 (MatchNat) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply MatchNat_Sem

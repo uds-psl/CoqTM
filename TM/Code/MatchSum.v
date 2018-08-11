@@ -97,7 +97,7 @@ Arguments Constr_inl : simpl never.
 Arguments Constr_inr : simpl never.
 
 Ltac smpl_TM_MatchSum :=
-  match goal with
+  lazymatch goal with
   | [ |- MatchSum _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchSum_Sem
   | [ |- MatchSum _ _ ⊨c(_) _ ] => apply MatchSum_Sem
   | [ |- projT1 (MatchSum _ _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply MatchSum_Sem
@@ -292,7 +292,7 @@ Arguments Constr_Some : simpl never.
 
 
 Ltac smpl_TM_MatchOption :=
-  match goal with
+  lazymatch goal with
   | [ |- MatchOption _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchOption_Sem
   | [ |- MatchOption _ ⊨c(_) _ ] => apply MatchOption_Sem
   | [ |- projT1 (MatchOption _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply MatchOption_Sem

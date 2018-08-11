@@ -285,7 +285,7 @@ End Steps_comp.
 
 
 Ltac smpl_TM_MatchPair :=
-  match goal with
+  lazymatch goal with
   | [ |- MatchPair _ _ ⊨ _ ] => apply MatchPair_Realise
   | [ |- projT1 (MatchPair _ _) ↓ _ ] => apply MatchPair_Terminates
 

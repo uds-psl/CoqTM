@@ -129,7 +129,7 @@ Ltac smpl_match_case_solve_RealiseIn :=
   eapply RealiseIn_monotone'; [ | shelve].
 
 Ltac smpl_match_RealiseIn :=
-  match goal with
+  lazymatch goal with
   | [ |- MATCH ?M1 ?M2 ⊨c(?k1) ?R] =>
     is_evar R;
     let tM2 := type of M2 in
@@ -148,7 +148,7 @@ Ltac smpl_match_RealiseIn :=
 .
 
 Ltac smpl_match_Realise :=
-  match goal with
+  lazymatch goal with
   | [ |- MATCH ?M1 ?M2 ⊨ ?R] =>
     is_evar R;
     let tM2 := type of M2 in
@@ -166,7 +166,7 @@ Ltac smpl_match_Realise :=
 
 
 Ltac smpl_match_Terminates :=
-  match goal with
+  lazymatch goal with
   | [ |- projT1 (MATCH ?M1 ?M2) ↓ ?R] =>
     is_evar R;
     let tM2 := type of M2 in
@@ -187,7 +187,7 @@ Ltac smpl_match_Terminates :=
 
 (* There is no rule for [Id] on purpose. *)
 Ltac smpl_TM_Combinators :=
-  match goal with
+  lazymatch goal with
   | [ |- MATCH _ _ ⊨ _] => smpl_match_Realise
   | [ |- MATCH _ _ ⊨c(_) _] => smpl_match_RealiseIn
   | [ |- projT1 (MATCH _ _) ↓ _] => smpl_match_Terminates

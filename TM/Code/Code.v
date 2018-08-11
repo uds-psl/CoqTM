@@ -123,7 +123,7 @@ End Encode_map_comp.
 [fun x => match x with constructor_name y => Retr_g y | _ => None] *)
 
 Ltac build_simple_retract_g :=
-  match goal with
+  lazymatch goal with
   | [ |- ?Y -> option ?X ] =>
     idtac "Retract function" X Y;
     let x := fresh "x" in
@@ -132,7 +132,7 @@ Ltac build_simple_retract_g :=
 
 
 Ltac build_simple_retract :=
-  match goal with
+  lazymatch goal with
   | [ |- Retract ?X ?Y ] =>
     idtac "Retract from" X "to" Y;
     let x := fresh "x" in

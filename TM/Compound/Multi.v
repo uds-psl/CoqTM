@@ -149,7 +149,7 @@ Arguments ReadChar_at_Rel { sig n } ( k ) x y /.
 
 
 Ltac smpl_TM_Multi :=
-  match goal with
+  lazymatch goal with
   | [ |- Nop ⊨ _ ] => eapply RealiseIn_Realise; apply Nop_Sem
   | [ |- Nop ⊨c(_) _ ] => eapply Nop_Sem
   | [ |- projT1 (Nop) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Nop_Sem

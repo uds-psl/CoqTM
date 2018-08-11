@@ -446,7 +446,7 @@ Arguments Constr_nil : simpl never.
 Arguments Constr_cons : simpl never.
 
 Ltac smpl_TM_MatchList :=
-  match goal with
+  lazymatch goal with
   | [ |- MatchList _ ⊨ _ ] => apply MatchList_Realise
   | [ |- projT1 (MatchList _) ↓ _ ] => apply MatchList_Terminates
 

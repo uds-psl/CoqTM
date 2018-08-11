@@ -366,7 +366,7 @@ Proof. vector_dupfree. Qed.
 
 
 Ltac smpl_dupfree :=
-  match goal with
+  lazymatch goal with
   | [ |- dupfree [|Fin.F1 |] ] => apply smpl_dupfree_helper1
   | [ |- dupfree [|Fin.FS |] ] => apply smpl_dupfree_helper2
   | [ |- dupfree (add_tapes _ _)] => apply add_tapes_dupfree
@@ -376,7 +376,7 @@ Ltac smpl_dupfree :=
 
 
 Ltac smpl_TM_LiftN :=
-  match goal with
+  lazymatch goal with
   | [ |- LiftTapes _ _ ⊨ _] => apply LiftTapes_Realise; [ smpl_dupfree | ]
   | [ |- LiftTapes _ _ ⊨c(_) _] => apply LiftTapes_RealiseIn; [ smpl_dupfree | ]
   | [ |- projT1 (LiftTapes _ _) ↓ _] => apply LiftTapes_Terminates; [ smpl_dupfree | ]

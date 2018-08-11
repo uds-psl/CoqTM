@@ -298,7 +298,7 @@ Section move_to_symbol.
 End move_to_symbol.
 
 Ltac smpl_TM_MoveToSymbol :=
-  match goal with
+  lazymatch goal with
   | [ |- MoveToSymbol   _ _ ⊨ _ ] => eapply MoveToSymbol_Realise
   | [ |- MoveToSymbol_L _ _ ⊨ _ ] => eapply MoveToSymbol_L_Realise
   | [ |- projT1 (MoveToSymbol   _ _) ↓ _ ] => eapply MoveToSymbol_Terminates

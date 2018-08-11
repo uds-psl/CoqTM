@@ -159,7 +159,7 @@ Arguments ReadChar_Rel sig x y /.
 
 
 Ltac smpl_TM_Mono :=
-  match goal with
+  lazymatch goal with
   | [ |- DoAct _ ⊨ _] => eapply RealiseIn_Realise; eapply DoAct_Sem
   | [ |- DoAct _ ⊨c(_) _] => eapply DoAct_Sem
   | [ |- projT1 (DoAct _) ↓ _] => eapply RealiseIn_TerminatesIn; eapply DoAct_Sem

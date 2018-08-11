@@ -56,7 +56,7 @@ Ltac modpon H :=
 
 (** To get rid of all those uggly tape rewriting hypothesises. *)
 Ltac clear_tape_eqs :=
-  repeat match goal with
+  repeat lazymatch goal with
          | [ H: ?t'[@ ?x] = ?t[@ ?x] |- _ ] => clear H
          end.
 

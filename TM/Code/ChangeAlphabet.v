@@ -364,7 +364,7 @@ End Computes_ChangeAlphabet2.
 (** If you want to use [ChangeAlphabet_Computes], just apply [Id] to the machine, to prevent [TM_Correct] unfolding [ChangeAlphabet] *)
 
 Ltac smpl_TM_ChangeAlphabet :=
-  match goal with
+  lazymatch goal with
   | [ |- ChangeAlphabet ?pM ?retr ⊨ _ ] => apply LiftAlphabet_Realise
   | [ |- projT1 (ChangeAlphabet ?pM ?retr) ↓ _ ] => apply LiftAlphabet_TerminatesIn
   end.
