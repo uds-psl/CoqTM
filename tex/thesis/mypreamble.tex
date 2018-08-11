@@ -252,9 +252,11 @@
 
 
 \lstdefinelanguage{coq}{%
-  keywords={if,then,else,match,fix,fun,cofix,forall,exists},%
+  keywords={if,then,else,match,with,end,fix,fun,cofix,forall,exists},%
   morekeywords={*,Goal,Definition,Lemma,Proof,Qed,Defined,Inductive,CoInductive,Canonical,Structure,%
-    Class,Instance,Variable,Axiom,Parameter,Section,Module,End,Arguments,Print,Check,Compute,Eval,*}%
+    Class,Instance,Variable,Axiom,Parameter,Section,Module,End,Arguments,Print,Check,Compute,Eval,Coercion,%
+    Notation,%
+    Ltac,Ltac,Tactic,lazymatch, ltac, context, constr,*}%
   comment=[s]{(*}{*)},%
 }
 
@@ -284,6 +286,7 @@
     {<>}{{$\not =$}}{1}%
     {<=}{{$\leq$}}{1}%
     {>=}{{$\ge$}}{1}%
+    {<<=2}{{$\subseteq$}}{1}%
   }%
 }
 
