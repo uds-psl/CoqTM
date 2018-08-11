@@ -119,10 +119,10 @@ Proof.
   }
   { cbn. reflexivity. }
   {
-    intros tin (yout, tout) H. cbn. intros a b HEncA HEncB. TMSimp.
-    destruct H; TMSimp inv_pair; clear_trivial_eqs.
-    - specialize (H _ HEncB). destruct b; auto.
-    - specialize (H _ HEncB). destruct b; auto.
+    intros tin (yout, tout) H. cbn. intros a b HEncA HEncB. cbn in *.
+    destruct H; TMSimp; clear_trivial_eqs.
+    - modpon H. destruct b; auto.
+    - modpon H. destruct b; auto.
   }
 Qed.
 
