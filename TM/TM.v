@@ -795,8 +795,8 @@ Section Semantics.
     forall input, exists outc, loopM (initc (projT1 pM) input) k = Some outc /\ R input ((projT2 pM (cstate outc)), ctapes outc).
   Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
 
-  Fact RealiseIn_monotone n (F : finType) (pM : pTM F n) (R1 R2 : pRel F n) k1 k2 :
-    pM ⊨c(k1) R1 -> k1 <= k2 -> R1 <<=2 R2 -> pM ⊨c(k2) R2.
+  Lemma RealiseIn_monotone n (F : finType) (pM : pTM F n) (R R' : pRel F n) k k' :
+    pM ⊨c(k') R' -> k' <= k -> R' <<=2 R -> pM ⊨c(k) R.
   Proof.
     unfold RealiseIn. intros H1 H2 H3 input.
     specialize (H1 input) as (outc & H1). exists outc.
@@ -805,13 +805,13 @@ Section Semantics.
     - intuition.
   Qed.
 
-  Fact RealiseIn_monotone' n (F : finType) (pM : pTM F n) (R1 : pRel F n) k1 k2 :
-    pM ⊨c(k1) R1 -> k1 <= k2 -> pM ⊨c(k2) R1.
+  Lemma RealiseIn_monotone' n (F : finType) (pM : pTM F n) (R : pRel F n) k k' :
+    pM ⊨c(k') R -> k' <= k -> pM ⊨c(k) R.
   Proof.
     intros H1 H2. eapply RealiseIn_monotone. eapply H1. assumption. firstorder.
   Qed.
 
-  Fact RealiseIn_split n (F : finType) (pM : pTM F n) R1 R2 (k : nat) :
+  Lemma RealiseIn_split n (F : finType) (pM : pTM F n) R1 R2 (k : nat) :
     pM ⊨c(k) R1 /\ pM ⊨c(k) R2 <-> pM ⊨c(k) R1 ∩ R2.
   Proof.
     split; swap 1 2; [ intros H | intros (H1&H2)]; repeat intros ?. hnf; firstorder eauto.
@@ -819,7 +819,7 @@ Section Semantics.
     pose proof loop_injective H1 H2 as <-. exists outc. split; hnf; eauto.
   Qed.
   
-  Fact Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
+  Lemma Realise_total n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
     pM ⊨ R /\ projT1 pM ↓ (fun _ i => k <= i) <-> pM ⊨c(k) R.
   Proof.
     split.
@@ -837,18 +837,18 @@ Section Semantics.
         exists x. eapply loop_monotone; eauto.
   Qed.
 
-  Fact RealiseIn_Realise n (F : finType) (pM : pTM F n) R k :
+  Lemma RealiseIn_Realise n (F : finType) (pM : pTM F n) R k :
     pM ⊨c(k) R -> pM ⊨ R.
   Proof. now intros (?&?) % Realise_total. Qed.
 
-  Fact RealiseIn_TerminatesIn n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
+  Lemma RealiseIn_TerminatesIn n (F : finType) (pM : { M : mTM n & states M -> F }) R k :
     pM ⊨c(k) R -> projT1 pM ↓ (fun tin l => k <= l). 
   Proof.
     intros HRel. hnf. intros tin l HSteps. hnf in HRel. specialize (HRel tin) as (outc&HLoop&Rloop).
     exists outc. eapply loop_monotone; eauto.
   Qed.
   
-  Fact Realise_strengthen n (F : finType) (pM : pTM F n) R1 R2 :
+  Lemma Realise_strengthen n (F : finType) (pM : pTM F n) R1 R2 :
     Realise pM R2 -> Realise pM R1 -> Realise pM (R1 ∩ R2).
   Proof.
     intros HwR HR t. firstorder.
