@@ -122,8 +122,8 @@ tapes, if the head of the tape is on the right-most symbol.
 
 \begin{definition}[Right tape]
   \label{def:isRght}
-  A tape $t$ is right, if $\MS{current}(t) \neq \None$ and $\MS{left}~t=\nil$.  With other words, $t = \MS{midtape}~ls~m~\nil$ for some $m:\Sigma$ and
-  $ls:\List(\Sigma)$.
+  $isRight(t) := \exists m~rs.~t=\MS{midtape}~ls~m~\nil$.
+  With other words, a tape $t$ is right, if and only if $\MS{current}(t) \neq \None \land \MS{right}(t) = \nil$.
 \end{definition}
 
 \section{Alphabet-Lifting}
