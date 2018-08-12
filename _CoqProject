@@ -4,7 +4,7 @@
 -I ../smpl/src
 
 -install none
-COQDOCFLAGS = "--charset utf-8 -s --parse-comments --with-header ./website/resources/header.html --with-footer ./website/resources/footer.html --index indexpage"
+COQDOCFLAGS = "--charset utf-8 --parse-comments --with-header ./website/header.html --with-footer ./website/footer.html --index indexpage"
 
 # Basics
 TM/Prelim.v

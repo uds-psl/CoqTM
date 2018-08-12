@@ -1,0 +1,3 @@
+[submodule "external/coqdocjs"]
+	path = external/coqdocjs
+	url = git@github.com:tebbi/coqdocjs.git
