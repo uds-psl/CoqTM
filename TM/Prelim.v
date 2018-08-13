@@ -77,10 +77,10 @@ End Loop.
 
 Section LoopLift.
 
-  Variable A B : Type. (* Abstract states *)
-  Variable lift : A -> B.
-  Variable (f : A -> A) (f' : B -> B). (* Abstract steps *)
-  Variable (h : A -> bool) (h' : B -> bool). (* Abstract halting states *)
+  Variable A B : Type. (** Abstract states *)
+  Variable lift : A -> B. (** Lifting function between states *)
+  Variable (f : A -> A) (f' : B -> B). (** Abstract steps *)
+  Variable (h : A -> bool) (h' : B -> bool). (** Abstract halting states *)
 
   Hypothesis halt_lift_comp : forall x:A, h' (lift x) = h x.
   Hypothesis step_lift_comp : forall x:A, h x = false -> f' (lift x) = lift (f x).
@@ -158,9 +158,10 @@ Section LoopMerge.
 End LoopMerge.
 
 
-(* Apply functions in typles, options, etc. *)
+(** Apply functions in tuples, options, etc. *)
 Section Map.
   Variable X Y Z : Type.
+
   Definition map_opt : (X -> Y) -> option X -> option Y :=
     fun f a =>
       match a with
@@ -189,13 +190,13 @@ End Map.
 
 
 
-(** We often use
+(** We often use the vernacular commands
 <<
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 >>
-in runtime proofs. However, if we then use [Fin.R], this can brake proofs, since the [plus] in the type of [Fin.R] doesn't simplify with [cbn] any more. To avoid this problem, we simply have a copy of [Fin.R] and [plus], that isn't affected by these commands.
- *)
+to avoid unfolding [*] and [+] of runtime polynoms. However, this can break proofs that use [Fin.R], since the [plus] in the type of [Fin.R] doesn't simplify with [cbn] any more. To work around this problem, we have a copy of [Fin.R] and [plus], that isn't affected by these commands. *)
+
 Fixpoint plus' (n m : nat) { struct n } : nat :=
   match n with
   | 0 => m
