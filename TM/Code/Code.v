@@ -4,6 +4,7 @@ Require Import Coq.Lists.List.
 (** * Codable Class **)
 
 
+(** Class of codable types *)
 Section Codable.
 
   Variable (sig: Type).
@@ -20,11 +21,9 @@ Arguments encode { sig } { X } { _ }.
 
 Hint Extern 4 (codable (FinType(EqType ?sigX)) ?X) => cbn : typeclass_instances.
 
-
+(** We often use the above coercion to write [cX x] instead of [encode x], because [encode x] can be ambigious, see [Encode_map] *)
 Coercion encode : codable >-> Funclass.
 
-
-(** We often use the above coercion to write [cX x] instead of [encode x], because [encode x] can be ambigious, see [Encode_map] *)
 Definition size (sig X : Type) (cX : codable sig X) (x : X) := length (cX x).
 Arguments size {sig X} (cX x).
 
@@ -58,12 +57,14 @@ Lemma Encode_Fin_hasSize n i :
   size (Encode_Fin n) i = 1.
 Proof. cbn. reflexivity. Qed.
 
+(*
 Compute encode true.
 (* This works thanks to the coercion above *)
 Compute Encode_bool true.
 Compute encode tt.
 Check encode Fin0.
 Compute encode Fin0 : list (Fin.t 10).
+*)
 
 
 Section Encode_Finite.
@@ -108,9 +109,6 @@ Section Encode_map_comp.
   Variable (cX : codable sig1 X).
   Variable (I1 : Retract sig1 sig2) (I2 : Retract sig2 sig3).
 
-  Check Encode_map (Encode_map cX I1) I2.
-  Check Encode_map cX (ComposeRetract I1 I2).
-
   Lemma Encode_map_comp x :
     Encode_map (Encode_map cX I1) I2 x = Encode_map cX (ComposeRetract I1 I2) x.
   Proof. cbn. rewrite List.map_map. reflexivity. Qed.
@@ -125,7 +123,7 @@ End Encode_map_comp.
 Ltac build_simple_retract_g :=
   lazymatch goal with
   | [ |- ?Y -> option ?X ] =>
-    idtac "Retract function" X Y;
+    (* idtac "Retract function" X Y; *)
     let x := fresh "x" in
     intros x; destruct x; intros; try solve [now apply Retr_g ]; right
   end.
@@ -134,13 +132,13 @@ Ltac build_simple_retract_g :=
 Ltac build_simple_retract :=
   lazymatch goal with
   | [ |- Retract ?X ?Y ] =>
-    idtac "Retract from" X "to" Y;
+    (* idtac "Retract from" X "to" Y; *)
     let x := fresh "x" in
     let y := fresh "y" in
     let f := (eval simpl in (ltac:(intros x; constructor; now apply Retr_f) : X -> Y)) in
-    idtac "f:" f;
+    (* idtac "f:" f; *)
     let g := (eval simpl in (ltac:(build_simple_retract_g) : Y -> option X)) in
-    idtac "g:" g;
+    (* idtac "g:" g; *)
     apply Build_Retract with (Retr_f := f) (Retr_g := g);
     abstract now hnf; intros x y; split;
     [ destruct y; try congruence; now intros -> % retract_g_inv
@@ -489,6 +487,7 @@ Check FinType(EqType sigNat).
     
 (** Test Playground *)
 
+(*
 Compute encode (Some true).
 Eval cbv in encode None.
 
@@ -510,3 +509,4 @@ Compute encode [4;5].
 Compute encode (Some 4) ++ encode (Some 5) ++ encode None.
 
 Compute encode ([tt;tt;tt], tt).
+*)

@@ -1,5 +1,7 @@
 Require Import TM.Prelim TM.Relations TM.TM.
 
+(** * Alphabet-Lift *)
+
 Section SujectTape.
   Variable sig tau : Type.
   Variable g : tau -> option sig.

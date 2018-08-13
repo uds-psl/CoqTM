@@ -1,11 +1,10 @@
-(* List destruct and construction *)
+(** * Constructor and Deconstructor Machines for Lists *)
 
 Require Import ProgrammingTools.
 
 Section MatchList.
 
-  (** ** Definition *)
-
+  (** ** Deconstructor *)
 
   Variable X : Type.
   Variable (sigX : finType).
@@ -46,7 +45,7 @@ Section MatchList.
                  end).
 
 
-  (** ** Corectness *)
+  (** *** Corectness *)
 
   Definition Skip_cons_Rel : Rel (tapes (sigList sigX)^+ 1) (unit * tapes (sigList sigX)^+ 1) :=
     Mk_R_p (
@@ -165,7 +164,7 @@ Section MatchList.
   Qed.
 
 
-  (** ** Termination *)
+  (** *** Termination *)
 
 
   Local Arguments plus : simpl never. Local Arguments mult : simpl never.
@@ -281,7 +280,7 @@ Section MatchList.
 
 
 
-  (** *** [IsNil] *)
+  (** ** [IsNil] *)
 
   Definition IsNil : pTM (sigList sigX)^+ bool 1 :=
     Move R;;
@@ -349,9 +348,7 @@ Section MatchList.
   
 
   (** *** [cons] *)
-
   
-
   Definition Constr_cons : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
     LiftTapes (MoveRight _;; Move L) [|Fin1|];;
     LiftTapes (CopySymbols_L stop) [|Fin1;Fin0|];;
@@ -420,6 +417,13 @@ Section MatchList.
 
 End MatchList.
 
+Arguments MatchList : simpl never.
+Arguments IsNil : simpl never.
+Arguments Constr_nil : simpl never.
+Arguments Constr_cons : simpl never.
+
+
+(** ** Compatibility of runtime functions with encoding mapping *)
 
 Section Steps_comp.
   Variable (sig tau: finType) (X:Type) (cX: codable sig X).
@@ -440,10 +444,7 @@ Section Steps_comp.
 End Steps_comp.
 
 
-Arguments MatchList : simpl never.
-Arguments IsNil : simpl never.
-Arguments Constr_nil : simpl never.
-Arguments Constr_cons : simpl never.
+(** ** Tactical Support *)
 
 Ltac smpl_TM_MatchList :=
   lazymatch goal with

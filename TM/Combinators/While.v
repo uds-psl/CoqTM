@@ -144,6 +144,9 @@ Section While.
   Qed.
   
 
+
+  (** ** Correctness of [While] *)
+
   Variable R : pRel sig (option F) n.
 
   Inductive While_Rel : pRel sig F n :=
@@ -171,6 +174,7 @@ Section While.
   Qed.
 
 
+  (** ** Termination of [While] *)
   Section While_TerminatesIn.
     Variable (T T' : Rel (tapes sig n) nat).
 
@@ -227,13 +231,14 @@ Section While.
 
 End While.
 
-
-
-(* Arguments While {n} {sig} M _. *)
-
 Arguments While : simpl never.
 Arguments While {n sig F} pM {defF}.
 
+(* Deprecated name *)
+Notation WHILE := While.
+
+
+(** ** (Co-) Induction Principle for Correctness (Runtime) of [While] *)
 
 Section WhileInduction.
   Variable (sig : finType) (n : nat) (F : finType).
@@ -309,7 +314,3 @@ Section OtherWhileRel.
   Qed.
 
 End OtherWhileRel.
-
-
-(* Deprecated name *)
-Notation WHILE := While.

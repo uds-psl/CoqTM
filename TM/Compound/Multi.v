@@ -9,7 +9,9 @@ Require Import TM.Compound.TMTac.
 (** * Simple compound multi-tape Machines *)
 
 
-(* n-tape Machine that does nothing *)
+(** ** Nop *)
+
+(** The n-tape Machine that does nothing *)
 Section Nop.
   Variable sig : finType.
   Variable n : nat.
@@ -29,7 +31,6 @@ Section Nop.
       apply Vector.eq_nth_iff; intros i ? <-. apply HInj. vector_not_in.
     }
   Qed.
-  
 End Nop.
 
 Arguments Nop_Rel {sig n} x y/.
@@ -37,8 +38,8 @@ Arguments Nop {sig n}.
 Arguments Nop : simpl never.
 
 
+(** ** Move two tapes *)
 
-(* Let both tapes move *)
 Section MovePar.
   Variable sig : finType.
   Variable (D1 D2 : move).
@@ -66,7 +67,9 @@ Arguments MovePar {sig} (D1 D2).
 Arguments MovePar : simpl never.
 
 
-(* Copy the current symbol from tape 0 to tape 1 *)
+(** ** Copy Symbol *)
+
+(** Copy the current symbol from tape 0 to tape 1 *)
 Section Copy.
   Variable sig : finType.
 
@@ -112,7 +115,9 @@ Arguments CopyChar { sig }.
 Arguments CopyChar : simpl never.
 
 
-(* Read a char at an arbitrary tape *)
+(** ** Read Char *)
+
+(** Read a char at an arbitrary tape *)
 Section ReadChar.
 
   Variable sig : finType.
@@ -147,6 +152,8 @@ Arguments ReadChar_at : simpl never.
 Arguments ReadChar_at {sig n} k.
 Arguments ReadChar_at_Rel { sig n } ( k ) x y /.
 
+
+(** ** Tactical support *)
 
 Ltac smpl_TM_Multi :=
   lazymatch goal with

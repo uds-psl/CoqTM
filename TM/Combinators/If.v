@@ -5,16 +5,15 @@ Section If.
   Variable n : nat.
   Variable sig : finType.
 
-  Variable pM1 : { M1 : mTM sig n & states M1 -> bool}.
+  Variable pM1 : pTM sig bool n.
 
-  Variable F2 : finType.
-  
-  Variable pM2 : { M2 : mTM sig n & states M2 -> F2}.
-  Variable pM3 : { M3 : mTM sig n & states M3 -> F2}.
+  Variable F : finType.
+  Variable pM2 : pTM sig F n.
+  Variable pM3 : pTM sig F n.
 
   Definition If := Match pM1 (fun b => if b then pM2 else pM3).
 
-  Lemma If_Realise (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) :
+  Lemma If_Realise R1 R2 R3 :
     pM1 ⊨ R1 ->
     pM2 ⊨ R2 ->
     pM3 ⊨ R3 ->
@@ -27,7 +26,7 @@ Section If.
     - hnf. intros H2 (f& t). intros ([ | ]& (y & H3&H3')). left. hnf. eauto. right. hnf. eauto.
   Qed.
 
-  Lemma If_TerminatesIn (R1 : Rel (tapes sig n) (bool * tapes sig n)) (T1 T2 T3 : Rel (tapes sig n) nat) :
+  Lemma If_TerminatesIn R1 T1 T2 T3 :
     pM1 ⊨ R1 ->
     projT1 pM1 ↓ T1 ->
     projT1 pM2 ↓ T2 ->
@@ -46,7 +45,7 @@ Section If.
   Qed.
 
   
-  Lemma If_RealiseIn (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) k1 k2 k3:
+  Lemma If_RealiseIn R1 R2 R3 k1 k2 k3 :
     pM1 ⊨c(k1) R1 ->
     pM2 ⊨c(k2) R2 ->
     pM3 ⊨c(k3) R3 ->

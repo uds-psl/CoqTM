@@ -58,7 +58,7 @@ Section Match.
           | inr q => p2 (projT1 q) (projT2 q)
           end.
   
-  Definition Match := (MatchTM; Match_p).
+  Definition Match : pTM sig F' n := (MatchTM; Match_p).
 
   
 

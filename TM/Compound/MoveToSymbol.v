@@ -7,7 +7,11 @@ Require Import TM.Compound.Multi.
 Require Import FunInd.
 Require Import Recdef.
 
-Section move_to_symbol.
+
+(** * Move to a symbol and translate read symbols *)
+
+
+Section MoveToSymbol.
   
   Variable sig : finType.
 
@@ -17,15 +21,14 @@ Section move_to_symbol.
   (** Rewrite function *)
   Variable g : sig -> sig.
 
-  
 
   (*
    * One Step:
-   * Read one symbol.  If there was no symbol, return [ None ].
-   * If the read symbol fulfills [ f ], return [ Some true ].
-   * Else move one to the right and return [ Some false ].
+   * Read one symbol. If there was no symbol, return [Some tt] (break out of the loop).
+   * If the symbol [s] fulfills [f], write [g s] and return [Some tt].
+   * Else, write [g s] and move right, return [None] (continue the loop).
    *)
-  Definition MoveToSymbol_Step : { M : mTM sig 1 & states M -> option unit} :=
+  Definition MoveToSymbol_Step : pTM sig (option unit) 1 :=
     Match (ReadChar)
           (fun b : option sig =>
              match b with
@@ -39,7 +42,9 @@ Section move_to_symbol.
   Definition MoveToSymbol_Step_Fun : tape sig -> tape sig :=
     fun t1 =>
       match current t1 with
-      | Some s => if (f s) then tape_write t1 (Some (g s)) else tape_move_mono t1 (Some (g s), R)
+      | Some s => if (f s)
+                 then tape_write t1 (Some (g s))
+                 else tape_move_mono t1 (Some (g s), R)
       | _ => t1
       end.
 
@@ -47,12 +52,12 @@ Section move_to_symbol.
     Mk_R_p (fun tin '(yout, tout) =>
               tout = MoveToSymbol_Step_Fun tin /\
               yout = match current tin with
-              | Some m =>
-                if f m
-                then Some tt (* break *)
-                else None (* continue *) 
-              | _ => (Some tt) (* break *)
-              end
+                     | Some m =>
+                       if f m
+                       then Some tt (* break *)
+                       else None (* continue *) 
+                     | _ => (Some tt) (* break *)
+                     end
            ).  
 
   Lemma MoveToSymbol_Step_Sem :
@@ -167,14 +172,6 @@ Section move_to_symbol.
         + inv H2.
     }
   Qed.
-
-  (*
-  Lemma MoveToSymbol_Fun_niltape t : MoveToSymbol_Fun t = niltape _ -> t = niltape _.
-  Proof.
-    intros H. remember (niltape sig) as N. functional induction MoveToSymbol_Fun t; subst; cbn in *; try congruence.
-    - specialize (IHt0 H). destruct rs; cbn in *; congruence.
-  Qed.
-*)
 
 
   (** Termination *)
@@ -295,7 +292,7 @@ Section move_to_symbol.
     - cbn. intros tin k Hk. destruct_tapes; cbn. rewrite <- Hk. unfold mirror_tapes. rewrite MoveToSymbol_steps_mirror. cbn. auto.
   Qed.
 
-End move_to_symbol.
+End MoveToSymbol.
 
 Ltac smpl_TM_MoveToSymbol :=
   lazymatch goal with

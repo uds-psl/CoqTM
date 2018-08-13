@@ -1,3 +1,5 @@
+(** * Constructors and Deconstructors for Pair Types *)
+
 Require Import ProgrammingTools.
 
 (* TODO: ~> base *)
@@ -8,8 +10,9 @@ Proof. intros H. now inv H. Qed.
 
 Local Arguments skipn { A } !n !l.
 
-
 Section MatchPair.
+
+  (** ** Deconstructor *)
 
   Variable (sigX sigY: finType) (X Y: Type) (cX: codable sigX X) (cY: codable sigY Y).
 
@@ -141,8 +144,7 @@ Section MatchPair.
         
       
 
-  (** Constructor *)
-
+  (** ** Constructor *)
   
   Definition Constr_pair_Rel : Rel (tapes sigPair^+ 2) (unit * tapes sigPair^+ 2) :=
     ignoreParam (
@@ -265,6 +267,8 @@ Section MatchPair.
 
 End MatchPair.
 
+(** ** Compatibility of runtime functions with mapping of encodings *)
+
 Section Steps_comp.
   Variable (sig tau: finType) (X Y:Type) (cX: codable sig X).
   Variable (I : Retract sig tau).
@@ -283,6 +287,8 @@ Section Steps_comp.
 
 End Steps_comp.
 
+
+(** ** Tactical support *)
 
 Ltac smpl_TM_MatchPair :=
   lazymatch goal with

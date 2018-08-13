@@ -1,7 +1,5 @@
 Require Import ProgrammingTools MatchSum.
 
-
-
 (**
 If there are two function [f1 : X -> Z] and [f2 : Y -> Z], then there is only one canonical way to define a function [map_sum : X + Y -> Z]. This machine operator takes machines [M1] and [M2] that compute the functions [f] and [g]; and defines a machine [Map_sum] that computes [map_sum].
 Because this is a machine combinator, we assume that [M1] and [M2] have the same number of tapes [n] and the same alphabet [sigM]. If the numbers of tapes or alphabets don't match, as usual for combinators, the machines have to be lifted, using the Tapes-lift and the Alphabet-Lift.

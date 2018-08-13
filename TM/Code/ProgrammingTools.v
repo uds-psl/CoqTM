@@ -2,6 +2,9 @@ Require Export CodeTM Copy ChangeAlphabet WriteValue.
 Require Export TMTac.
 Require Export Basic.Mono Compound.Multi.
 
+(** * All tools for programming Turing machines *)
+
+(** All Coq modules in that the user programms Turing machine should [Require Import TM.Code.ProgrammingTools]. The module should additionally require and import the modules containing the constructor and deconstructor machines, e.g. [Require Import TM.Code.MatchNat], etc. *)
 
 
 (** This tactic applys [tape_contains_ext] *)
@@ -54,12 +57,11 @@ Ltac modpon H :=
 
 
 
-(** To get rid of all those uggly tape rewriting hypothesises. *)
+(** To get rid of all those uggly tape rewriting hypothesises. Be warned that maybe the goal can't be solved after that. *)
 Ltac clear_tape_eqs :=
   repeat lazymatch goal with
          | [ H: ?t'[@ ?x] = ?t[@ ?x] |- _ ] => clear H
          end.
-
 
 
 (** Machine Notations *)

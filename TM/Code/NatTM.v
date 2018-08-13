@@ -36,7 +36,7 @@ Qed.
 *)
 
 
-(** * Addition *)
+(** ** Addition *)
 
 
 (*
@@ -94,7 +94,7 @@ Definition Add :=
   LiftTapes (Reset _) [|Fin3|]. (* Reset b *)
 
 
-(** ** Correctness of [Add] *)
+(** *** Correctness of [Add] *)
 
 Definition Add_Step_Rel : Rel (tapes sigNat^+ 2) (option unit * tapes sigNat^+ 2) :=
   fun tin '(yout, tout) =>
@@ -210,7 +210,7 @@ Proof.
 Qed.
 
 
-(** ** Termination of [Add] *)
+(** *** Termination of [Add] *)
 
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
@@ -321,7 +321,7 @@ Qed.
 
 
 
-(** * Multiplication *)
+(** ** Multiplication *)
 
 
 (*
@@ -397,7 +397,7 @@ Definition Mult : { M : mTM _ 6 & states M -> unit } :=
   LiftTapes (Reset _) [|Fin5|]. (* Reset m' *)
 
 
-(** ** Correctness of [Mult] *)
+(** *** Correctness of [Mult] *)
 
 Definition Mult_Step_Rel : Rel (tapes sigNat^+ 5) (option unit * tapes sigNat^+ 5) :=
   fun tin '(yout, tout) =>
@@ -566,7 +566,7 @@ Proof.
 Qed.
 
 
-(** ** Termination of Mult *)
+(** *** Termination of Mult *)
 
 Definition Mult_Step_steps m' n c :=
   match m' with

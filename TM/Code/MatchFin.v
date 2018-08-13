@@ -1,4 +1,4 @@
-(** * Matching and constructors for finite types *)
+(** * Constructors and Deconstructors for Finite Types *)
 
 Require Import ProgrammingTools.
 
@@ -15,6 +15,7 @@ Section MatchFin.
            | _ => Return (Nop) default
            end).
 
+  (** Note that [Encode_Finite] is not globally declared as an instance, because that would cause ambiguity. For example, [bool+bool] is finite, but we might want to encode it with [Encode_sum Encode_bool Encode_bool]. *)
   Local Existing Instance Encode_Finite.
 
   Definition MatchFin_Rel : pRel sig^+ sig 1 :=
@@ -32,14 +33,13 @@ Section MatchFin.
     }
   Qed.
 
-
   (** There is no need for a constructor, just use [WriteValue] *)
 
 End MatchFin.
 
 
 Arguments MatchFin : simpl never.
-Arguments MatchFin sig {_}. (* Default element is infered automatically *)
+Arguments MatchFin sig {_}. (** Default element is infered and inserted automatically *)
 
 
 

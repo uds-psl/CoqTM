@@ -1,6 +1,9 @@
 Require Import TM.Prelim TM.TM.
 Require Import TM.Lifting.LiftTapes. (* for [simpl_not_in] *)
 
+(** * Tactics that help verifying complex machines *)
+
+
 Ltac dec_pos P := let H := fresh in destruct (Dec P) as [_ | H]; [ | now contradiction H].
 Ltac dec_neg P := let H := fresh in destruct (Dec P) as [H | _]; [now contradiction H | ].
 
@@ -109,6 +112,7 @@ Tactic Notation "TMSimp" tactic(T) :=
 Tactic Notation "TMSimp" := TMSimp idtac.
 
 
+(** Rewrite [eq]-assumptions, but only in the goal. This is much faster than [TMSimp]. *)
 Ltac TMSimp_goal :=
   repeat multimatch goal with
          | [ H : ?X = _ |- _ ] => rewrite H

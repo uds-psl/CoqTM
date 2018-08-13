@@ -7,18 +7,18 @@ Require Import TM.Lifting.LiftTapes.
 Require Import FunInd.
 Require Import Recdef.
 
+(** * Copy Symbols from t0 to t1 *)
 
-(* This two-tape Turing machine copies the symbols from tape 0 to tape 1, until it reads a symbol x on tape 0 such that f(x)=true. *)
-(* This machine is similar to MoveToSymbol, with the only difference, that it copies the read symbols to another tape. *)
+(** This two-tape Turing machine copies the symbols from tape 0 to tape 1, until it reads a symbol x on tape 0 such that f(x)=true. This machine is similar to MoveToSymbol, with the only difference, that it copies the read symbols to another tape (without translating it). *)
 
 
 Section CopySymbols.
 
   Variable sig : finType.
-  (* Termination check *)
+  (** Termination check *)
   Variable f : sig -> bool.
 
-  Definition CopySymbols_Step : { M : mTM sig 2 & states M -> option unit} :=
+  Definition CopySymbols_Step : pTM sig (option unit) 2 :=
     Match (ReadChar_at Fin0)
           (fun b : option sig =>
              match b with

@@ -1,5 +1,9 @@
 Require Import TM.Prelim TM.Relations TM.TM.
 
+(** * Tapes-Lift *)
+
+
+(** Select the [m] elements of [V], of that their index is in [I] *)
 Definition select (m n: nat) (X: Type) (I : Vector.t (Fin.t n) m) (V : Vector.t X n) : Vector.t X m :=
   Vector.map (Vector.nth V) I.
 
@@ -10,6 +14,7 @@ Proof. now apply Vector.nth_map. Qed.
 *)
 
 
+(** Relational tapes-lift *)
 Section LiftTapes_Rel.
 
   Variable (sig : finType) (F : Type).
@@ -46,8 +51,8 @@ Arguments LiftTapes_T {sig m n} I T x y /.
 
 Section Fill.
   Variable X : Type.
-  Variable m n : nat.
 
+  (** Replace the elements of [init] of which the index is in [I] with the element in [V] of that index. *)
   Fixpoint fill {m n : nat} (I : Vector.t (Fin.t n) m) : forall (init : Vector.t X n) (V : Vector.t X m), Vector.t X n :=
     match I with
     | Vector.nil _ => fun init V => init
@@ -56,6 +61,7 @@ Section Fill.
         Vector.replace (fill I' init (Vector.tl V)) i (Vector.hd V)
     end.
 
+  Variable m n : nat.
   Implicit Types (i : Fin.t n) (j : Fin.t m).
   Implicit Types (I : Vector.t (Fin.t n) m) (init : Vector.t X n) (V : Vector.t X m).
   
@@ -280,6 +286,8 @@ End LiftNM.
 
 Arguments LiftTapes : simpl never.
 
+
+(* TODO: AddTapes is unused, remove it *)
 
 
 (* Indexes vector for adding a fixed number [m] of additional tapes at the begin. *)

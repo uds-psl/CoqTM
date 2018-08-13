@@ -1,3 +1,5 @@
+(** * Implementation of [ϕ] (aka SplitBody) *)
+
 Require Import TM.Code.ProgrammingTools.
 Require Import TM.LM.Semantics TM.LM.Alphabets.
 Require Import TM.LM.MatchTok.
@@ -6,8 +8,8 @@ Require Import TM.Code.ListTM TM.Code.MatchList TM.Code.MatchNat.
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 
-(** The [JumpTarget] machine only operates on programs. Consequently, the alphabet of [JumpTarget] is just [sigPro]. [JumpTarget] will also assume, that the result of [jumpTarget] is [Some]. *)
 
+(** The [JumpTarget] machine only operates on programs. Thus we define [JumpTarget] on the alphabet [sigPro^+]. *)
 
 (** This is the only way we can encode [nat] on [sigPro]: as a variable token. *)
 Definition retr_nat_prog : Retract sigNat sigPro := Retract_sigList_X _.

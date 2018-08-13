@@ -1,22 +1,17 @@
+(** * Heap Lookup *)
+
 Require Import TM.Code.ProgrammingTools.
 Require Import TM.LM.Semantics TM.LM.Alphabets.
 Require Import TM.Code.ListTM TM.Code.MatchPair TM.Code.MatchSum TM.Code.MatchNat.
-
-(** * Lookup *)
 
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 
 Section Lookup.
 
-  (**
-There is no need to save [n], however [H] must be saved. We use the [Nth'] machine, because we don't want to introduce an additional [sigOption sigHEnt] to the alphabet. [Nth'] also doesn't save [a] (which is the parameter of [Nth'] here, not [n]).
-[Lookup] will overwrite and reset the variables [a] and [n], but save [H] (which is saved by [Nth']).
+  (** There is no need to save [n]. [H] must be saved. We use the [Nth'] machine, because we don't want to introduce an additional [sigOption sigHEnt] to the alphabet. [Nth'] also doesn't save [a] (which is the parameter of [Nth'] here, not [n]). [Lookup] will overwrite and reset the variables [a] and [n], but save [H] (which is saved by [Nth']). *)
 
-Instead of encoding the optional output of the machine with [sigOption sigHClos], our machine will only be specified if the result of [lookup] is [Some]. We can make this assumption because all heap machines we will consider never get stuck. We use the machine [Nth'], which is also only specified, if [nth_error = Some].
-
-We could define [Lookup] over the alphabet [sigHeap], however, in the step machine, we want to read [a] and [n] from a different closure alphabet (sigList sigHClos). [a] is read from an address of a closure and [n] from a variable of this closure, and the output closure will also be copied to this alphabet.
-   *)
+(** We could define [Lookup] over the alphabet [sigHeap], however, in the step machine, we want to read [a] and [n] from a different closure alphabet (sigList sigHClos). [a] is read from an address of a closure and [n] from a variable of this closure, and the output closure will also be copied to this alphabet. *)
 
 
   Variable sigLookup : finType.
@@ -35,19 +30,19 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
 [a] is stored in the second way and [n] in the third way.
 *)
 
-  (* No 1 *)
+  (** No 1 *)
   Definition retr_nat_clos_ad : Retract sigNat sigHClos :=
     Retract_sigPair_X _ _.
   Definition retr_nat_lookup_clos_ad : Retract sigNat sigLookup :=
     ComposeRetract retr_nat_clos_ad retr_clos_lookup.
 
-  (* No 2 *)
+  (** No 2 *)
   Definition retr_nat_clos_var : Retract sigNat sigHClos :=
     Retract_sigPair_Y _ _.
   Definition retr_nat_lookup_clos_var : Retract sigNat sigLookup :=
     ComposeRetract retr_nat_clos_var retr_clos_lookup.
 
-  (* No 3 *)
+  (** No 3 *)
   Definition retr_nat_heap_entry : Retract sigNat sigHeap :=
     Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_Y _ (Retract_id _))).
   Local Definition retr_nat_lookup_entry : Retract sigNat sigLookup :=
@@ -64,14 +59,14 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
   Definition retr_hent'_heap : Retract sigHEnt' sigHeap := _.
   Local Definition retr_hent'_lookup : Retract sigHEnt' sigLookup := ComposeRetract retr_hent'_heap retr_heap_lookup.
   
-(*
-Tapes:
-t0: H
-t1: a
-t2: n
-t3: out
-t4: internal tape
-*)
+  (*
+  Tapes:
+  t0: H
+  t1: a
+  t2: n
+  t3: out
+  t4: internal tape
+  *)
 
   Definition Lookup_Step : pTM sigLookup^+ (option bool) 5 :=
     If (Nth' retr_heap_lookup retr_nat_lookup_clos_ad @ [|Fin0; Fin1; Fin4; Fin3|])

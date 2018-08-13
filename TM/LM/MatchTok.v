@@ -1,3 +1,5 @@
+(** * Constructors and Deconstructors for Tokens *)
+
 Require Import ProgrammingTools.
 Require Import TM.Code.MatchNat TM.Code.MatchSum TM.Code.MatchFin.
 Require Import TM.LM.Semantics TM.LM.Alphabets.

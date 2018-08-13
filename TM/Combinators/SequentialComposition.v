@@ -6,15 +6,15 @@ Section Composition.
   Variable sig : finType.
 
   
-  Variable F : finType.
-  Variable pM1 : {M1 : mTM sig n & states M1 -> F}.
+  Variable F1 : finType.
+  Variable pM1 : pTM sig F1 n.
 
   Variable F2 : finType.
-  Variable pM2 : { M2 : mTM sig n & states M2 -> F2}.
+  Variable pM2 : pTM sig F2 n.
   
   Definition Seq := Match pM1 (fun _ => pM2).
 
-  Lemma Seq_Realise (R1 : Rel _ (_ * _)) (R2 : Rel _ (F2 * _)) :
+  Lemma Seq_Realise R1 R2 :
     pM1 ⊨ R1 ->
     pM2 ⊨ R2 ->
     Seq ⊨ ⋃_y ((R1 |_ y) ∘ R2).
@@ -25,12 +25,13 @@ Section Composition.
     firstorder.
   Qed.
 
-  Lemma Seq_TerminatesIn (R1 : Rel (tapes sig n) (F * tapes sig n)) (T1 T2 : Rel (tapes sig n) nat) :
+  Lemma Seq_TerminatesIn R1 T1 T2 :
     pM1 ⊨ R1 ->
     projT1 pM1 ↓ T1 ->
     projT1 pM2 ↓ T2 ->
-    projT1 Seq ↓ (fun tin i => exists i1 i2, T1 tin i1 /\ 1 + i1 + i2 <= i /\
-                                     forall tout yout, R1 tin (yout, tout) -> T2 tout i2).
+    projT1 Seq ↓
+           (fun tin i => exists i1 i2, T1 tin i1 /\ 1 + i1 + i2 <= i /\
+                               forall tout yout, R1 tin (yout, tout) -> T2 tout i2).
   Proof.
     intros HRealise HTerm1 HTerm2.
     eapply TerminatesIn_monotone.

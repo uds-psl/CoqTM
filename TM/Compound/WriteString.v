@@ -2,12 +2,12 @@ Require Import TM.TM TM.Basic.Mono TM.Combinators.Combinators TM.Compound.Multi.
 Require Import List.
 Require Import TMTac.
 
-(* Useful for runtime stuff *)
+(** Useful for runtime stuff *)
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 
 
-(** The correctness and definition of [WriteString] is uncommon, because it is defined (and verified) by recursion (or induction) over the string *)
+(** The correctness and definition of [WriteString] is non-standard, because it is defined (and verified) by recursion (or induction) over the string *)
 Section Write_String.
 
   Variable sig : finType.

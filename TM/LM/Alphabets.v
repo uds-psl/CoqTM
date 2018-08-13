@@ -4,8 +4,6 @@ Require Import Semantics.
 
 (** * Alphabets *)
 
-(* See [TokTM] *)
-
 Inductive ATok : Type := retAT | lamAT | appAT.
 
 Coercion ATok2Tok (a : ATok) : Tok :=

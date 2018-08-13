@@ -1,9 +1,12 @@
 Require Import ProgrammingTools.
 
-(* Basic pattern matching *)
+(** * Constructor and Deconstructor Machines for Sum Types and Option Types *)
+
 Section MatchSum.
 
   Variable X Y : Type.
+
+  (** ** Deconstructor for Sum Types *)
 
   Variable (sigX sigY : finType).
   Hypothesis (codX : codable sigX X) (codY : codable sigY Y).
@@ -45,7 +48,7 @@ Section MatchSum.
     }
   Qed.
 
-  (* Constructors *)
+  (** ** Constructors for Sum Types *)
   Section SumConstr.
 
 
@@ -96,6 +99,8 @@ Arguments MatchSum : simpl never.
 Arguments Constr_inl : simpl never.
 Arguments Constr_inr : simpl never.
 
+(** ** Tactical Support for Sum Types *)
+
 Ltac smpl_TM_MatchSum :=
   lazymatch goal with
   | [ |- MatchSum _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchSum_Sem
@@ -115,10 +120,6 @@ Smpl Add smpl_TM_MatchSum : TM_Correct.
 
 
 
-
-
-(** ** Reductions *)
-
 Section MatchOption.
 
   (* Matching of option reduces to matching of sums with [Empty_set] *)
@@ -130,15 +131,10 @@ Section MatchOption.
   Compute encode (None : option nat).
   Compute encode (Some 42).
 
+  (** ** Deconstructor for Option Types *)
+
   Let sig := FinType (EqType (sigSum sigX (FinType(EqType Empty_set)))).
   Let tau := FinType (EqType (sigOption sigX)).
-
-  Check _ : codable sig X.
-  Check _ : codable sig^+ X.
-  Check _ : codable tau X.
-  Check _ : codable tau^+ X.
-  Check _ : codable tau (option X).
-  Check _ : codable tau^+ (option X).
 
   Definition MatchOption_Rel : Rel (tapes tau^+ 1) (bool * tapes tau^+ 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
@@ -233,6 +229,7 @@ Section MatchOption.
     }
   Qed.
 
+  (** ** Constructors for Option Types *)
 
   Definition Constr_Some_Rel : Rel (tapes tau^+ 1) (unit * tapes tau^+ 1) :=
     Mk_R_p (ignoreParam(
@@ -290,6 +287,8 @@ Arguments MatchOption : simpl never.
 Arguments Constr_None : simpl never.
 Arguments Constr_Some : simpl never.
 
+
+(** ** Tactical Support for Option Types *)
 
 Ltac smpl_TM_MatchOption :=
   lazymatch goal with

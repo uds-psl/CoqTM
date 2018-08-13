@@ -2,8 +2,12 @@ Require Import TM.Prelim TM.Code.CodeTM.
 Require Import TM.Lifting.LiftAlphabet.
 
 
-Generalizable All Variables.
+(** * Alphabet-lift for "programmed" Turing Machines *)
 
+(** All "programmed" Turing machines are defined on an alphabet [Σ^+]. In this module, we instanciate the [LiftAlphabet] operator. Given a machine [M:TM_{Σ^+}] and a retraction [f: Σ ↪ Γ, we define a machine [⇑M : TM_{Γ^+}]. *)
+
+
+Generalizable All Variables.
 
 Section SurjectInject.
   Variable (sig tau : finType).
@@ -77,9 +81,6 @@ Section MapCode.
 
   Context `{cX : codable sig X}.
 
-  Check _ : codable sig^+ X.
-
-  
 
   (* Translation Functions *)
   Notation injectTape := (mapTape f').
@@ -206,7 +207,7 @@ Arguments injectTape : simpl never.
 Arguments surjectTape : simpl never.
 
 
-(** Machine Notation *)
+(** ** Definition of the lifted machine *)
 
 Section ChangeAlphabet.
   Variable (sig tau : finType).
@@ -218,7 +219,6 @@ Section ChangeAlphabet.
     LiftAlphabet pM (Retract_plus retr) (inl UNKNOWN).
 
 End ChangeAlphabet.
-
 
 
 (** This tactic removes [surjectTape] in hypothesises and in the goal *)
@@ -238,6 +238,8 @@ Ltac simpl_surject_step :=
 Ltac simpl_surject := repeat simpl_surject_step.
 
 
+
+(** ** Function Computation of the lifted machine *)
 
 
 Section Computes_ChangeAlphabet.
@@ -360,6 +362,8 @@ Section Computes_ChangeAlphabet2.
 End Computes_ChangeAlphabet2.
 
 
+
+(** ** Tactical support *)
 
 (** If you want to use [ChangeAlphabet_Computes], just apply [Id] to the machine, to prevent [TM_Correct] unfolding [ChangeAlphabet] *)
 

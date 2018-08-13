@@ -1,3 +1,5 @@
+(** * Machines that compute list functions *)
+
 Require Import ProgrammingTools.
 Require Import MatchNat MatchList MatchSum. (* [TM.Code.MatchSum] contains [Constr_Some] and [Constr_None]. *)
 
@@ -11,7 +13,7 @@ Local Arguments Encode_list : simpl never.
 Local Arguments Encode_nat : simpl never.
 
 
-(** * Implementation of [nth_error] *)
+(** ** Implementation of [nth_error] *)
 
 Section Nth.
 
@@ -21,11 +23,12 @@ Section Nth.
   Local Instance retr_X_list : Retract sigX sig := ComposeRetract (Retract_sigList_X _) retr1.
   Local Instance retr_X_opt : Retract sigX sig := ComposeRetract (Retract_sigOption_X _) retr3.
 
+  (*
   Check _ : codable sig (list X).
   Check _ : codable sig nat.
   Check _ : codable sig (option X).
+  *)
 
-  
   (*
    * Nth_Step:
    * if ∃n'. n = S n'; n' -> n {
@@ -207,7 +210,7 @@ Section Nth.
 End Nth.
 
   
-(** * Other Implementation of [nth_error] *)
+(** ** Other Implementation of [nth_error] *)
 
 Section Nth'.
 
@@ -602,8 +605,9 @@ Section ListStuff.
 End ListStuff.
 
   
+(** ** Append *)
 
-(** I simply copy memory instead of using constructors/deconstructors, which could be tedious here. *)
+(** I simply copy memory instead of using constructors/deconstructors. The former approach is maybe easier, but I want to use fewer internal tapes. *)
 Section Append.
 
   Variable (sigX : finType) (X : Type) (cX : codable sigX X).
@@ -760,6 +764,7 @@ End Append.
 
 
 
+(** ** Length *)
 
 Section Lenght.
 

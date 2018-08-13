@@ -2,8 +2,15 @@ Require Export TM.Prelim TM.TM TM.Code.Code.
 Require Export TM.Lifting.Lifting.
 Require Export TM.Combinators.Combinators.
 
+(** * Value-Containing *)
 
-(* Tape proposition that says that the pointer is on (but not off) the right-most symbol *)
+
+Generalizable Variable X Y.
+
+
+(** ** Right tapes *)
+
+(** Tape proposition that says that the pointer is on (but not off) the right-most symbol *)
 Section IsRight.
 
   Definition isRight (sig : Type) (t : tape sig) :=
@@ -49,26 +56,22 @@ Section IsRight.
 End IsRight.
 
 
-
-(** Type for start and stop symbols, isomorphic to [bool] *)
-
+(** We add these three symbols the alphabets of every machine. [START] is the first symbol of the encoding and [END] is always the right-most symbol. [UNKNOWN] is always ignored (it is needed for the alphabet-lift). *)
 Inductive boundary : Type :=
 | START   : boundary
 | STOP    : boundary
 | UNKNOWN : boundary.
 
+(** Declare discreteness of [boundary] *)
 Instance boundary_eq : eq_dec boundary.
 Proof. unfold dec. decide equality. Defined.
 
+(** Declare finiteness of [boundary] *)
 Instance boundary_fin : finTypeC (EqType boundary).
 Proof. split with (enum := [START; STOP; UNKNOWN]). cbn. intros []; cbn; reflexivity. Defined.
 
 
-
-
-Generalizable Variable X Y Z sig tau.
-
-
+(** In this section, we define value-containing (≃). It is defined on tapes over arbitrary [Type]s (even infinite types), not [finType]. *)
 Section Fix_Sig.
 
   Variable (sig : Type).
@@ -76,19 +79,11 @@ Section Fix_Sig.
   Notation "sig '^+'" := ((boundary + sig) % type) (at level 0) : type_scope.
 
 
-  (** ** Value Containing *)
+  (** A tape [t] contains a value [x], if [t=midtape rs (inl START) (map inr (encode x) ++ [inl STOP])] for some [rs : list (sig^+)]. This means, the pointer is on the start symbol, right to the pointer is the encoding of [x], which is terminated by the stop symbol [inl STOP]. We write [t ≃ x] for tape [t] contains [x]. *)
 
-  (** A tape [t] contains a value [x], if [t=midtape rs (inl START) (map inr (encode x) ++ [inl STOP])] for some [rs :
-      list (sig^+)].  This means, the pointer is on the start symbol, right to the pointer is the encoding of [x], which
-      is terminated by the stop symbol [inl STOP].  We write [t ≃ x] for tape [t] contains [x]. *)
-
-  (** We also define a dual predicate for value-containing: reversed value containing.  The difference is that the
-      pointer is on the stop symbol, instead of the start symbol.  This predicate is useful for intermediate states of a
-      machine, for example in the machine [CopyValue], which first has to move the head to the ustop symbol.  We write
-      [t ≂ x] for [t] contains [x] reversed. *)
+  (** We also define a dual predicate for value-containing: reversed value containing. It is, however, only used internally. The difference is, that the pointer is on the stop symbol, instead of the start symbol. This predicate is useful for intermediate states of a machine, for example in the machine [CopyValue], which first has to move the head to the stop symbol. We write [t ≂ x] for [t] reversedly contains [x]. *)
 
   Section Tape_Contains.
-
     Context `{cX : codable sig X}.
 
     Definition tape_contains' (t: tape sig^+) (x : X) :=
@@ -282,7 +277,7 @@ End Fix_Sig.
 Arguments tape_contains : simpl never.
 Arguments tape_contains_rev : simpl never.
 
-(** In the ' version, the encodings are explicite. *)
+(** In the ['] version, the encodings are explicit. With [unfold tape_contains in *], the encodings can be displayed. *)
 Arguments tape_contains' {sig X} (cX).
 Arguments tape_contains_rev' {sig X} (cX).
 
@@ -301,141 +296,5 @@ Arguments Computes2_Rel {sig n X cX Y cY Z cZ F} f x y/.
 Arguments Computes2_T {sig n X cX Y cY} r x y/.
 
 
+(** Because every machine is defined on an alphabet [Σ^+], the notation adds the discreteness and finiteness constructors, to case [Σ^+ : finType]. *)
 Notation "sig '^+'" := (FinType (EqType (boundary + sig) % type)) (at level 0) : type_scope.
-
-
-
-(* begin hide *)
-(*
-Section Computes_Gen.
-
-  Variable sig : finType.
-  Variable n : nat.
-  Variable F : finType.
-
-
-  Variable (Res : Type).
-  Hypothesis (codRes : codable sig Res).
-  Variable resTape : Fin.t n.
-
-
-  (* Make a type for a curried function *)
-  Fixpoint paramVectCoerce (paramTypes : list Type) : Type :=
-    match paramTypes with
-    | nil => Res
-    | t :: paramTypes' => t -> paramVectCoerce paramTypes'
-    end.
-
-
-  Record comp_gen_param :=
-    mk_param
-      {
-        par_tape :> Fin.t n;
-        par_type : Type;
-        par_code :> codable sig par_type;
-      }.
-
-  Definition param_genF (params : list comp_gen_param) :=
-    paramVectCoerce (map par_type params).
-
-
-  Fixpoint Computes_Gen
-           (params : list comp_gen_param)
-           (f : param_genF params)
-           {struct params} : relation (tapes (sig^+) n).
-  Proof.
-    intros tin tout. destruct params as [ | (tapeX, X, codX) params']; cbn in f.
-    - apply (tape_encodes _ (tout[@resTape]) f).
-    - apply (forall x : X, tape_encodes codX (tin[@tapeX]) x -> @Computes_Gen params' (f x) tin tout).
-  Defined.
-
-  Definition Computes_Gen_Rel
-             (params : list comp_gen_param)
-             (f : param_genF params) : Rel (tapes (sig^+) n) (F * (tapes (sig^+) n)) :=
-    ignoreParam (@Computes_Gen params f).
-
-  Definition params_tapes (params : list comp_gen_param) : list (Fin.t n) := map par_tape params.
-
-  Lemma Computes_Gen_Ext
-        (params : list comp_gen_param)
-        (f : param_genF params)
-        tin tin' tout :
-    (forall param, List.In param params ->
-              forall x : par_type param,
-                tape_encodes (par_code param) tin'[@par_tape param] x ->
-                tape_encodes (par_code param) tin [@par_tape param] x) ->
-    @Computes_Gen params f tin tout -> @Computes_Gen params f tin' tout.
-  Proof.
-    intros H HComp.
-    induction params as [ | (tapeX, X, codX) params' IH]; cbn in *; intros; auto.
-    apply IH; eauto. apply HComp. cbn in *. specialize (H _ ltac:(eauto) ltac:(eauto)). auto.
-  Qed.
-
-End Computes_Gen.
-
-Arguments Computes_Gen {sig} {n} {Res} (codRes) (resTape) (params) (f).
-Arguments Computes_Gen_Rel {sig} {n} F {Res} (codRes) (resTape) (params) (f).
-
-(* Check, that Computes_Gen coincises with Computes for [k := 1] *)
-Section Test_Computes_Gen1.
-
-  Variable sig : finType.
-  Variable n_tapes : nat.
-  Variable (i j : Fin.t n_tapes).
-  Variable (X Y : Type) (cX : codable sig X) (cY : codable sig Y).
-  Variable (f : X -> Y).
-  Variable F : finType.
-
-  Definition gen1 := Computes_Gen cY j [| (mk_param i cX) |] f.
-
-  Lemma Computes_Gen_Computes : gen1 =2 Computes i j cX cY f.
-  Proof.
-    split; cbn; hnf; intuition.
-  Qed.
-
-End Test_Computes_Gen1.
-
-(* Check, that Computes_Gen coincises with Computes2 for [k := 2] *)
-Section Test_Computes_Gen2.
-  Variable sig : finType.
-  Variable n_tapes : nat.
-  Variable (i j k : Fin.t n_tapes).
-  Variable (X Y Z : Type) (cX : codable sig X) (cY : codable sig Y) (cZ : codable sig Z).
-  Variable (f : X -> Y -> Z).
-  Variable F : finType.
-
-  Definition gen2 := Computes_Gen cZ k [| mk_param i cX; mk_param j cY |] f.
-
-  Lemma Computes_Gen_Computes2 : gen2 =2 Computes2 i j k cX cY cZ f.
-  Proof.
-    split; cbn; hnf.
-    - intuition. hnf. intuition.
-    - intuition.
-  Qed.
-
-End Test_Computes_Gen2.
- *)
-
-
-(*
-(* Check, that Computes_Gen coincises with InitTape for [k := 0] *)
-
-Section Test_InitTape_Gen0.
-  Variable sig : finType.
-  Variable (X : Type) (cX : codable sig X).
-  Variable x : X.
-
-  Definition gen0 := Computes_Gen cX (Fin.F1 (n := 0)) [||] x.
-
-  Lemma Computes_Gen_InitTape :
-    gen0 =2 InitTape_Rel cX x |_tt.
-  Proof.
-    hnf. split.
-    - TMSimp. do 2 eexists. split; hnf; cbn; eauto.
-    - TMSimp. do 2 eexists. split; hnf; cbn; eauto.
-  Qed.
-
-End Test_InitTape_Gen0.
- *)
-
-(* end hide *)

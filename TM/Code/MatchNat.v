@@ -1,8 +1,10 @@
 Require Import TM.Code.ProgrammingTools.
 
+(** * Constructor and Deconstructor Machines for Natural Numbers *)
 
-(* Basic pattern matching *)
 Section MatchNat.
+
+  (** ** Deconstructor *)
 
   Definition MatchNat_Rel : Rel (tapes sigNat^+ 1) (bool * tapes sigNat^+ 1) :=
     Mk_R_p
@@ -88,6 +90,8 @@ Section MatchNat.
 
 End MatchNat.
 
+
+(** ** Tactical Support *)
 
 Ltac smpl_TM_MatchNat :=
   lazymatch goal with

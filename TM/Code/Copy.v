@@ -1,4 +1,4 @@
-(* Helper functions for verifying machines using CopySymbols and MoveToSymbol *)
+(** * Helper functions and machines for verifying machines using [CopySymbols] ane [MoveToSymbol] *)
 
 Require Import FunInd.
 
@@ -779,7 +779,6 @@ Section Translate.
       exists x. split. eauto. unfold MoveLeft_steps. now rewrite Encode_map_hasSize.
     }
   Qed.
-
 
 End Translate.
 

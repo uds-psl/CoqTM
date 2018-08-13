@@ -1,7 +1,8 @@
 Require Import TM.Prelim TM.TM.
 
+(** * Mirror Operator *)
 
-Section MirrorTM.
+Section Mirror.
   Variable (n : nat) (sig : finType).
 
   Definition mirror_act : (option sig * move) -> (option sig * move) :=
@@ -22,7 +23,7 @@ Section MirrorTM.
 
 
   Variable F : finType.
-  Variable pM : { M : mTM sig n & states M -> F }.
+  Variable pM : pTM sig F n.
 
   Definition Mirror_trans :
     states (projT1 pM) * Vector.t (option sig) n ->
@@ -126,7 +127,7 @@ Section MirrorTM.
       + firstorder.
   Qed.
 
-End MirrorTM.
+End Mirror.
 
 Arguments Mirror : simpl never.
 Arguments Mirror_Rel { n sig F } R x y /.

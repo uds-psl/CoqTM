@@ -1,6 +1,7 @@
+(** * Reduction of the Halting Problem of the Heap Machine to the Halting Problem of Turing Machines *)
+
 Require Import ProgrammingTools.
 Require Import LM.Semantics LM.Alphabets LM.StepTM.
-
 
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
@@ -148,4 +149,10 @@ Proof.
 Qed.
 
 
+(** This vernacular command checks wether we have indeed assumed no axioms. *)
 Print Assumptions HaltingProblem.
+(**
+<<
+Closed under the global context
+>>
+*)

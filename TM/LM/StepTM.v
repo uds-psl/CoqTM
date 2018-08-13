@@ -1,13 +1,15 @@
+(** * Step Machine of the Heap Machine Simulator *)
+
 Require Import TM.Code.ProgrammingTools.
 Require Import TM.LM.Semantics TM.LM.Alphabets.
 Require Import TM.LM.MatchTok TM.LM.LookupTM TM.LM.JumpTargetTM.
 Require Import TM.Code.ListTM TM.Code.MatchList TM.Code.MatchPair TM.Code.MatchSum.
 
-
-(** * Step Machine *)
-
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
+
+
+(** Here we compose the [Lookup] and [JumpTarget] machines. *)
 
 Section StepMachine.
 
@@ -18,13 +20,7 @@ Section StepMachine.
   Implicit Types (P Q : Pro).
 
   
-
-  (** Here we compose the [Lookup] and [JumpTarget] machines, together with additional some matches.
-The semantics of the step machine are only defined, similarly to [Lookup] and [JumpTarget], when the simulated heap machine steps.
-
-The machine operates on lists of closures and on a heap, so we need a closure-list alphabet and a heap alphabet.
-   *)
-
+  (** The machine operates on lists of closures and on a heap, so we need a closure-list alphabet and a heap alphabet. *)
   Variable sigStep : finType.
   Variable retr_closures_step : Retract (sigList sigHClos) sigStep.
   Variable retr_heap_step : Retract sigHeap sigStep.
@@ -928,6 +924,4 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
     }
   Qed.
   
-
-
 End StepMachine.
