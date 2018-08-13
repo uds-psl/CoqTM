@@ -34,7 +34,7 @@ Section MatchList.
 
   Definition MatchList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
     LiftTapes (Move R) [|Fin0|];;
-    MATCH (LiftTapes (ReadChar) [|Fin0|])
+    Match (LiftTapes (ReadChar) [|Fin0|])
           (fun s => match s with
                  | Some (inr sigList_nil) => (* nil *)
                    Return (LiftTapes (Move L) [|Fin0|]) false 
@@ -285,7 +285,7 @@ Section MatchList.
 
   Definition IsNil : pTM (sigList sigX)^+ bool 1 :=
     Move R;;
-    MATCH ReadChar
+    Match ReadChar
     (fun s =>
        match s with
        | Some (inr sigList_nil) =>

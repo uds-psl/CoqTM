@@ -12,7 +12,7 @@ Section If.
   Variable pM2 : { M2 : mTM sig n & states M2 -> F2}.
   Variable pM3 : { M3 : mTM sig n & states M3 -> F2}.
 
-  Definition If := MATCH pM1 (fun b => if b then pM2 else pM3).
+  Definition If := Match pM1 (fun b => if b then pM2 else pM3).
 
   Lemma If_Realise (R1 : Rel _ _) (R2 : Rel _ (F2 * _)) (R3 : Rel _ (F2 * _)) :
     pM1 ⊨ R1 ->

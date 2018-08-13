@@ -26,7 +26,7 @@ Section move_to_symbol.
    * Else move one to the right and return [ Some false ].
    *)
   Definition MoveToSymbol_Step : { M : mTM sig 1 & states M -> option unit} :=
-    MATCH (ReadChar)
+    Match (ReadChar)
           (fun b : option sig =>
              match b with
              | Some x => if f x
@@ -81,7 +81,7 @@ Section move_to_symbol.
    * The main loop of the machine.
    * Execute MoveToSymbol_Step in a loop until MoveToSymbol_Step returned [ None ] or [ Some true ]
    *)
-  Definition MoveToSymbol : { M : mTM sig 1 & states M -> unit } := WHILE MoveToSymbol_Step.
+  Definition MoveToSymbol : { M : mTM sig 1 & states M -> unit } := While MoveToSymbol_Step.
   
   Definition rlength (t : tape sig) := length (tape_local t).
 

@@ -179,7 +179,7 @@ Qed.
 
 Definition JumpTarget_Step : pTM sigPro^+ (option bool) 5 :=
   If (MatchList sigTok_fin @ [|Fin0; Fin3|])
-     (MATCH (ChangeAlphabet MatchTok _ @ [|Fin3|])
+     (Match (ChangeAlphabet MatchTok _ @ [|Fin3|])
              (fun t : option ATok =>
                 match t with
                 | Some retAT =>
@@ -403,7 +403,7 @@ Proof.
 Qed.
 
 
-Definition JumpTarget_Loop := WHILE JumpTarget_Step.
+Definition JumpTarget_Loop := While JumpTarget_Step.
 
 
 Definition JumpTarget_Loop_Rel : pRel sigPro^+ bool 5 :=

@@ -1,7 +1,9 @@
 Require Import TM.TM.
 
-Open Scope vector_scope.
+(** * Basic 1-Tape Machines *)
 
+
+(** ** Helper functions *)
 Section Mk_Mono.
   Variable (sig states : finType).
   Variable mono_trans : states -> option sig -> states * (option sig * move).
@@ -28,6 +30,7 @@ Arguments Mk_R_p { sig F } ( R ) x y /.
 
 
 
+(** ** Do a single action *)
 Section DoAct.
   Variable sig : finType.
   Variable c : sig.
@@ -55,8 +58,9 @@ Arguments DoAct : simpl never.
 Arguments DoAct_Rel { sig } act x y /.
 
 
-Section Write.
+(** *** Derived Machines *)
 
+Section DoAct_Derived.
   Variable sig : finType.
   Variable c : sig. (* for Write *)
   Variable (D : move). (* for Move *)
@@ -74,7 +78,6 @@ Section Write.
     - reflexivity.
     - hnf. firstorder.
   Qed.
-
 
   Definition Move : pTM sig unit 1 := DoAct (None, D).
 
@@ -104,7 +107,7 @@ Section Write.
     - hnf. firstorder.
   Qed.
 
-End Write.
+End DoAct_Derived.
 
 Arguments Write : simpl never.
 Arguments Write_Rel { sig } c x y / : rename.
@@ -116,6 +119,8 @@ Arguments Move_Rel { sig } ( D ) x y /.
 Arguments WriteMove : simpl never.
 Arguments WriteMove_Rel { sig } (w D) x y / : rename.
 
+
+(** ** Read a symbol *)
 
 Section ReadChar.
 
@@ -157,6 +162,7 @@ Arguments ReadChar {sig}.
 Arguments ReadChar_Rel sig x y /.
 
 
+(** ** Tactical support *)
 
 Ltac smpl_TM_Mono :=
   lazymatch goal with

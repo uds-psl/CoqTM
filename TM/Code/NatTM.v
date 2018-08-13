@@ -59,7 +59,7 @@ Definition Add_Step : { M : mTM _ 2 & states M -> option unit } :=
      (Return Nop (Some tt)).
 
 
-Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := WHILE Add_Step.
+Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := While Add_Step.
 
 (*
  * Full machine in pseudocode:
@@ -375,7 +375,7 @@ Definition Mult_Step : { M : mTM _ 5 & states M -> option unit } :=
      (Return Nop (Some tt)). (* break *)
 
 
-Definition Mult_Loop : { M : mTM _ 5 & states M -> unit } := WHILE Mult_Step.
+Definition Mult_Loop : { M : mTM _ 5 & states M -> unit } := While Mult_Step.
 
 
 (*

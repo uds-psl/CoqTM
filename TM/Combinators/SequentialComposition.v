@@ -12,7 +12,7 @@ Section Composition.
   Variable F2 : finType.
   Variable pM2 : { M2 : mTM sig n & states M2 -> F2}.
   
-  Definition Seq := MATCH pM1 (fun _ => pM2).
+  Definition Seq := Match pM1 (fun _ => pM2).
 
   Lemma Seq_Realise (R1 : Rel _ (_ * _)) (R2 : Rel _ (F2 * _)) :
     pM1 ⊨ R1 ->

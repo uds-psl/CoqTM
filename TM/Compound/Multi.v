@@ -73,7 +73,7 @@ Section Copy.
   Variable f : sig -> sig.
 
   Definition CopyChar : pTM sig unit 2 :=
-    MATCH (LiftTapes ReadChar [|Fin.F1|])
+    Match (LiftTapes ReadChar [|Fin.F1|])
           (fun s : option sig =>
              match s with
              | None =>  Nop

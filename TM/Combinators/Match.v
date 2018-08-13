@@ -1,6 +1,8 @@
 Require Export TM.TM.
 Require Import Shared.FiniteTypes.DepPairs EqdepFacts.
 
+(** * Match Combinator *)
+
 Section Match.
 
   Variable n : nat.
@@ -12,11 +14,15 @@ Section Match.
   Variable F' : finType.
   Variable pMf : F -> pTM sig F' n.
 
-  Notation "'M1'" := (projT1 pM1).
-  Notation "'p1'":= (projT2 pM1).
+  (** The (unpartioned) machine [M] *)
+  Notation M1 := (projT1 pM1).
+  (** The partitioning of the machine [M] *)
+  Notation p1 := (projT2 pM1).
 
-  Notation "'Mf' f" := (projT1 (pMf f)) (at level 10).
-  Notation "'p2' f" := (projT2 (pMf f)) (at level 10).
+  (** The (unpartioned) case-machine [M' y] *)
+  Notation "'Mf' y" := (projT1 (pMf y)) (at level 10).
+  (** The partioning of the case-machine [M' y] *)
+  Notation "'p2' y" := (projT2 (pMf y)) (at level 10).
 
   Definition Match_trans :
     (TM.states M1 + { f : F & TM.states (Mf f) }) * Vector.t (option sig) n ->
@@ -39,30 +45,30 @@ Section Match.
       | inr q => halt (projT2 q)
       end.
   
-  Definition Match : mTM sig n :=
+  Definition MatchTM : mTM sig n :=
     {|
       trans := Match_trans;
       halt  := Match_halt;
       start := inl (start M1);
     |}.
 
-  Definition Match_p : (states Match) -> F' :=
+  Definition Match_p : (states MatchTM) -> F' :=
     fun q => match q with
           | inl q => p2 (p1 q) (start (Mf (p1 q))) (* Canonical value *)
           | inr q => p2 (projT1 q) (projT2 q)
           end.
   
-  Definition MATCH := (Match; Match_p).
+  Definition Match := (MatchTM; Match_p).
 
   
 
   (** Lift configurations of [M1] to configurations of [Match] *)
-  Definition lift_confL (c : mconfig sig (states M1) n) : mconfig sig (states Match) n :=
+  Definition lift_confL (c : mconfig sig (states M1) n) : mconfig sig (states MatchTM) n :=
     mk_mconfig (inl (cstate c)) (ctapes c).
 
 
   (** Lift configuration of [M2] to configurations of [Match] *)
-  Definition lift_confR (f : F) (c : mconfig sig (states (Mf f) ) n) : mconfig sig (states Match) n :=
+  Definition lift_confR (f : F) (c : mconfig sig (states (Mf f) ) n) : mconfig sig (states MatchTM) n :=
     mk_mconfig (inr (existT (fun f0 : F => states (Mf f0)) f (cstate c))) (ctapes c).
 
   (** Lifted Steps of [M1] are compatible with steps in [M1], for non-halting states *)
@@ -82,7 +88,7 @@ Section Match.
   Qed.
 
   (** Lifted halting states of [M1] *)
-  Definition halt_liftL (c : mconfig sig (states (Match)) n) :=
+  Definition halt_liftL (c : mconfig sig (states (MatchTM)) n) :=
     match cstate c with
     | inl q => halt (m := M1) q
     | inr q => true
@@ -90,7 +96,7 @@ Section Match.
 
 
   (** Non-halting states of [M1] are non-halting states of [Match] *)
-  Lemma halt_conf_liftL (c : mconfig sig (states Match) n) :
+  Lemma halt_conf_liftL (c : mconfig sig (states MatchTM) n) :
     halt_liftL c = false -> halt (cstate c) = false.
   Proof.
     intros H. cbn. unfold Match_halt.
@@ -112,7 +118,7 @@ Section Match.
 
   (** The starting configuration of [Match] corresponds to the starting configuration of [M1]. *)
   Lemma lift_initc t :
-    initc Match t = lift_confL (initc M1 t).
+    initc MatchTM t = lift_confL (initc M1 t).
   Proof. reflexivity. Qed.
 
   (** This lemma is needed for the termination part. Suppose [M1] terminates in [c1].  The case machine [Mf f] starts with the tapes of [c1] and terminates in a configuration [c2]. Then, if we start [Match] with the same tapes as [M1], [Match] terminates in the lifted configuration of [c2]. *)
@@ -121,7 +127,7 @@ Section Match.
         (c2 : mconfig sig (states (Mf (p1 (cstate c1)))) n) :
     loopM (initc M1 t) k1 = Some c1 ->
     loopM (initc (Mf (p1 (cstate c1))) (ctapes c1)) k2 = Some c2 ->
-    loopM (initc Match t) (k1 + (1 + k2)) = Some (lift_confR c2).
+    loopM (initc MatchTM t) (k1 + (1 + k2)) = Some (lift_confR c2).
   Proof.
     intros HLoop1 HLoop2. unfold loopM in *.
     apply loop_merge with (h := halt_liftL) (a2 := lift_confL c1).
@@ -134,7 +140,7 @@ Section Match.
     - (* execute one step *)
       rewrite loop_step by auto.
       rewrite step_nop_transition by apply (loop_fulfills HLoop1).
-      eapply loop_lift with (lift := lift_confR (f := p1 (cstate c1))) (f' := step (M := Match)) (h' := haltConf (M := Match)) in HLoop2.
+      eapply loop_lift with (lift := lift_confR (f := p1 (cstate c1))) (f' := step (M := MatchTM)) (h' := haltConf (M := MatchTM)) in HLoop2.
       + apply HLoop2.
       + intros. cbn. now destruct x.
       + intros. apply step_comp_liftR.
@@ -142,9 +148,9 @@ Section Match.
 
 
   (** The [Match] machine must take the "nop" action if it is in a final state of [M1]. *)
-  Lemma step_nop_split (k2 : nat) (c2 : mconfig sig (states M1) n) (outc : mconfig sig (states Match) n) :
+  Lemma step_nop_split (k2 : nat) (c2 : mconfig sig (states M1) n) (outc : mconfig sig (states MatchTM) n) :
     haltConf c2 = true ->
-    loopM (M := Match) (lift_confL c2) k2 = Some outc ->
+    loopM (M := MatchTM) (lift_confL c2) k2 = Some outc ->
     exists k2' c2',
       k2 = S k2' /\
       loopM (M := Mf (p1 (cstate c2))) (initc _ (ctapes c2)) k2' = Some c2' /\
@@ -165,8 +171,8 @@ Section Match.
   Qed.
 
 
-  Lemma Match_split k t (outc : mconfig sig (states Match) n) :
-    loopM (initc Match t) k = Some outc ->
+  Lemma Match_split k t (outc : mconfig sig (states MatchTM) n) :
+    loopM (initc MatchTM t) k = Some outc ->
     exists k1 (c1 : mconfig sig (states M1) n) k2 (c2 : mconfig sig (states (Mf (p1 (cstate c1)))) n),
       loopM (initc M1 t) k1 = Some c1 /\
       loopM (initc (Mf (p1 (cstate c1))) (ctapes c1)) k2 = Some c2 /\
@@ -188,7 +194,7 @@ Section Match.
   (** Correctness *)
   Lemma Match_Realise (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) :
     pM1 ⊨ R1 ->
-    (forall f : F, pMf f ⊨ R2 f) -> MATCH ⊨ (⋃_f (R1 |_ f) ∘ R2 f).
+    (forall f : F, pMf f ⊨ R2 f) -> Match ⊨ (⋃_f (R1 |_ f) ∘ R2 f).
   Proof.
     intros HRel1 HRel2. hnf in HRel1.
     hnf. intros t i outc HLoop.
@@ -202,9 +208,9 @@ Section Match.
   (** Runtime *)
   Lemma Match_TerminatesIn (R1 : Rel _ (F * _)) T1 T2 :
     pM1 ⊨ R1 -> M1 ↓ T1 -> (forall f : F, Mf f ↓(T2 f)) ->
-    projT1 MATCH ↓ (fun tin i => exists i1 i2, T1 tin i1 /\ 1 + i1 + i2 <= i /\ forall tout yout, R1 tin (yout, tout) -> T2 yout tout i2).
+    projT1 Match ↓ (fun tin i => exists i1 i2, T1 tin i1 /\ 1 + i1 + i2 <= i /\ forall tout yout, R1 tin (yout, tout) -> T2 yout tout i2).
   Proof.
-    unfold MATCH. intros HRel1 HTerm1 HTerm2. hnf in HRel1, HTerm1.
+    unfold Match. intros HRel1 HTerm1 HTerm2. hnf in HRel1, HTerm1.
     hnf. intros t i (i1&i2&HT1&Hk&H).
     specialize HTerm1 with (1 := HT1) as (c1&HLoop1).
     specialize HRel1 with (1 := HLoop1).
@@ -219,7 +225,7 @@ Section Match.
   Lemma Match_RealiseIn (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) k1 k2:
     pM1 ⊨c(k1) R1 ->
     (forall f : F, pMf f ⊨c(k2) R2 f) ->
-    MATCH ⊨c(1 + k1 + k2) (⋃_f (R1 |_ f) ∘ R2 f).
+    Match ⊨c(1 + k1 + k2) (⋃_f (R1 |_ f) ∘ R2 f).
   Proof.
     intros (H1&H2) % Realise_total H3. apply Realise_total. split.
     - eapply Match_Realise; eauto. intros ?. eapply Realise_total; eauto.
@@ -228,9 +234,9 @@ Section Match.
       + firstorder.
   Qed.
 
-
 End Match.
-(* Arguments MATCH {n} {sig} {F} pM1 {_} pMf : clear implicits. *)
 
+Arguments Match : simpl never.
 
-Arguments MATCH : simpl never.
+(* Deprecated name *)
+Notation MATCH := Match.

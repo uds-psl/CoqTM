@@ -280,7 +280,7 @@ t4: internal tape
   Qed.
     
 
-  Definition Lookup := WHILE Lookup_Step.
+  Definition Lookup := While Lookup_Step.
 
   Definition Lookup_Rel : pRel sigLookup^+ bool 5 :=
     fun tin '(yout, tout) =>

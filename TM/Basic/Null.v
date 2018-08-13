@@ -1,10 +1,10 @@
 Require Import TM.Prelim TM.TM.
 
-(** 0-tape Turing machine that does nothing. *)
+(** * 0-tape Turing machine that does nothing. *)
+
 Section Mono_Nop.
 
   Variable sig : finType.
-
 
   Definition NullTM : mTM sig 0 :=
     {|
@@ -26,6 +26,9 @@ End Mono_Nop.
 Arguments Null : simpl never.
 Arguments Null {sig}.
 Arguments Null_Rel { sig } x y / : rename.
+
+
+(** ** Tactical support *)
 
 Ltac smpl_TM_Null :=
   lazymatch goal with

@@ -377,7 +377,8 @@ Ltac smpl_dupfree :=
 
 Ltac smpl_TM_LiftN :=
   lazymatch goal with
-  | [ |- LiftTapes _ _ ⊨ _] => apply LiftTapes_Realise; [ smpl_dupfree | ]
+  | [ |- LiftTapes _ _ ⊨ _] =>
+    apply LiftTapes_Realise; [ smpl_dupfree | ]
   | [ |- LiftTapes _ _ ⊨c(_) _] => apply LiftTapes_RealiseIn; [ smpl_dupfree | ]
   | [ |- projT1 (LiftTapes _ _) ↓ _] => apply LiftTapes_Terminates; [ smpl_dupfree | ]
   end.

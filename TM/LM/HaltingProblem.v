@@ -12,7 +12,7 @@ Definition retr_heap_step : Retract sigHeap sigStep := _.
 Definition retr_closures_step : Retract (sigList sigHClos) sigStep := _.
 
 
-Definition Loop := WHILE (Step retr_closures_step retr_heap_step).
+Definition Loop := While (Step retr_closures_step retr_heap_step).
 
 Definition Loop_Rel : pRel sigStep^+ unit 11 :=
   ignoreParam (

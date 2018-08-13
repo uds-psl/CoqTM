@@ -1,7 +1,9 @@
-(* Export the submodules *)
+(** * Combinators *)
+
+(** Export Modules for Combinators *)
 Require Export Match If SequentialComposition While Mirror.
 
-
+(** ** Simple Combinators *)
 
 (** Identity operator *)
 Section Id.
@@ -14,7 +16,6 @@ For example, when using [ChangeAlphabet], but the machine realises a relation, y
 
   Definition Id := pM.
 End Id.
-
 
 
 
@@ -85,11 +86,10 @@ Arguments Return : simpl never.
 
 
 
-(** * Tactical support *)
+(** ** Tactical support *)
 
 
 (** Helper tactics for match *)
-
 
 (** This tactic destructs a variable recursivle and shelves each goal where it couldn't destruct the variable further. The purpose of this tactic is to pre-instantiate functions to relations with holes of the form [Param -> Rel _ _]. We need this for the [Match] Machine.
 The implementation of this tactic is quiete uggly but works for parameters with up to 9 constructor arguments. This tactic may generates a lot of warnings, which can be ignored. *)
@@ -122,7 +122,7 @@ Ltac destruct_shelve e :=
 .
   
 
-Eval simpl in ltac:(intros ?e; destruct_shelve e) : (option (bool + (bool + (bool + bool)))) -> Rel _ _.
+(* Eval simpl in ltac:(intros ?e; destruct_shelve e) : (option (bool + (bool + (bool + bool)))) -> Rel _ _. *)
 
 
 Ltac smpl_match_case_solve_RealiseIn :=
@@ -130,7 +130,7 @@ Ltac smpl_match_case_solve_RealiseIn :=
 
 Ltac smpl_match_RealiseIn :=
   lazymatch goal with
-  | [ |- MATCH ?M1 ?M2 ⊨c(?k1) ?R] =>
+  | [ |- Match ?M1 ?M2 ⊨c(?k1) ?R] =>
     is_evar R;
     let tM2 := type of M2 in
     let x := fresh "x" in
@@ -149,7 +149,7 @@ Ltac smpl_match_RealiseIn :=
 
 Ltac smpl_match_Realise :=
   lazymatch goal with
-  | [ |- MATCH ?M1 ?M2 ⊨ ?R] =>
+  | [ |- Match ?M1 ?M2 ⊨ ?R] =>
     is_evar R;
     let tM2 := type of M2 in
     let x := fresh "x" in
@@ -167,7 +167,7 @@ Ltac smpl_match_Realise :=
 
 Ltac smpl_match_Terminates :=
   lazymatch goal with
-  | [ |- projT1 (MATCH ?M1 ?M2) ↓ ?R] =>
+  | [ |- projT1 (Match ?M1 ?M2) ↓ ?R] =>
     is_evar R;
     let tM2 := type of M2 in
     let x := fresh "x" in
@@ -188,17 +188,17 @@ Ltac smpl_match_Terminates :=
 (* There is no rule for [Id] on purpose. *)
 Ltac smpl_TM_Combinators :=
   lazymatch goal with
-  | [ |- MATCH _ _ ⊨ _] => smpl_match_Realise
-  | [ |- MATCH _ _ ⊨c(_) _] => smpl_match_RealiseIn
-  | [ |- projT1 (MATCH _ _) ↓ _] => smpl_match_Terminates
+  | [ |- Match _ _ ⊨ _] => smpl_match_Realise
+  | [ |- Match _ _ ⊨c(_) _] => smpl_match_RealiseIn
+  | [ |- projT1 (Match _ _) ↓ _] => smpl_match_Terminates
   | [ |- If _ _ _ ⊨ _] => eapply If_Realise
   | [ |- If _ _ _ ⊨c(_) _] => eapply If_RealiseIn
   | [ |- projT1 (If _ _ _) ↓ _] => eapply If_TerminatesIn
   | [ |- Seq _ _ ⊨ _] => eapply Seq_Realise
   | [ |- Seq _ _ ⊨c(_) _] => eapply Seq_RealiseIn
   | [ |- projT1 (Seq _ _) ↓ _] => eapply Seq_TerminatesIn
-  | [ |- WHILE _ ⊨ _] => eapply While_Realise
-  | [ |- projT1 (WHILE _) ↓ _] => eapply While_TerminatesIn
+  | [ |- While _ ⊨ _] => eapply While_Realise
+  | [ |- projT1 (While _) ↓ _] => eapply While_TerminatesIn
   | [ |- ChangePartition _ _ ⊨ _] => eapply ChangePartition_Realise
   | [ |- ChangePartition _ _ ⊨c(_) _] => eapply ChangePartition_RealiseIn
   | [ |- projT1 (ChangePartition _ _) ↓ _] => eapply ChangePartition_Terminates

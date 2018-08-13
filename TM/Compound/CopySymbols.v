@@ -19,7 +19,7 @@ Section CopySymbols.
   Variable f : sig -> bool.
 
   Definition CopySymbols_Step : { M : mTM sig 2 & states M -> option unit} :=
-    MATCH (ReadChar_at Fin0)
+    Match (ReadChar_at Fin0)
           (fun b : option sig =>
              match b with
              | Some x =>
@@ -71,7 +71,7 @@ Section CopySymbols.
    * The main loop of the machine.
    * Execute CopySymbols_Step in a loop until CopySymbols_Step returned [ Some tt ]
    *)
-  Definition CopySymbols : pTM sig unit 2 := WHILE CopySymbols_Step.
+  Definition CopySymbols : pTM sig unit 2 := While CopySymbols_Step.
 
   Definition rlength (t : tape sig) := length (tape_local t).
 

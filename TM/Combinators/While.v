@@ -18,7 +18,7 @@ Section While.
       then (start (projT1 pM), nop_action)
       else trans (q,s).
 
-  Definition While : mTM sig n :=
+  Definition WhileTM : mTM sig n :=
     Build_mTM While_trans (start (projT1 pM))
               (fun q => halt q && match projT2 pM q with
                                | Some _ => true
@@ -34,8 +34,8 @@ Section While.
       | None => default
       end.
 
-  Definition WHILE : pTM sig F n :=
-    (While; While_part).
+  Definition While : pTM sig F n :=
+    (WhileTM; While_part).
 
   Local Arguments loopM {_ _} _ _ _.
   Local Arguments halt {_ _} _ _.
@@ -43,7 +43,7 @@ Section While.
 
   Lemma step_comp (c : mconfig sig (states (projT1 pM)) n) :
     haltConf c = false ->
-    step (projT1 pM) c = step While c.
+    step (projT1 pM) c = step WhileTM c.
   Proof.
     intros HHalt. unfold haltConf in HHalt.
     destruct c as [q t]. cbn in *.
@@ -52,17 +52,17 @@ Section While.
 
   Lemma halt_comp (c : mconfig sig (states (projT1 pM)) n) :
     haltConf (M := projT1 pM) c = false ->
-    haltConf (M := While)     c = false.
+    haltConf (M := WhileTM)     c = false.
   Proof.
     intros HHalt. cbn in *.
     destruct c as [q t]. cbn in *.
     apply andb_false_iff. now left.
   Qed.
 
-  Lemma While_trans_repeat (c : mconfig sig (states While) n) :
+  Lemma While_trans_repeat (c : mconfig sig (states WhileTM) n) :
     haltConf (M := projT1 pM) c = true ->
     projT2 pM (cstate c) = None ->
-    step While c = initc (While) (ctapes c).
+    step WhileTM c = initc (WhileTM) (ctapes c).
   Proof.
     intros HHalt HRepeat. unfold haltConf in HHalt.
     destruct c as [q t]; cbn in *.
@@ -70,10 +70,10 @@ Section While.
   Qed.
 
   Lemma While_split k (c1 c3 : mconfig sig (states (projT1 pM)) n) :
-    loopM While c1 k = Some c3 ->
+    loopM WhileTM c1 k = Some c3 ->
     exists k1 k2 c2,
       loopM (projT1 pM) c1 k1 = Some c2 /\
-      loopM While c2 k2 = Some c3 /\
+      loopM WhileTM c2 k2 = Some c3 /\
       k1 + k2 <= k.
   Proof.
     unfold loopM. intros HLoop.
@@ -86,13 +86,13 @@ Section While.
     - apply halt_comp.
   Qed.
 
-  Lemma While_split_repeat k (c1 c2 : mconfig sig (states While) n) :
-    loopM While c1 k = Some c2 ->
+  Lemma While_split_repeat k (c1 c2 : mconfig sig (states WhileTM) n) :
+    loopM WhileTM c1 k = Some c2 ->
     haltConf (M := projT1 pM) c1 = true ->
     projT2 pM (cstate c1) = None ->
     exists k' : nat,
       k = S k' /\
-      loopM While (initc While (ctapes c1)) k' = Some c2.
+      loopM WhileTM (initc WhileTM (ctapes c1)) k' = Some c2.
   Proof.
     intros HLoop HHalt HRepeat. unfold haltConf in HHalt.
     destruct k as [ | k']; cbn in *.
@@ -101,8 +101,8 @@ Section While.
       now rewrite While_trans_repeat in HLoop by auto.
   Qed.
 
-  Lemma While_split_term k (c1 c2 : mconfig sig (states While) n) (f : F) :
-    loopM While c1 k = Some c2 ->
+  Lemma While_split_term k (c1 c2 : mconfig sig (states WhileTM) n) (f : F) :
+    loopM WhileTM c1 k = Some c2 ->
     haltConf (M := projT1 pM) c1 = true ->
     projT2 pM (cstate c1) = Some f ->
     c2 = c1.
@@ -111,14 +111,14 @@ Section While.
     eapply loop_eq_0. 2: apply HLoop. unfold haltConf in *. cbn in *. now rewrite HHalt, HTerm.
   Qed.
 
-  Lemma While_merge_repeat k1 k2 (c1 c2 c3 : mconfig sig (states While) n) :
+  Lemma While_merge_repeat k1 k2 (c1 c2 c3 : mconfig sig (states WhileTM) n) :
     loopM (projT1 pM) c1 k1 = Some c2 ->
     (projT2 pM) (cstate c2) = None ->
-    loopM While (initc While (ctapes c2)) k2 = Some c3 ->
-    loopM While c1 (k1+(1+k2)) = Some c3.
+    loopM WhileTM (initc WhileTM (ctapes c2)) k2 = Some c3 ->
+    loopM WhileTM c1 (k1+(1+k2)) = Some c3.
   Proof.
     intros HLoop1 HRepeat HLoop2. unfold loopM in *.
-    eapply loop_lift with (lift := id) (f' := step (While)) (h' := haltConf (M := projT1 pM)) in HLoop1; cbv [id] in *; cbn; auto; cycle 1.
+    eapply loop_lift with (lift := id) (f' := step (WhileTM)) (h' := haltConf (M := projT1 pM)) in HLoop1; cbv [id] in *; cbn; auto; cycle 1.
     { intros. symmetry. now apply step_comp. }
     apply loop_merge with (h := haltConf (M := projT1 pM)) (a2 := c2).
     - apply halt_comp.
@@ -127,13 +127,13 @@ Section While.
       cbn in *. setoid_rewrite (loop_fulfills HLoop1). now rewrite HRepeat.
   Qed.
 
-  Lemma While_merge_term k1 (c1 c2 : mconfig sig (states While) n) (f : F) :
+  Lemma While_merge_term k1 (c1 c2 : mconfig sig (states WhileTM) n) (f : F) :
     loopM (projT1 pM) c1 k1 = Some c2 ->
     (projT2 pM) (cstate c2) = Some f ->
-    loopM While c1 k1 = Some c2.
+    loopM WhileTM c1 k1 = Some c2.
   Proof.
     intros HLoop HTerm. unfold loopM in *.
-    eapply loop_lift with (lift := id) (f' := step (While)) (h' := haltConf (M := projT1 pM)) in HLoop; cbv [id] in *; cbn; auto; cycle 1.
+    eapply loop_lift with (lift := id) (f' := step (WhileTM)) (h' := haltConf (M := projT1 pM)) in HLoop; cbv [id] in *; cbn; auto; cycle 1.
     { intros. symmetry. now apply step_comp. }
     unfold loopM.
     replace k1 with (k1 + 0) by omega.
@@ -156,7 +156,7 @@ Section While.
         While_Rel tin (yout, tout).
 
   Lemma While_Realise :
-    pM ⊨ R -> WHILE ⊨ While_Rel.
+    pM ⊨ R -> While ⊨ While_Rel.
   Proof.
     intros HRel. hnf in HRel; hnf. intros t k; revert t. apply complete_induction with (x := k); clear k; intros k IH. intros tin c3 HLoop.
     apply While_split in HLoop as (k1&k2&c2&HLoop1&HLoop2&Hk).
@@ -183,7 +183,7 @@ Section While.
             T' tin k1 /\
             (forall ymid tmid, R tin (Some ymid, tmid) -> k1 <= k) /\
             (forall tmid, R tin (None, tmid) -> exists k2, T tmid k2 /\ 1 + k1 + k2 <= k)) ->
-      While ↓T.
+      WhileTM ↓T.
     Proof.
       intros Realise_M Term_M Hyp tin i. revert tin. apply complete_induction with (x:=i); clear i; intros i IH tin.
       intros (i1&HT1&HT2&HT3) % Hyp. (* todo: i *)
@@ -217,7 +217,7 @@ Section While.
     Lemma While_TerminatesIn :
       pM ⊨ R ->
       projT1 pM ↓ T ->
-      While ↓ While_T.
+      WhileTM ↓ While_T.
     Proof.
       intros HRel HTerm. eapply While_TerminatesIn_ind; eauto.
       intros tin k' HCoInd. destruct HCoInd as [ t k k1 H1 H2 H3 ]. eauto.
@@ -231,8 +231,8 @@ End While.
 
 (* Arguments While {n} {sig} M _. *)
 
-Arguments WHILE : simpl never.
-Arguments WHILE {n sig F} pM {defF}.
+Arguments While : simpl never.
+Arguments While {n sig F} pM {defF}.
 
 
 Section WhileInduction.
@@ -309,3 +309,7 @@ Section OtherWhileRel.
   Qed.
 
 End OtherWhileRel.
+
+
+(* Deprecated name *)
+Notation WHILE := While.

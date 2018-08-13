@@ -22,7 +22,7 @@ Section MatchSum.
 
   Definition MatchSum : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> bool } :=
     Move R;; (* skip the [START] symbol *)
-    MATCH (ReadChar) (* read the "constructor" symbol *)
+    Match (ReadChar) (* read the "constructor" symbol *)
           (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding partition *)
                  | Some (inr sigSum_inl) => Return (Write (inl START)) true  (* inl *)
                  | Some (inr sigSum_inr) => Return (Write (inl START)) false (* inr *)

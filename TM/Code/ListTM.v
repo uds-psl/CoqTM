@@ -155,7 +155,7 @@ Section Nth.
            tout[@Fin2] ≃ nth_error l n).
 
 
-  Definition Nth_Loop := WHILE Nth_Step.
+  Definition Nth_Loop := While Nth_Step.
 
 
   Lemma Nth_Loop_Realise : Nth_Loop ⊨ Nth_Loop_Rel.
@@ -358,7 +358,7 @@ Section Nth'.
           end.
 
 
-  Definition Nth'_Loop := WHILE Nth'_Step.
+  Definition Nth'_Loop := While Nth'_Step.
 
 
   Lemma Nth'_Loop_Realise : Nth'_Loop ⊨ Nth'_Loop_Rel.
@@ -849,7 +849,7 @@ Section Lenght.
   Qed.
   
 
-  Definition Length_Loop := WHILE Length_Step.
+  Definition Length_Loop := While Length_Step.
 
   Definition Length_Loop_Rel : pRel sig^+ unit 3 :=
     ignoreParam (
