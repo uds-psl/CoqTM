@@ -93,7 +93,7 @@ End InjectSurject.
 
 Section TranslateAct.
   Variable X Y : Type.
-  Definition map_act : (X -> Y) -> option X * move -> option Y * move := fun f => map_left (map_opt f).
+  Definition map_act : (X -> Y) -> option X * move -> option Y * move := fun f => map_fst (map_opt f).
 End TranslateAct.
 
 

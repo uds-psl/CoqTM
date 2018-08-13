@@ -15,7 +15,7 @@ Section While.
     (TM.states (projT1 pM)) * Vector.t (option sig * move) n :=
     fun '(q,s) =>
       if halt q
-      then (start (projT1 pM), null_action)
+      then (start (projT1 pM), nop_action)
       else trans (q,s).
 
   Definition While : mTM sig n :=
@@ -66,7 +66,7 @@ Section While.
   Proof.
     intros HHalt HRepeat. unfold haltConf in HHalt.
     destruct c as [q t]; cbn in *.
-    unfold step. cbn -[tape_move_multi] in *. rewrite HHalt. unfold initc. f_equal. apply tape_move_null_action.
+    unfold step. cbn -[tape_move_multi] in *. rewrite HHalt. unfold initc. f_equal. apply tape_move_nop_action.
   Qed.
 
   Lemma While_split k (c1 c3 : mconfig sig (states (projT1 pM)) n) :

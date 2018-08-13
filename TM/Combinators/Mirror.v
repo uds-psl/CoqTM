@@ -5,7 +5,7 @@ Section MirrorTM.
   Variable (n : nat) (sig : finType).
 
   Definition mirror_act : (option sig * move) -> (option sig * move) :=
-    map_right mirror_move.
+    map_snd mirror_move.
 
   Definition mirror_acts : Vector.t (option sig * move) n -> Vector.t (option sig * move) n :=
     Vector.map mirror_act.

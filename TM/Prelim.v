@@ -182,8 +182,9 @@ Section Map.
       | inr x => inr (f x)
       end.
 
-  Definition map_left  : (X -> Z) -> X * Y -> Z * Y := fun f '(x,y) => (f x, y).
-  Definition map_right : (Y -> Z) -> X * Y -> X * Z := fun f '(x,y) => (x, f y).
+  Definition map_fst : (X -> Z) -> X * Y -> Z * Y := fun f '(x,y) => (f x, y).
+  Definition map_snd : (Y -> Z) -> X * Y -> X * Z := fun f '(x,y) => (x, f y).
+
 End Map.
 
 

@@ -25,7 +25,7 @@ Section Match.
         match q with
         | inl q =>
           if halt q
-          then (inr (existT _ (p1 q) (start (Mf (p1 q)))), null_action)
+          then (inr (existT _ (p1 q) (start (Mf (p1 q)))), nop_action)
           else let (q', a) := trans (q, s) in (inl q', a)
         | inr q =>
           let (q', a) := trans (projT2 q, s) in
@@ -107,7 +107,7 @@ Section Match.
     unfold lift_confL, lift_confR. cbn. unfold haltConf in Halt.
     unfold step at 1; cbn.
     rewrite Halt. f_equal.
-    apply tape_move_null_action.
+    apply tape_move_nop_action.
   Qed.
 
   (** The starting configuration of [Match] corresponds to the starting configuration of [M1]. *)
