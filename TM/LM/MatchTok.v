@@ -27,7 +27,7 @@ Definition MatchTok_steps := 11.
 Lemma MatchTok_Sem : MatchTok ⊨c(MatchTok_steps) MatchTok_Rel.
 Proof.
   unfold MatchTok_steps. eapply RealiseIn_monotone.
-  { unfold MatchTok. repeat TM_Correct.
+  { unfold MatchTok. TM_Correct.
     - apply LiftAlphabet_RealiseIn. apply MatchFin_Sem.
   }
   { cbn. reflexivity. }

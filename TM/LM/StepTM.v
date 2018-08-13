@@ -76,7 +76,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma TailRec_Realise : TailRec ⊨ TailRec_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold TailRec. repeat TM_Correct.
+    { unfold TailRec. TM_Correct.
       - apply Reset_Realise with (cX := Encode_map Encode_Prog retr_pro_step).
       - apply Reset_Realise with (cX := Encode_map Encode_HClos retr_clos_step).
     }
@@ -110,7 +110,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma TailRec_Terminates : projT1 TailRec ↓ TailRec_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold TailRec. repeat TM_Correct.
+    { unfold TailRec. TM_Correct.
       - apply Reset_Terminates with (cX := Encode_map Encode_Prog retr_pro_step).
       - apply Reset_Terminates with (cX := Encode_map Encode_HClos retr_clos_step).
     }
@@ -157,7 +157,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma ConsClos_Realise : ConsClos ⊨ ConsClos_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold ConsClos. repeat TM_Correct.
+    { unfold ConsClos. TM_Correct.
       - apply Reset_Realise with (cX := Encode_map Encode_HClos retr_clos_step).
       - apply Reset_Realise with (cX := Encode_map Encode_nat retr_nat_step_clos_ad).
     }
@@ -186,7 +186,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma ConsClos_Terminates : projT1 ConsClos ↓ ConsClos_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold ConsClos. repeat TM_Correct.
+    { unfold ConsClos. TM_Correct.
       - apply Reset_Realise with (cX := Encode_map Encode_HClos retr_clos_step).
       - apply Reset_Terminates with (cX := Encode_map Encode_HClos retr_clos_step).
       - apply Reset_Terminates with (cX := Encode_map Encode_nat retr_nat_step_clos_ad).
@@ -241,7 +241,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Step_lam_Realise : Step_lam ⊨ Step_lam_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Step_lam. repeat TM_Correct.
+    { unfold Step_lam. TM_Correct.
       - apply JumpTarget_Realise.
       - apply TailRec_Realise.
       - apply ConsClos_Realise.
@@ -291,7 +291,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Step_lam_Terminates : projT1 Step_lam ↓ Step_lam_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Step_lam. repeat TM_Correct.
+    { unfold Step_lam. TM_Correct.
       - apply JumpTarget_Realise.
       - apply JumpTarget_Terminates.
       - apply TailRec_Realise.
@@ -363,7 +363,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Put_Realise : Put ⊨ Put_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Put. repeat TM_Correct.
+    { unfold Put. TM_Correct.
       - apply Length_Computes with (X := HEnt).
       - apply Translate_Realise with (X := nat).
       - apply Translate_Realise with (X := HClos).
@@ -409,7 +409,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Put_Terminates : projT1 Put ↓ Put_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Put. repeat TM_Correct.
+    { unfold Put. TM_Correct.
       - apply Length_Computes with (X := HEnt).
       - apply Length_Terminates with (X := HEnt).
       - apply Translate_Realise with (X := nat).
@@ -522,7 +522,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Step_app_Realise : Step_app ⊨ Step_app_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Step_app. repeat TM_Correct.
+    { unfold Step_app. TM_Correct.
       - apply TailRec_Realise.
       - apply Reset_Realise with (cX := Encode_map Encode_nat retr_nat_step_clos_ad).
       - apply Put_Realise.
@@ -582,7 +582,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Step_app_Terminates : projT1 Step_app ↓ Step_app_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Step_app. repeat TM_Correct.
+    { unfold Step_app. TM_Correct.
       - apply TailRec_Realise.
       - apply TailRec_Terminates.
       - apply Reset_Realise with (cX := Encode_map Encode_nat retr_nat_step_clos_ad).
@@ -665,7 +665,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Step_var_Realise : Step_var ⊨ Step_var_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Step_var. repeat TM_Correct.
+    { unfold Step_var. TM_Correct.
       - apply TailRec_Realise.
       - apply Lookup_Realise.
       - apply Reset_Realise with (cX := Encode_map Encode_HClos retr_closure_step).
@@ -709,7 +709,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Step_var_Terminates : projT1 Step_var ↓ Step_var_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Step_var. repeat TM_Correct.
+    { unfold Step_var. TM_Correct.
       - apply TailRec_Realise.
       - apply TailRec_Terminates.
       - apply Lookup_Realise.
@@ -796,7 +796,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Step_Realise : Step ⊨ Step_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Step. repeat TM_Correct.
+    { unfold Step. TM_Correct.
       - eapply RealiseIn_Realise. apply MatchTok_Sem.
       - apply Step_lam_Realise.
       - apply Step_app_Realise.
@@ -899,7 +899,7 @@ The machine operates on lists of closures and on a heap, so we need a closure-li
   Lemma Step_Terminates : projT1 Step ↓ Step_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Step. repeat TM_Correct.
+    { unfold Step. TM_Correct.
       - eapply RealiseIn_Realise. apply MatchTok_Sem.
       - eapply RealiseIn_TerminatesIn. apply MatchTok_Sem.
       - apply Step_lam_Terminates.

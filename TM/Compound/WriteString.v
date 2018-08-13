@@ -46,8 +46,8 @@ Section Write_String.
     WriteString str ⊨c(WriteString_steps (length str)) (WriteString_sem_fix str).
   Proof.
     induction str as [ | s [ | s' str'] IH ].
-    - cbn. change (2 * 0 - 1) with 0. repeat TM_Correct.
-    - cbn. change (2 * 1 - 1) with 1. repeat TM_Correct.
+    - cbn. change (2 * 0 - 1) with 0. TM_Correct.
+    - cbn. change (2 * 1 - 1) with 1. TM_Correct.
     - change (WriteString (s :: s' :: str')) with (WriteMove s D;; WriteString (s' :: str')).
       eapply RealiseIn_monotone.
       { TM_Correct. TM_Correct. apply IH. }

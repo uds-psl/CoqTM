@@ -387,7 +387,7 @@ Section Move.
   Lemma MoveRight_Realise : MoveRight ⊨ MoveRight_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold MoveRight. repeat TM_Correct. }
+    { unfold MoveRight. TM_Correct. }
     {
       intros tin ((), tout) H. intros x HEncX.
       TMSimp; clear_trivial_eqs. clear H0.
@@ -401,7 +401,7 @@ Section Move.
   Lemma MoveLeft_Realise : MoveLeft ⊨ MoveLeft_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold MoveLeft. repeat TM_Correct. }
+    { unfold MoveLeft. TM_Correct. }
     {
       intros tin ((), tout) H. intros x HEncX.
       TMSimp; clear_trivial_eqs. clear H0.
@@ -428,7 +428,7 @@ Section Move.
     projT1 MoveRight ↓ (fun tin k => exists x, tin[@Fin0] ≃ x /\ MoveRight_steps x <= k).
   Proof.
     unfold MoveRight_steps. eapply TerminatesIn_monotone.
-    { unfold MoveRight. repeat TM_Correct. }
+    { unfold MoveRight. TM_Correct. }
     {
       intros tin k (x&HEncX&Hk).
       destruct HEncX as (r1&->).
@@ -442,7 +442,7 @@ Section Move.
     projT1 MoveLeft ↓ (fun tin k => exists x, tin[@Fin0] ≂ x /\ MoveLeft_steps x <= k).
   Proof.
     unfold MoveLeft_steps. eapply TerminatesIn_monotone.
-    { unfold MoveLeft. repeat TM_Correct. }
+    { unfold MoveLeft. TM_Correct. }
     {
       intros tin k (x&HEncX&Hk).
       destruct HEncX as (r1&->).
@@ -472,7 +472,7 @@ Section Move.
   Lemma ResetEmpty_Sem : ResetEmpty ⊨c(ResetEmpty_steps) ResetEmpty_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold ResetEmpty. repeat TM_Correct. }
+    { unfold ResetEmpty. TM_Correct. }
     { reflexivity. }
     {
       intros tin ((), tout) H. cbn. intros x HEncX HCod.
@@ -497,7 +497,7 @@ Section Move.
   Lemma ResetEmpty1_Sem : ResetEmpty1 ⊨c(ResetEmpty1_steps) ResetEmpty1_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold ResetEmpty1. repeat TM_Correct. }
+    { unfold ResetEmpty1. TM_Correct. }
     { reflexivity. }
     {
       intros tin ((), tout) H. cbn. intros x HEncX HCod.
@@ -552,7 +552,7 @@ Section CopyValue.
   Lemma CopyValue_Realise : CopyValue ⊨ CopyValue_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold CopyValue. repeat TM_Correct. eapply MoveRight_Realise with (X := X). }
+    { unfold CopyValue. TM_Correct. eapply MoveRight_Realise with (X := X). }
     {
       intros tin ((), tout) H.
       intros x HEncX HRight.
@@ -570,7 +570,7 @@ Section CopyValue.
     projT1 CopyValue ↓ (fun tin k => exists x:X, tin[@Fin0] ≃ x /\ CopyValue_steps x <= k).
   Proof.
     unfold CopyValue_steps. eapply TerminatesIn_monotone.
-    { unfold CopyValue. repeat TM_Correct.
+    { unfold CopyValue. TM_Correct.
       - eapply MoveRight_Realise.
       - eapply MoveRight_Terminates. }
     {
@@ -622,7 +622,7 @@ Section MoveValue.
   Lemma MoveValue_Realise : MoveValue ⊨ MoveValue_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold MoveValue. repeat TM_Correct.
+    { unfold MoveValue. TM_Correct.
       - apply Reset_Realise with (X := Y).
       - apply CopyValue_Realise with (X := X).
       - apply Reset_Realise with (X := X).
@@ -643,7 +643,7 @@ Section MoveValue.
     projT1 MoveValue ↓ (fun tin k => exists (x : X) (y : Y), tin[@Fin0] ≃ x /\ tin[@Fin1] ≃ y /\ MoveValue_steps x y <= k).
   Proof.
     unfold MoveValue_steps. eapply TerminatesIn_monotone.
-    { unfold MoveValue. repeat TM_Correct.
+    { unfold MoveValue. TM_Correct.
       - apply Reset_Realise with (X := Y).
       - apply Reset_Terminates with (X := Y).
       - apply CopyValue_Realise with (X := X).
@@ -707,7 +707,7 @@ Section Translate.
   Lemma Translate'_Realise : Translate' ⊨ Translate'_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Translate'. repeat TM_Correct. }
+    { unfold Translate'. TM_Correct. }
     {
       intros tin ((), tout) H. intros x HEncX.
       destruct HEncX as (ls&HEncX). TMSimp.
@@ -724,7 +724,7 @@ Section Translate.
     projT1 Translate' ↓ (fun tin k => exists x, tin[@Fin0] ≃(Encode_map cX retr1) x /\ Translate'_steps x <= k).
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Translate'. repeat TM_Correct. }
+    { unfold Translate'. TM_Correct. }
     {
       intros tin k (x&HEncX&Hk). unfold size in *.
       destruct HEncX as (r1&->).
@@ -746,7 +746,7 @@ Section Translate.
   Lemma Translate_Realise : Translate ⊨ Translate_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Translate. repeat TM_Correct.
+    { unfold Translate. TM_Correct.
       - apply Translate'_Realise.
       - apply MoveLeft_Realise with (cX := Encode_map cX retr2).
     }
@@ -766,7 +766,7 @@ Section Translate.
     projT1 Translate ↓ Translate_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Translate. repeat TM_Correct.
+    { unfold Translate. TM_Correct.
       - apply Translate'_Realise.
       - apply Translate'_Terminates.
       - apply MoveLeft_Terminates.

@@ -49,7 +49,7 @@ Section MatchPair.
   Lemma MatchPair_Realise : MatchPair ⊨ MatchPair_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold MatchPair. repeat TM_Correct. }
+    { unfold MatchPair. TM_Correct. }
     {
       intros tin ((), tout) H.
       intros (x,y) HEncXY HRight.
@@ -95,7 +95,7 @@ Section MatchPair.
   Lemma MatchPair_Terminates : projT1 MatchPair ↓ MatchPair_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold MatchPair. repeat TM_Correct. }
+    { unfold MatchPair. TM_Correct. }
     {
       intros tin k ((x&y)&HEncP&Hk). unfold MatchPair_steps in *. cbn in *.
       exists 1, (32 + 16 * size _ x). repeat split; try omega.
@@ -163,7 +163,7 @@ Section MatchPair.
   Lemma Constr_pair_Realise : Constr_pair ⊨ Constr_pair_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Constr_pair. repeat TM_Correct.
+    { unfold Constr_pair. TM_Correct.
       - apply MoveRight_Realise with (X := X).
     }
     {
@@ -189,7 +189,7 @@ Section MatchPair.
   Lemma Constr_pair_Terminates : projT1 Constr_pair ↓ Constr_pair_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Constr_pair. repeat TM_Correct.
+    { unfold Constr_pair. TM_Correct.
       - apply MoveRight_Realise with (X := X).
       - apply MoveRight_Realise with (X := X).
       - apply MoveRight_Terminates with (X := X).
@@ -221,7 +221,7 @@ Section MatchPair.
   Lemma Snd_Realise : Snd ⊨ Snd_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Snd. repeat TM_Correct. }
+    { unfold Snd. TM_Correct. }
     {
       intros tin ((), tout) H. intros (x,y) HEncXY.
       destruct HEncXY as (ls&HEncXY).
@@ -247,7 +247,7 @@ Section MatchPair.
   Lemma Snd_Terminates : projT1 Snd ↓ Snd_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Snd. repeat TM_Correct. }
+    { unfold Snd. TM_Correct. }
     {
       intros tin k ((x,y)&HEncP&Hk). unfold Snd_steps in *; cbn in *.
       exists (8+4*size _ x), 3. repeat split; try omega.

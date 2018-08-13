@@ -67,7 +67,7 @@ Section MapSum.
   Lemma MapSum_Computes : MapSum ⊨ Computes_Rel map_sum.
   Proof.
     eapply Realise_monotone.
-    { unfold MapSum. repeat TM_Correct.
+    { unfold MapSum. TM_Correct.
       - apply Translate_Realise with (X := X).
       - apply (ChangeAlphabet_Computes (M1_Computes)).
       - apply Translate_Realise with (X := X).
@@ -141,7 +141,7 @@ Section MapSum.
   Lemma MapSum_Terminates : projT1 MapSum ↓ Computes_T MapSum_steps.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold MapSum. repeat TM_Correct.
+    { unfold MapSum. TM_Correct.
       - apply Translate_Realise with (X := X).
       - apply Translate_Terminates with (X := X).
       - apply (ChangeAlphabet_Computes (M1_Computes)).

@@ -196,7 +196,7 @@ Section move_to_symbol.
     projT1 MoveToSymbol ↓ (fun tin k => MoveToSymbol_steps (tin[@Fin.F1]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold MoveToSymbol. repeat TM_Correct.
+    { unfold MoveToSymbol. TM_Correct.
       1-2: eapply Realise_total; eapply MoveToSymbol_Step_Sem.
     }
     {

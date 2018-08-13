@@ -34,7 +34,7 @@ Section MatchSum.
   Lemma MatchSum_Sem : MatchSum ⊨c(MatchSum_steps) MatchSum_Rel.
   Proof.
     unfold MatchSum_steps. eapply RealiseIn_monotone.
-    { unfold MatchSum. repeat TM_Correct. }
+    { unfold MatchSum. TM_Correct. }
     { Unshelve. 4,10,11: constructor. all: cbn. all: omega. }
     {
       intros tin (yout&tout) H.
@@ -66,7 +66,7 @@ Section MatchSum.
     Lemma Constr_inl_Sem : Constr_inl ⊨c(Constr_inl_steps) Constr_inl_Rel.
     Proof.
       unfold Constr_inl_steps. eapply RealiseIn_monotone.
-      { unfold Constr_inl. repeat TM_Correct. }
+      { unfold Constr_inl. TM_Correct. }
       { cbn. reflexivity. }
       {
         intros tin (()&tout) H.
@@ -79,7 +79,7 @@ Section MatchSum.
     Lemma Constr_inr_Sem : Constr_inr ⊨c(Constr_inl_steps) Constr_inr_Rel.
     Proof.
       unfold Constr_inr_steps. eapply RealiseIn_monotone.
-      { unfold Constr_inr. repeat TM_Correct. }
+      { unfold Constr_inr. TM_Correct. }
       { cbn. reflexivity. }
       {
         intros tin (()&tout) H.
@@ -190,7 +190,7 @@ Section MatchOption.
     MatchOption ⊨c(MatchOption_steps) MatchOption_Rel.
   Proof.
     unfold MatchOption_steps. eapply RealiseIn_monotone.
-    { unfold MatchOption. repeat TM_Correct. unfold ChangeAlphabet. repeat TM_Correct.
+    { unfold MatchOption. TM_Correct. unfold ChangeAlphabet. TM_Correct.
       - apply ResetEmpty_Sem with (X := unit).
     }
     { cbn. reflexivity. }
@@ -248,7 +248,7 @@ Section MatchOption.
   Lemma Constr_Some_Sem : Constr_Some ⊨c(Constr_Some_steps) Constr_Some_Rel.
   Proof.
     unfold Constr_Some_steps. eapply RealiseIn_monotone.
-    { unfold Constr_Some. unfold ChangeAlphabet. repeat TM_Correct. }
+    { unfold Constr_Some. unfold ChangeAlphabet. TM_Correct. }
     { cbn. reflexivity. }
     {
       intros tin ((), tout) H.
@@ -279,7 +279,7 @@ Section MatchOption.
   Lemma Constr_None_Sem : Constr_None ⊨c(Constr_None_steps) Constr_None_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold Constr_None. repeat TM_Correct. }
+    { unfold Constr_None. TM_Correct. }
     { cbn. reflexivity. }
     { intros tin ((), tout) H. cbn in *. auto. }
   Qed.

@@ -125,7 +125,7 @@ t4: internal tape
   Lemma Lookup_Step_Realise : Lookup_Step ⊨ Lookup_Step_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Lookup_Step. repeat TM_Correct.
+    { unfold Lookup_Step. TM_Correct.
       - apply Nth'_Realise.
       - apply CopyValue_Realise with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
       - apply Translate_Realise with (X := nat).
@@ -210,7 +210,7 @@ t4: internal tape
   Lemma Lookup_Step_Terminates : projT1 Lookup_Step ↓ Lookup_Step_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Lookup_Step. repeat TM_Correct.
+    { unfold Lookup_Step. TM_Correct.
       - apply Nth'_Realise.
       - apply Nth'_Terminates.
       - apply CopyValue_Realise with (cX := Encode_map Encode_nat retr_nat_lookup_entry).
@@ -306,7 +306,7 @@ t4: internal tape
   Lemma Lookup_Realise : Lookup ⊨ Lookup_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Lookup. repeat TM_Correct.
+    { unfold Lookup. TM_Correct.
       - apply Lookup_Step_Realise.
     }
     {
@@ -345,7 +345,7 @@ t4: internal tape
   Lemma Lookup_Terminates : projT1 Lookup ↓ Lookup_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Lookup. repeat TM_Correct.
+    { unfold Lookup. TM_Correct.
       - apply Lookup_Step_Realise.
       - apply Lookup_Step_Terminates. }
     {

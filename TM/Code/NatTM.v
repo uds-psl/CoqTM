@@ -115,7 +115,7 @@ Lemma Add_Step_Sem : Add_Step ⊨c(9) Add_Step_Rel.
 Proof.
   eapply RealiseIn_monotone.
   {
-    unfold Add_Step. repeat TM_Correct.
+    unfold Add_Step. TM_Correct.
   }
   { cbn. reflexivity. }
   {
@@ -140,7 +140,7 @@ Definition Add_Loop_Rel : Rel (tapes sigNat^+ 2) (unit * tapes sigNat^+ 2) :=
 Lemma Add_Loop_Realise : Add_Loop ⊨ Add_Loop_Rel.
 Proof.
   eapply Realise_monotone.
-  { unfold Add_Loop. repeat TM_Correct. eapply RealiseIn_Realise. apply Add_Step_Sem. }
+  { unfold Add_Loop. TM_Correct. eapply RealiseIn_Realise. apply Add_Step_Sem. }
   {
     apply WhileInduction; intros; intros a b HEncA HEncB; cbn in *; destruct_unit.
     - specialize (HLastStep _ _ HEncA HEncB). destruct b; auto.
@@ -175,7 +175,7 @@ Lemma Add_Main_Realise : Add_Main ⊨ Add_Main_Rel.
 Proof.
   eapply Realise_monotone.
   {
-    unfold Add_Main. repeat TM_Correct.
+    unfold Add_Main. TM_Correct.
     - apply CopyValue_Realise with (X := nat).
     - apply CopyValue_Realise with (X := nat).
     - apply Add_Loop_Realise.
@@ -195,7 +195,7 @@ Lemma Add_Computes : Add ⊨ Computes2_Rel plus.
 Proof.
   eapply Realise_monotone.
   {
-    unfold Add. repeat TM_Correct.
+    unfold Add. TM_Correct.
     - apply Add_Main_Realise.
     - apply Reset_Realise with (X := nat). (* Don't forget the type here! *)
   }
@@ -225,7 +225,7 @@ Lemma Add_Loop_Terminates :
               Add_Loop_steps b <= i).
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold Add_Loop. repeat TM_Correct.
+  { unfold Add_Loop. TM_Correct.
     - eapply RealiseIn_Realise. apply Add_Step_Sem.
     - eapply RealiseIn_TerminatesIn. apply Add_Step_Sem. }
   {
@@ -269,7 +269,7 @@ Lemma Add_Main_Terminates :
 Proof.
   unfold Add_Main, Add_Main_steps. eapply TerminatesIn_monotone.
   {
-    repeat TM_Correct.
+    TM_Correct.
     - apply CopyValue_Realise with (X := nat).
     - apply CopyValue_Terminates with (X := nat).
     - apply CopyValue_Realise with (X := nat).
@@ -302,7 +302,7 @@ Lemma Add_Terminates :
 Proof.
   unfold Add, Add_steps. eapply TerminatesIn_monotone.
   {
-    repeat TM_Correct.
+    TM_Correct.
     - apply Add_Main_Realise.
     - apply Add_Main_Terminates.
     - apply Reset_Terminates with (X := nat).
@@ -427,7 +427,7 @@ Lemma Mult_Step_Realise : Mult_Step ⊨ Mult_Step_Rel.
 Proof.
   eapply Realise_monotone.
   {
-    unfold Mult_Step. repeat TM_Correct.
+    unfold Mult_Step. TM_Correct.
     - apply Add_Computes.
     - apply Reset_Realise with (X := nat).
     - apply CopyValue_Realise with (X := nat).
@@ -472,7 +472,7 @@ Lemma Mult_Loop_Realise :
 Proof.
   eapply Realise_monotone.
   {
-    unfold Mult_Loop. repeat TM_Correct. eapply Mult_Step_Realise.
+    unfold Mult_Loop. TM_Correct. eapply Mult_Step_Realise.
   }
   {
     eapply WhileInduction; intros; intros c m' n HEncM' HEncN HEncC HInt3 HInt4; TMSimp.
@@ -530,7 +530,7 @@ Lemma Mult_Main_Realise :
 Proof.
   eapply Realise_monotone.
   {
-    unfold Mult_Main. repeat TM_Correct.
+    unfold Mult_Main. TM_Correct.
     - apply CopyValue_Realise with (X := nat).
     - apply Mult_Loop_Realise.
   }
@@ -551,7 +551,7 @@ Lemma Mult_Computes :
 Proof.
   eapply Realise_monotone.
   {
-    unfold Mult. repeat TM_Correct.
+    unfold Mult. TM_Correct.
     - eapply Mult_Main_Realise.
     - eapply Reset_Realise with (X := nat).
   }
@@ -592,7 +592,7 @@ Lemma Mult_Step_Terminates :
 Proof.
   eapply TerminatesIn_monotone.
   {
-    unfold Mult_Step. repeat TM_Correct.
+    unfold Mult_Step. TM_Correct.
     - apply Add_Computes.
     - apply Add_Terminates.
     - apply Reset_Realise with (X := nat).
@@ -648,7 +648,7 @@ Lemma Mult_Loop_Terminates :
               Mult_Loop_steps m' n c <= i).
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold Mult_Loop. repeat TM_Correct.
+  { unfold Mult_Loop. TM_Correct.
     - apply Mult_Step_Realise.
     - apply Mult_Step_Terminates. }
   {
@@ -686,7 +686,7 @@ Definition Mult_Main_steps m n := 44 + 12 * m + Mult_Loop_steps m n 0.
 Lemma Mult_Main_Terminates : projT1 Mult_Main ↓ Computes2_T Mult_Main_steps.
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold Mult_Main. repeat TM_Correct.
+  { unfold Mult_Main. TM_Correct.
     - apply CopyValue_Realise with (X := nat).
     - apply CopyValue_Terminates with (X := nat).
     - apply Mult_Loop_Terminates.
@@ -709,7 +709,7 @@ Definition Mult_steps m n := 13 + Mult_Main_steps m n.
 Lemma Mult_Terminates : projT1 Mult ↓ Computes2_T Mult_steps.
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold Mult. repeat TM_Correct.
+  { unfold Mult. TM_Correct.
     - apply Mult_Main_Realise.
     - apply Mult_Main_Terminates.
     - apply Reset_Terminates with (X := nat).

@@ -75,7 +75,7 @@ Section MatchList.
   Lemma Skip_cons_Realise : Skip_cons ⊨ Skip_cons_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Skip_cons. repeat TM_Correct. }
+    { unfold Skip_cons. TM_Correct. }
     {
       intros tin ((), tout) H. intros ls rs x l HTin. TMSimp. clear_trivial_eqs.
       destruct l as [ | x' l']; cbn.
@@ -103,7 +103,7 @@ Section MatchList.
   Lemma M1_Realise : M1 ⊨ M1_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold M1. repeat TM_Correct. eapply Skip_cons_Realise. }
+    { unfold M1. TM_Correct. eapply Skip_cons_Realise. }
     {
       intros tin ((), tout) H. intros ls rs x l HRight HTin0. TMSimp; clear_trivial_eqs.
       rename H2 into HCopy.
@@ -144,7 +144,7 @@ Section MatchList.
   Lemma MatchList_Realise : MatchList ⊨ MatchList_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold MatchList. repeat TM_Correct. eapply M1_Realise. eapply Skip_cons_Realise. }
+    { unfold MatchList. TM_Correct. eapply M1_Realise. eapply Skip_cons_Realise. }
     {
       intros tin (yout, tout) H. intros l HEncL HRight.
       destruct HEncL as (ls&HEncL). pose proof HRight as (ls'&rs'&HRight'). TMSimp; clear_trivial_eqs.
@@ -180,7 +180,7 @@ Section MatchList.
                  6 + 4 * size cX x <= k).
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Skip_cons. repeat TM_Correct. }
+    { unfold Skip_cons. TM_Correct. }
     {
       intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
       exists 1, (4 + 4 * size cX x). repeat split. 1-2: omega.
@@ -201,7 +201,7 @@ Section MatchList.
                  23 + 12 * size cX x <= k).
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold M1. repeat TM_Correct. eapply Skip_cons_Realise. eapply Skip_cons_Terminates. }
+    { unfold M1. TM_Correct. eapply Skip_cons_Realise. eapply Skip_cons_Terminates. }
     {
       intros tin k (ls&rs&x&l&HTin&Hk). TMSimp. clear HTin.
       exists (6 + 4 * size cX x), (16 + 8 * size cX x). repeat split; try omega. eauto 6.
@@ -244,7 +244,7 @@ Section MatchList.
                 MatchList_steps l <= k).
   Proof.
     unfold MatchList_steps, MatchList_steps_cons, MatchList_steps_nil. eapply TerminatesIn_monotone.
-    { unfold MatchList. repeat TM_Correct.
+    { unfold MatchList. TM_Correct.
       - eapply M1_Realise.
       - eapply M1_Terminates.
       - eapply Skip_cons_Realise.
@@ -309,7 +309,7 @@ Section MatchList.
   Lemma IsNil_Sem : IsNil ⊨c(IsNil_steps) IsNil_Rel.
   Proof.
     unfold IsNil_steps. eapply RealiseIn_monotone.
-    { unfold IsNil. repeat TM_Correct. }
+    { unfold IsNil. TM_Correct. }
     { Unshelve. 4-11: reflexivity. omega. }
     {
       intros tin (yout, tout) H. cbn. intros xs HEncXs.
@@ -342,7 +342,7 @@ Section MatchList.
   Lemma Constr_nil_Sem : Constr_nil ⊨c(Constr_nil_steps) Constr_nil_Rel.
   Proof.
     unfold Constr_nil_steps. eapply RealiseIn_monotone.
-    { unfold Constr_nil. repeat TM_Correct. }
+    { unfold Constr_nil. TM_Correct. }
     { reflexivity. }
     { intros tin ((), tout) H. cbn in *. auto. }
   Qed.
@@ -371,7 +371,7 @@ Section MatchList.
   Lemma Constr_cons_Realise : Constr_cons ⊨ Constr_cons_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Constr_cons. repeat TM_Correct. apply MoveRight_Realise with (X := X). }
+    { unfold Constr_cons. TM_Correct. apply MoveRight_Realise with (X := X). }
     {
       intros tin ((), tout) H. intros l y HEncL HEncY.
       TMSimp; clear_trivial_eqs.
@@ -398,7 +398,7 @@ Section MatchList.
                 Constr_cons_steps y <= k).
   Proof.
     unfold Constr_cons_steps. eapply TerminatesIn_monotone.
-    { unfold Constr_cons. repeat TM_Correct.
+    { unfold Constr_cons. TM_Correct.
       - apply MoveRight_Realise with (X := X).
       - apply MoveRight_Realise with (X := X).
       - apply MoveRight_Terminates with (X := X).

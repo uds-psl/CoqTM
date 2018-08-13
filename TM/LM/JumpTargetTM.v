@@ -31,7 +31,7 @@ Definition App_Tokens_Rel : pRel sigPro^+ (FinType(EqType unit)) 2 :=
 Lemma App_Tokens_Realise : App_Tokens ⊨ App_Tokens_Rel.
 Proof.
   eapply Realise_monotone.
-  { unfold App_Tokens. repeat TM_Correct.
+  { unfold App_Tokens. TM_Correct.
     - apply App'_Realise with (X := Tok).
     - apply MoveValue_Realise with (X := Pro).
   }
@@ -50,7 +50,7 @@ Definition App_Tokens_T : tRel sigPro^+ 2 :=
 Lemma App_Tokens_Terminates : projT1 App_Tokens ↓ App_Tokens_T.
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold App_Tokens. repeat TM_Correct.
+  { unfold App_Tokens. TM_Correct.
     - apply App'_Realise with (X := Tok).
     - apply App'_Terminates with (X := Tok).
     - apply MoveValue_Terminates with (X := Pro) (Y := Pro).
@@ -83,7 +83,7 @@ Definition App_ATok_Rel (t : ATok) : pRel sigPro^+ unit 2 :=
 Lemma App_ATok_Realise t : App_ATok t ⊨ App_ATok_Rel t.
 Proof.
   eapply Realise_monotone.
-  { unfold App_ATok. repeat TM_Correct.
+  { unfold App_ATok. TM_Correct.
     - apply App_Tokens_Realise.
   }
   {
@@ -100,7 +100,7 @@ Definition App_ATok_T (t: ATok) : tRel sigPro^+ 2 :=
 Lemma App_ATok_Terminates (t: ATok) : projT1 (App_ATok t) ↓ App_ATok_T t.
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold App_ATok. repeat TM_Correct.
+  { unfold App_ATok. TM_Correct.
     - apply App_Tokens_Terminates.
   }
   {
@@ -136,7 +136,7 @@ Definition App_Tok_Rel : pRel sigPro^+ (FinType(EqType unit)) 3 :=
 Lemma App_Tok_Realise : App_Tok ⊨ App_Tok_Rel.
 Proof.
   eapply Realise_monotone.
-  { unfold App_Tok. repeat TM_Correct.
+  { unfold App_Tok. TM_Correct.
     - apply App_Tokens_Realise.
     - apply Reset_Realise with (X := Tok).
   }
@@ -156,7 +156,7 @@ Definition App_Tok_T : tRel sigPro^+ 3 :=
 Lemma App_Tok_Terminates : projT1 App_Tok ↓ App_Tok_T.
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold App_Tok. repeat TM_Correct.
+  { unfold App_Tok. TM_Correct.
     - apply App_Tokens_Realise.
     - apply App_Tokens_Terminates.
     - apply Reset_Terminates with (X := Tok).
@@ -246,7 +246,7 @@ Definition JumpTarget_Step_Rel : pRel sigPro^+ (option bool) 5 :=
 Lemma JumpTarget_Step_Realise : JumpTarget_Step ⊨ JumpTarget_Step_Rel.
 Proof.
   eapply Realise_monotone.
-  { unfold JumpTarget_Step. repeat TM_Correct.
+  { unfold JumpTarget_Step. TM_Correct.
     - eapply RealiseIn_Realise. apply MatchTok_Sem.
     - apply App_ATok_Realise.
     - eapply RealiseIn_Realise. apply ResetEmpty1_Sem with (X := nat).
@@ -334,7 +334,7 @@ Definition JumpTarget_Step_T : tRel sigPro^+ 5 :=
 Lemma JumpTarget_Step_Terminates : projT1 JumpTarget_Step ↓ JumpTarget_Step_T.
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold JumpTarget_Step. repeat TM_Correct.
+  { unfold JumpTarget_Step. TM_Correct.
     - eapply RealiseIn_Realise. apply MatchTok_Sem.
     - eapply RealiseIn_TerminatesIn. apply MatchTok_Sem.
     - apply App_ATok_Terminates.
@@ -430,7 +430,7 @@ Definition JumpTarget_Loop_Rel : pRel sigPro^+ bool 5 :=
 Lemma JumpTarget_Loop_Realise : JumpTarget_Loop ⊨ JumpTarget_Loop_Rel.
 Proof.
   eapply Realise_monotone.
-  { unfold JumpTarget_Loop. repeat TM_Correct.
+  { unfold JumpTarget_Loop. TM_Correct.
     - apply JumpTarget_Step_Realise.
   }
   {
@@ -480,7 +480,7 @@ Definition JumpTarget_Loop_T : tRel sigPro^+ 5 :=
 Lemma JumpTarget_Loop_Terminates : projT1 JumpTarget_Loop ↓ JumpTarget_Loop_T.
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold JumpTarget_Loop. repeat TM_Correct.
+  { unfold JumpTarget_Loop. TM_Correct.
     - apply JumpTarget_Step_Realise.
     - apply JumpTarget_Step_Terminates. }
   {
@@ -545,7 +545,7 @@ Definition JumpTarget_Rel : pRel sigPro^+ bool 5 :=
 Lemma JumpTarget_Realise : JumpTarget ⊨ JumpTarget_Rel.
 Proof.
   eapply Realise_monotone.
-  { unfold JumpTarget. repeat TM_Correct.
+  { unfold JumpTarget. TM_Correct.
     - apply JumpTarget_Loop_Realise.
   }
   {
@@ -576,7 +576,7 @@ Definition JumpTarget_T : tRel sigPro^+ 5 :=
 Lemma JumpTarget_Terminates : projT1 JumpTarget ↓ JumpTarget_T.
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold JumpTarget. repeat TM_Correct.
+  { unfold JumpTarget. TM_Correct.
     - apply JumpTarget_Loop_Terminates.
   }
   {

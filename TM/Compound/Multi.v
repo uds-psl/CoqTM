@@ -22,7 +22,7 @@ Section Nop.
   Lemma Nop_Sem : Nop ⊨c(0) Nop_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold Nop. repeat TM_Correct. }
+    { unfold Nop. TM_Correct. }
     { reflexivity. }
     {
       intros tin ((), tout) (_&HInj). cbn in *.
@@ -54,7 +54,7 @@ Section MovePar.
   Lemma MovePar_Sem : MovePar ⊨c(3) MovePar_R.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold MovePar. repeat TM_Correct. }
+    { unfold MovePar. TM_Correct. }
     { reflexivity. }
     { hnf in *. intros tin (yout&tout) H. now TMSimp. }
   Qed.
@@ -130,7 +130,7 @@ Section ReadChar.
     ReadChar_at ⊨c(1) ReadChar_at_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold ReadChar_at. repeat TM_Correct. }
+    { unfold ReadChar_at. TM_Correct. }
     { cbn. reflexivity. }
     {
       intros tin (yout, tout) H.

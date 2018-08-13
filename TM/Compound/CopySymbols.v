@@ -156,7 +156,7 @@ Section CopySymbols.
     projT1 CopySymbols ↓ (fun tin k => CopySymbols_steps (tin[@Fin.F1]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold CopySymbols. repeat TM_Correct.
+    { unfold CopySymbols. TM_Correct.
       1-2: eapply Realise_total; eapply CopySymbols_Step_Sem.
     }
     {

@@ -92,7 +92,7 @@ Section Nth.
   Lemma Nth_Step_Realise : Nth_Step ⊨ Nth_Step_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Nth_Step. repeat TM_Correct.
+    { unfold Nth_Step. TM_Correct.
       - eapply Reset_Realise with (cX := Encode_map cX retr_X_list).
       - apply Translate_Realise with (X := X).
     }
@@ -161,7 +161,7 @@ Section Nth.
   Lemma Nth_Loop_Realise : Nth_Loop ⊨ Nth_Loop_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Nth_Loop. repeat TM_Correct. eapply Nth_Step_Realise. }
+    { unfold Nth_Loop. TM_Correct. eapply Nth_Step_Realise. }
     {
       apply WhileInduction; intros; intros l n HEncL HEncN HRight.
       - TMSimp. modpon HLastStep.
@@ -186,7 +186,7 @@ Section Nth.
   Lemma Nth_Computes : Nth ⊨ Computes2_Rel (@nth_error _).
   Proof.
     eapply Realise_monotone.
-    { unfold Nth. repeat TM_Correct.
+    { unfold Nth. TM_Correct.
       - apply CopyValue_Realise with (X := list X).
       - apply CopyValue_Realise with (X := nat).
       - apply Nth_Loop_Realise.
@@ -260,7 +260,7 @@ Section Nth'.
   Lemma Nth'_Step_Realise : Nth'_Step ⊨ Nth'_Step_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Nth'_Step. repeat TM_Correct.
+    { unfold Nth'_Step. TM_Correct.
       - eapply Reset_Realise with (X := X).
     }
     {
@@ -306,7 +306,7 @@ Section Nth'.
   Lemma Nth'_Step_Terminates : projT1 Nth'_Step ↓ Nth'_Step_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Nth'_Step. repeat TM_Correct.
+    { unfold Nth'_Step. TM_Correct.
       - apply Reset_Terminates with (X := X).
     }
     {
@@ -364,7 +364,7 @@ Section Nth'.
   Lemma Nth'_Loop_Realise : Nth'_Loop ⊨ Nth'_Loop_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Nth'_Loop. repeat TM_Correct. eapply Nth'_Step_Realise. }
+    { unfold Nth'_Loop. TM_Correct. eapply Nth'_Step_Realise. }
     {
       apply WhileInduction; intros; intros l n HEncL HEncN HRight; cbn in *.
       - modpon HLastStep. destruct yout.
@@ -402,7 +402,7 @@ Section Nth'.
   Lemma Nth'_Loop_Terminates : projT1 Nth'_Loop ↓ Nth'_Loop_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Nth'_Loop. repeat TM_Correct.
+    { unfold Nth'_Loop. TM_Correct.
       - apply Nth'_Step_Realise.
       - apply Nth'_Step_Terminates. }
     {
@@ -468,7 +468,7 @@ Section Nth'.
   Lemma Nth'_Realise : Nth' ⊨ Nth'_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Nth'. repeat TM_Correct.
+    { unfold Nth'. TM_Correct.
       - apply CopyValue_Realise with (X := list X).
       - apply Nth'_Loop_Realise.
       - apply Reset_Realise with (X := list X).
@@ -505,7 +505,7 @@ Section Nth'.
   Lemma Nth'_Terminates : projT1 Nth' ↓ Nth'_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Nth'. repeat TM_Correct.
+    { unfold Nth'. TM_Correct.
       - apply CopyValue_Realise with (X := list X).
       - apply CopyValue_Terminates with (X := list X).
       - apply Nth'_Loop_Realise.
@@ -632,7 +632,7 @@ Section Append.
   Lemma App'_Realise : App' ⊨ App'_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold App'. repeat TM_Correct.
+    { unfold App'. TM_Correct.
       - apply MoveRight_Realise with (X := list X).
     }
     {
@@ -680,7 +680,7 @@ Section Append.
   Lemma App'_Terminates : projT1 App' ↓ App'_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold App'. repeat TM_Correct. (* This is a bit strange, because [App'] is a sequence of two sequences. *)
+    { unfold App'. TM_Correct. (* This is a bit strange, because [App'] is a sequence of two sequences. *)
       - apply MoveRight_Realise with (X := list X).
       - apply MoveRight_Realise with (X := list X).
       - apply MoveRight_Terminates with (X := list X).
@@ -717,7 +717,7 @@ Section Append.
   Lemma App_Computes : App ⊨ Computes2_Rel (@app X).
   Proof.
     eapply Realise_monotone.
-    { unfold App. repeat TM_Correct.
+    { unfold App. TM_Correct.
       - apply CopyValue_Realise with (X := list X).
       - apply App'_Realise.
     }
@@ -742,7 +742,7 @@ Section Append.
   Lemma App_Terminates : projT1 App ↓ App_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold App. repeat TM_Correct.
+    { unfold App. TM_Correct.
       - apply CopyValue_Realise with (X := list X).
       - apply CopyValue_Terminates with (X := list X).
       - apply App'_Terminates.
@@ -800,7 +800,7 @@ Section Lenght.
   Lemma Length_Step_Realise : Length_Step ⊨ Length_Step_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Length_Step. repeat TM_Correct.
+    { unfold Length_Step. TM_Correct.
       - apply Reset_Realise with (X := X).
     }
     {
@@ -829,7 +829,7 @@ Section Lenght.
   Lemma Length_Step_Terminates : projT1 Length_Step ↓ Length_Step_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Length_Step. repeat TM_Correct.
+    { unfold Length_Step. TM_Correct.
       - apply Reset_Realise with (X := X).
       - apply Reset_Terminates with (X := X).
     }
@@ -867,7 +867,7 @@ Section Lenght.
   Lemma Length_Loop_Realise : Length_Loop ⊨ Length_Loop_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold Length_Loop. repeat TM_Correct.
+    { unfold Length_Loop. TM_Correct.
       - apply Length_Step_Realise.
     }
     {
@@ -900,7 +900,7 @@ Section Lenght.
   Lemma Length_Loop_Terminates : projT1 Length_Loop ↓ Length_Loop_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Length_Loop. repeat TM_Correct.
+    { unfold Length_Loop. TM_Correct.
       - apply Length_Step_Realise.
       - apply Length_Step_Terminates. }
     {
@@ -922,7 +922,7 @@ Section Lenght.
   Lemma Length_Computes : Length ⊨ Computes_Rel (@length X).
   Proof.
     eapply Realise_monotone.
-    { unfold Length. repeat TM_Correct.
+    { unfold Length. TM_Correct.
       - apply CopyValue_Realise with (X := list X).
       - apply Length_Loop_Realise.
       - eapply RealiseIn_Realise. apply ResetEmpty1_Sem with (X := list X).
@@ -943,7 +943,7 @@ Section Lenght.
   Lemma Length_Terminates : projT1 Length ↓ Length_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold Length. repeat TM_Correct.
+    { unfold Length. TM_Correct.
       - apply CopyValue_Realise with (X := list X).
       - apply CopyValue_Terminates with (X := list X).
       - apply Length_Loop_Realise.

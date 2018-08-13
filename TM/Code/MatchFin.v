@@ -23,7 +23,7 @@ Section MatchFin.
   Lemma MatchFin_Sem : MatchFin ⊨c(5) MatchFin_Rel.
   Proof.
     eapply RealiseIn_monotone.
-    { unfold MatchFin. repeat TM_Correct. }
+    { unfold MatchFin. TM_Correct. }
     { Unshelve. 4,8:reflexivity. all:omega. }
     {
       intros tin (yout, tout) H. intros x HEncX.

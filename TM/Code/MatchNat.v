@@ -29,7 +29,7 @@ Section MatchNat.
   Lemma MatchNat_Sem : MatchNat ⊨c(MatchNat_steps) MatchNat_Rel.
   Proof.
     unfold MatchNat_steps. eapply RealiseIn_monotone.
-    { unfold MatchNat. repeat TM_Correct. }
+    { unfold MatchNat. TM_Correct. }
     { Unshelve. 4,8: reflexivity. all: omega. }
     {
       intros tin (yout&tout) H. intros n HEncN. TMSimp.
@@ -56,7 +56,7 @@ Section MatchNat.
     Lemma Constr_S_Sem : Constr_S ⊨c(Constr_S_steps) S_Rel.
     Proof.
       unfold Constr_S_steps. eapply RealiseIn_monotone.
-      { unfold Constr_S. repeat TM_Correct. }
+      { unfold Constr_S. TM_Correct. }
       { cbn. omega. }
       {
         intros tin (yout, tout) H. intros n HEncN.
@@ -79,7 +79,7 @@ Section MatchNat.
     Lemma Constr_O_Sem : Constr_O ⊨c(Constr_O_steps) O_Rel.
     Proof.
       unfold Constr_O_steps. eapply RealiseIn_monotone.
-      { unfold Constr_O. repeat TM_Correct. }
+      { unfold Constr_O. TM_Correct. }
       { cbn. reflexivity. }
       { intros tin (yout, tout) H. cbn in *. auto. }
     Qed.

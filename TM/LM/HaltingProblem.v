@@ -38,7 +38,7 @@ Definition Loop_Rel : pRel sigStep^+ unit 11 :=
 Lemma Loop_Realise : Loop ⊨ Loop_Rel.
 Proof.
   eapply Realise_monotone.
-  { unfold Loop. repeat TM_Correct.
+  { unfold Loop. TM_Correct.
     - apply Step_Realise.
   }
   {
@@ -84,7 +84,7 @@ Definition Loop_T : tRel sigStep^+ 11 :=
 Lemma Loop_Terminates : projT1 Loop ↓ Loop_T.
 Proof.
   eapply TerminatesIn_monotone.
-  { unfold Loop. repeat TM_Correct.
+  { unfold Loop. TM_Correct.
     - apply Step_Realise.
     - apply Step_Terminates. }
   {
