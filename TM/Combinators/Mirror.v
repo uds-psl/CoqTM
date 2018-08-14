@@ -75,7 +75,7 @@ Section Mirror.
     unfold mirrorConf; cbn. f_equal. apply tape_move_multi_mirror_acts.
   Qed.
 
-  Lemma mirror_split k c1 c2 :
+  Lemma mirror_lift k c1 c2 :
     loopM (M := projT1 Mirror)             c1  k = Some             c2 ->
     loopM (M := projT1 pM    ) (mirrorConf c1) k = Some (mirrorConf c2).
   Proof.
@@ -84,7 +84,7 @@ Section Mirror.
     - intros ? _. now apply mirror_step.
   Qed.
 
-  Lemma mirror_merge k c1 c2 :
+  Lemma mirror_unlift k c1 c2 :
     loopM (M := projT1     pM) (mirrorConf c1) k = Some (mirrorConf c2) ->
     loopM (M := projT1 Mirror) (           c1) k = Some (           c2).
   Proof.
@@ -103,7 +103,7 @@ Section Mirror.
   Proof.
     intros HRealise. intros t i outc HLoop.
     apply (HRealise (mirror_tapes t) i (mirrorConf outc)).
-    now apply mirror_split in HLoop.
+    now apply mirror_lift in HLoop.
   Qed.
 
   Definition Mirror_T (T : tRel sig n) : tRel sig n :=
@@ -113,7 +113,7 @@ Section Mirror.
     projT1 pM ↓ T -> projT1 Mirror ↓ Mirror_T T.
   Proof.
     intros HTerm. hnf. intros t1 k H1. hnf in HTerm. specialize (HTerm (mirror_tapes t1) k H1) as (outc&H).
-    exists (mirrorConf outc). apply mirror_merge. cbn. now rewrite mirrorConf_involution.
+    exists (mirrorConf outc). apply mirror_unlift. cbn. now rewrite mirrorConf_involution.
   Qed.
 
   Lemma Mirror_RealiseIn R (k : nat) :
