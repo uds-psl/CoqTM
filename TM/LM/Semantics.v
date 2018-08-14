@@ -78,27 +78,21 @@ Section Semantics.
 
   Definition steps : state -> state -> Prop := star step.
 
-  Inductive steps_k : state -> nat -> state -> Prop :=
-  | steps_k_O s : steps_k s 0 s
-  | steps_k_S s s' s'' k : step s s' -> steps_k s' k s'' -> steps_k s (S k) s''.
+  Definition steps_k : nat -> state -> state -> Prop := pow step.
 
-  Lemma steps_k_steps (s s' : state) (k : nat) :
-    steps_k s k s' -> steps s s'.
-  Proof. induction 1; econstructor; eauto. Qed.
+  Corollary steps_k_steps (s s' : state) (k : nat) :
+    steps_k k s s' -> steps s s'.
+  Proof. intros. apply star_pow. eauto. Qed.
 
-  Lemma steps_steps_k (s s' : state) :
-    steps s s' -> exists k, steps_k s k s'.
-  Proof.
-    intros Steps. induction Steps as [ | s s' s'' HStep_k Steps (k&IH)].
-    - eexists. constructor 1.
-    - eexists. econstructor 2; eauto.
-  Qed.
+  Corollary steps_steps_k (s s' : state) :
+    steps s s' -> exists k, steps_k k s s'.
+  Proof. intros. apply star_pow. eauto. Qed.
 
   Definition halts (s : state) : Prop :=
     exists s', steps s s' /\ halt_state s'.
 
   Definition halts_k (s : state) (k : nat) : Prop :=
-    exists s', steps_k s k s' /\ halt_state s'.
+    exists s', steps_k k s s' /\ halt_state s'.
 
   Definition step_fun : state -> option state :=
     fun '(T, V, H) =>
@@ -195,7 +189,7 @@ Section Semantics.
   Qed.
 
   Lemma halt_state_steps_k s s' k :
-    halt_state s -> steps_k s k s' -> s' = s /\ k = 0.
+    halt_state s -> steps_k k s s' -> s' = s /\ k = 0.
   Proof.
     intros HHalt HSteps. hnf in HHalt.
     destruct HSteps; auto. now specialize (HHalt _ H).
