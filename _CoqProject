@@ -4,7 +4,7 @@
 -I ../smpl/src
 
 -install none
-COQDOCFLAGS = "--charset utf-8 --parse-comments --with-header ./website/header.html --with-footer ./website/footer.html --index indexpage"
+COQDOCFLAGS = "--charset utf-8 --parse-comments --with-header ./website/header.html --with-footer ./website/footer.html --index indexpage --coqlib https://coq.inria.fr/distrib/V8.8.1/stdlib/"
 
 # Basics
 TM/Prelim.v
