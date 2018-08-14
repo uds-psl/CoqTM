@@ -296,5 +296,5 @@ Arguments Computes2_Rel {sig n X cX Y cY Z cZ F} f x y/.
 Arguments Computes2_T {sig n X cX Y cY} r x y/.
 
 
-(** Because every machine is defined on an alphabet [Σ^+], the notation adds the discreteness and finiteness constructors, to case [Σ^+ : finType]. *)
+(** Because every machine is defined on an alphabet [Σ^+], the notation adds the discreteness and finiteness constructors, to cast [Σ^+ : finType]. *)
 Notation "sig '^+'" := (FinType (EqType (boundary + sig) % type)) (at level 0) : type_scope.

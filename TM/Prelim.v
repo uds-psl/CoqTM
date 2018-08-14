@@ -195,7 +195,7 @@ End Map.
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 >>
-to avoid unfolding [*] and [+] of runtime polynoms. However, this can break proofs that use [Fin.R], since the [plus] in the type of [Fin.R] doesn't simplify with [cbn] any more. To work around this problem, we have a copy of [Fin.R] and [plus], that isn't affected by these commands. *)
+to avoid unfolding [*] and [+] in runtime polynoms. However, this can break proofs that use [Fin.R], since the [plus] in the type of [Fin.R] doesn't simplify with [cbn] any more. To work around this problem, we have a copy of [Fin.R] and [plus], that isn't affected by these commands. *)
 
 Fixpoint plus' (n m : nat) { struct n } : nat :=
   match n with
