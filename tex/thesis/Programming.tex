@@ -16,7 +16,8 @@ complex case studies.
 We first want to define what it means that a tape $t$ \emph{contains} a value $x$, written as $t \simeq x$.  Tapes, as defined in
 Definition~\ref{def:tape}, are essentially a list of symbols, so we have to linearise values to strings.
 
-\begin{definition}[Encodable types]
+\setCoqFilename{FormalComplexity.TM.Code.Code}%
+\begin{definition}[Encodable types][codable]
   \label{def:encodable}
   We say that a type $X$ is encodable over a finite alphabet $\Sigma_X$, if there is a function $encode : X \to \List(\Sigma_X)$.
 \end{definition}
@@ -27,7 +28,7 @@ on $\List(\Sigma)$.  As we do not need any of these facts, we leave them out of 
 % we have to be careful when we define new type class instances.
 
 We can map encodings with retractions:
-\begin{definition}[Map encodings]
+\begin{definition}[Map encodings][Encode_map]
   \label{def:Encode_map}
   Let $X$ be encodable over $\Sigma$ and $f : \Sigma \hookrightarrow \Tau$ be a retraction.  Then $X$ is also encodable over $\Tau$ with the following
   encoding function:
@@ -36,7 +37,7 @@ We can map encodings with retractions:
 
 Mapping of encodings are compatible with composition of retractions.  This means that if we map the encoding twice, this is the same as mapping the
 encoding with the composition of both retractions:
-\begin{lemma}[Composition and encoding mapping]
+\begin{lemma}[Composition and encoding mapping][Encode_map_comp]
   \label{lem:Encode_map_comp}
   Let $f : \Sigma \hookrightarrow \Tau$ and $g : \Tau \hookrightarrow \Delta$ be retractions and $X$ be encodable over $\Sigma$.  Then there is only
   one way how $X$ can be encoded over $\Delta$, i.e.:
@@ -48,36 +49,36 @@ For each type and type constructor, we have a distinct alphabet.  We define basi
   \label{def:basic-encodings}
   ~
   \begin{enumerate}
-  \item We encode $\Unit$ over the empty alphabet $\False$: $encode~\unit := \nil$
-  \item The types $\Bool$ and $\Fin_k$ are encoded over themself, i.e.\ $encode(x):=[x]$.
-  \item Let $X$ be encodable over $\Sigma_X$.  Then $\Option(X)$ is encodable over
+  \coqitem[Encode_unit] We encode $\Unit$ over the empty alphabet $\False$: $encode~\unit := \nil$
+  \coqitem[Encode_fin] The types $\Bool$ and $\Fin_k$ are encoded over themself, i.e.\ $encode(x):=[x]$.
+  \coqitem[Encode_option] Let $X$ be encodable over $\Sigma_X$.  Then $\Option(X)$ is encodable over
     \[ \Sigma_{\Option(X)} ::= \MS{NONE} ~|~ \MS{SOME} ~|~ (x:\Sigma_X) \]
     With the retraction $RetrOpt : \Sigma_X \hookrightarrow \Sigma_{\Option(X)}$ and
     \begin{alignat*}{3}
       &encode~&&\None  &~:=~& [\MS{NONE}] \\
       &encode~&&\Some x&~:=~& \MS{SOME} \cons encode(x)
     \end{alignat*}
-  \item Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then $X+Y$ is encodable over
+  \coqitem[Encode_sum] Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then $X+Y$ is encodable over
     \[ \Sigma_{X+Y} ::= \MS{INL} ~|~ \MS{INR} ~|~ (x:\Sigma_X) ~|~ (y:\Sigma_Y) \] With the retractions
     $RetrInl : \Sigma_X \hookrightarrow \Sigma_{X+Y}$, $RetrLft : \Sigma_X \hookrightarrow \Sigma_{X+Y}$ and
     \begin{alignat*}{3}
       &encode~&&(\inl x)&~:=~& \MS{INL} \cons encode(x) \\
       &encode~&&(\inr y)&~:=~& \MS{INR} \cons encode(y)
     \end{alignat*}
-  \item Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then $X \times Y$ is encodable over
+  \coqitem[Encode_prod] Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  Then $X \times Y$ is encodable over
     \[ \Sigma_{X \times Y} ::= (x:\Sigma_X) ~|~ (y:\Sigma_Y) \] With the retractions
     $RetrFst : \Sigma_X \hookrightarrow \Sigma_{X \times Y}$, $RetrSnd : \Sigma_Y \hookrightarrow \Sigma_{X \times Y}$ and
     \[
       encode(x,y) := encode(x) \app encode(y)
     \]
-  \item Let $X$ be encodable over $\Sigma_X$.  Then $\List(X)$ is encodable over
+  \coqitem[Encode_list] Let $X$ be encodable over $\Sigma_X$.  Then $\List(X)$ is encodable over
     \[ \Sigma_{\List(X)} ::= \MS{NIL} ~|~ \MS{CONS} ~|~ (x:\Sigma_X) \]
     With the retraction $RetrList : \Sigma_X \hookrightarrow \Sigma_{\List(X)}$ and
     \begin{alignat*}{3}
       &encode~&&(\nil      ) &~:=~& [\MS{NIL}] \\
       &encode~&&(l \cons ls) &~:=~& \MS{CONS} \cons encode(x) \app encode(ls)
     \end{alignat*}
-  \item Natural numbers $\Nat$ are encodable over $\Sigma_\Nat ::= \MS{S} ~|~ \MS{0} $ with
+  \coqitem[Encode_nat] Natural numbers $\Nat$ are encodable over $\Sigma_\Nat ::= \MS{S} ~|~ \MS{0} $ with
     \begin{alignat*}{3}
       &encode~&&(0  ) &~:=~& [\MS{O}] \\
       &encode~&&(S~n) &~:=~& \MS{S} \cons encode(n)
@@ -93,14 +94,16 @@ $\Sigma_{X+X}$.  Now there are two possibilities how to encode $X$ on $\Sigma_{X
 with this problem, when we program and verify Turing machines, by explicitly specifying the right retractions.
 
 If $X$ is encodable over $\Sigma$, we encode values of $x$ on tapes with an extended alphabet $\Sigma^+$ that has an additional start and stop symbol.
-\begin{definition}[$\Sigma^+$] Let $\Sigma$ be an alphabet.
+\setCoqFilename{FormalComplexity.TM.Code.CodeTM}%
+\begin{definition}[$\Sigma^+$][boundary]
+  Let $\Sigma$ be an alphabet.
   \[
     \Sigma^+ ::= \MS{START} ~|~ \MS{STOP} ~|~ \MS{UNKNOWN} ~|~ (s: \Sigma)
   \]
   Also, we define the retraction $RetrPlus : \Sigma \hookrightarrow \Sigma^+$.
 \end{definition}
 The $\MS{UNKNOWN}$ symbol is important later. We define what $t \simeq x$ means:
-\begin{definition}[$t \simeq x$]
+\begin{definition}[$t \simeq x$][tape_contains]
   \label{def:tape_contains}
   Let $X$ be encodable over $\Sigma$ and $t : \Tape_{\Sigma^+}$.
   \[
@@ -120,7 +123,7 @@ machines.  If a tape contains a value, the size of the tape (i.e.\ the number of
 number of rest symbols $ls$ to the left.  To avoid data leaks, we have the convention to only add symbols on the left side.  We also only write on
 tapes, if the head of the tape is on the right-most symbol.
 
-\begin{definition}[Right tape]
+\begin{definition}[Right tape][isRight]
   \label{def:isRght}
   $isRight(t) := \exists m~rs.~t=\MS{midtape}~ls~m~\nil$.
   With other words, a tape $t$ is right, if and only if $\MS{current}(t) \neq \None \land \MS{right}(t) = \nil$.
@@ -133,7 +136,8 @@ In Section~\ref{sec:sigma-Lift}, we defined the alphabet-lift operator.  However
 symbol in the smaller alphabet $\Sigma$.  All ``programmed'' Turing machines are defined over an extended alphabet $\Sigma^+$.  It seems therefore
 useful, to introduce a uniform default symbol $\MS{UNKNOWN}$ to $\Sigma^+$.  Intuitively, nothing can go wrong, because, by definition, $\MS{UNKNOWN}$
 is not part of any encoding.  This intuition is confirmed by the following lemma:
-\begin{lemma}[$surject$ and value-containing]
+\setCoqFilename{FormalComplexity.TM.Code.ChangeAlphabet}%
+\begin{lemma}[$surject$ and value-containing][contains_translate_tau]
   \label{lem:contains_translate_tau}
   Let $f: \Sigma \hookrightarrow \Tau$ be a retraction between two alphabets.  Let $x:X$, where $X$ is encodable over $\Sigma$. Then, for
   $t:\Tape_{\Tau^+}$
@@ -161,7 +165,8 @@ $\MS{WriteValue}~str : \TM_{\Sigma^+}^1$ gets an encoding $str:\List(\Sigma)$ of
 \footnote{The reason why $\MS{WriteValue}$ is not parametrised over values $x:X$ is, that we would also need to parametrise $\MS{WriteString}$ over
   the encoding function of $X$.  With this approach, only the correctness Lemma~\ref{lem:WriteValue_Sem} is parametrised over the encoding.}%
 .
-\begin{definition}[$\MS{WriteValue}$]
+\setCoqFilename{FormalComplexity.TM.Code.WriteValue}%
+\begin{definition}[$\MS{WriteValue}$][WriteValue]
   \label{def:WriteValue}
   Let $str:\List(\Sigma)$
   \[
@@ -171,7 +176,7 @@ $\MS{WriteValue}~str : \TM_{\Sigma^+}^1$ gets an encoding $str:\List(\Sigma)$ of
 \end{definition}
 The machine writes the stop symbol, the encoding $str$, and the start symbol in reversed order from right to left.  If it started with a right tape,
 then after the execution the tape contains the value $x$ that has the encoding $str$.
-\begin{lemma}[Correctness of $\MS{WriteValue}$]
+\begin{lemma}[Correctness of $\MS{WriteValue}$][WriteValue_Sem]
   \label{lem:WriteValue_Sem}
   Let $X$ be encodable over $\Sigma$ and $str : \List(\Sigma)$.
   \[
@@ -199,19 +204,18 @@ other side, a deconstructor machine has a partition for each constructor and may
 \label{sec:match-nat}
 
 This is the correctness relation for $\MS{MatchNat}$:
-\begin{definition}[Correctness relation of $\MS{MatchNat}$]
+\setCoqFilename{FormalComplexity.TM.Code.MatchNat}%
+\begin{definition}[Correctness relation of $\MS{MatchNat}$][MatchNat_Rel]
   \label{def:MatchNat_Rel}
   ~
 \begin{lstlisting}[style=semicoqstyle]
 $MatchNatRel :=$
-  $\lambda t~(y, t').$
-    $\forall (n:\Nat).$
-      $t[0] \simeq n \rightarrow$
-      match $y$, $n$
-      [$\false$, $O$ => $t'[0] \simeq 0$
-      |$\true$, $S~n'$ => $t'[0] \simeq n'$
-      | _, _ => $\False$
-      ].
+  $\lambda t~(y, t').~\forall (n:\Nat).~t[0] \simeq n \rightarrow$
+    match $y$, $n$
+    [$\false$, $O$ => $t'[0] \simeq 0$
+    |$\true$, $S~n'$ => $t'[0] \simeq n'$
+    | _, _ => $\False$
+    ].
 \end{lstlisting}
 \end{definition}
 
@@ -226,18 +230,18 @@ so the machine moves back to the start symbol and terminates in the partition $\
 machine reads $\MS{S}$, this means the number $n$ is the successor of some number $n'$.  To decrement $n$, it overwrites the current $\MS{S}$ with a
 new start symbol and terminates on this symbol in the partition $\true$.
 
-\begin{definition}[$\MS{MatchNat}$]
+\begin{definition}[$\MS{MatchNat}$][MatchNat]
   \label{def:MatchNat}
   ~
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchNat} :=$
-  Move R; 
-  Match ($\MS{ReadChar}$) 
-        ($\lambda(o:\Option(sigNat)).$ match $o$
-           [$\Some {\MS{S}}$ => $\Return{(\MS{Write}~\MS{START})}{\true}$
-           |$\Some {\MS{O}}$ => $\Return{(\MS{Move}~L)}{\false}$
-           | _ => _ 
-           ]).
+  $\MS{Move}~R$; 
+  Match($\MS{ReadChar}$) 
+       ($\lambda(o:\Option(sigNat)).$ match $o$
+          [$\Some {\MS{S}}$=>$\Return{(\MS{Write}~\MS{START})}{\true}$
+          |$\Some {\MS{O}}$=>$\Return{(\MS{Move}~L)}{\false}$
+          |_=>_ 
+          ]).
 \end{lstlisting}
 \end{definition}
 
@@ -245,7 +249,7 @@ Note, that the placeholder $\_$ stands for some unspecified machine, e.g.\ in th
 the machine is not explicitly given, because the premise of the correctness relation of $\MS{MatchNat}$ guaranties that there must be a symbol under
 the head that is either $\MS{S}$ or $\MS{O}$, so this part of the machine must never execute.
 
-\begin{lemma}[Correctness of $\MS{MatchNat}$]
+\begin{lemma}[Correctness of $\MS{MatchNat}$][MatchNat_Sem]
   $\MS{MatchNat} \RealiseIn{5} MatchNatRel$.
 \end{lemma}
 \begin{proof}
@@ -254,11 +258,11 @@ the head that is either $\MS{S}$ or $\MS{O}$, so this part of the machine must n
 \end{proof}
 
 We define the $O$-constructor with $\MS{WriteValue}$:
-\begin{definition}[$\MS{ConstrO}$]
+\begin{definition}[$\MS{ConstrO}$][Constr_O]
   \label{def:Constr_O}
   $\MS{ConstrO} := \MS{WriteValue}~[\MS{O}]$.
 \end{definition}
-\begin{lemma}[Correctness of $\MS{ConstrO}$]
+\begin{lemma}[Correctness of $\MS{ConstrO}$][Constr_O_Sem]
   \label{lem:Constr_O_Sem}
   $\MS{ConstrO} \RealiseIn{5} ConstrORel$ with
   \[
@@ -270,10 +274,10 @@ We define the $O$-constructor with $\MS{WriteValue}$:
 \end{proof}
 
 The $S$ constructor overwrites the current symbol (which is the start symbol) with $\MS{S}$ and writes a new start symbol.
-\begin{definition}[$\MS{ConstrS}$]
+\begin{definition}[$\MS{ConstrS}$][Constr_S]
   $\MS{ConstrS} := \MS{WriteMove}~\MS{S}~L \Seq \MS{Write}~\MS{START}$
 \end{definition}
-\begin{lemma}[Correctness of $\MS{ConstrS}$]
+\begin{lemma}[Correctness of $\MS{ConstrS}$][Constr_S_Sem]
   $\MS{ConstrS} \RealiseIn{3} ConstrSRel$ with
   \[
     ConstrSRel := \lambda t~t'.~\forall n.~ t[0] \simeq n \rightarrow t'[0] \simeq S~n.
@@ -287,7 +291,8 @@ The $S$ constructor overwrites the current symbol (which is the start symbol) wi
 Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  $\MS{MatchSum} : \TM_{\Sigma_{X+Y}^+}^1(\Bool)$ reads a value $s:X+Y$.  If it is
 $\inl x$ (or $\inr~y$), it replaces the $\MS{INL}$ (or $\MS{INR}$) symbol with a new start symbol and terminates in $\true$ (or $\false$).
 
-\begin{definition}[$\MS{MatchSum}$]
+\setCoqFilename{FormalComplexity.TM.Code.MatchSum}%
+\begin{definition}[$\MS{MatchSum}$][MatchSum]
   \label{def:MatchSum}
   ~
   \small
@@ -303,7 +308,7 @@ $\MS{MatchSum} :=$
 \end{lstlisting}
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{MatchSum}$]
+\begin{lemma}[Correctness of $\MS{MatchSum}$][MatchSum_Sem]
   \label{lem:MatchSum_Realise}
   $\MS{MatchSum} \RealiseIn{5} MatchSumRel$ with
 \begin{lstlisting}[style=semicoqstyle]
@@ -318,11 +323,11 @@ $MatchSumRel :=$
 
 We have one constructor machine for $\inl$ and $\inr$.  They are both analogous.  They overwrite the start symbol with $\MS{INL}$ or $\MS{INR}$ and
 write a new start symbol one step further left.
-\begin{definition}[$\MS{ConstrInl}$]
+\begin{definition}[$\MS{ConstrInl}$][Constr_inl]
   \label{def:Constr_inl}
   $\MS{ConstrInl} := \MS{WriteMove}~\MS{INL}~L \Seq \MS{Write}~\MS{START}$.
 \end{definition}
-\begin{lemma}[Correctness of $\MS{ConstrInl}$]
+\begin{lemma}[Correctness of $\MS{ConstrInl}$][Constr_inl_Sem]
   \label{lem:Constr_inl_Sem}
   $\MS{ConstrInl} \RealiseIn{3} ConstrInlRel$ with
   \[
@@ -337,11 +342,10 @@ The types $\Option(X)$ and $X+\Unit$ are isomorphic.  Furthermore, the alphabets
 are also isomorphic.  We can use this fact to derive a match machine and constructor machines for the type $\Option(X)$.  Let
 $f : \Sigma_{X+\Unit} \hookrightarrow \Sigma_{\Option(X)}$ be the canonical retraction.  Then, we can define $\MS{MatchOption}$ as
 $\LiftAlphabet{\MS{MatchSum}}{f}$.  However, in the case that $o=\None$, the surjected output tape $t'$ contains $\unit$.  Thus, the tape has form
-(for some $ls$)
-\[ t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]. \] However, we want that the tape is right in this case.  That is, because $\Option(X)$ is not a
-recursive data type and the information that $o=\None$ is already encoded in the partition in which $\MS{MatchOption}$ terminates.  So in this case,
-the tape moves one step to the right:
-\begin{definition}[$\MS{MatchOption}$]
+$t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]$ (for some $ls$).  However, we want that the tape is right in this case.  That is, because $\Option(X)$
+is not a recursive data type and the information that $o=\None$ is already encoded in the partition in which $\MS{MatchOption}$ terminates.  So in
+this case, the tape moves one step to the right:
+\begin{definition}[$\MS{MatchOption}$][MatchOption]
   \label{def:MatchOption}
   ~
   \[
@@ -349,7 +353,7 @@ the tape moves one step to the right:
   \]
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{MatchOption}$]
+\begin{lemma}[Correctness of $\MS{MatchOption}$][MatchOption_Sem]
   \label{lem:MatchSum_Realise}
   $\MS{MatchOption} \RealiseIn{7} MatchOptionRel$ with
 \begin{lstlisting}[style=semicoqstyle]
@@ -364,11 +368,11 @@ $MatchOptionRel :=$
 Note that we have to add $2$ extra steps: one for the conditional and one for the $\MS{Move}$ in the $\None$-case.
 
 We can also derive the $\Some{\cdot}$ constructor of $\Option(X)$ from the $\inl$ constructor of $X+\Unit$.
-\begin{definition}[$\MS{ConstrSome}$]
+\begin{definition}[$\MS{ConstrSome}$][Constr_Some]
   \label{def:Constr_Some}
   $\MS{ConstrSome} := \LiftAlphabet{\MS{ConstrInl}}{f}$.
 \end{definition}
-\begin{lemma}[Correctness of $\MS{ConstrSome}$]
+\begin{lemma}[Correctness of $\MS{ConstrSome}$][Constr_Some_Sem]
   \label{lem:Constr_Some_Sem}
   $\MS{ConstrSome} \RealiseIn{3} ConstrSomeRel$ with
   \[
@@ -376,11 +380,11 @@ We can also derive the $\Some{\cdot}$ constructor of $\Option(X)$ from the $\inl
   \]
 \end{lemma}
 For the $\None$ constructor, we simply use $\MS{WriteValue}$
-\begin{definition}[$\MS{ConstrNone}$]
+\begin{definition}[$\MS{ConstrNone}$][Constr_None]
   \label{def:Constr_None}
   $\MS{ConstrNone} := \MS{WriteValue}~[\MS{NONE}]$.
 \end{definition}
-\begin{lemma}[Correctness of $\MS{ConstrNone}$]
+\begin{lemma}[Correctness of $\MS{ConstrNone}$][Constr_None_Sem]
   \label{lem:Constr_None_Sem}
   $\MS{ConstrNone} \RealiseIn{3} ConstrNoneRel$ with
   \[
@@ -401,7 +405,8 @@ symbol on tape~$1$.  Then, it seeks the last character of the encoding of $\pi_1
 start symbol) from right to left to tape~$1$.  Then it moves again to the last symbol of the original encoding of $\pi_1(p)$ on tape~$0$, and
 overwrites it with a new start symbol.
 
-\begin{definition}[$\MS{MatchPair}$]
+\setCoqFilename{FormalComplexity.TM.Code.MatchPair}%
+\begin{definition}[$\MS{MatchPair}$][MatchPair]
   \label{def:MatchPair}
   ~
   \begin{alignat*}{2}
@@ -420,7 +425,7 @@ $\pi_2(p)$ is empty.  If it is empty, then the first $\MS{MoveToSymbol}~f~id$ mo
 symbol of the encoding of $\pi_2(p)$.  In both cases, $\MS{Move}~L$ moves to the last symbol of $\pi_1(p)$ (or to the start symbol, if $\pi_1(p)$ is
 empty).
 
-\begin{lemma}[Correctness of $\MS{MatchPair}$]
+\begin{lemma}[Correctness of $\MS{MatchPair}$][MatchPair_Realise]
   \label{lem:MatchPair_Realise}
   $\MS{MatchPair} \Realise MatchPairRel$ with
   \small
@@ -428,7 +433,7 @@ empty).
     MatchPairRel := \lambda t~t'.~\forall (p: X \times Y).~t[0] \simeq p \rightarrow isRight~t[1] \rightarrow t'[0] \simeq \pi_2(p) \land t'[1] \simeq \pi_1(p).
   \]
 \end{lemma}
-\begin{lemma}[Runtime of $\MS{MatchPair}$]
+\begin{lemma}[Runtime of $\MS{MatchPair}$][MatchPair_Terminates]
   \label{lem:MatchPair_TerminatesIn}
   $\MS{MatchPair} \TerminatesIn MatchPairT$ with
   \[
@@ -439,7 +444,7 @@ empty).
 The constructor copies the first component $x$ from tape $0$ to tape $1$, which initially contains the second component $y$, from right to left.  By
 that, it overwrites the start symbol on tape $1$ with the last symbol of the encoding of $x$.
 
-\begin{definition}[$\MS{ConstrPair}$]
+\begin{definition}[$\MS{ConstrPair}$][Constr_pair]
   \label{def:Constr_pair}
   ~
   \[
@@ -448,7 +453,7 @@ that, it overwrites the start symbol on tape $1$ with the last symbol of the enc
   Where $g$ is the same function as in Definition~\ref{def:MatchPair}.  $h(s)$ is $\true$ if and only if $s=\MS{STOP}$.
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{ConstrPair}$]
+\begin{lemma}[Correctness of $\MS{ConstrPair}$][Constr_pair_Realise]
   \label{lem:Constr_pair_Realise}
   \small
   $\MS{ConstrPair} \Realise ConstrPairRel$ with
@@ -456,7 +461,7 @@ that, it overwrites the start symbol on tape $1$ with the last symbol of the enc
     ConstrPairRel := \lambda t~t'.~\forall (x:X)~(y:Y).~t[0] \simeq x \rightarrow t[1] \simeq y \rightarrow t'[0] \simeq x \land t'[1] (x,y).
   \]
 \end{lemma}
-\begin{lemma}[Runtime of $\MS{ConstrPair}$]
+\begin{lemma}[Runtime of $\MS{ConstrPair}$][Constr_pair_Terminates]
   \label{lem:Constr_pair_TerminatesIn}
   $\MS{ConstrPair} \TerminatesIn ConstrPairT$ with
   \[
@@ -466,14 +471,15 @@ that, it overwrites the start symbol on tape $1$ with the last symbol of the enc
 
 \subsubsection{List Types}
 \label{sec:MatchList}
+\setCoqFilename{FormalComplexity.TM.Code.MatchList}%
 
 The definition of $\MS{MatchList}$ is quite complex.  For brevity we only state the correctness statements of the match-machine here.  The machine
 $\MS{MatchList} : \TM_{\Sigma_{\List(X)}^+}^2(\Bool)$ expects a list on tape $0$.  If it is $\nil$, it terminates in the partition $\false$ and leaves
 the tapes unchanged.  If the list is $x \cons xs$, it copies $x$ to tape $1$ and removes $x$ from tape $0$, and terminates in the partition $\true$.
 
-\begin{lemma}[Correctness of $\MS{MatchList}$]
+\begin{lemma}[Correctness of $\MS{MatchList}$][MatchList_Realise]
   \label{lem:MatchList_Realise}
-  $\MS{MatchList} \simeq MatchListRel$ with
+  $\MS{MatchList} \Realise MatchListRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $MatchListRel :=$
   $\lambda t~(y, t').~\forall (l:\List(X)).~t[0] \simeq l \rightarrow isRight~t[1] \rightarrow \MS{match}~y, l$
@@ -485,10 +491,10 @@ $MatchListRel :=$
 \end{lemma}
 
 The $\nil$ constructor is defined using $\MS{WriteValue}$.
-\begin{definition}[$\MS{ConstrNil}$]
+\begin{definition}[$\MS{ConstrNil}$][Constr_nil]
   $\MS{ConstrNil} := \MS{WriteValue}~[\MS{NIL}]$.
 \end{definition}
-\begin{lemma}[Correctness of $\MS{ConstrNil}$]
+\begin{lemma}[Correctness of $\MS{ConstrNil}$][Constr_nil_Sem]
   $\MS{ConstrNil} \RealiseIn{5} ConstrNilRel$ with
   \[
     ConstrNilRel := \lambda t~t.~isRight~t[0] \rightarrow t'[0] \simeq \nil
@@ -500,7 +506,7 @@ symbol of the encoding of $x$ and copies them on tape $0$ from right to left.  T
 copies the start symbol from tape $1$ to tape $0$.  After that, the machine overwrites this start symbol with $\MS{CONS}$ and writes a new start
 symbol on tape $0$.
 
-\begin{definition}[$\MS{ConstrCons}$]
+\begin{definition}[$\MS{ConstrCons}$][Constr_cons]
   \label{def:Constr_cons}
   \begin{alignat*}{2}
     &\MS{ConstrCons}&~:=~& \LiftTapes{(\MS{MoveToSymbol}~h~id \Seq \MS{Move}~L)}{\Vector{1}} \Seq \\
@@ -511,7 +517,7 @@ symbol on tape $0$.
   from the alphabet $\Sigma_X$.
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{ConstrCons}$]
+\begin{lemma}[Correctness of $\MS{ConstrCons}$][Constr_cons_Realise]
   \label{lem:Constr_cons_Realise}
   $\MS{ConstrCons} \Realise ConstrConsRel$ with
   \begin{align*}
@@ -527,7 +533,8 @@ All finite types $\Sigma$ can be encoded on themself, i.e.\ $encode(x)=[x]$ for 
 from the starting symbol to the symbol and reads it.  After that, it moves the head one further so that the tape is right and terminates in the
 partition corresponding to the read symbol.
 
-\begin{definition}[$\MS{MatchFin}$]
+\setCoqFilename{FormalComplexity.TM.Code.MatchFin}%
+\begin{definition}[$\MS{MatchFin}$][MatchFin]
   \label{def:MatchFin}
   Let $def:\Sigma$.
   \small
@@ -536,7 +543,7 @@ $\MS{MatchFin} := \Match~\MS{ReadChar}~(\lambda s.$ $\MS{match}~s$[$\Some{x} \Ri
 \end{lstlisting}
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{MatchFin}$]
+\begin{lemma}[Correctness of $\MS{MatchFin}$][MatchFin_Sem]
   \label{lem:MatchFin_Sem}
   $\MS{MatchFin} \RealiseIn{5} MatchFinRel$ with
   \[
@@ -555,7 +562,8 @@ Section~\ref{sec:MoveToSymbol}, we also defined a machine that moves the head to
 that copies a value from tape $t[0]$ on tape $t[1]$.  By the convention we set up in Section~\ref{sec:value-containing}), if we write new symbols on a
 tape, this tape must be right.  With other words, the machine $\MS{CopySymbols}$ can assume that the ``target'' tape is right.  Formally, the
 correctness relation is defined as:
-\begin{definition}[Correctness relation of $\MS{CopyValue}$]
+\setCoqFilename{FormalComplexity.TM.Code.Copy}%
+\begin{definition}[Correctness relation of $\MS{CopyValue}$][CopyValue_Rel]
   \label{def:CopyValue_Rel}
   ~
   \[
@@ -574,7 +582,7 @@ correctness relation is defined as:
 The algorithm of $\MS{CopyValue}$ works as follows.  First, the machine moves the head of tape $0$ right, from the start symbol to the stop symbol.
 Then it copies the symbols, from the stop symbol to the start symbol, to tape $1$.
 
-\begin{definition}[$\MS{CopyValue}$]
+\begin{definition}[$\MS{CopyValue}$][CopyValue]
   \label{def:CopyValue}
   ~
   \small
@@ -586,13 +594,13 @@ Then it copies the symbols, from the stop symbol to the start symbol, to tape $1
 Note that the second parameter of $\MS{MoveToSymbol}$ is the a translation function.  In this case, it should simply move around leave the symbols
 unchanged.
 
-\begin{lemma}[Correctness of $\MS{CopyValue}$]
+\begin{lemma}[Correctness of $\MS{CopyValue}$][CopyValue_Realise]
   \label{lem:CopyValue_Realise}
   $\MS{CopyValue} \Realise CopyValueRel$.
 \end{lemma}
 
 The runtime of $\MS{CopyValue}$ is linear in size of the encoding of $x$.
-\begin{lemma}[Runtime of $\MS{CopyValue}$]
+\begin{lemma}[Runtime of $\MS{CopyValue}$][CopyValue_TerminatesIn]
   \label{lem:CopyValue_TerminatesIn}
   ~
   \[
@@ -611,7 +619,7 @@ be two retractions $f_1, f_2 : \Sigma \hookrightarrow \Tau$ on the alphabet $\Ta
 $\MS{MoveToSymbol}$ machine the feature to translate the symbols it read.  Using this feature, we define a machine that translates between the two
 possibilities of the encoding of $X$ on $\Tau$.  Therefore we have to define a function $tanslate : \Tau^+ \to \Tau^+$.
 
-\begin{definition}[Translation between two encodings]
+\begin{definition}[Translation between two encodings][translate]
   \label{def:translate}
   Let $f_1, f_2 : \Sigma \hookrightarrow \Tau$ be two retractions on $\Tau$.
   \begin{alignat*}{2}
@@ -627,7 +635,7 @@ possibilities of the encoding of $X$ on $\Tau$.  Therefore we have to define a f
 This function translates a symbol of $\Tau$ to $\Sigma$, using the partial inversion function $f_1^{-1}$ and afterwards applies the injection $f_2$
 from $\Sigma$ to $\Tau$ and the (implicit) injection from $\Tau$ to $\Tau^+$.
 
-\begin{definition}[$\MS{Translate}$]
+\begin{definition}[$\MS{Translate}$][Translate]
   ~
   \begin{alignat*}{2}
     & \MS{Translate}~f_1~f_2 &~:=~& \MS{MoveToSymbol}~(\lambda x.~x=\MS{STOP})~(translate~f_1~f_2) \Seq \\
@@ -635,7 +643,7 @@ from $\Sigma$ to $\Tau$ and the (implicit) injection from $\Tau$ to $\Tau^+$.
   \end{alignat*}
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{Translate}$]
+\begin{lemma}[Correctness of $\MS{Translate}$][Translate_Realise]
   $\MS{Translate}~f_1~f_2 \Realise TranslateRel~f_1~f_2$ with
   \[
     TranslateRel~f_1~f_2 := \lambda t~t'.~\forall(x:X).~t[0] \simeq_{f_1} x \rightarrow t[0] \simeq_{f_2} x.
@@ -650,12 +658,12 @@ The aforementioned machine $\MS{MoveToSymbol}~(\lambda x.~x=\MS{STOP})~id$ can a
 a value, after the execution of this machine, the tape is right.  This is especially important to prevent memory leaks in loops, where we may want to
 write on a tape multiple times.  We must reset each ``used'' tape before writing on it again.
 
-\begin{definition}[$\MS{ResetTape}$]
+\begin{definition}[$\MS{ResetTape}$][Reset]
   \label{def:Reset}
   $\MS{ResetTape} := \MS{MoveToSymbol}~(\lambda x.~x=\MS{STOP})~id$
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{ResetTape}$]
+\begin{lemma}[Correctness of $\MS{ResetTape}$][Reset_Realise]
   \label{lem:Reset_Realise}
   $\MS{ResetTape} \Realise ResetTapeRel$ with
   \[
@@ -718,7 +726,8 @@ relations of machines.  For input tapes, we have the invariant that they contain
 tapes are initially right, and contain an output value after the execution.  Internal tapes are right before and after the execution.  With this
 distinction of input, output, and internal tapes, we can formalise a convention for functional computation of binary functions: Tapes $t[0]$ and
 $t[1]$ are input tapes for $x$ and $y$, $t[2]$ is the output tape for $f~x~y$, and all other tapes are internal tapes.
-\begin{definition}[Functional computation correctness relation]
+\setCoqFilename{FormalComplexity.TM.Code.CodeTM}%
+\begin{definition}[Functional computation correctness relation][Computes2_Rel]
   \label{def:Computes2_Rel}
   Let $f : X \to Y \to Z$, where $X$ and $Y$ are encodable on $\Sigma$.  Then
   $FunRel(f) \subseteq \Tape_{\Sigma^+}^{3+n} \times \Tape_{\Sigma^+}^{3+n}$ is defined as:
@@ -735,7 +744,7 @@ $t[1]$ are input tapes for $x$ and $y$, $t[2]$ is the output tape for $f~x~y$, a
 \end{definition}
 
 Similarly, we can define the runtime function of such a machine.
-\begin{definition}[Functional computation runtime relation]
+\begin{definition}[Functional computation runtime relation][Computes2_T]
   \label{def:Computes2_T}
   Let $steps : X \to Y \to \Nat$ , where $X$ and $Y$ are encodable on $\Sigma$.  Then $FunT(h) \subseteq \Tape_{\Sigma^+} \times \Nat$ is defined as:
   \begin{alignat*}{2}
@@ -783,6 +792,7 @@ We implement the general design of the previous section for concrete functions.
 
 \subsection{Addition}
 \label{sec:Add}
+\setCoqFilename{FormalComplexity.TM.Code.NatTM}%
 
 We want to implement the functions $add,mult:\Nat\to\Nat\to\Nat$, according to Definition~\ref{def:Computes2_Rel}.  First we define the machine
 $\MS{Add}$ that computes the addition function.  We reuse this machine to implement a machine $\MS{Mult}$ that computes the multiplication function.
@@ -822,7 +832,7 @@ The next step is to implement the step machine.  $\MS{AddStep}$ has only access 
 also visualised in Table~\ref{tab:tapes-Add}.  The decrement operation and test whether $b$ was $0$ is implemented using the deconstructor machine
 $\MS{MatchNat}$.  In the case that $b$ is $0$, the step machine terminates in $\Some\unit$, so that the loop brakes.  In case $b$ is greater then $0$,
 $\MS{MatchNat}$ decreases $b$ and the step machine increases $a$.  Then it terminates in $\None$, so that the loop continues.
-\begin{definition}[$\MS{AddStep}$]
+\begin{definition}[$\MS{AddStep}$][Add_Step]
   \label{def:Add_Step}
   \[
     \MS{AddStep} := \If{\LiftTapes{\MS{MatchNat}}{\Vector{1}}}{\Return{(\LiftTapes{\MS{ConstrS}}{\Vector{0}})}{\None}}{\Return{\Nop}{\Some\unit}}.
@@ -830,7 +840,7 @@ $\MS{MatchNat}$ decreases $b$ and the step machine increases $a$.  Then it termi
 \end{definition}
 
 Because all parts of $\MS{AddStep}$ terminate in constant time, we get the constant runtime part of the semantics of $\MS{AddStep}$ for free.
-\begin{lemma}[Correctness of $\MS{AddStep}$]
+\begin{lemma}[Correctness of $\MS{AddStep}$][Add_Step_Sem]
   \label{lem:Add_Step_Sem}
   $\MS{AddStep} \RealiseIn{9} AddStepRel$ with
 \begin{lstlisting}[style=semicoqstyle]
@@ -847,7 +857,7 @@ $AddStepRel$ :=
 
 According to the general design plan, we define $\MS{AddLoop} := \While~\MS{AddStep}$.  The correctness relation of $\MS{AddLoop}$ now says, that
 after the execution of the loop, $t'[0]$ contains $a+b$ and $t'[1]$ contains $0$:
-\begin{lemma}[Correctness of $\MS{AddLoop}$]
+\begin{lemma}[Correctness of $\MS{AddLoop}$][Add_Loop_Realise]
   \label{lem:Add_Loop_Realise}
   $\MS{AddLoop} \Realise AddLoopRel$ with
   \[
@@ -862,7 +872,7 @@ after the execution of the loop, $t'[0]$ contains $a+b$ and $t'[1]$ contains $0$
 
 The runtime of $\MS{AddLoop}$ must be shown separately.  We know that the loop is executed $b+1$ times, each iteration takes $9$ steps.  We have to
 add $1$ step for each re-iteration of the loop.  So, the total step number is $9+10 \cdot b$.
-\begin{lemma}[Runtime of $\MS{AddLoop}$]
+\begin{lemma}[Runtime of $\MS{AddLoop}$][Add_Loop_Terminates]
   \label{lem:Add_Loop_TerminatesIn}
   $\MS{AddLoop} \downarrow AddLoopT$ with
   \[
@@ -871,7 +881,7 @@ add $1$ step for each re-iteration of the loop.  So, the total step number is $9
 \end{lemma}
 
 Now we can define the full machine $\MS{Add}$:
-\begin{definition}[$\MS{Add}$]
+\begin{definition}[$\MS{Add}$][Add]
   \label{def:Add}
   ~
   \[
@@ -906,13 +916,13 @@ execution protocol for $\MS{Add}$.
 From the execution protocol in Table~\ref{tab:exec-Add}, we can see that after the execution of all four sub-machines, the tapes $0$ and $1$ still
 contain the values $m$ and $n$, tape $2$ contains $m+n$, and tape $3$ is right.  Execution protocols serve as outlines of the formal correctness
 proofs.  We conclude the correctness of $\MS{Add}$.
-\begin{lemma}[Correctness of $\MS{Add}$]
+\begin{lemma}[Correctness of $\MS{Add}$][Add_Computes]
   \label{lem:Add_Computes}
   $\MS{Add} \Realise FunRel(add)$.
 \end{lemma}
 
 For the runtime function, we have to add linear components for the copying of $m$ and $n$.
-\begin{lemma}[Runtime of $\MS{Add}$]
+\begin{lemma}[Runtime of $\MS{Add}$][Add_Terminates]
   $\MS{Add} \downarrow FunT(stepsAdd)$ with
   \[
     stepsAdd~m~n := 98 + 22 \cdot m + 12 \cdot n.
@@ -991,7 +1001,7 @@ The tape-assignment is depicted in Table~\ref{tab:tapes-Mult}.  Note that not fo
 used as the internal tape for $\MS{Add}$ to save the first parameter, which is called $n$ in this case.  The step machine, $\MS{MultStep}$, has only
 access to the copy of $m$, which is mapped to tape $0$ of $\MS{MultStep}$.  In the following, we use also use the name $m$ for its copy in the context
 of $\MS{MultStep}$.
-\begin{definition}[$\MS{MultStep}$]
+\begin{definition}[$\MS{MultStep}$][Mult_Step]
   \label{def:Mult_Step}
   \begin{alignat*}{2}
     &\MS{MultStep} &~:=~&
@@ -1005,7 +1015,7 @@ of $\MS{MultStep}$.
 \end{definition}
 An execution protocol of $\MS{MultStep}$ for the case $m=S~m'$ (where $m$ is the copy) is shown in Table~\ref{tab:exec-MultStep}.  The correctness
 relation of $\MS{MultStep}$ is analogous to $\MS{AddStep}$.
-\begin{lemma}[Correctness of $\MS{MultStep}$]
+\begin{lemma}[Correctness of $\MS{MultStep}$][Mult_Step_Realise]
   \label{lem:Mult_Step_Sem}
   $\MS{MultStep} \RealiseIn{9} MultStepRel$ with
   \small
@@ -1027,7 +1037,7 @@ As usual, we define $\MS{MultLoop} := \While~\MS{MultStep}$.  The correctness st
 $m$, $n$, $c$, and all other tapes are right, then after the execution of the loop, the tapes contain $0$, $n$, and $m \cdot n + c$ and the other
 tapes are right.  Thus, when we instantiate the $c$-tape with the value $0$, the output tape contains $m \cdot n$.
 
-\begin{lemma}[Correctness of $\MS{MultLoop}$]
+\begin{lemma}[Correctness of $\MS{MultLoop}$][Mult_Loop_Realise]
   \label{lem:Mult_Loop_Realise}
   \label{lem:Mult_Loop_Realise}
   $\MS{MultLoop} \Realise MultLoopRel$ with
@@ -1039,7 +1049,7 @@ tapes are right.  Thus, when we instantiate the $c$-tape with the value $0$, the
 \end{lemma}
 
 It is now easy to define the rest of $\MS{Mult}$.
-\begin{definition}{$\MS{Mult}$}
+\begin{definition}[$\MS{Mult}$][Mult]
   \label{def:Mult}
   \[
     \MS{Mult} :=
@@ -1051,19 +1061,20 @@ It is now easy to define the rest of $\MS{Mult}$.
 \end{definition}
 
 It follows that $\MS{Mult}$ computes the function $mult$, w.r.t.\ Definition~\ref{def:Computes2_Rel}.
-\begin{lemma}[Correctness of $\MS{Mult}$]
+\begin{lemma}[Correctness of $\MS{Mult}$][Mult_Computes]
   \label{lem:Mult_Computes}
   $\MS{Mult} \Realise FunRel(mult)$.
 \end{lemma}
 
 For brevity,  we omit the concrete runtime function here.  
-\begin{lemma}[Runtime of $\MS{Mult}$]
+\begin{lemma}[Runtime of $\MS{Mult}$][Mult_Terminates]
   There is a function $multSteps : \Nat\to\Nat\to\Nat$, such that $multSteps \in \mathcal{O}(m \cdot n^2)$ and
   $\MS{Mult} \TerminatesIn FunT(multSteps)$.
 \end{lemma}
 
 \subsection{Mapping of Sum Functions}
 \label{sec:SumTM}
+\setCoqFilename{FormalComplexity.TM.Code.SumTM}%
 
 Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function $(f+g) : X+Y \to Z$ by $(f+g)(\inl x):=f(x)$ and
 $(f+g)(\inr y):=g(y)$.  We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a
@@ -1084,7 +1095,7 @@ it is translated to the alphabet of $M_1$.  Then we execute the alphabet-lifted 
 and leaves $x$ unchanged.  After that, $\MS{MapSum}$ translates $x$ back to the alphabet $\Sigma_{X+Y}$ and applies the constructor $\inl$, so the
 input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is symmetric.
 
-\begin{definition}[$\MS{MapSum}$]
+\begin{definition}[$\MS{MapSum}$][MapSum]
   \label{def:MapSum}
   ~
   \begin{align*}
@@ -1112,7 +1123,7 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
 % \end{lstlisting}
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{MapSum}$]
+\begin{lemma}[Correctness of $\MS{MapSum}$][Mult_Sum_Computes]
   \label{lem:MapSum_Computes}
   If $M_1 \Realise FunRel(f_1)$ and $M_2 \Realise FunRel(f_2)$, then $\MS{MapSum} \Realise FunRel(f_1+f_2)$.
 \end{lemma}
@@ -1120,6 +1131,7 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
 
 \subsection{List Access}
 \label{sec:Nth}
+\setCoqFilename{FormalComplexity.TM.Code.ListTM}%
 
 In this section, we show how to implement machines that compute the function $nth : \List(X) \to \Nat \to \Option(X)$.  Again, we use the technique
 for extending alphabets of Section~\ref{sec:extend-alphabet}.  For brevity, we exclude most runtime relations and proofs, we refer to the Coq
@@ -1180,7 +1192,7 @@ constructor to the head.  Note that before we can apply the constructor, $x$ has
 case $n$ was non-zero, if the list is empty, the machine applies the $\None$ constructor to the output tape.  Else, it deletes the head (which was on
 the output tape) and continues the loop.
 
-\begin{definition}[$\MS{NthStep}$]
+\begin{definition}[$\MS{NthStep}$][Nth_Step]
   \label{def:Nth_Step}
   ~
   \begin{align*}
@@ -1198,7 +1210,7 @@ the output tape) and continues the loop.
 
 The correctness relation of $\MS{NthStep}$ has to capture all four cases.
 
-\begin{lemma}[Correctness of $\MS{NthStep}$]
+\begin{lemma}[Correctness of $\MS{NthStep}$][Nth_Step_Realise]
   \label{lem:Nth_Step_Realise}
   $\MS{NthStep} \Realise NthStepRel$ with
   \small
@@ -1221,7 +1233,7 @@ Now, we can prove the correctness of the loop, $\MS{NthLoop} := \While~\MS{NthSt
 $n - (1 + \length{l})$.  The new value of $l$ will be $skipn~(S~n)~l$, where $skipn : \Nat \to \List(X) \to \List(X)$ applies $\tl$ $n$-times.  Note
 that if $n < \length{l}$, the new value of $n$ will be $0$ and the machine returns a $\Some\cdot$ value.
 
-\begin{lemma}[Correctness of $\MS{NthLoop}$]
+\begin{lemma}[Correctness of $\MS{NthLoop}$][Nth_Loop_Realise]
   \label{lem:Nth_Loop_Realise}
   $\MS{NthLoop} \Realise NthLoopRel$ with
   \begin{alignat*}{2}
@@ -1233,7 +1245,7 @@ that if $n < \length{l}$, the new value of $n$ will be $0$ and the machine retur
 The full machine $\MS{Nth}$ makes copies of $n$ and $l$ and run $\MS{NthLoop}$ on the copies.  After that, it resets the internal tapes $2$ and $3$
 with the copies of $n$ and $l$.  Note that for the correctness of $\MS{Reset}$ it is only important that there is a value on the tape.  The runtime
 (which we omit here), does depend on the actual values.
-\begin{definition}[$\MS{Nth}$]
+\begin{definition}[$\MS{Nth}$][Nth]
   \[
     \MS{Nth} := \LiftTapes{\MS{CopyValue}}{\Vector{0;3}} \Seq
     \LiftTapes{\MS{CopyValue}}{\Vector{1;4}} \Seq
@@ -1246,16 +1258,17 @@ Note that we copy and reset values of different types.  We have to insert this s
 respective correctness lemmas, in this case, Lemma~\ref{lem:CopyValue_Realise} and Lemma~\ref{lem:Reset_Realise}.
 
 It follows that $\MS{Nth}$ computes the function $nth$.
-\begin{lemma}[Correctness of $\MS{Nth}$]
+\begin{lemma}[Correctness of $\MS{Nth}$][Nth_Computes]
   \label{lem:Nth_Computes}
   $\MS{Nth} \Realise FunRel(nth)$.
 \end{lemma}
 
-For brevity, we omit the concrete runtime function.
-\begin{lemma}[Runtime of $\MS{Nth}$]
-  \label{lem:Nth_TerminatesIn}
-  There is a function $NthSteps:\List(X)\to\Nat\to\Nat$, such that $NthSteps \in \mathcal{O}(\size{ls})$ and $\MS{Nth} \TerminatesIn NthSteps$.
-\end{lemma}
+% % This is not proven in Coq
+% For brevity, we omit the concrete runtime function.
+% \begin{lemma}[Runtime of $\MS{Nth}$][Nth_Terminates]
+%   \label{lem:Nth_TerminatesIn}
+%   There is a function $NthSteps:\List(X)\to\Nat\to\Nat$, such that $NthSteps \in \mathcal{O}(\size{ls})$ and $\MS{Nth} \TerminatesIn NthSteps$.
+% \end{lemma}
 
 
 %%% Local Variables:

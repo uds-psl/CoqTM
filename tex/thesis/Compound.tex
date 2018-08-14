@@ -13,18 +13,21 @@ When $M$ always terminates in constant time $k$, we show $M \RealiseIn{k} R$ ins
 can prove correctness and (constant) runtime at once.  For (non-constant) runtime, we use the dual approach, using the anti-monotonicity
 Lemma~\ref{lem:TerminatesIn_monotone}.
 
+
 \section{$\Nop$}
 \label{sec:Nop}
+\setCoqFilename{FormalComplexity.TM.Compound.Multi}%
+
 
 Using the alphabet-lift (Definition~\ref{def:LiftAlphabet}) and $\MS{Null}$ (Definition~\ref{def:Null}), it is easy to define an $n$-tape machine
 $\Nop : \TM_\Sigma^n$ for every alphabet $\Sigma$ and number of tapes $n$:
-\begin{definition}[$\Nop$]
+\begin{definition}[$\Nop$][Nop]
   $\Nop \defop \LiftTapes{\MS{Null}}{\nil}$
 \end{definition}
 Note that because $\MS{Null}$ is a 0-tape machine, and $\Nop$ is supposed to be an $n$-tape machine, the index-vector must be the vector
 $\nil : \Fin_n^0$.
 
-\begin{lemma}[Correctness of $\Nop$]
+\begin{lemma}[Correctness of $\Nop$][Nop_Sem]
   \label{lem:Nop_Sem}
   $\Nop \RealiseIn0 NopRel$ with $NopRel := \lambda t~t'.~t'=t$.
 \end{lemma}
@@ -44,9 +47,10 @@ tapes can be automated in Coq.
 
 \section{$\MS{WriteString}$}
 \label{sec:WriteString}
+\setCoqFilename{FormalComplexity.TM.Compound.WriteString}%
 
 The machine $\MS{WriteString}~d~str$ writes a fixed string $str:\List(\Sigma)$ in the direction $d$.  It is defined by recursion over the string:
-\begin{definition}[$\MS{WriteString}$]
+\begin{definition}[$\MS{WriteString}$][WriteString]
   \begin{alignat*}{3}
     &\MS{WriteString}~d~&&(\nil)         &~:=~& \Nop \\
     &\MS{WriteString}~d~&&(s \cons \nil) &~:=~& \MS{Write}~s \\
@@ -62,7 +66,7 @@ terminates, the head of the tape is under the last written symbol, which is the 
 $2\cdot\length{str}-1$ steps.
 
 The relation that $\MS{WriteString}$ ``automatically'' realises, is also defined per recursion over the string:
-\begin{lemma}
+\begin{lemma}[][WriteString_fix_Sem]
   $\MS{WriteString}~d~str \RealiseIn{2 \cdot \length{str} - 1} R'~d~str$ with
   \begin{alignat*}{3}
     &\MS{R'}~d~&&(\nil        ) &~:=~& NopRel \\
@@ -77,7 +81,7 @@ The relation that $\MS{WriteString}$ ``automatically'' realises, is also defined
 \end{proof}
 
 We define the actual relation of $\MS{WriteString}$ in terms of a function on tapes, defined by recursion over $str$:
-\begin{lemma}[Correctness of $\MS{WriteString}$]
+\begin{lemma}[Correctness of $\MS{WriteString}$][WriteString_Sem]
   \label{lem:WriteString_Sem}
   Let $d:\Move$ and $str:\List(\Sigma)$.
   \[ \MS{WriteString}~d~str \RealiseIn{4\cdot\length{str}} WriteStringRel~d~str \]
@@ -99,15 +103,16 @@ particular example, the former approach seems to be easier.
 
 \section{$\MS{MovePar}$}
 \label{sec:MovePar}
+\setCoqFilename{FormalComplexity.TM.Compound.Multi}%
 
 The two-tape machine $\MS{MovePar}~d~d'$ combines two $\MS{Move}$ machines.  It first moves the $0$th\footnote{To avoid confusion with zero-based
   indices used throughout this thesis, we write ``the $0$th or $1$st tape'', instead of ``the first or second tape.''} tape in direction $d$ and after
 that the $1$st tape in direction $d'$.
-\begin{definition}[$\MS{MovePar}$]
+\begin{definition}[$\MS{MovePar}$][MovePar]
   \label{def:MovePar}
   $\MS{MovePar}~d_1~d_2 \defop \LiftTapes{(\MS{Move}~d_1)}{\Vector{0}} \Seq \LiftTapes{(\MS{Move}~d_2)}{\Vector{1}}$.
 \end{definition}
-\begin{lemma}[Correctness of $\MS{MovePar}$]
+\begin{lemma}[Correctness of $\MS{MovePar}$][MovePar_Sem]
   \label{lem:MovePar_Sem}
   $\MS{MovePar}~d_1~d_2 \RealiseIn3 MoveParRel~d_1~d_2$ with
   \[ MoveParRel~d_1~d_2 := \lambda t~t'.~t'[0]=\MS{mv}~d_1~t[0] ~\land~ t'[1]=\MS{mv}~d_2~t[1]. \]
@@ -129,6 +134,7 @@ Thus, we also do not more proofs of this kind on paper.
 
 \section{$\MS{CopySymbols}$}
 \label{sec:CopySymbols}
+\setCoqFilename{FormalComplexity.TM.Compound.CopySymbols}%
 
 The machine $\MS{CopySymbols}~h : \TM_\Sigma^2$, where $h:\Sigma\to\Bool$, is a compound machine involving a $\While$-loop.  It reads a symbol on tape
 $0$, writes it to tape $1$, and moves both tapes to right, until the read symbol satisfies $h$.  If there was no current symbol on tape $0$, it also
@@ -136,7 +142,7 @@ terminates.
 
 We first define the machine for the step.  Since we want to apply the $\While$ operator on the step machine, it must be partitioned over
 $\Option(\Unit)$.  $\Some\unit$ means to break out of the loop and $\None$ means to repeat the loop.
-\begin{definition}[$\MS{CopySymbolsStep}$]
+\begin{definition}[$\MS{CopySymbolsStep}$][CopySymbols_Step]
   \label{CopySymbols_Step}
   % \begin{multline*}
   %   \MS{CopySymbolsStep}~h :=
@@ -166,7 +172,7 @@ $\MS{CopySymbolsStep}~h :=$
 \end{lstlisting}
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{CopySymbolsStep}$]
+\begin{lemma}[Correctness of $\MS{CopySymbolsStep}$][CopySymbols_Step_Sem]
   \label{lem:CopySymbols_Step_Sem}
   ~
   \[
@@ -188,13 +194,13 @@ $\MS{CopySymbolsStep}~h :=$
 \end{proof}
 
 We define $\MS{CopySymbol}$ by applying the $\While$ combinator to $\MS{CopySymbolsStep}$:
-\begin{definition}[$\MS{CopySymbols}$]
+\begin{definition}[$\MS{CopySymbols}$][CopySymbols]
   \label{def:CopySymbols}
   $\MS{CopySymbols}~h := \While(\MS{CopySymbolsStep}~h)$.
 \end{definition}
 
 The correctness of $\MS{CopySymbols}$ can be expressed using a recursive function on tapes:
-\begin{lemma}[Correctness of $\MS{CopySymbols}$]
+\begin{lemma}[Correctness of $\MS{CopySymbols}$][CopySymbols_Realise]
   \label{lem:CopySymbols_Realise}
   $\MS{CopySymbols}~h \Realise CopySymbolsRel~h$
   with $CopySymbolsRel~h := \lambda t~t' = CopySymbolsFun~h~t$ and
@@ -218,7 +224,7 @@ The correctness of $\MS{CopySymbols}$ can be expressed using a recursive functio
 We observe that the runtime of $\MS{CopySymbols}$ only depends on the $0$th tape.  Therefore, we define a function
 $CopySymbolsSteps : \Tape_\Sigma \to \Nat$ that overestimates the number of steps needed for the loop, depending on the $0$th tape.  Note that
 $\While$ requires one additional step for each repeat of the loop.
-\begin{lemma}[Runtime of $\MS{CopySymbols}$]
+\begin{lemma}[Runtime of $\MS{CopySymbols}$][CopySymbols_TerminatesIn]
   $\MS{CopySymbols} \TerminatesIn CopySymbolsT$ with \\
   $CopySymbolsT := \lambda t~k.~CopySymbolsSteps(t) \leq k$ and
   \begin{multline*}
@@ -246,7 +252,7 @@ $\While$ requires one additional step for each repeat of the loop.
 
 Using the $\MS{Mirror}$ operator, we can define a machine $\MS{CopySymbolsL}$ that copies and goes to the left instead.  We also have to ``mirror''
 the correctness relations and their respective functions.  We do not repeat the definitions here.
-\begin{definition}[$\MS{CopySymbolsL}$]
+\begin{definition}[$\MS{CopySymbolsL}$][CopySymbols_L]
   $\MS{CopySymbolsL}~h := \MS{Mirror}(\MS{CopySymbols}~h).$
 \end{definition}
 
@@ -258,7 +264,7 @@ $\MS{CopySymbols}~h$.  Instead of copying the symbols from one tape to another t
 symbol that satisfies the boolean predicate $h$.  We leave out the correctness and runtime statements, as they can be derived from the statements
 about $\MS{CopySymbols}$ above.
 
-\begin{definition}[$\MS{MoveToSymbol}$]
+\begin{definition}[$\MS{MoveToSymbol}$][MoveToSymbol]
   ~
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MoveToSymbolStep}~h~f :=$

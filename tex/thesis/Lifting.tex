@@ -8,8 +8,8 @@ right, we would like to use sequential composition and move one tape after the o
 moves the first tape to the right and one that moves the second tape to the right.  There are multiple ways to solve this problem.  For example, we
 could define a class of $n$-tape machines that move the $i$th tape to the right and leave all other tapes unchanged.  However, it is in general easier
 to build and prove correctness of small machines that operate on a minimal amount of tapes.  Asperti and Ricciotti~\cite{asperti2015} define an
-injecting operator that translates an one-tape machine into a $1+n$-tape machine.  We generalise this approach and implement an operator that takes an
-$m$-tape machine and yields an $n$-tape machine, where $m \le n$.
+injecting operator that translates an one-tape machine into a $(1+n)$-tape machine.  We generalise this approach and implement an operator that takes
+an $m$-tape machine and yields an $n$-tape machine, where $m \le n$.
 
 The second part of this problem is how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that sums
 (encodings of) natural numbers, we could want to build a machine $\MS{Sum}$ that sums numbers in a list of numbers.  Consider an alphabet
@@ -24,6 +24,7 @@ bigger alphabet.
 
 \section{Tape-Lift}
 \label{sec:n-Lift}
+\setCoqFilename{FormalComplexity.TM.Lifting.LiftTapes}%
 
 The tape-lift takes a machine $M:\TM_\Sigma^m(F)$ and a duplicate-free vector\footnote{ Note that instead of duplicate free index vectors
   $I:\Fin_n^m$, we could also use injective functions $f: \Fin_m \to \Fin_n$.  However, we choose index-vectors, because they are easier to define in
@@ -35,19 +36,19 @@ The transition function of $\LiftTapes{M}{I}$ gets the $n$ read symbols and sele
 $\delta_M$ with the selected symbols and the current state $q$.  $\delta_M$ yields an $m$-vector $act:\Act^m$ and the continuation state $q'$.  It
 fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 
-\begin{definition}[Vector selecting]
+\begin{definition}[Vector selecting][select]
   \label{def:select}
   Let $X:\Type$, $m,n:\Nat$, $I : \Fin_n^m$, and $V : X^n$.
   \[ select~I~V := \map{\bigl(\lambda (j:\Fin_m).~V[j] \bigr)}{I}. \]
 \end{definition}
-\begin{lemma}[Correctness of $select$]
+\begin{lemma}[Correctness of $select$][select_nth]
   By definition, for $k:\Fin_m$, we have
   \[
     (select~I~V)[k]=V\bigl[I[k]\bigr].
   \]
 \end{lemma}
 
-\begin{definition}[Vector filling]
+\begin{definition}[Vector filling][fill]
   Let $X:\Type$, $m,n:\Nat$,$I:\Fin_n^m$, $init:X^n$, and $V:X^m$:
   \begin{alignat*}{3}
     & fill~(\nil      )&& ~init~V &~:=~& init \\
@@ -58,9 +59,9 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 \begin{lemma}[Correctness of $fill$]
   If $I$ is duplicate-free, then
   \begin{enumerate}
-  \item \label{lem:fill_correct_nth}
+  \coqitem[fill_correct_nth] \label{lem:fill_correct_nth}
     If $I[j]=i$, then $(fill~I~init~V)[i] = V[j]$.
-  \item \label{lem:fill_not_index}
+  \coqitem[fill_not_index] \label{lem:fill_not_index}
     If $i \notin I$, then $(fill~I~init~V)[i] = init[i]$.
   \end{enumerate}
 \end{lemma}
@@ -68,7 +69,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   By induction on $I : \Fin_n^m$.
 \end{proof}
 
-\begin{definition}[$\LiftTapes{M}{I}$]
+\begin{definition}[$\LiftTapes{M}{I}$][LiftTapes]
   \label{def:LiftTapes}
   Let $M:\TM_\Sigma^m(F)$ and $I : \Fin_n^m$.  We define $\LiftTapes{M}{I} : \TM_\Sigma^n(F)$.  All components are the same as in $M$, except:
   \begin{alignat*}{2}
@@ -77,7 +78,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   \end{alignat*}
 \end{definition}
 
-\begin{lemma}[Correctness of $\LiftTapes{M}{I}$]
+\begin{lemma}[Correctness of $\LiftTapes{M}{I}$][LiftTapes_Realise]
   \label{lem:LiftTapes_Realise}
   Let $M : \TM_\Sigma^m(F)$ and $I : \Fin_n^m$ a duplicate-free index-vector.  If $M \Realise R$, then $\LiftTapes{M}{I} \Realise \LiftTapes{R}{I}$ with
   \[
@@ -85,7 +86,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   \]
 \end{lemma}
 
-\begin{lemma}[Runtime of $\LiftTapes{M}{I}$]
+\begin{lemma}[Runtime of $\LiftTapes{M}{I}$][LiftTapes_TerminatesIn]
   \label{lem:LiftTapes_TerminatesIn}
   Let $M : \TM_\Sigma^m(F)$ and $I$ duplicate-free index-vector. If $M \TerminatesIn T$, then $\LiftTapes{M}{R} \TerminatesIn \LiftTapes{T}{I}$ with
   $
@@ -101,7 +102,7 @@ lifting function:
 
 However, for the second part of the correctness, i.e.\ tapes that are not in $I$ do not change, we need another lemma about $loop$:
 
-\begin{lemma}[Mapping loops]
+\begin{lemma}[Mapping loops][loop_map]
   \label{lem:loop_map}
   Let $A:\Type$, $f:A \to A$, $h:A \to\ Bool$.  Let $B:\Type$ and $g : A \to B$.  If $g(f~a)=g(a)$ for all $a:A$, then
   \begin{alignat*}{1}
@@ -120,6 +121,7 @@ We apply this lemma in the proof of Lemma~\ref{lem:LiftTapes_Realise} with $g :=
 
 \section{Alphabet-Lift}
 \label{sec:sigma-Lift}
+\setCoqFilename{FormalComplexity.TM.Lifting.LiftAlphabet}%
 
 Let $M : \TM_\Sigma^n(F)$ be a machine over the alphabet $\Sigma$, and $f : \Sigma \hookrightarrow \Tau$ a retraction on another alphabet $\Tau$.
 Note that then $\Tau$ has at least as many symbols as $\Sigma$.  We need a default symbol $def:\Sigma$.  In contrast to the default partition we
@@ -132,7 +134,7 @@ The transition function of the lifted machine $\LiftAlphabet{M}{(f,def)}$ reads 
 $def$ instead.  The transition function $\delta_M$ of $M$ yields the successor state $q'$ and a vector of actions $act: (\Option(\Sigma) \times
 \MS{Move})^n$, which is translated using $f:\Sigma\to\Tau$ to $act' : (\Option(\Tau) \times \MS{Move})^n$.
 
-\begin{definition}[$\LiftAlphabet{M}{(f,def)}$]
+\begin{definition}[$\LiftAlphabet{M}{(f,def)}$][LiftAlphabet]
   \label{def:LiftAlphabet}
   Let $f : \Sigma \Tau$, $def:\Sigma$, and $M : \TM_\Sigma^n(F)$.  We define the machine %
   $\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n(F)$ with the same components as $M$, except:
@@ -149,13 +151,15 @@ $def$ instead.  The transition function $\delta_M$ of $M$ yields the successor s
   $mapAct : \forall (\Sigma~\Tau:\Type).~(\Sigma\to\Tau) \to \Act_\Sigma \to \Act_\Tau$.  All other components are the same as $M$.
 \end{definition}
 
+\setCoqFilename{FormalComplexity.TM.TM}%
 For the correctness and runtime lemmas, we also need the canonical function
 \[
-  mapTape:\forall (\Tau~\Sigma:\Type).~(\Tau\to\Sigma)\to\Tape_\Tau\to\Tape_\Sigma
+  \coqlink[mapTape]{mapTape}:\forall (\Tau~\Sigma:\Type).~(\Tau\to\Sigma)\to\Tape_\Tau\to\Tape_\Sigma
 \]
-that maps every symbol on a tape.  We write $mapTapes$ for the respective tape-vector function.
+that maps every symbol on a tape.  We write $\coqlink[mapTapes]{mapTapes}$ for the respective tape-vector function.
+\setCoqFilename{FormalComplexity.TM.Lifting.LiftAlphabet}%
 
-\begin{lemma}[Correctness of $\LiftAlphabet{M}{(f,def)}$]
+\begin{lemma}[Correctness of $\LiftAlphabet{M}{(f,def)}$][LiftAlphabet_Realise]
   \label{lem:LiftAlphabet_Realise}
   If $M \Realise R$, then $\LiftAlphabet{M}{(f,def)} \Realise \LiftAlphabet{R}{(f,def)}$ with
   \[
@@ -163,7 +167,7 @@ that maps every symbol on a tape.  We write $mapTapes$ for the respective tape-v
   \]
 \end{lemma}
 
-\begin{lemma}[Runtime of $\LiftAlphabet{M}{(f,def)}$]
+\begin{lemma}[Runtime of $\LiftAlphabet{M}{(f,def)}$][LiftAlphabet_TerminatesIn]
   \label{lem:LiftAlphabet_TerminatesIn}
   If $M \TerminatesIn T$, then $\LiftAlphabet{M}{(f,def)} \TerminatesIn \LiftAlphabet{T}{(f,def)}$ with
   \[
@@ -173,7 +177,7 @@ that maps every symbol on a tape.  We write $mapTapes$ for the respective tape-v
 
 The proofs are analogous to the former proofs.  The configuration lifting is
 \[
-  surjectConf (q,t) := (q, mapTapes~surject~t).
+  \coqlink[surjectConf]{surjectConf} (q,t) := (q, mapTapes~surject~t).
 \]
 
 

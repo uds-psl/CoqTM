@@ -180,15 +180,18 @@ and $f^{-1}$), but we also overload $f$ with the tuple of both functions.
 \section{Machines and Tapes}
 \label{sec:machine-tapes}
 
+\setCoqFilename{FormalComplexity.TM.TM}
+
 % There are many variations of Turing machines.  We have chosen multi-Tape
 
 We use the definition of multi-tape Turing machines and their tapes and semantics from Asperti and Ricciotti~\cite{asperti2015}.
 
-\begin{definition}[Multi-tape Turing machine]
+\begin{definition}[Multi-tape Turing machine][mTM]
   \label{def:mTM}
-  An \emph{$n$-tape Turing machine}\footnote{Asperti and Ricciotti~\cite{asperti2015} restrict this definition to machines with $n>0$.  We do not have
-    this restriction.  We actually define a $0$-tape machine $\MS{Null}$, see Section~\ref{sec:Null}.} over a finite alphabet $\Sigma$ is a tuple
-  $M = (Q, \delta, start, halt)$ where
+  An $n$-tape Turing machine%
+  \footnote{Asperti and Ricciotti~\cite{asperti2015} restrict this definition to machines with $n>0$.  We do not have this restriction.  We actually
+    define a $0$-tape machine $\MS{Null}$, see Section~\ref{sec:Null}.} %
+  over a finite alphabet $\Sigma$ is a tuple $M = (Q, \delta, start, halt)$ where
   \begin{itemize}
   \item $Q$ is a finite type
   \item $\delta \from Q \times \left(\Option(\Sigma)\right)^n \to Q \times \left(\Option(\Sigma) \times \MS{Move}\right)^n$
@@ -200,11 +203,11 @@ We use the definition of multi-tape Turing machines and their tapes and semantic
 
 We write $\MS{TM}_\Sigma^n$ for the type of $n$-tape Turing machines over the alphabet $\Sigma$.
 
-While we parametrise Definition~\ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, we hide the finite type $Q$ of \emph{states}.
-The transition function $\delta$ yields for every state and vector of $n$ read symbols the new state and a vector of $n$ (optional) symbols to write,
-and a direction to move.  The read symbols are optional, since it can be the case that there is no symbol under the head of a tape.  $start$ is the
-start state of the machine and $halt$ represents the subset of halting states.  Tuples of the type $\Option(\Sigma) \times \Move$ are called
-\emph{actions}.  They are referred to with the symbol $\MS{Act}_\Sigma$ or $\MS{Act}$ if $\Sigma$ is clear.  Our machines behave deterministically,
+While we parametrise Definition~\ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, we hide the finite type $Q$ of states.  The
+transition function $\delta$ yields for every state and vector of $n$ read symbols the new state and a vector of $n$ (optional) symbols to write, and
+a direction to move.  The read symbols are optional, since it can be the case that there is no symbol under the head of a tape.  $start$ is the start
+state of the machine and $halt$ represents the subset of halting states.  Tuples of the type $\Option(\Sigma) \times \Move$ are called
+\textit{actions}.  They are referred to with the symbol $\MS{Act}_\Sigma$ or $\MS{Act}$ if $\Sigma$ is clear.  Our machines behave deterministically,
 because $\delta$ is a function.
 
 When we want to verify complex machines, we do not want to reason about internal states.  We rather want to reason about partitions of states, e.g.\
@@ -224,16 +227,15 @@ tapes as a finite sequence of symbols from left to right, this means that $ls$ i
 There are three cases where there is no current symbol: the tape can be completely empty, or the head can be to the left (or right) outermost of the
 non-empty tape.  Formally, tapes are defined inductively:
 
-\begin{definition}[Tape]
+\begin{definition}[Tape][tape]
   \label{def:tape}
   Let $\Sigma : \Type$.  Then $\Tape_\Sigma$ is defined as the inductive type:
-  \begin{align*}
-    & \Tape_\Sigma ::= \\
-    & \quad | \quad \MS{niltape} \\
-    & \quad | \quad \MS{leftof}  ~ (r:\Sigma) ~ (rs:\List(\Sigma)) \\
-    & \quad | \quad \MS{midtape} ~ (ls:\List(\Sigma)) ~ (m:\Sigma) ~ (rs:\List(\Sigma)) \\
-    & \quad | \quad \MS{rightof} ~ (l:\Sigma) ~ (ls:\List(\Sigma)).
-  \end{align*}
+  \begin{alignat*}{2}
+    & \Tape_\Sigma &~::=~& \MS{niltape} \\
+    &&& |~ \MS{leftof}  ~ (r:\Sigma) ~ (rs:\List(\Sigma)) \\
+    &&& |~ \MS{midtape} ~ (ls:\List(\Sigma)) ~ (m:\Sigma) ~ (rs:\List(\Sigma)) \\
+    &&& |~ \MS{rightof} ~ (l:\Sigma) ~ (ls:\List(\Sigma)).
+  \end{alignat*}
 \end{definition}
 
 As usual, we leave the subscript $\Sigma$ out, if it is clear from the context.
@@ -248,9 +250,9 @@ As usual, we leave the subscript $\Sigma$ out, if it is clear from the context.
 % \end{align*}
 
 Now we can define the \emph{configuration} of a multi-tape Turing machine.  It is captured by the current state and the vector of the $n$ tapes:
-\begin{definition}[Configuration]
+\begin{definition}[Configuration][mconfig]
   \label{def:config}
-  A \emph{configuration} of $M: \TM_\Sigma^n$ is a tuple $c = (q, t)$, where $q: Q_M$ and $t: \Tape_\Sigma^n$.  We write
+  A configuration of $M: \TM_\Sigma^n$ is a tuple $c = (q, t)$, where $q: Q_M$ and $t: \Tape_\Sigma^n$.  We write
   $\Conf_M := Q_M \times \Tape_\Sigma^n$ for the type of configurations of $M$.
 \end{definition}
 
@@ -262,7 +264,7 @@ Now we can define the \emph{configuration} of a multi-tape Turing machine.  It i
 % \end{alignat*}
 % The function $\MS{mv}_L$ is defined analogously.
 The function $\MS{mv} \from \Move \to \Tape_\Sigma \to \Tape_\Sigma$ moves a tape in a direction.
-\begin{definition}[Tape movement]
+\begin{definition}[Tape movement][tape_move]
   \footnotesize
   \begin{alignat*}{4}
     & \MS{mv}~L~(\MS{leftof}~r~rs)                &&:= \MS{leftof}~r~rs
@@ -280,7 +282,7 @@ The function $\MS{mv} \from \Move \to \Tape_\Sigma \to \Tape_\Sigma$ moves a tap
 Note that moving further right (or left) when that tape already is to the right (or left) of the symbols, does not change the tape.
 
 The functions $\MS{left},~\MS{right} \from \Tape \to \List(\Sigma)$ return the symbols to the left (or right) side of the head:
-\begin{definition}[$\MS{left}$ and $\MS{right}$]
+\begin{definition}[$\MS{left}$ and $\MS{right}$][left]
   \begin{alignat*}{4}
     \MS{left} &~(\MS{niltape})                 &&:= \nil
     \quad\quad\quad\quad
@@ -301,7 +303,7 @@ Now we can define the function $\MS{wr} \from \Tape \to \Option(\Move) \to \Tape
 we get a $\MS{midtape}$, where the left and right symbols remain unchanged and $a$ is now in the middle.  For $\None$, the tape remains unchanged.
 Note that there is no way to decrease the number of symbols on a tape, or to write ``blank'' symbols.
 
-\begin{definition}[$\MS{wr}$]
+\begin{definition}[$\MS{wr}$][tape_write]
   \begin{alignat*}{3}
     \MS{wr}~t &~ \None   &&:= t \\
     \MS{wr}~t &~ \Some a &&:= \MS{midtape}~(\MS{left}~t)~{a}~(\MS{right}~t)
@@ -312,7 +314,7 @@ To define the function $\MS{step} \from \Conf \to \Conf$, we need to know the sy
 $\MS{current} \from Tape \to \Option(\Sigma)$.  It returns $\None$ if the head is not under a symbol, and $\Some a$ if the head is under the symbol
 $a$.
 
-\begin{definition}[$\MS{current}$]
+\begin{definition}[$\MS{current}$][current]
   \begin{alignat*}{2}
     \MS{current}&~(\MS{midtape}~{ls}~{m}~{rs})&&:= \Some m \\
     \MS{current}&~\_                          &&:= \None
@@ -321,7 +323,7 @@ $a$.
 
 We can state a correctness lemma of the function $\MS{wr}$:
 
-\begin{lemma}[Correctness of $\MS{wr}$]
+\begin{fact}[Correctness of $\MS{wr}$]
   \label{lem:write}
   For all tapes $t$ and symbols $\sigma:\Sigma$:
   % TODO: Align it, for example like in https://tex.stackexchange.com/questions/12771/mix-align-and-enumerate
@@ -330,7 +332,7 @@ We can state a correctness lemma of the function $\MS{wr}$:
   \item $\MS{left}    (\MS{wr}~t~\Some\sigma) = \MS{left} (t)$
   \item $\MS{current} (\MS{wr}~t~\Some\sigma) = \Some\sigma$
   \end{enumerate}
-\end{lemma}
+\end{fact}
 \begin{proof}
   All claims follow by case analysis over $t$.
 \end{proof}
@@ -339,7 +341,7 @@ We can now define the function $\MS{step} \from \Conf \to \Conf$.  First, the ma
 vector and the current state into the transition function $\delta$.  Then, each tape writes the symbol and moves its head into the direction that
 $\delta$ yielded for it.  The machine ends up in a new step $q'$.
 
-\begin{definition}[$\MS{step}$]
+\begin{definition}[$\MS{step}$][step]
   \label{def:step}
   \begin{alignat*}{2}
     \MS{doAct} &~t~(s, d) &~:=~& \MS{mv}~d~(\MS{wr}~t~s) \\
@@ -351,7 +353,8 @@ $\delta$ yielded for it.  The machine ends up in a new step $q'$.
 To define the execution of a machine, we first define an abstract recursive \emph{loop} function of the type
 $\Loop \from (A \to A) \to (A \to \Bool) \to A \to \Nat \to \Option(A)$, for every $A:\Type$:
 
-\begin{definition}[$\Loop$]
+\setCoqFilename{FormalComplexity.TM.Prelim}
+\begin{definition}[$\Loop$][loop]
   \begin{align*}
     \Loop~f~h~a~k :=
     \begin{cases}
@@ -368,26 +371,27 @@ We can show some basic facts about $\Loop$.
   Let $k,l : \Nat$ and $a,b,b':A$.
   \begin{enumerate}
   \item \label{lem:loop_monotone}
-    If $k \le l$ and $\Loop~f~h~a~k = \Some{b}$, then $\Loop~f~h~a~l = \Some{b}$.
+    \coqlink[loop_monotone]{If $k \le l$ and $\Loop~f~h~a~k = \Some{b}$, then $\Loop~f~h~a~l = \Some{b}$.}
   \item \label{lem:loop_injective}
-    If $\Loop~f~h~a~k = \Some{b}$ and $\Loop~f~h~a~l = \Some{b'}$, then $b = b'$.
+    \coqlink[loop_injective]{If $\Loop~f~h~a~k = \Some{b}$ and $\Loop~f~h~a~l = \Some{b'}$, then $b = b'$.}
   \item \label{lem:loop_fulfills}
-    If $\Loop~f~h~a~k = \Some{b}$, then $h(b) = \true$.
+    \coqlink[loop_fulfills]{If $\Loop~f~h~a~k = \Some{b}$, then $h(b) = \true$.}
   \item \label{lem:loop_0}
-    If $h~a = \true$, then $\Loop~f~h~a~k = \Some{a}$.
+    \coqlink[loop_0]{If $h~a = \true$, then $\Loop~f~h~a~k = \Some{a}$.}
   \item \label{lem:loop_eq_0}
-    If $h~a = \true$ and $\Loop~f~h~a~k = \Some{b}$, then $a=b$.
+    \coqlink[loop_eq_0]{If $h~a = \true$ and $\Loop~f~h~a~k = \Some{b}$, then $a=b$.}
   \end{enumerate}
 \end{lemma}
 \begin{proof}
   Claims~\ref{lem:loop_monotone},~\ref{lem:loop_injective}, and~\ref{lem:loop_fulfills} follow by induction on $k : \Nat$.  Claim~\ref{lem:loop_0}
   follows by Definition.  Claim~\ref{lem:loop_eq_0} is a direct consequence of claim~\ref{lem:loop_0}.
 \end{proof}
+\setCoqFilename{FormalComplexity.TM.TM}
 
 
 We instantiate the abstract $\Loop$ function and get a function $\MS{loopM} \from \Conf \to \Nat \to \Option(\Conf)$ that executes $k$ steps of the
 machine:
-\begin{definition}[Machine execution]
+\begin{definition}[Machine execution][loopM]
   \begin{alignat*}{3}
     \MS{initConf}   &~t         &&:= (t, start) \\
     \MS{haltConf}   &~(t, q)    &&:= halt(q) \\
@@ -408,7 +412,7 @@ concrete (partitioned) machine $M: \TM_\Sigma^n(F)$.  It consists consists of tw
 
 The correctness part is captured by \emph{realisation} of a (partitioned) relation $R$:
 
-\begin{definition}[Realisation]
+\begin{definition}[Realisation][Realise]
   \label{def:realisation}
   Let $M:\TM_\Sigma^n(F)$ and $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$.
   \[
@@ -425,7 +429,7 @@ if the machine terminates.
 The runtime part of the semantics implies termination of the machine on certain inputs.  It links the input $t:\Tape_\Sigma^n$ to the number of steps
 the machine needs for the computation.
 
-\begin{definition}[Termination on a runtime relation]
+\begin{definition}[Termination on a runtime relation][TerminatesIn]
   \label{def:TerminatesIn}
   Let $T \subseteq \Tape_\Sigma^n \times \Nat$.
   \[
@@ -436,18 +440,18 @@ the machine needs for the computation.
 \end{definition}
 
 
-\begin{lemma}[Monotonicity of $M \Realise R$]
+\begin{lemma}[Monotonicity of $M \Realise R$][Realise_monotone]
   \label{lem:Realise_monotone}
   If $M \Realise R'$ and $R' \subseteq R$, then $M \Realise R$.
 \end{lemma}
 
-\begin{lemma}[Anti-monotonicity of $M \TerminatesIn T$]
+\begin{lemma}[Anti-monotonicity of $M \TerminatesIn T$][TerminatesIn_monotone]
   \label{lem:TerminatesIn_monotone}
   If $M \TerminatesIn T'$ and $T \subseteq T'$, then $M \TerminatesIn T$.
 \end{lemma}
 
 For machines that always terminate in a constant number of steps, it is useful to combine both predicates:
-\begin{definition}[Realisation in constant time]
+\begin{definition}[Realisation in constant time][RealiseIn]
   \label{def:RealiseIn}
   ~
   \[
@@ -458,7 +462,7 @@ For machines that always terminate in a constant number of steps, it is useful t
   \]
 \end{definition}
 
-\begin{lemma}[Specification of realisation in constant time]
+\begin{lemma}[Specification of realisation in constant time][Realise_total]
   \label{lem:Realise_total}
   \[
     M \RealiseIn{k} R
@@ -468,7 +472,7 @@ For machines that always terminate in a constant number of steps, it is useful t
   \]
 \end{lemma}
 
-\begin{lemma}[Monotonicity of $M \RealiseIn{k} R$]
+\begin{lemma}[Monotonicity of $M \RealiseIn{k} R$][RealiseIn_monotone]
   \label{lem:RealiseIn_monotone}
   If $M \RealiseIn{k'} R'$, $k' \leq k$, and $R' \subseteq R$, then \\
   $M \RealiseIn{k} R$.
@@ -488,11 +492,13 @@ show how to combine these basic machines and build complex machines.
 \subsection{$\MS{Null}$}
 \label{sec:Null}
 
+\setCoqFilename{FormalComplexity.TM.Basic.Null}
+
 A very simple class of machine is the zero-tape $\MS{Null}$ machine.  The class $\MS{Null}_\Sigma$ is parametrised over the alphabet, however,
 $\Sigma$ is always clear in the context, so we leave the index out.  We fix an alphabet $\Sigma$.  $\MS{Null}$ terminates immediately, i.e.\ after $0$
 steps.
 
-\begin{definition}[Null]
+\begin{definition}[Null][Null]
   \label{def:Null}
   $\MS{Nop}~f: \TM_\Sigma^{\mkern+1mu 0}$ is defined as follows:
   \begin{align*}
@@ -506,7 +512,7 @@ Note that if we have an unpartitioned machine $M:\TM_\Sigma^n$, we implicitly pa
 
 % The correctness relation says exactly that the tapes don't change:
 The correctness relation is the universal relation, because empty vectors do not have information.
-\begin{lemma}[Correctness of $\MS{Null}$]
+\begin{lemma}[Correctness of $\MS{Null}$][Null_Sem]
   \label{lem:Null_Sem} $\MS{Null} \RealiseIn0 NullRel$ with $NullRel := \lambda~t~t'.~ \True$.
 \end{lemma}
 \begin{proof}
@@ -516,9 +522,11 @@ The correctness relation is the universal relation, because empty vectors do not
 \subsection{$\MS{DoAct}$}
 \label{sec:DoAct}
 
+\setCoqFilename{FormalComplexity.TM.Basic.Mono}
+
 Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action $a:\Act$ (i.e.\ they optionally write a symbol and move the tape) and
 terminate after this step.
-\begin{definition}[$\MS{DoAct}~a$]
+\begin{definition}[$\MS{DoAct}~a$][DoAct]
   \label{def:DoAct}
   Let $a:\Act_\Sigma$.  Then $\MS{DoAct}~a : \TM_\Sigma^1$ is defined as follows:
   \begin{align*}
@@ -529,7 +537,7 @@ terminate after this step.
   \end{align*}
 \end{definition}
 The semantics of $\MS{DoAct}$ is easily expressed using the function $\MS{doAct}$ (see Definition~\ref{def:step}):
-\begin{lemma}[Correctness of $\MS{DoAct}$]
+\begin{lemma}[Correctness of $\MS{DoAct}$][DoAct_Sem]
   \label{lem:DoAct_Sem} $\MS{DoAct}~a \RealiseIn1 DoActRel~a$ with
   \[
     DoActRel~a := \lambda~t~t'.~ t' = \MS{doAct}~t~a.
@@ -539,7 +547,7 @@ The semantics of $\MS{DoAct}$ is easily expressed using the function $\MS{doAct}
   By execution.
 \end{proof}
 We define some abbreviations:
-\begin{definition}[Machine classes derived from $\MS{DoAct}$]
+\begin{definition}[Machine classes derived from $\MS{DoAct}$][DoAct_Derived]
  \label{def:DoAct-derived} 
  \begin{align*}
    \MS{Move}       ~d &:= \MS{DoAct} (\None, d) \\
@@ -556,7 +564,7 @@ $Read : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of partitioned ma
 of the alphabet.  They read a symbol and terminate in the state that corresponds to this symbol.  They also have a distinct state for the case that
 the current symbol is $\None$.
 
-\begin{definition}[$\MS{Read}$]
+\begin{definition}[$\MS{Read}$][ReadChar]
   The machine $\MS{Read} : \TM_\Sigma^n(\Option(\Sigma))$ is defined as follows:
   \begin{align*}
     Q          &:= \Bool+\Sigma \\
@@ -574,7 +582,7 @@ the current symbol is $\None$.
 \end{definition}
 
 
-\begin{lemma}[Correctness of $\MS{Read}$]
+\begin{lemma}[Correctness of $\MS{Read}$][ReadChar_Sem]
   \label{lem:Read_Sem} $\MS{Read}~f \RealiseIn{0} ReadRel~f$ with
   \[
     ReadRel := \lambda~t~y~t'.~ y = \MS{current}~t[0] \land t' = t

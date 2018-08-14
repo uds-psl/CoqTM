@@ -25,6 +25,8 @@ and termination) on each stage of the development.
 \section{$\MS{Match}$}
 \label{sec:match}
 
+\setCoqFilename{FormalComplexity.TM.Combinators.Match}
+
 Asperti and Ricciotti~\cite{asperti2015} define the control flow operators sequential composition, conditional, and while.  However, for the
 conditional they have to give one explicit ``else'' state.  Giving an explicit state is very tedious for complex machines.  That is why we use the
 generalised notion of partitioned machines.  For example, for the conditional $\If{M_1}{M_2}{M_3}$, $M_1$ is partitioned over $\Bool$.  In case $M_1$
@@ -35,7 +37,7 @@ proof scratches for the correctness and runtime in Subsection~\ref{sec:match-pro
 Let $M : \TM_\Sigma^n(F)$ and $f \from F \to \TM_\Sigma^n(F')$ be a function from partitions to machines.  We define
 $\MS{Match}~M~f : \TM_\Sigma^n(F')$.
 
-\begin{definition}[$\MS{Match}~M~f$]
+\begin{definition}[$\MS{Match}~M~f$][Match]
   \label{def:Match}
   Let $M : \TM_\Sigma^n(F)$ and $f : F \to \TM_\Sigma^n(F')$.  We define the machine $\MS{Match}~M~f : \TM_\Sigma^n(F')$ with the following
   components:
@@ -72,7 +74,7 @@ $\MS{Match}~M~f$ first executes a copy of $M$.  When it reaches a final state $q
 to the injection of the start state of the machine $f(part~q)$.  When $\MS{Match}~M~f$ reaches a state that is the injection of a final state of a
 machine $f~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
 
-\begin{lemma}[Correctness of $\MS{Match}~M~f$]
+\begin{lemma}[Correctness of $\MS{Match}~M~f$][Match_Realise]
   \label{lem:Match_Realise}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$ and $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$ for all $y:F$.
   If $M \Realise R$ and $f~y \Realise R'~y$ for all $y:F$, then
@@ -92,7 +94,7 @@ $f~y$, which has type $F'$.
 To specify the runtime of $\MS{Match}~M~f$, we need to know the runtime relation in that $M$ terminates, and for each $y:F$ the runtime of $f~y$.
 We also need to know the correctness of $M$, because the runtime of $f~y$ depends on the output of $M$, which is the input of $f~y$.
 
-\begin{lemma}[Runtime of $\MS{Match}~M~f$]
+\begin{lemma}[Runtime of $\MS{Match}~M~f$][Match_TerminatesIn]
   \label{lem:Match_Terminates}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, $T \subseteq \Tape_\Sigma^n \times \Nat$, and
   $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \Realise R$, $M \TerminatesIn T$, and $f~y \TerminatesIn T'~y$ for all $y:F$, then
@@ -105,7 +107,7 @@ We also need to know the correctness of $M$, because the runtime of $f~y$ depend
 \end{lemma}
 
 We can combine the correctness and runtime lemma, in case $M$ and every $f~y$ terminates in constant time.
-\begin{lemma}[Correctness of $\MS{Match}~M~f$ in constant time]
+\begin{lemma}[Correctness of $\MS{Match}~M~f$ in constant time][Match_RealiseIn]
   \label{lem:Match_RealiseIn}
   Let $k_1, k_2:\Nat$.\\
   If $M \RealiseIn{k_1} R$ and $f~y \RealiseIn{k_2} R'~y$ for every $y:F$, then
@@ -122,7 +124,8 @@ We can combine the correctness and runtime lemma, in case $M$ and every $f~y$ te
 As mentioned above, conditional and sequential composition can be defined as instances of the Match operator.  For the sequential composition
 $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$, the function $f : F \to \TM_\Sigma^n(F')$, maps all partitions of $F$ to the
 machine $M_2$.
-\begin{definition}[Sequential composition]
+\setCoqFilename{FormalComplexity.TM.Combinators.SequentialComposition}%
+\begin{definition}[Sequential composition][Seq]
   \label{def:Seq}
   Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
   \[
@@ -136,7 +139,7 @@ This means that regardless in which partition the machine $M_1$ terminated, the 
 start state of $M_2$.  The following lemma is the correctness lemma of sequential composition, for constant-time termination.  The version without
 constant-time termination, i.e.\ the lemma we get notationally by removing the steps numbers, holds as well.
 
-\begin{lemma}[Correctness of sequential composition]
+\begin{lemma}[Correctness of sequential composition][Seq_RealiseIn]
   \label{lem:Seq_RealiseIn}
   If $M_1 \RealiseIn{k_1} R_1$ and $R_1 \RealiseIn{k_2} R_2$, then
   $
@@ -149,7 +152,7 @@ $\left(\bigcup_{y:F} R_1\at y\right) \circ R_2 \equiv R_1 \at \unit \circ R_2 = 
 relations with unpartitioned relations.  This means that sequential composition of two machines amounts to composing their correctness relations.
 
 In case, either $M_1$ or $M_2$ do not have constant runtime, we need the runtime lemma, that can be derived from Lemma~\ref{lem:Match_Terminates}.
-\begin{lemma}[Runtime of sequential composition]
+\begin{lemma}[Runtime of sequential composition][Seq_TerminatesIn]
   \label{lem:Seq_TerminatesIn}
   If $M_1 \Realise R_1$, $M_1 \TerminatesIn T_1$, and $M_2 \TerminatesIn T_2$, then
   \[
@@ -166,7 +169,8 @@ $f : \Bool \to \TM_\Sigma^n(F)$ simply maps $\true$ to $M_2$ and $\false$ to $M_
 ($\true$) and negative ($\false$) states.  The machine $\If{M_1}{M_2}{M_3}$, as defined bellow, first executes $M_1$.  If terminated in a positive
 state, it continues the execution in $M_2$, else in $M_3$.
 
-\begin{definition}[Conditional]
+\setCoqFilename{FormalComplexity.TM.Combinators.If}%
+\begin{definition}[Conditional][If]
   \label{def:If}
   Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F)$.
   \[
@@ -175,7 +179,7 @@ state, it continues the execution in $M_2$, else in $M_3$.
   \]
 \end{definition}
 
-\begin{lemma}[Correctness of conditional]
+\begin{lemma}[Correctness of conditional][If_RealiseIn]
   \label{lem:If_RealiseIn}
   If $M_1 \RealiseIn{k_1} R_1$, $M_2 \RealiseIn{k_2} R_2$, and $M_3 \RealiseIn{k_3} R_3$, then
   $
@@ -188,7 +192,7 @@ terminated, than the copy of $M_1$ either terminated in the partition $\true$ or
 else in $M_3$.
 
 The runtime lemma of the conditional can also be derived from Lemma~\ref{lem:Match_Terminates}.
-\begin{lemma}[Runtime of the conditional]
+\begin{lemma}[Runtime of the conditional][If_TerminatesIn]
   \label{lem:If_TerminatesIn}
   If $M_1 \Realise R_1$, $M_1 \TerminatesIn T_1$, $M_2 \TerminatesIn T_2$, and $M_3 \TerminatesIn T_3$, then
   \begin{align*}
@@ -212,6 +216,8 @@ only implies termination in an uncertain number of steps.
 \subsection{Proof of $\Match$}
 \label{sec:match-proofs}
 
+\setCoqFilename{FormalComplexity.TM.Prelim}
+
 The idea of the proofs of Lemma~\ref{lem:Match_Realise} and Lemma~\ref{lem:Match_Terminates} is to abstract two features of the machine: lifting of
 configurations from one abstract machine to another abstract machines, and sequence of two loops.  We formalise these two concepts for abstract
 machines, i.e.\ we argue on the abstract $\Loop$ function.
@@ -231,7 +237,7 @@ The second assumption is that $h'$ and $h$ are compatible w.r.t.\ $lift$; formal
 \end{equation}
 
 Under these two assumptions we can show two lemmas that essentially say that the second abstract machine $B$ simulates the first machine $A$.
-\begin{lemma}[Loop lifting]
+\begin{lemma}[Loop lifting][loop_lift]
   \label{lem:loop_lift}
   Under the assumptions~(\ref{eq:loop_lift_assumption1}) and~(\ref{eq:loop_lift_assumption2}):
   \begin{alignat*}{1}
@@ -243,7 +249,7 @@ Under these two assumptions we can show two lemmas that essentially say that the
 \begin{proof}
   By induction on $k:\Nat$.
 \end{proof}
-\begin{lemma}[Loop unlifting]
+\begin{lemma}[Loop unlifting][loop_unlift]
   \label{lem:loop_unlift}
   Under the assumptions~(\ref{eq:loop_lift_assumption1}) and~(\ref{eq:loop_lift_assumption2}):
   \begin{alignat*}{1}
@@ -284,7 +290,7 @@ $h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume:
   \forall(a:A).~h~a = \false \rightarrow h'~a = \false
 \end{equation}
 
-\begin{lemma}[Loop merging]
+\begin{lemma}[Loop merging][loop_merge]
   \label{lem:loop_merge}
   Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
@@ -297,7 +303,7 @@ $h \from A \to \Bool$ and $h' \from A \to \Bool$.  We assume:
 \begin{proof}
   By induction on $k_1:\Nat$, using Lemma~\ref{lem:loop}~(\ref{lem:loop_monotone}).
 \end{proof}
-\begin{lemma}[Loop splitting]
+\begin{lemma}[Loop splitting][loop_split]
   \label{lem:loop_split}
   Under assumption~(\ref{eq:loop_merge_assumption}):
   \begin{align*}
@@ -319,7 +325,8 @@ state and tapes component of $c_k$.
 
 The execution steps of $\Match$ are essentially a sequence of first, the lifted steps of execution of $M$, second, a ``nop'' transition, and third,
 the lifted steps of the execution of $M'~y$.  We give the concrete lifting functions from $M$ to $\Match$ and from $M~y$ to $\Match$:
-\begin{definition}[Liftings of $\Match$]
+\setCoqFilename{FormalComplexity.TM.Combinators.Match}%
+\begin{definition}[Liftings of $\Match$][lift_confL]
   We define the functions \\$liftL : \Conf_M \to \Conf_\Match$ and $liftR_y : \Conf_{M'(y)} \to \Conf_\Match$ for all $y:F$:
   \begin{alignat*}{2}
     & liftL   & (q, t) &:= (\inl q,      t) \\
@@ -328,7 +335,7 @@ the lifted steps of the execution of $M'~y$.  We give the concrete lifting funct
 \end{definition}
 
 For the sequential part, we also have to define the lifted halting function of \\$haltConfL : \Conf_\Match \to \Bool$:
-\begin{definition}[Lifted halting function]
+\begin{definition}[Lifted halting function][halt_liftL]
   \begin{alignat*}{2}
     & haltConfL & (\inl~q, t) &:= halt_M(q) \\
     & haltConfL & (\inr~q, t) &:= \true
@@ -336,7 +343,7 @@ For the sequential part, we also have to define the lifted halting function of \
 \end{definition}
 
 Using Lemma~\ref{lem:loop_merge} and~\ref{lem:loop_lift}, we can show the lemma we need for runtime:
-\begin{lemma}[Merging parts of executions of $\Match$]
+\begin{lemma}[Merging parts of executions of $\Match$][Match_merge]
   \label{lem:Match_merge}
   Let $t : \Tape_\Sigma^n$, $k_1, k_2:\Nat$, $c_1 : \Conf_M$ and $c_2 : \Conf_{M'(part_M~q_1)}$.
   \begin{alignat*}{1}
@@ -361,7 +368,7 @@ Using Lemma~\ref{lem:loop_merge} and~\ref{lem:loop_lift}, we can show the lemma 
 \end{proof}
 The runtime Lemma~\ref{lem:Match_Terminates} follows directly from Lemma~\ref{lem:Match_merge}.
 
-\begin{lemma}[Splitting execution of $\Match$]
+\begin{lemma}[Splitting execution of $\Match$][Match_split]
   \label{lem:Match_split}
   Let $t : \Tape_\Sigma^n$, $k : \Nat$, $c : \Conf_\Match$.
   \begin{align*}
@@ -382,13 +389,13 @@ Asperti and Ricciotti~\cite{asperti2015} have a version of Lemma~\ref{lem:loop_l
 
 \section{$\MS{While}$}
 \label{sec:While}
-
+\setCoqFilename{FormalComplexity.TM.Combinators.While}%
 
 The machine $\While~M$ essentially behaves like a ``do-while'' loop in imperative languages like C.  At the end of the execution of the loop body $M$,
 $M$ decides either to continue or break out of the loop.  If $M$ terminated in the partition $\None$, then the loop is continued, and if $M$
 terminated in $\Some{y}$, the loop breaks and $\While~M$ terminates in $y$.  When $M : \TM_\Sigma^n(\Option(F))$, then $\While~M : \TM_\Sigma^n(F)$.
 
-\begin{definition}[$\MS{While}~M$]
+\begin{definition}[$\MS{While}~M$][While]
   \label{def:While}
   Let $M : \TM_\Sigma^n(\Option(F))$ and $def:F$.  We define $\MS{While}~M : \TM_\Sigma^n(F)$ with the following components.
   \begin{alignat*}{3}
@@ -422,7 +429,7 @@ only halts in states where $part_M(q)$ has a $\Some{.}$ value.
 
 The correctness of $\MS{While}$ can be expressed using the following relation:
 
-\begin{lemma}[Correctness of $\MS{While}$]
+\begin{lemma}[Correctness of $\MS{While}$][While_Realise]
   \label{lem:While_Realise}
   Let $R \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.
   If $M \Realise R$, then $\While~M \Realise WhileRel~M$, where
@@ -436,7 +443,7 @@ The correctness of $\MS{While}$ can be expressed using the following relation:
 \end{lemma}
 
 We can also express the correctness relation of $\While$ using the Kleene star:
-\begin{fact}[Alternative specification of $\While~M$]
+\begin{fact}[Alternative specification of $\While~M$][OtherWhileRel]
   ~
   \[
     WhileRel~R \equiv (R \at \None)^* \circ \Bigl( \bigcup_{y:F} \bigl( R \at {\Some y} \bigr) \att y \Bigr)
@@ -452,7 +459,7 @@ $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, we must of course h
 $R' \subseteq \Tape_\Sigma^n \times \Option(F) \times \Tape_\Sigma^n$.  Then we apply Lemma~\ref{lem:Realise_monotone} and~\ref{lem:While_Realise},
 and have to show $WhileRel~R' \subseteq R$.  We can prove this by induction on the inductive predicate, which is equivalent to apply the following
 lemma:
-\begin{lemma}[Induction for $WhileRel$]
+\begin{lemma}[Induction for $WhileRel$][WhileInduction]
   \label{lem:WhileInduction}
   ~
   \begin{alignat*}{1}
@@ -465,7 +472,7 @@ lemma:
 
 The runtime lemma of $\While$ is dual.  We define a co-inductive relation $WhileT~R~T'$, where $R$ is the relation that $M$ realises and $T'$ is the
 runtime relation in that $M$ terminates.
-\begin{lemma}[Runtime of $\While~M$]
+\begin{lemma}[Runtime of $\While~M$][While_TerminatesIn]
   \label{lem:While_TerminatesIn}
   If $M \Realise R$ and $M \TerminatesIn T'$.\\Then $\While~M \TerminatesIn WhileT~R~T'$, where $WhileT~R~T'$ is defined as the following co-inductive
   runtime relation:
@@ -480,7 +487,7 @@ runtime relation in that $M$ terminates.
 When we want to show $\While~M \TerminatesIn T$, this is dual to showing $\While~M \Realise R$.  We apply the anti-monotonicity
 Lemma~\ref{lem:TerminatesIn_monotone} and the above runtime lemma, and have to show $T \subseteq WhileT~R~T'$.  For that, we use the co-induction
 lemma of $WhileT$:
-\begin{lemma}[$WhileT$ co-induction]
+\begin{lemma}[$WhileT$ co-induction][WhileCoInduction]
   \label{lem:WhileCoInduction}
   To show $T \subseteq WhileT~R~T'$, it suffices to show:
   \begin{alignat*}{1}
@@ -517,7 +524,7 @@ addition to the loop-splitting and loop-merging lemmas.  We present the key lemm
 We simply write $\While$ instead of $\While~M$ in this section.  Since we have $\Conf_M = \Conf_\While$, we also only write $\Conf$.
 
 The first lemma says that an execution of $\While$ consists of an execution of $M$ and a (possibly empty) continuation of $\While$:
-\begin{lemma}[Splitting the execution of $\While$]
+\begin{lemma}[Splitting the execution of $\While$][While_split]
   \label{lem:While_split}
   Let $c_1, c_3 : \Conf$ and $k:\Nat$.  Then
   \begin{alignat*}{1}
@@ -533,7 +540,7 @@ The first lemma says that an execution of $\While$ consists of an execution of $
 \end{proof}
 
 We have two more splitting lemmas, for that case that $\While$ terminated immediately, and for that case that $\While$ continued the loop.
-\begin{lemma}[Splitting, break case]
+\begin{lemma}[Splitting, break case][While_split_term]
   \label{lem:While_split_term}
   Let $c_1$, $c_2 : \Conf$, $k:\Nat$, and $y:F$.
   \begin{alignat*}{1}
@@ -546,7 +553,7 @@ We have two more splitting lemmas, for that case that $\While$ terminated immedi
 \begin{proof}
   By Lemma \ref{lem:loop} (\ref{lem:loop_eq_0}), because $c_1$ is a halting state of $\While$.
 \end{proof}
-\begin{lemma}[Splitting, continue case]
+\begin{lemma}[Splitting, continue case][While_split_repeat]
   \label{lem:While_split_repeat}
   Let $c_1$, $c_2 : \Conf$, $k:\Nat$.
   \begin{alignat*}{1}
@@ -576,7 +583,7 @@ We now can prove the correctness Lemma~\ref{lem:While_Realise} of $\While$.
 
 For the runtime proofs, we again have lemmas that ``merge'' steps together.
 
-\begin{lemma}[Merging, break case]
+\begin{lemma}[Merging, break case][While_merge_term]
   Let $k : \Nat$, $c_1, c_2 : \Conf$, and $y:F$.
   \begin{alignat*}{1}
     & M(c_1) \terminates^k c_2 \rightarrow \\
@@ -584,7 +591,7 @@ For the runtime proofs, we again have lemmas that ``merge'' steps together.
     & \While(c_1) \terminates^k c_2.
   \end{alignat*}
 \end{lemma}
-\begin{lemma}[Merging, continue case]
+\begin{lemma}[Merging, continue case][While_merge_repeat]
   Let $k_1, k_2 : \Nat$, $c_1, c_2, c_3 : \Conf$.
   \begin{alignat*}{1}
     & M(c_1) \terminates^{k_1} c_2 \rightarrow \\
@@ -608,7 +615,8 @@ correctness and runtime relations.
 
 Using the proving techniques developed in the previous sections, verifying this $\MS{Mirror}$ operator is very easy.
 
-\begin{definition}[Mirror tape]
+\setCoqFilename{FormalComplexity.TM.TM}%
+\begin{definition}[Mirror tape][mirror_tape]
   \label{def:mirror_tape}
   Let $t : \Tape_\Sigma$.
   \begin{alignat*}{2}
@@ -622,15 +630,15 @@ Using the proving techniques developed in the previous sections, verifying this 
   \label{lem:mirror}
   Let $t:\Tape_\Sigma$.
   \begin{enumerate}
-  \item \label{lem:mirror_tape_injective}
+  \coqitem[mirror_tape_injective] \label{lem:mirror_tape_injective}
     $\MS{mirror}$ is injective,
-  \item \label{lem:mirror_tape_involution}
+  \coqitem[mirror_tape_involution] \label{lem:mirror_tape_involution}
     $\MS{mirror}$ is an involution, i.e.\ $\MS{mirror}(\MS{mirror}(t))=t$,
-  \item \label{lem:mirror_left}
+  \coqitem[mirror_tape_left] \label{lem:mirror_left}
     $\MS{left}(\MS{mirror}(t)) = \MS{right}(\MS{mirror}(t))$,
-  \item \label{lem:mirror_right}
+  \coqitem[mirror_tape_right] \label{lem:mirror_right}
     $\MS{right}(\MS{mirror}(t)) = \MS{left}(\MS{mirror}(t))$,
-  \item \label{lem:mirror_current}
+  \coqitem[mirror_tape_current] \label{lem:mirror_current}
     $\MS{current}(\MS{mirror}(t)) = \MS{current}(t)$.
   \end{enumerate}
 \end{lemma}
@@ -640,8 +648,8 @@ Using the proving techniques developed in the previous sections, verifying this 
 
 
 To define $\MS{Mirror}~M$, we assume an injective and involutive function $swap:\MS{Move} \to \MS{Move}$ that simply swaps $L$ and $R$.
-
-\begin{definition}[$\MS{Mirror}~M$]
+\setCoqFilename{FormalComplexity.TM.Combinators.Mirror}%
+\begin{definition}[$\MS{Mirror}~M$][Mirror]
   \label{def:Mirror}
   Let $M:\TM_\Sigma^n(F)$.  The machine $\MS{Mirror}~M : \TM_\Sigma^n(F)$ has the same components as $M$, except:
   \[
@@ -653,13 +661,13 @@ To define $\MS{Mirror}~M$, we assume an injective and involutive function $swap:
 The correctness and termination proofs are similar to the proofs of $\MS{Match}$ and $\MS{While}$.  The ``lifting'' between configurations of $M$ and
 $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \Conf$ that simply mirrors the tapes.
 
-\begin{definition}[Mirror configuration]
+\begin{definition}[Mirror configuration][mirrorConf]
   \label{def:mirrorConf}
   $mirrorConf(q,t) := (q, \map{mirror}{t}).$
 \end{definition}
 
 
-\begin{lemma}[Mirroring steps]
+\begin{lemma}[Mirroring steps][mirror_step]
   \label{lem:mirror_step}
   Let $c_1 : \Conf$.  Then
   \[ step_M~(mirrorConf~c_1) = mirrorConf~(step_{\MS{Mirror}}~c_1) \]
@@ -669,15 +677,15 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
   \label{lem:mirror_loop}
   Let $c_1, c_2 : \Conf$.
   \begin{enumerate}
-  \item \label{lem:mirror_split}
-    $ \MS{Mirror} (c_1) \terminates^k c_2 \rightarrow M (mirrorConf~c_1) \terminates^k (mirrorConf~c_2) $
-  \item \label{lem:mirror_merge}
-    $ M (mirrorConf~c_1) \terminates^k (mirrorConf~c_2) \rightarrow \MS{Mirror} (c_1) \terminates^k c_2 $
+  \item \label{lem:mirror_lift}
+    \coqlink[mirror_lift]{$\MS{Mirror} (c_1) \terminates^k c_2 \rightarrow M (mirrorConf~c_1) \terminates^k (mirrorConf~c_2)$}
+  \item \label{lem:mirror_unlift}
+    \coqlink[mirror_unlift]{$M (mirrorConf~c_1) \terminates^k (mirrorConf~c_2) \rightarrow \MS{Mirror} (c_1) \terminates^k c_2$}
   \end{enumerate}
 \end{lemma}
 \begin{proof}
-  Claim~\ref{lem:mirror_split} follows with Lemma~\ref{lem:loop_unlift} and Lemma~\ref{lem:mirror_step}.  Claim~\ref{lem:mirror_merge} follows with
-  Lemma~\ref{lem:loop_lift} and Lemma~\ref{lem:mirror_step}.
+  Claim~\ref{lem:mirror_lift} follows with Lemma~\ref{lem:loop_lift} and Lemma~\ref{lem:mirror_step}.  Claim~\ref{lem:mirror_unlift} follows with
+  Lemma~\ref{lem:loop_unlift} and Lemma~\ref{lem:mirror_step}.
 \end{proof}
 
 \begin{lemma}[Correctness of $\MS{Mirror}$]
@@ -687,7 +695,7 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
   \]
 \end{lemma}
 \begin{proof}
-  Follows from Lemma~\ref{lem:mirror_loop}~(\ref{lem:mirror_split}).
+  Follows from Lemma~\ref{lem:mirror_loop}~(\ref{lem:mirror_lift}).
 \end{proof}
 \begin{lemma}[Runtime of $\MS{Mirror}$]
   Let $M \Realise T$.  Then $\MS{Mirror}~M \TerminatesIn MirrorT~T$ with
@@ -696,21 +704,22 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
   \]
 \end{lemma}
 \begin{proof}
-  Follows from Lemma~\ref{lem:mirror_loop}~(\ref{lem:mirror_merge}).
+  Follows from Lemma~\ref{lem:mirror_loop}~(\ref{lem:mirror_unlift}).
 \end{proof}
 
 \section{Partition Operators}
 \label{sec:partition-op}
+\setCoqFilename{FormalComplexity.TM.Combinators.Combinators}%
 
 The operators of the above sections of this Chapter modified the behaviour of the machine.  We can also define simple operators that modify the
 partitioning function $part : Q \to F$.  This is for example useful, if we want some (partitioned) machine to terminate in one particular partition.
 
-\begin{definition}[$\MS{ChangePartition}$]
+\begin{definition}[$\MS{ChangePartition}$][ChangePartition]
   Let $M:\TM_\Sigma^n(F)$ and $g : F \to F'$.
   \[ \MS{ChangePartition}~M~g := (M, part_M \circ g). \]
 \end{definition}
 
-\begin{definition}[Fix partition]
+\begin{definition}[$\MS{Return}$][Return]
   Let $M:\TM_\Sigma^n(F)$ and $y:F$.
   \[ \MS{Return~M~y} := \MS{ChangePartition}~M~(\lambda \_.~y). \]
 \end{definition}
@@ -718,7 +727,7 @@ partitioning function $part : Q \to F$.  This is for example useful, if we want 
 The correctness for these simple operators is obvious.  Note that we do not need lemmas for runtime, because Definition~\ref{def:TerminatesIn} of
 runtime is defined over the bare machine without partitioning function.  So the runtime lemmas for $M$ also apply for $\MS{ChangePartition}$ and
 $\MS{Return}$.
-\begin{lemma}[Correctness of $\MS{ChangePartition}$ and $\MS{Return}$]
+\begin{lemma}[Correctness of $\MS{ChangePartition}$ and $\MS{Return}$][ChangePartition_Realise]
   If $M \Realise R$, then
   \begin{alignat*}{1}
     \MS{ChangePartition}~M~g & \Realise \bigcup_{y:F} (R \at y) \att {g(y)} \\

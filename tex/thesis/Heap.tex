@@ -44,10 +44,11 @@ The reduction relation $s \red t$ is defined inductively on terms:
 
 \subsubsection{Heap Machine}
 \label{sec:heap-def}
+\setCoqFilename{FormalComplexity.TM.LM.Semantics}%
 
 Instead of substituting expressions, the heap machine works with closures.  A closure is a program together with a variable binding.  Variable
 bindings are implemented as pointers to a linked list of closures, called \emph{heap}.  Programs are lists of tokens:
-\begin{definition}[Program]
+\begin{definition}[Program][Pro]
   \label{def:Tok}
   \begin{alignat*}{2}
     n:   &~Var  &~:=~& \Nat \\
@@ -68,7 +69,7 @@ Programs essentially are linearised expressions of $L$.  The function $\gamma$ t
 
 The heap is implemented as a list of heap entries.  A heap entry may be empty or contain a closure and a pointer to the next heap entry.  Pointers are
 implemented as list indices on the heap entry list.
-\begin{definition}[Closures and heaps]
+\begin{definition}[Closures and heaps][Heap]
   \label{def:Heap}
   ~
   \begin{alignat*}{2}
@@ -106,7 +107,7 @@ closure'' $(a,Q)$ on the argument stack.  The splitting is realised with the fun
 }%
 The first $\MS{RET}$ matches to the $\MS{LAM}$ in the program above, so it is part of the first partition.  $\phi$ is formally defined with a
 tail-recursive auxiliary function:
-\begin{definition}[$\phi$]
+\begin{definition}[$\phi$][jumpTarget]
   \label{def:jumpTarget}
   We define $\phi~P :=~ \phi'~0~\nil~P$ with the auxiliary function $\phi' : \Nat \to Pro \to Pro \to \Option(Pro \times Pro)$, which is defined by
   recursion on $P:Pro$.
@@ -124,7 +125,7 @@ If the first token on the first closure of the control stack is $\MS{\mathbf{VAR
 $n$th entry in the environment on the heap at the address $a$.  Then, it pushes this closure to the value stack.  The function $lookup : Heap \to Add
 \to Var \to \Option(Clos)$ starts at the heap entry at the address $a$, and gets the $n$th entry. We write $H[a,n]$ for
 $lookup~H~a~n$.  The function is defined by recursion on $n$:
-\begin{definition}[$lookup$]
+\begin{definition}[$lookup$][lookup]
   \label{def:lookup}
   $H[a,n]$ is defined by recursion on $n$:
   \[
@@ -170,15 +171,15 @@ optimisation for space usage with tail recursive programs.
   \label{lem:heap-red}
   ~
   \begin{enumerate}
-  \item \label{lem:halt_state_dec}%
-    $(T,V,H)\nred$ is decidable, i.e.\ there is a function $halt$ such that
-    \[
-      (T,V,H) \nred ~\iff~ halt(T,V,H) = \true
-    \]
-  \item \label{lem:step-iff}%
+  \coqitem[step_iff] \label{lem:step-iff}%
     The relation $\red$ is functional and computable, i.e.\ there is a function $step$, such that
     \[
       (T,V,H) \red (T',V',H') ~\iff~ step(T,V,H)=\Some{(T',V',H')}
+    \]
+  \coqitem[is_halt_state_correct] \label{lem:halt_state_dec}%
+    $(T,V,H)\nred$ is decidable, i.e.\ there is a function $halt$ such that
+    \[
+      halt(T,V,H) = \true ~\iff~ (T,V,H) \nred  
     \]
   \end{enumerate}
 \end{lemma}
@@ -189,7 +190,8 @@ optimisation for space usage with tail recursive programs.
 
 First, we notice that all types in Definition~\ref{def:Heap}, except program Tokens ($Tok$), are encodable over canonical alphabets, according to
 Definition~\ref{def:basic-encodings}.
-\begin{definition}[Encoding of heaps]
+\setCoqFilename{FormalComplexity.TM.LM.Alphabets}%
+\begin{definition}[Encoding of heaps][]
   \label{def:Heap-encode}
   The type of tokens ($Tok$) is isomorphic to the sum of $ATok := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $Var$.  $ATok$ is encodable on itself (since
   it is finite), and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Tok$ is encodable on $\Sigma_{Tok} := \Sigma_{ATok+\Nat}$.
@@ -201,7 +203,8 @@ Definition~\ref{def:basic-encodings}.
 
 First, we derive constructor and deconstructor machines for tokens.  As the type of tokens essentially is the sum of two encodable types ($ATok$ and
 $\Nat$), we can combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
-\begin{definition}[$\MS{MatchTok}$]
+\setCoqFilename{FormalComplexity.TM.LM.MatchTok}%
+\begin{definition}[$\MS{MatchTok}$][MatchTok]
   $\MS{MatchTok} : \TM_{\Sigma^+_{Tok}}^1(\Option(ATok))$ is defined by
   \begin{alignat*}{2}
     & \MS{MatchTok} &~:=~& \MS{If}~\MS{MatchSum} \\
@@ -209,8 +212,8 @@ $\Nat$), we can combine constructors and deconstructors from Section~\ref{sec:co
     &               &    & \MS{Else}~~~ \MS{ChangePartition}~(\LiftAlphabet{\MS{MatchFin}}{RetrRgt})~(\Some\cdot)
   \end{alignat*}
 \end{definition}
-\begin{lemma}[Correctness of $\MS{MatchTok}$]
-  \label{lem:MatchTok_Realise}
+\begin{lemma}[Correctness of $\MS{MatchTok}$][MatchTok_Sem]
+  \label{lem:MatchTok_Sem}
   $\MS{MatchTok} \RealiseIn{11} MatchTokRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $MatchTokRel :=$
@@ -237,6 +240,7 @@ machine.
 
 \subsection{$\MS{Lookup}$}
 \label{sec:Lookup}
+\setCoqFilename{FormalComplexity.TM.LM.LookupTM}%
 
 The machine $\MS{Lookup} : \TM_{\Sigma^+}^5(\Bool)$ realises the heap $lookup$ function.  Note, that the heap is just a linked list of closures, where
 the pointers are indices.  It uses the machine $\MS{Nth}' : \TM_{\Sigma^+}^4(\Bool)$ which is like $\MS{Nth}$ from Section~\ref{sec:Nth}, but with the
@@ -246,23 +250,23 @@ First we consider the alphabet of $\MS{Lookup}$.  We can encode closures on the 
 $H[a,n]$, $a$ and $n$ are encoded on an alphabet of the closures of a closure stack.  Thus, we define $\MS{Lookup}$ on an alphabet $\Sigma$, with
 retractions $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$ and $f_{Clos} : \Sigma_{Clos} \hookrightarrow \Sigma$.  The second retraction correspond
 to the closure alphabet where $a$ and $n$ are encoded.  The retraction
-\[ f_{Clos'} : \Sigma_{Clos} \hookrightarrow \Sigma := RetrFst \circ RetrOpt \circ RetrList \circ f_{Heap} \]%
+\[ \coqlink[retr_clos_lookup_heap]{f_{Clos'}} : \Sigma_{Clos} \hookrightarrow \Sigma := RetrFst \circ RetrOpt \circ RetrList \circ f_{Heap} \]%
 is the canonical retraction of closures from the heap.
 
 There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depending on whether the number is:
 \begin{enumerate}
 \item an address of the pointer of an heap on the stack alphabet:
   \[
-    f_{add} := RetrFst \circ f_{Clos'}
+    \coqlink[retr_nat_lookup_clos_ad]{f_{add}} := RetrFst \circ f_{Clos'}
   \]
 \item a variable in a token of a closure on the stack alphabet:
   \[
-    f_{var} := RetrRgt \circ RetrList \circ RetrSnd \circ f_{Clos'}
+    \coqlink[retr_nat_lookup_clos_var]{f_{var}} := RetrRgt \circ RetrList \circ RetrSnd \circ f_{Clos'}
   \]
   Note that $RetrRgt : \Sigma_{Var} \hookrightarrow \Sigma_{Tok}$.
 \item a pointer to the next heap entry:
   \[
-    f_{next} := RetrSnd \circ RetrOpt \circ RetrList \circ f_{Heap}
+    \coqlink[retr_nat_lookup_entry]{f_{next}} := RetrSnd \circ RetrOpt \circ RetrList \circ f_{Heap}
   \]
 \end{enumerate}
 
@@ -307,7 +311,7 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
   \label{tab:exec-LookupStep-0}
 \end{table}
 
-\begin{definition}[$\MS{LookupStep}$]
+\begin{definition}[$\MS{LookupStep}$][Lookup_Step]
   \label{def:Lookup_Step}
   We define the machine $\MS{LookupStep} : \TM_{\Sigma^+}^5(\Option(\Bool))$.
   \begin{align*}
@@ -343,7 +347,7 @@ $g$ w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still co
 terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there two possible reasons for that: Either $H[a]=\None$ or
 $H[a]=\Some\None$, but we do not distinct these two failure cases.
 
-\begin{lemma}[Correctness of $\MS{Lookup}$]
+\begin{lemma}[Correctness of $\MS{Lookup}$][Lookup_Step_Realise]
   \label{lem:Lookup_Realise}
   $\MS{Lookup} \Realise LookupRel$
   with
@@ -360,6 +364,7 @@ $H[a]=\Some\None$, but we do not distinct these two failure cases.
 
 \subsection{$\MS{SplitBody}$}
 \label{sec:SplitBody}
+\setCoqFilename{FormalComplexity.TM.LM.JumpTargetTM}%
 
 The machine $\MS{SplitBody} : \TM_{\Sigma^+_{Pro}}^5(\Bool)$ computes the function $\phi$ (cf.\ Definition~\ref{def:jumpTarget}).  The
 implementation of this machine is straight-forward, because $\phi'$ is defined tail-recursively.  The machine
@@ -373,7 +378,7 @@ parametrised machine $\MS{AppATok}~t$ that appends a finite token (i.e.\ $t$ is 
 the machine $AppTok$ that appends a token on a tape to $Q$.
 
 
-\begin{definition}[$\MS{SplitBody}$]
+\begin{definition}[$\MS{SplitBody}$][JumpTarget_Step]
   \label{def:JumpTarget}
   We define the canonical retraction $f_{Var} : Var \to \Sigma_{Pro}$ by $f_{Var} := RetrRgt \circ RetrList$.
   %% This is a bad hack, but I think it looks nice...
@@ -448,7 +453,7 @@ Note that the step machine resets the tape for $k$ before it brakes out of the l
 The loop machine halts in $\true$ if and only if $\phi'~k~Q~P$ is not $\None$.  If it is $\Some{(P',Q')}$, then after the execution the first two
 tapes contain $P'$ and $Q$, and the other tapes are right.  If $\phi'~k~Q~P = \None$, the correctness relation only commits that the machine
 terminates in the partition $\false$.
-\begin{lemma}[Correctness of $\MS{SplitBodyLoop}$]
+\begin{lemma}[Correctness of $\MS{SplitBodyLoop}$][JumpTarget_Loop_Realise]
   $\MS{SplitBodyLoop} \Realise SplitBodyLoopRel$.
   \begin{alignat*}{1}
     & SplitBodyLoopRel := \\
@@ -460,7 +465,7 @@ terminates in the partition $\false$.
 \end{lemma}
 
 Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$.
-\begin{lemma}[Correctness of $\MS{SplitBodyLoop}$]
+\begin{lemma}[Correctness of $\MS{SplitBodyLoop}$][JumpTarget_Realise]
   $\MS{SplitBody} \Realise SplitLoopRel$ with
   \begin{alignat*}{1}
     & SplitBodyRel := \\
@@ -474,6 +479,7 @@ Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$.
 
 \subsection{$\MS{Step}$}
 \label{sec:heap-Step}
+\setCoqFilename{FormalComplexity.TM.LM.StepTM}%
 
 
 We define a machine $\MS{Step}_\Sigma^{11} : \TM(\Option(\Unit))$ that simulates steps of the heap machine.  The tapes $0$, $1$, and $2$ contain the
@@ -492,7 +498,7 @@ The machine $\MS{Step} : \TM_\Sigma^{11}(\Option(\Unit))$ is defined on an arbit
 $f_{Stack} : \Sigma_{List(Clos)} \hookrightarrow \Sigma$ and $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$.  We omit the definition of $\MS{Step}$
 here, since it is quite complex although it is straight-forward.
 
-\begin{lemma}[Correctness of $\MS{Step}$]
+\begin{lemma}[Correctness of $\MS{Step}$][Step_Realise]
   \label{lem:Step_Realise}
   $\MS{Step} \Realise StepRel$ with
   \begin{alignat*}{1}
@@ -510,7 +516,7 @@ For each developed machine, we also have runtime proofs, but we omitted the runt
   stepSteps : \List(HClos) \to \List(HClos) \to Heap \to \Nat
 \]
 such that $\MS{Step}$ terminates in $stepSteps~T~V~H$ steps when the first three tapes contain $T$, $V$, $H$, and the internal tapes are right.
-\begin{lemma}[Runtime of $\MS{Step}$]
+\begin{lemma}[Runtime of $\MS{Step}$][Step_Terminates]
   \label{lem:Step_Terminates}
   $\MS{Step} \TerminatesIn StepT$ with
   \begin{alignat*}{3}
@@ -522,12 +528,13 @@ such that $\MS{Step}$ terminates in $stepSteps~T~V~H$ steps when the first three
 
 \subsection{$\MS{Loop}$}
 \label{sec:heap-Loop}
+\setCoqFilename{FormalComplexity.TM.LM.HaltingProblem}%
 
 We instantiate $\Sigma := \Sigma_{\List(Clos)} + \Sigma_{Heap}$ and define $\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if
 the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  Moreover, if the heap state terminates with an empty control stack
 $(\nil, V', H')$, the tapes of $\MS{Loop}$ contain $(\nil, V', H')$ after the execution.
 
-\begin{lemma}[Correctness of $\MS{Loop}$]
+\begin{lemma}[Correctness of $\MS{Loop}$][Loop_Realise]
   \label{lem:Loop_Realise}
   $\MS{Loop} \Realise LoopRel$ with
   \begin{alignat*}{1}
@@ -540,7 +547,7 @@ $(\nil, V', H')$, the tapes of $\MS{Loop}$ contain $(\nil, V', H')$ after the ex
 
 For the runtime function $loopSteps$, we need the $step$ and $halt$ functions from Lemma~\ref{lem:heap-red}.  The runtime-function of $\MS{Loop}$ is
 defined per recursion over the number $k$ of reduction steps of the heap machine.
-\begin{lemma}[Runtime of $\MS{Loop}$]
+\begin{lemma}[Runtime of $\MS{Loop}$][Loop_Terminates]
   \label{lem:Loop_Terminates}
   $\MS{Loop} \TerminatesIn LoopT$ with
   \begin{alignat*}{2}
@@ -575,16 +582,18 @@ The last step of the reduction of the halting problem of the heap machine to the
 \]
 such that the first three tapes of $initTape(T,V,H)$ contain $T$, $V$, or $H$, respectively, and the rest tapes are right.
 
-\begin{definition}[$initTapes$]
+\begin{definition}[$initTapes$][initTapes]
   \label{def:initTapes}
   ~
   \[
     initTapes(T,V,H) := initValue(T) \cons initValue(V) \cons initValue(H) \cons initRight^8
   \]
-  With $initValue(x) := \MS{midtape}~\nil~\MS{START}~(encode(x) \app [\MS{STOP}])$ and $initRight := \MS{midtape}~\nil~\MS{STOP}~\nil$.
+  \setCoqFilename{FormalComplexity.TM.Code.CodeTM}%
+  With $\coqlink[initValue]{initValue}(x) := \MS{midtape}~\nil~\MS{START}~(encode(x) \app [\MS{STOP}])$ and $initRight := \MS{midtape}~\nil~\MS{STOP}~\nil$.
+  \setCoqFilename{FormalComplexity.TM.LM.HaltingProblem}%
 \end{definition}
 
-\begin{theorem}[Halting problem reduction]
+\begin{theorem}[Halting problem reduction][HaltingProblem]
   \label{lem:HaltingProblem}
   Let $(T,V,H)$ be a heap state.  Then
   \[
