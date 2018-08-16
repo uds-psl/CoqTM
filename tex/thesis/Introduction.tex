@@ -13,9 +13,11 @@ leave out invariants and other rigorous details.  It can also happen that incons
 Informal proofs are not enough for us.  We want proofs that are (1)~understandable by humans, and (2)~rigorous enough that even computers accept the
 proof.  Formal proofs often involve a lot of little details that a human can easily oversee.  Computers can help in this regard.  They make it
 possible to employ proof search and similar automation, to fill in \textit{tedious details}, so that the user can focus on the \textit{interesting}
-parts of proofs.  Another vital aspect to ease the formalisation of complex but low-level abstract machines is the introduction of structure and
-composability.  It requires a powerful framework, to define and certify complex machines with ease.  In this thesis, we introduce such a framework,
-for programming and formally verifying multi-tape Turing machines.
+parts of proofs.
+
+Another vital aspect to ease the formalisation of complex but low-level abstract machines is the introduction of structure and composability.  It
+requires a powerful framework, to define and certify complex machines with ease.  In this thesis, we introduce such a framework, for programming and
+formally verifying multi-tape Turing machines.
 
 
 \section{Contributions}
@@ -46,8 +48,8 @@ undecidability of the halting problem of Turing machines.
 Ciaffaglione et~al.~\cite{Ciaffaglione:2016:TTC:2956213.2956306} define tapes of Turing machines as infinite streams.  They certify Turing machines
 using induction and co-induction in Coq.
 
-In her bachelor thesis, Heiter~\cite{Heiter} reduces the halting problem of single-tape to the \textit{Post correspondence problem} in Coq.  They use
-the same definition of single-tape Turing machines as in \cite{asperti2012}.
+In her bachelor thesis, Heiter~\cite{Heiter} reduces the \textit{Post correspondence problem} to the halting problem of single-tape Turing machines in
+Coq.  They use the same definition of single-tape Turing machines as in \cite{asperti2012}.
 
 
 
@@ -55,19 +57,20 @@ the same definition of single-tape Turing machines as in \cite{asperti2012}.
 \label{sec:outline}
 
 In Chapter~\ref{chap:definitions}, we define the notion of multi-tape Turing machines.  We also introduce means to specify the semantics of machines,
-and define basic machines, on which all our machines are based.  In Chapter~\ref{chap:combining}, we control-flow operators.  In
+and define basic machines, on which all our machines are based.  In Chapter~\ref{chap:combining}, we define control-flow operators.  In
 Chapter~\ref{chap:lifting}, we show how to combine machines with different alphabets and numbers of tapes.  We combine simple machines in
 Chapter~\ref{chap:compound}.  In Chapter~\ref{chap:programming}, we introduce abstractions that enable the programmer to directly manipulate values,
 and show complex case-studies.  In Chapter~\ref{chap:heap} we develop our final case-study where we implement and verify a Turing machine that
 simulates a two-stack machine and show that the halting problem of this machine reduces to the halting problem of multi-tape Turing machines.  We
 conclude and discuss possible future work in Chapter~\ref{chap:conclusion}.  In the appendix, we present some pearls of the Coq development of this
-thesis.  In the PDF version of this thesis, all definitions and lemmas are hyperlinked to the documented online source code of the Coq implementation
-of the framework.  The source code is also available for download, from:
+thesis.
 
+Throughout the thesis, we use mathematical notation, the reader is not supposed to be expert in type theory.  In the PDF version of this thesis, all
+definitions and lemmas are hyperlinked to the documented online source code of the Coq implementation of the framework.  The complete source code is
+available for download, from:
 \begin{center}
-  \url{https://www.ps.uni-saarland.de/~wuttke/bachelor.php}
+  \url{https://www.ps.uni-saarland.de/~wuttke/bachelor/}
 \end{center}
-
 
 %%% Local Variables:
 %%% TeX-master: "thesis"
