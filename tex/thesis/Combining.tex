@@ -98,9 +98,9 @@ We also need to know the correctness of $M$, because the runtime of $f~y$ depend
   \label{lem:Match_Terminates}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, $T \subseteq \Tape_\Sigma^n \times \Nat$, and
   $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \Realise R$, $M \TerminatesIn T$, and $f~y \TerminatesIn T'~y$ for all $y:F$, then
-  $\MS{Match}~M~f \TerminatesIn \MS{MatchT}~R~T~T'$, where
+  $\MS{Match}~M~f \TerminatesIn MatchT~R~T~T'$, where
   \[
-    \MS{MatchT}~R~T~T' :=
+    MatchT~R~T~T' :=
     \lambda~t~k.~ \exists~k_1~k_2.~T~t~k_1 \land 1+k_1+k_2 \le k \land
       \forall~y~t'.~ R~t~(y,t') \rightarrow T'(y)~t'~k_2.
   \]

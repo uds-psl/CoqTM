@@ -71,7 +71,7 @@ We have an operator that restricts the partition $B$ of a partitioned relation a
   \label{def:rel-restrict}
   Let $R \subseteq A \times B \times A$ and $y:B$.
   \[
-    R \at y := \lambda(x~z).~R~x~(y,z)
+    R \at y := \lambda x~z.~R~x~(y,z)
   \]
 \end{definition}
 
@@ -583,7 +583,7 @@ the current symbol is $\None$.
 
 
 \begin{lemma}[Correctness of $\MS{Read}$][ReadChar_Sem]
-  \label{lem:Read_Sem} $\MS{Read}~f \RealiseIn{0} ReadRel~f$ with
+  \label{lem:Read_Sem} $\MS{Read}~f \RealiseIn{0} ReadRel$ with
   \[
     ReadRel := \lambda~t~y~t'.~ y = \MS{current}~t[0] \land t' = t
   \]

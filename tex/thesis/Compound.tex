@@ -209,9 +209,9 @@ The correctness of $\MS{CopySymbols}$ can be expressed using a recursive functio
     \begin{multline*}
       CopySymbolsFun~h~t :=\\
       \begin{cases}
-        \Vector{t[0]; \MS{wr}~t[1]~(\Some{x})}                                  & \MS{current}~t[0]=\Some{x} \land h(x) \\
-        CopySymbolsFun~h~\Vector{\MS{mv}~R~t[0]; \MS{doAct}~t[1]~(\Some{x}, R)} & \MS{current}~t[0]=\Some{x} \land \lnot h(x) \\
-        t                                                                       & \MS{current}~t[0]=\None
+        \Vector{t[0];~ \MS{wr}~t[1]~\Some{x}}                                    & \MS{current}~t[0]=\Some{x} \land h(x) \\
+        CopySymbolsFun~h~\Vector{\MS{mv}~R~t[0];~ \MS{doAct}~t[1]~(\Some{x}, R)} & \MS{current}~t[0]=\Some{x} \land \lnot h(x) \\
+        t                                                                        & \MS{current}~t[0]=\None
       \end{cases}
     \end{multline*}
   }

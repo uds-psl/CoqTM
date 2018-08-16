@@ -87,8 +87,8 @@ For each type and type constructor, we have a distinct alphabet.  We define basi
   Note that we implicitly map the encoding functions in this definition.
 \end{definition}
 
-This are all encodings we need.  Generally, we say that $X$ is minimally encodable over $\Sigma_X$, if $X$ is encodable over $\Sigma_X$ according to
-Definition~\ref{def:basic-encodings}.  The mapping encodings introduces ambiguity: It is not only possible to encode multiple types on the same
+This are all encodings we need.  We say that $X$ is \textit{minimally encodable} over $\Sigma_X$, if $X$ is encodable over $\Sigma_X$ according to
+Definition~\ref{def:basic-encodings}.  Mapping of encodings introduces ambiguity: It is not only possible to encode multiple types on the same
 alphabet, but there may be several ways how to encode the same type on the same alphabet.  For example, the minimal alphabet of the type $X+X$ is
 $\Sigma_{X+X}$.  Now there are two possibilities how to encode $X$ on $\Sigma_{X+X}$: using the retraction $RetrSigX$ and $RetrSigY$.  We must deal
 with this problem, when we program and verify Turing machines, by explicitly specifying the right retractions.
@@ -110,8 +110,8 @@ The $\MS{UNKNOWN}$ symbol is important later. We define what $t \simeq x$ means:
     t \simeq x := \exists~ls.~
     t = \MS{midtape}~ls~(\MS{START})~(encode(x) \app [\MS{STOP}])
   \]
-  In case the encoding is not clear, we write $t \simeq_f x$ with $t:\Tape_{\Tau^+}$ and $x:X$, when $X$ is minimal encodable on $\Sigma$ and
-  $f: \Sigma \hookrightarrow \Tau$.
+  In case the encoding is not clear, we write $t \simeq_f x$ with $t:\Tape_{\Tau^+}$ and $x:X$, when $X$ is minimal encodable on $\Sigma_X$ and
+  $f: \Sigma_X \hookrightarrow \Tau$.
 \end{definition}
 
 Note that in Definition~\ref{def:tape_contains}, we have to map the encoding of $x$ to the extended alphabet $\Sigma^+$, using $RetrPlus$.  If
@@ -142,10 +142,10 @@ is not part of any encoding.  This intuition is confirmed by the following lemma
   Let $f: \Sigma \hookrightarrow \Tau$ be a retraction between two alphabets.  Let $x:X$, where $X$ is encodable over $\Sigma$. Then, for
   $t:\Tape_{\Tau^+}$
   \[
-    t \simeq_f x \iff mapTape~(surject~f)~t \simeq x.
+     mapTape~(surject~f)~t \simeq x ~\iff~ t \simeq_f x
   \]
 \end{lemma}
-Note that the encoding on the left side is mapped with the retraction $f$.
+Note that the encoding on the right side is mapped with the retraction $f$.
 
 We write $\LiftAlphabet{M}{f}$ for $\LiftAlphabet{M}{(f, \MS{UNKNOWN})}$.  Note that we also use the $\Uparrow$ notation for the tapes-lift.  However,
 it is always clear whether we mean the tape-lift or alphabet-lift.  We use the notation $\LiftBoth{M}{f}{I} := \LiftTapes{(\LiftAlphabet{M}{f})}{I}$,
@@ -170,9 +170,8 @@ $\MS{WriteValue}~str : \TM_{\Sigma^+}^1$ gets an encoding $str:\List(\Sigma)$ of
   \label{def:WriteValue}
   Let $str:\List(\Sigma)$
   \[
-    \MS{WriteValue}(x) := \MS{WriteString}~L~\left(\rev{\left(\MS{START} \cons str \app [\MS{STOP}]\right)}\right).
+    \MS{WriteValue}(str) := \MS{WriteString}~L~\left(\rev{\left(\MS{START} \cons \map{RetrPlus}{str} \app [\MS{STOP}]\right)}\right).
   \]
-  Note that we implicitly map $str$ to the extended alphabet $\Sigma^+$.
 \end{definition}
 The machine writes the stop symbol, the encoding $str$, and the start symbol in reversed order from right to left.  If it started with a right tape,
 then after the execution the tape contains the value $x$ that has the encoding $str$.
@@ -183,7 +182,7 @@ then after the execution the tape contains the value $x$ that has the encoding $
     \MS{WriteValue}(str) \RealiseIn{3 + 2 \cdot \length{str}} WriteValueRel(str)
   \]
   \[
-    WriteValueRel(str) := \lambda t~t'.~\forall (x:X).~encode(x) = str \rightarrow isRight(t[0]) \rightarrow t'[0] \simeq x.
+    WriteValueRel(str) := \lambda t~t'.~\forall (x:X).~encode(x) = str \rightarrow isRight~t[0] \rightarrow t'[0] \simeq x.
   \]
 \end{lemma}
 
