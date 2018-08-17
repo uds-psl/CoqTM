@@ -50,21 +50,31 @@
 \renewcommand\cite{\citep}
 
 \thispagestyle{empty}
-
 \maketitlepage
 
+% Empty page
+\shipout\null
+
+\thispagestyle{empty}
 \statementpage
 
+% Empty page
+\shipout\null
+
 \chapter*{Abstract}
-\addcontentsline{toc}{chapter}{\numberline{}Abstract}
+%\addcontentsline{toc}{chapter}{\numberline{}Abstract}
 \input{abstract}
 
 \newpage
+% Empty page
+\shipout\null
 
 \chapter*{Acknowledgements}
 \input{acknowledgements}
 
-\addtocontents{toc}{\vspace{5mm}}
+\newpage
+% Empty page
+\shipout\null
 
 \tableofcontents
 
