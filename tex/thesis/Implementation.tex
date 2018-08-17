@@ -150,7 +150,7 @@ operator.
 The tactic \lstinline!modpon H! instantiates assumptions of the form $H: \forall x~\cdots.~P \rightarrow \cdots \rightarrow Q$.  For each premise that
 the tactic could not solve automatically, it creates a new subgoal with existentials for the quantified variables.
 
-The tactic \lstinline!repeat TM_Correct! instantiates the existential relation $?R'$ and proves $M \Realise ?R'$.  For that, it applies all
+The tactic \lstinline!TM_Correct! instantiates the existential relation $?R'$ and proves $M \Realise ?R'$.  For that, it applies all
 correctness lemmas of the combinators, lifts, value-constructors and deconstructors, and some other auxiliary machines.  It does not apply correctness
 lemmas that are parametrised over an encoding function, e.g.\ the correctness Lemma~\ref{lem:CopyValue_Realise}, because the choice of the encoding
 functions is semantically relevant.  The user can declare more correctness and runtime lemmas to be used by \lstinline!TM_Correct!.  We use the Coq
@@ -176,7 +176,7 @@ The tactic \lstinline!smpl_dupfree! automatically proves that a vector is duplic
 
 We use the general approach how to prove correctness (or runtime) of a Turing machine, as described in Chapter~\ref{chap:compound}: We show
 $M \Realise R'$ for some relation $R'$ and it remains to show $R' \subseteq R$.  The first step is done using the tactic
-\lstinline!rrepeat TM_Correctr!  For example, consider the following goal (we use the user-defined Coq notation \lstinline!$\Realise$c(9)! to mean
+\lstinline!TM_Correct!  For example, consider the following goal (we use the user-defined Coq notation \lstinline!$\Realise$c(9)! to mean
 $\RealiseIn{9}$).
 \begin{lstlisting}
 ============================
@@ -186,7 +186,7 @@ The outline of the proof script is:
 \begin{lstlisting}
 Proof.
   eapply RealiseIn_monotone.
-  { unfold Add_Step. repeat TM_Correct. }
+  { unfold Add_Step. TM_Correct. }
   { cbn. reflexivity. }
   { (* ... *) }
 Qed.
