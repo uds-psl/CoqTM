@@ -59,6 +59,7 @@
 \newcommand{\advisor}[1]{\def\theadvisor{#1}}
 \newcommand{\reviewerOne}[1]{\def\thereviewerOne{#1}}
 \newcommand{\reviewerTwo}[1]{\def\thereviewerTwo{#1}}
+\newcommand{\supervisor}[1]{\def\thesupervisor{#1}}
 \newcommand{\university}[1]{\def\theuniversity{#1}}
 \newcommand{\faculty}[1]{\def\thefaculty{#1}}
 \newcommand{\thesistype}[1]{\def\thethesistype{#1}}
@@ -103,8 +104,17 @@
       \end{minipage}
 
       \noindent
+      \begin{minipage}{1\textwidth}%
+        \vspace{1cm}
+        \begin{center} \large
+          \emph{Supervisor}\\
+          \thesupervisor
+        \end{center}%
+      \end{minipage}%
+
+      \noindent
       \begin{minipage}{1\textwidth}
-        \vspace{3cm}
+        \vspace{1cm}
         \begin{center} \large
           \emph{Reviewers} \\
           \thereviewerOne\\
@@ -113,7 +123,6 @@
       \end{minipage}
 
       \vfill
-
       {\large Submitted: \thesubday\textsuperscript{th} \thesubmonth~\thesubyear}
 
     \end{center}
