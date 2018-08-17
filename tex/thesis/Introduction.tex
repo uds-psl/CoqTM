@@ -1,44 +1,51 @@
 \chapter{Introduction}
 \label{chap:intro}
 
-Turing machines build the traditional foundation of the theory of computation and complexity.  However, reasoning about Turing machines can be
-tedious, because their semantic is unstructured: from each state of the machine, the execution can continue in each other state, similar to the
-infamous \textit{goto} statement \cite{dijkstra2002go}.
 
-Textbooks like Boolos et~al.~\cite{boolos2007computability} leave out formal proofs of correctness.  To establish that a function is
-Turing-computable, authors often give an informal description of the algorithm and conclude with the \textit{Church-Turing thesis} that the function
-is Turing-computable.  Proofs of equivalence of Turing-computability and computability w.r.t.\ other abstract machine models are often informal.  They
-leave out invariants and other rigorous details.  It can also happen that inconsistencies are discovered \cite{Xu:2013:MTM:2529315.2529331}.
+There are multiple reasons why reasoning about Turing machines is considered tedious.  First, their semantics is unstructured: from each state of the
+machine, the execution can continue in each other state, similar to the infamous \textit{goto} statement~\cite{dijkstra2002go}.  But even worse,
+Turing machines are not compositional.  Sequential composition or loops of Turing machines are not directly available.  Even the formal specification
+of machines is a burden, because complex machines may have a huge number of internal states.  Last but not least, they are low-level, because each
+step of the machine is basic: read a symbol from the tape, write a symbol to the tape, or move the head in a direction.
 
-Informal proofs are not enough for us.  We want proofs that are (1)~understandable by humans, and (2)~rigorous enough that even computers accept the
-proof.  Formal proofs often involve a lot of little details that a human can easily oversee.  Computers can help in this regard.  They make it
-possible to employ proof search and similar automation, to fill in \textit{tedious details}, so that the user can focus on the \textit{interesting}
-parts of proofs.
+For the above reasons, textbooks like Boolos et~al.~\cite{boolos2007computability} leave out formal proofs of correctness.  They also often only give
+an informal description of machines, which obviously makes formal reasoning impossible.  Even if they define the whole machine, they leave out formal
+specification of invariants to figure out for the reader.  To establish that a function is Turing computable, authors often give an informal
+description of the algorithm and conclude, using the \textit{Church-Turing thesis}, that the function is Turing-computable. Or they switch to another
+abstract machine model, but define the transition function between the models of computation only informally.
 
-Another vital aspect to ease the formalisation of complex but low-level abstract machines is the introduction of structure and composability.  It
-requires a powerful framework, to define and certify complex machines with ease.  In this thesis, we introduce such a framework, for programming and
-formally verifying multi-tape Turing machines.
+In this thesis, we aim to define, specify, and formally verify Turing machines in a framework built in the theorem prover Coq~\cite{Coq}.  First of
+all, we address the problems above.  Instead of defining machines in terms of transition tables, we compose machines using functions of Coq's logic --
+the calculus of (co)inductive constructions.  For example, we define a function that builds the sequential composition of two machines.  To eliminate
+the need to reason about concrete internal states, we only reason about partitions of states.  We address the problem that machines are low-level, by
+introducing abstractions, so that Turing machines directly manipulate values of arbitrary encodable types.  This makes programming of (and reasoning
+about) Turing machines much easier than for register machines, because register machines only operate on natural numbers.
+
+There are many variations of Turing machines.  We choose multi-tape Turing machines with arbitrary alphabets.  Our plan is, that each tape should
+contain a value.  We choose a finite model of tapes, i.e.\ each tape has only finitely many symbols but may allocate arbitrary many symbols.
 
 
 \section{Contributions}
 \label{sec:contributions}
 
-We formalise a variant of deterministic multi-Tape Turing machines in the interactive theorem prover Coq~\cite{Coq}.  We build a framework for
-programming and verifying Turing machines, that means giving a correctness, runtime, and termination certificate that is verified by Coq.  Our
-framework extends the framework by Asperti and Ricciotti~\cite{asperti2015} in the interactive theorem prover Matita~\cite{asperti2011matita}.  We
-make it easier to reason about Turing machines by eliminating the need to reason about concrete machine states, and introduce more general
-control-flow operators.  We increase the level of programming abstraction and make it possible that machines can directly manipulate values of
-arbitrary encodable types.  As a case-study, we show that our framework is strong enough to implement and verify a Turing machine that simulates a
-two-stack machine.  We formally prove that the halting problem of this two-stack machine reduces to the halting problem of multi-tape Turing machines.
+We formalise a variant of deterministic multi-Tape Turing machines in the interactive theorem prover Coq.  We build a framework for programming and
+formally verifying Turing machines, that means giving a correctness, runtime, and termination certificate that is verified by Coq.  Our framework
+extends the framework by Asperti and Ricciotti~\cite{asperti2015} in the interactive theorem prover Matita~\cite{asperti2011matita}.  Compared to
+their framework, we make it easier to reason about Turing machines by eliminating the need to reason about concrete machine states, and introduce more
+general control-flow operators, and we introduce runtime certificates.  We increase the level of programming abstraction and make it possible that
+machines can directly manipulate values of arbitrary encodable types.  As a case-study, we show that our framework is strong enough to implement and
+verify a Turing machine that simulates a two-stack machine for an variant of the $\lambda$-calculus.  We formally prove that the halting problem of
+this two-stack machine reduces to the halting problem of multi-tape Turing machines.  Thereby, this work is the last step to formally prove that
+multi-tape Turing machines can simulate the $\lambda$-calculus.
 
 \section{Related Work}
 \label{sec:relatedwork}
 
 Asperti and Ricciotti~\cite{asperti2012} formalise single-tape Turing machines over arbitrary alphabets in the interactive theorem prover Matita.
-Matita uses the same constructive type theoretic foundation as Coq, the calculus of (co)inductive constructions.  In~\cite{asperti2015}, they
-formalise multi-tape Turing machines in Matita.  They use the notion of \textit{realisation} of relations for specifying semantics of Turing machines.
-They define and verify a universal Turing machine and also formalise the reduction from multi-tape Turing machines to single-tape Turing machines.
-Furthermore, they propose the formalisation of Turing machines as a benchmark for comparing proof assistants.
+Matita uses the same constructive type theoretic foundation as Coq.  In~\cite{asperti2015}, they formalise multi-tape Turing machines in Matita.  They
+use the notion of \textit{realisation} of relations for specifying the semantics of Turing machines.  They define and verify a universal Turing
+machine and also formalise the reduction from multi-tape Turing machines to single-tape Turing machines.  Furthermore, they propose the formalisation
+of Turing machines as a benchmark for comparing proof assistants.
 
 Xu, Zhang, and Urban~\cite{Xu:2013:MTM:2529315.2529331} formalise single-tape Turing machines over a binary alphabet in
 Isabelle/HOL~\cite{nipkow2002isabelle}.  They follow the textbook of Boolos et~al.~\cite{boolos2007computability} and use Hoare-logic to specify the
@@ -46,10 +53,17 @@ semantics of Turing machines.  They translate \textit{abacus programs} and \text
 undecidability of the halting problem of Turing machines.
 
 Ciaffaglione et~al.~\cite{Ciaffaglione:2016:TTC:2956213.2956306} define tapes of Turing machines as infinite streams.  They certify Turing machines
-using induction and co-induction in Coq.
+using induction and co-induction and also show the undecidability of the halting problem in Coq.
 
-In her bachelor thesis, Heiter~\cite{Heiter} reduces the \textit{Post correspondence problem} to the halting problem of single-tape Turing machines in
-Coq.  They use the same definition of single-tape Turing machines as in \cite{asperti2012}.
+Forster, Heiter, and Smolka~\cite{PCPITP} formally reduce the \textit{Post correspondence problem} to the halting problem of single-tape Turing
+machines in Coq.  They use the same definition of Turing machines as we use, but restricted to one tape.  This definition was originally presented
+in~\cite{asperti2012}.
+
+There are other mechanisations of abstract machine models.  For example, Kunze et~al.~\cite{KunzeEtAl:2018:Formal} formalise reductions from the
+programming language $L$ to several stack-machines.  The stack-machine for that we build a simulator is a variant of a machine of this paper.  Forster
+and Smolka~\cite{ForsterSmolka17} formalise the theory of computation in Coq, based on the language $L$.  Norish
+et~al.~\cite{NorrishComputabilityTheory} formalise computability theory in HOL4 based on the $\lambda$-calculus and recursive functions and show that
+both models of computations are equivalent
 
 
 
@@ -65,9 +79,9 @@ simulates a two-stack machine and show that the halting problem of this machine 
 conclude and discuss possible future work in Chapter~\ref{chap:conclusion}.  In the appendix, we present some pearls of the Coq development of this
 thesis.
 
-Throughout the thesis, we use mathematical notation, the reader is not supposed to be expert in type theory.  In the PDF version of this thesis, all
-definitions and lemmas are hyperlinked to the documented online source code of the Coq implementation of the framework.  The complete source code is
-available for download, from:
+Throughout the thesis, we use mathematical notation, the reader is not required to be expert in type theory.  In the PDF version of this thesis, all
+definitions and lemmas are hyperlinked to the documented online source code of the Coq implementation of the framework.  The source code is tested to
+compile with Coq versions 8.7 and 8.8.  The complete source code is available for download, from:
 \begin{center}
   \url{https://www.ps.uni-saarland.de/~wuttke/bachelor/}
 \end{center}
