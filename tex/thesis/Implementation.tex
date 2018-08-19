@@ -104,13 +104,13 @@ We use Sigurd~Schneider's smpl plugin \cite{SMPL}.  I lets the user add tactics 
 applicable tactic from the database.  We use this plugin for proof automation, more on that below.
 
 
-\section{Value-containing}
+\section{Value-containment}
 \label{sec:coq-values}
 
 The Coq implementation of the definition of multi-tape Turing machines is straight-forward.  Therefore, we omit code-listings here.  The interested
 reader of the PDF version of this thesis might click on the definitions, to get to the Coq definitions.
 
-We also use typeclasses to implement the notion of encodable types and value-containing.
+We also use typeclasses to implement the notion of encodable types and value-containment.
 
 \begin{lstlisting}
 Section Codable.
@@ -126,7 +126,7 @@ Coercion encode : codable >-> Funclass.
 
 The \lstinline!Coercion! vernacular makes is possible to write \lstinline!cX x!, when \lstinline!cX! is an instance that witnesses that \lstinline!x!
 is encodable over \lstinline!X!.  This applies the concrete \lstinline!encode! function, given by \lstinline!cX!.  We prefer this notation over
-\lstinline!encode x!, due to the fact that encodability is ambiguous, as noted in Section~\ref{sec:value-containing}.  We define the alphabets in
+\lstinline!encode x!, due to the fact that encodability is ambiguous, as noted in Section~\ref{sec:value-containment}.  We define the alphabets in
 Definition~\ref{lem:retracts-basic} inductively, and also declare their proofs of finiteness.
 
 We realise the type of the extended alphabet $\Sigma^+$ with $boundary + \Sigma$, where
@@ -291,7 +291,7 @@ In Table~\ref{tab:coq-lines}, we summarise the numbers of Coq code.  We used the
     Combinators                               &  422 &  383 \\
     Lifting                                   &  361 &  193 \\
     Compound Machines                         &  378 &  278 \\
-    Value containing                          &  424 &  119 \\
+    Value containment                         &  424 &  119 \\
     Copying and writing values                &  411 &  288 \\
     Alphabet-Lift with values                 &  134 &  269 \\
     Deconstructors and constructors           &  492 &  492 \\

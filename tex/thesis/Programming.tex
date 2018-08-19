@@ -5,13 +5,13 @@ We can define machines using primitive operations like $\MS{DoAct}$, and can com
 reuse machines in bigger contexts.  However, our imperative ``language'' still has no notion of values or data cells.  We want to use each tape as a
 data cell to store one value.  Therefore, we have to define what it means that a tape contains a value.  When we ``program'' Turing machines, instead
 of using basic machines, we only use machines that directly change the value of a tape.  We use the combinators introduced in
-Chapter~\ref{chap:combining} to simulate control flow of imperative programming languages.  Using the definition of value-containing, we specify a
+Chapter~\ref{chap:combining} to simulate control flow of imperative programming languages.  Using the definition of value-containment, we specify a
 ``callee-saving'' convention for function computation.  We present a generic pattern how to program and verify Turing machines, and present more
 complex case studies.
 
 
-\section{Value-Containing}
-\label{sec:value-containing}
+\section{Value-Containment}
+\label{sec:value-containment}
 
 We first want to define what it means that a tape $t$ \emph{contains} a value $x$, written as $t \simeq x$.  Tapes, as defined in
 Definition~\ref{def:tape}, are essentially a list of symbols, so we have to linearise values to strings.
@@ -137,7 +137,7 @@ symbol in the smaller alphabet $\Sigma$.  All ``programmed'' Turing machines are
 useful, to introduce a uniform default symbol $\MS{UNKNOWN}$ to $\Sigma^+$.  Intuitively, nothing can go wrong, because, by definition, $\MS{UNKNOWN}$
 is not part of any encoding.  This intuition is confirmed by the following lemma:
 \setCoqFilename{FormalComplexity.TM.Code.ChangeAlphabet}%
-\begin{lemma}[$surject$ and value-containing][contains_translate_tau]
+\begin{lemma}[$surject$ and value-containment][contains_translate_tau]
   \label{lem:contains_translate_tau}
   Let $f: \Sigma \hookrightarrow \Tau$ be a retraction between two alphabets.  Let $x:X$, where $X$ is encodable over $\Sigma$. Then, for
   $t:\Tape_{\Tau^+}$
@@ -558,7 +558,7 @@ $\MS{MatchFin} := \Match~\MS{ReadChar}~(\lambda s.$ $\MS{match}~s$[$\Some{x} \Ri
 
 In Section~\ref{sec:CopySymbols}, we defined a machine that copies symbols until a certain symbol from one tape to another tape.  In
 Section~\ref{sec:MoveToSymbol}, we also defined a machine that moves the head to a certain symbol.  We want to use these machines to define a machine
-that copies a value from tape $t[0]$ on tape $t[1]$.  By the convention we set up in Section~\ref{sec:value-containing}), if we write new symbols on a
+that copies a value from tape $t[0]$ on tape $t[1]$.  By the convention we set up in Section~\ref{sec:value-containment}), if we write new symbols on a
 tape, this tape must be right.  With other words, the machine $\MS{CopySymbols}$ can assume that the ``target'' tape is right.  Formally, the
 correctness relation is defined as:
 \setCoqFilename{FormalComplexity.TM.Code.Copy}%
@@ -613,7 +613,7 @@ actually have a symbol on $t[0]$.  The reason for that is, that we want to relat
 \subsection{Translate Values}
 \label{sec:Translate}
 
-In Section~\ref{sec:value-containing}, we observed, that the containing relation is ambiguous: if $X$ is minimally encodable over $\Sigma$, there may
+In Section~\ref{sec:value-containment}, we observed, that the containment relation is ambiguous: if $X$ is minimally encodable over $\Sigma$, there may
 be two retractions $f_1, f_2 : \Sigma \hookrightarrow \Tau$ on the alphabet $\Tau$.  In Section~\ref{sec:MoveToSymbol}, we gave the
 $\MS{MoveToSymbol}$ machine the feature to translate the symbols it read.  Using this feature, we define a machine that translates between the two
 possibilities of the encoding of $X$ on $\Tau$.  Therefore we have to define a function $tanslate : \Tau^+ \to \Tau^+$.
