@@ -2,35 +2,35 @@
 \label{chap:conclusion}
 
 % What we did and what others did
-We have formalised multi-tape Turing machines in Coq.  We developed a framework for programming and proving correctness and runtime of multi-tape
-Turing machines.  We have demonstrated the power of this framework by implementing a multi-tape Turing machine that simulates a two-stack machine for
-a variant of the $\lambda$-calculus.  This abstract machine is a variation from the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  The
-two variants of the heap machine differ in that the programs in our version are linearised lists of tokens.  In~\cite{KunzeEtAl:2018:Formal}, the
-authors show that heap machine can simulate terms of the programming language $L$, which is a subset of the call-by-value $\lambda$-calculus.  It
-should be easy to formalise the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our version of the heap machine.  By that, we would
-formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing machines.  This is, however, outside the scope of
-this thesis.  It is an ongoing research project~\cite{ForsterLOLA}, to implement a Coq library of undecidability reductions, and this thesis provides
-one step towards this goal.  The reduction from the Post correspondence problem (PCP) to the halting problem of single-tape Turing machines has
-already been formalised in~\cite{PCPITP}.
+We have formalised multi-tape Turing machines in Coq.  We developed a framework for programming and proving correctness and time complexity of
+multi-tape Turing machines.  We have demonstrated the power of this framework by implementing a multi-tape Turing machine that simulates a two-stack
+machine for a variant of the $\lambda$-calculus.  This abstract machine is a variation from the heap machine in Kunze
+et~al.~\cite{KunzeEtAl:2018:Formal}.  The two variants of the heap machine differ in that the programs in our version are linearised lists of tokens.
+In~\cite{KunzeEtAl:2018:Formal}, the authors show that heap machine can simulate terms of the programming language $L$, which is a subset of the
+call-by-value $\lambda$-calculus.  It should be easy to formalise the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our version
+of the heap machine.  By that, we would formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing machines.
+This is, however, outside the scope of this thesis.  It is an ongoing research project~\cite{ForsterLOLA}, to implement a Coq library of
+undecidability reductions, and this thesis provides one step towards this goal.  The reduction from the Post correspondence problem (PCP) to the
+halting problem of single-tape Turing machines has already been formalised in~\cite{PCPITP}.
 
 \paragraph{Differences to other implementations of Turing machines}
 We build on Asperti and Ricciotti`s framework from~\cite{asperti2015} inside the theorem prover Matita, and initially ported their definitions of
 tapes and Turing machines to Coq.  We find their inductive definition of the tape in particular practical, because of its symmetric and final nature.
 This is in contrast to the implementation of tapes in~\cite{Xu:2013:MTM:2529315.2529331}, where tapes are split into two halves and the right half
 contains the current symbol.  Because of the symmetric nature of tapes, it was extremely easy to define an operator $\MS{Mirror}$ that mirrors the
-transition function.  The finite nature made it possible to define an always terminating machine that moves the head two the right (or using
+transition function.  The finite nature made it possible to define an always terminating machine that moves the head to the right (or using
 $\MS{Mirror}$ to the left) end of the tape.  This is in contrast to~\cite{Ciaffaglione:2016:TTC:2956213.2956306}, where tapes are implemented as
 infinite streams of symbols.  Our framework implements five major improvements on~\cite{asperti2015}.  (1) By introducing partitioned machines we make
 it unnecessary to reason about concrete states of machines.  The authors in \cite{asperti2015} already note that reasoning about internal states is
-tedious and therefore do not include the terminating state in their definition of realisation.  (2) We have introduced a certificate for runtime.
-Asperti and Ricciotti have two notion of realisation, a strong and a weak one, where the former implies termination.  However, it made no commitments
-over the concrete number of steps needed.  We use a variant of their weak notion of realisation and have introduced a new notion of runtime that
-relates the inputs to the number of steps needed for the computation.  (3) By introducing an operator $\MS{Match}$ that generalises sequential
-composition and conditional, we simplified the verification of both operators and also introduced a useful operator that was used throughout the
-thesis.  (4) We implemented general lifting operators that make it possible to compose small machines (w.r.t.\ the alphabet and number of tapes) to
-fairly complex machines.  At this point, composing compound machines is reasonably easy, but we (5) have introduced another layer of abstraction.  We
-have made it possible to directly manipulate values of encodable types.  The on-paper design and implementation in Coq of the heap machine simulator
-\todo{I can't read Yannick`s comment} was straight-forward.
+tedious and therefore do not include the terminating state in their definition of realisation.  (2) We have introduced a certificate for time
+complexity.  Asperti and Ricciotti have two notion of realisation, a strong and a weak one, where the former implies termination.  However, it made no
+commitments over the concrete number of steps needed.  We use a variant of their weak notion of realisation and have introduced a new notion of time
+complexity that relates the inputs to the number of steps needed for the computation.  (3) By introducing an operator $\MS{Match}$ that generalises
+sequential composition and conditional, we simplified the verification of both operators and also introduced a useful operator that was used
+throughout the thesis.  (4) We implemented general lifting operators that make it possible to compose small machines (w.r.t.\ the alphabet and number
+of tapes) to fairly complex machines.  At this point, composing compound machines is reasonably easy, but we (5) have introduced another layer of
+abstraction.  We have made it possible to directly manipulate values of encodable types.  The on-paper design and implementation in Coq of the heap
+machine simulator was straight-forward.
 
 
 % Norrish`s comment about the "daunting suspect".
@@ -43,42 +43,43 @@ Turing machines can be programmed with less effort than usually suspected, becau
 manipulate values of \textit{arbitrary} encodable types.  This was the main innovation to implement a simulator for $L$.
 
 
-\paragraph{Duality correctness and runtime}
-We noted that our notions of realisation and termination/runtime are dual in a sense.  The weak notion of realisation says that \textit{if} the
+\paragraph{Duality correctness and time complexity}
+We noted that our notions of realisation and termination/running time are dual in a sense.  The weak notion of realisation says that \textit{if} the
 machine terminates, then the output is correct w.r.t.\ a correctness relation $R$.  On the other side, a machine terminates in a termination relation
-$T$ if all pairs of input tapes $t$ and step numbers $k$, the machine terminates in $k$ with the input $t$.  Realisation is monotone (cf.\
-Lemma~\ref{lem:Realise_monotone}) and termination is anti-monotone (cf.\ Lemma~\ref{lem:TerminatesIn_monotone}).  We find it remarkable that we use an
-inductive correctness relation for $\MS{While}$ (cf.\ Lemma~\ref{lem:While_Realise} and a co-inductive termination relation (cf.\
-Lemma~\ref{lem:While_TerminatesIn}).  We use induction to show correctness and co-induction for termination of instances of $\While$.  However,
+$T$ if all pairs of input tapes $t$ and step numbers $k$, the machine terminates in $k$ with the input $t$.  Realisation is monotone
+(cf.~Lemma~\ref{lem:Realise_monotone}) and termination is anti-monotone (cf.~Lemma~\ref{lem:TerminatesIn_monotone}).  We find it remarkable that we
+use an inductive correctness relation for $\MS{While}$ (cf.~Lemma~\ref{lem:While_Realise}) and a co-inductive termination relation
+(cf.~Lemma~\ref{lem:While_TerminatesIn}).  We use induction to show correctness and co-induction for termination of instances of $\While$.  However,
 co-induction can be avoided.  In fact, we introduced the co-inductive termination relation of $\While$ only for streamlines.
 
 \paragraph{Similarity of realisation and weak Hoare triples}
-As already noted by~\cite{Ciaffaglione:2016:TTC:2956213.2956306}, the notion of realisation is similar to the classic Hoare logic widely used in
-program verification.  For example, consider the classic Hoare proof rule for sequential composition, and the corresponding relational rule
-(for unpartitioned machines $M_1,M_2 : \TM_\Sigma^n$):
+As already noted in~\cite{Ciaffaglione:2016:TTC:2956213.2956306}, the notion of realisation is similar to the classic Hoare logic widely used in
+program verification.  For example, consider the classic Hoare proof rule for sequential composition, and had the corresponding relational rule (for
+unpartitioned machines $M_1,M_2 : \TM_\Sigma^n$):
 \[
   \inferrule{\{A\}~P_1~\{B\} \and \{B\}~P_2~\{C\}}{\{A\}~P_1 \Seq P_2~\{C\}}
   \qquad
   \inferrule{M_1 \Realise R_1 \and M_2 \Realise R_2}{M_1 \Seq M_2 \Realise R_1 \circ R_2}
 \]
 We encode preconditions and postconditions inside correctness relations.  This means that if the precondition is not true for the input tape $t$, then
-$R~t~(y,t')$ is logically equivalent to $\True$.  Sequential composition of machines amounts to relational composition of correctness relations (cf.\
-Lemma~\ref{lem:Seq_RealiseIn}).  However, we are not aware of a Hoare-style logical calculus for reasoning about termination in a concrete number of
-steps that is dual to classical Hoare logic, like in our duality between realisation and termination.
+$R~t~(y,t')$ is logically equivalent to $\True$.  Sequential composition of machines amounts to relational composition of correctness relations
+(cf.~Lemma~\ref{lem:Seq_RealiseIn}).  However, we are not aware of a Hoare-style logical calculus for reasoning about termination in a concrete number
+of steps that is dual to classical Hoare logic, like in our duality between realisation and termination.
 
 \paragraph{Problems of the framework}
 The biggest problem of this framework is that encodability of types can be ambiguous.  For example, there are more than three ways how to encode
-natural numbers on the alphabet of the heap machine simulator (cf.\ Section~\ref{sec:Lookup}).  We had to mentally keep track of in which encoding a
+natural numbers on the alphabet of the heap machine simulator (cf.~Section~\ref{sec:Lookup}).  We had to mentally keep track of in which encoding a
 value is encoded on a tape, and to translate values from one encoding to another.
 
 
 \paragraph{Comparison of proof assistants}
 Asperti and Ricciotti\cite{asperti2015} propose the formalisation of Turing machines as a benchmark for comparing proof assistants.
+\todo{Comparison of proof assistants}
 
 
 
 \paragraph{Future work}
-When we defined the notion of value-containment (cf.\ Section~\ref{sec:value-containment}), we had future work in mind where we formalise space-usage
+When we defined the notion of value-containment (cf.~Section~\ref{sec:value-containment}), we had future work in mind where we formalise space-usage
 of machines.  We were careful to avoid memory-leaks in the machines, but have not yet formalised this aspect of correctness.  We can strengthen the
 correctness relations with commitments about the space-usage of each tape.  Asperti and Ricciotti`s inductive definition of tapes is very helpful in
 this regard, because their tapes never decrease the number of symbols.  This means that the total space usage of a tape is just the number of symbols
@@ -89,10 +90,10 @@ allocate memory, but decreases the length of the encoding and increases the leng
 on rest symbol, i.e.\ decreases the length of the rest by one, and increases the length of the encoding by one.  Thus, if the rest is empty,
 $\MS{ConstrS}$ allocates one new symbol.
 
-Further future work could be to show that the runtime function of the simulator is polynomial w.r.t.\ the number of steps and the length of the
+Further future work could be to show that the running time function of the simulator is polynomial w.r.t.\ the number of steps and the length of the
 encoding of the initial heap machine state.  We could also formalise the reduction from multi-tape Turing machines to single-tape Turing machines, and
 from single-tape Turing machines with arbitrary alphabet to single-tape Turing machines with a binary alphabet.  The opposite reduction from
-multi-tape Turing machines to $L$ is still unpublished.
+multi-tape Turing machines to $L$, i.e.\ programming an $L$ expression that simulates multi-tape Turing machines, is also open for future work.
 
 The framework can be used to program other simulator machines, for example, for the ``naive'' substitution-based machine
 in~\cite{KunzeEtAl:2018:Formal}.

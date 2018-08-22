@@ -28,15 +28,15 @@ contain a value.  We choose a finite model of tapes, i.e.\ each tape has only fi
 \section{Contributions}
 \label{sec:contributions}
 
-We formalise a variant of deterministic multi-Tape Turing machines in the interactive theorem prover Coq.  We build a framework for programming and
-formally verifying Turing machines, that means giving a correctness, runtime, and termination certificate that is verified by Coq.  Our framework
-extends the framework by Asperti and Ricciotti~\cite{asperti2015} in the interactive theorem prover Matita~\cite{asperti2011matita}.  Compared to
-their framework, we eliminate the need to reason about concrete machine states and introduce more general control-flow operators.  We also introduce a
-certificate for runtime and termination.  We increase the level of programming abstraction and make it possible that machines can directly manipulate
-values of arbitrary encodable types.  As a case-study, we show that our framework is strong enough to implement and verify a Turing machine that
-simulates a two-stack machine for a variant of the $\lambda$-calculus.  We formally prove that the halting problem of this two-stack machine reduces
-to the halting problem of multi-tape Turing machines.  Thereby, this work is the last step to formally prove that multi-tape Turing machines can
-simulate the $\lambda$-calculus.
+We formalise a variant of deterministic multi-tape Turing machines in the interactive theorem prover Coq.  We build a framework for programming and
+formally verifying Turing machines, that means giving a correctness and time complexity certificate that is verified by Coq.  Our framework extends
+the framework by Asperti and Ricciotti~\cite{asperti2015} in the interactive theorem prover Matita~\cite{asperti2011matita}.  Compared to their
+framework, we eliminate the need to reason about concrete machine states and introduce more general control-flow operators.  We also introduce a
+certificate for running time and termination.  We increase the level of programming abstraction and make it possible that machines can directly
+manipulate values of arbitrary encodable types.  As a case-study, we show that our framework is strong enough to implement and verify a Turing machine
+that simulates a two-stack machine for a variant of the $\lambda$-calculus.  We formally prove that the halting problem of this two-stack machine
+reduces to the halting problem of multi-tape Turing machines.  Thereby, this work is the last step to formally prove that multi-tape Turing machines
+can simulate the $\lambda$-calculus.
 
 \section{Related Work}
 \label{sec:relatedwork}
@@ -81,7 +81,7 @@ thesis.
 
 Throughout the thesis, we use mathematical notation, the reader is not required to be expert in type theory.  In the PDF version of this thesis, all
 definitions and lemmas are hyperlinked to the documented online source code of the Coq implementation of the framework.  The source code is tested to
-compile with Coq versions 8.7 and 8.8.  The complete source code is available for download from:
+compile with Coq versions 8.7 and 8.8.  The home page of this thesis contains the PDF version, the source code, and the online documentation:
 \begin{center}
   \url{https://www.ps.uni-saarland.de/~wuttke/bachelor/}
 \end{center}
