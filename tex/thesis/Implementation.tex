@@ -153,8 +153,8 @@ the tactic could not solve automatically, it creates a new subgoal with existent
 The tactic \lstinline!TM_Correct! instantiates the existential relation $?R'$ and proves $M \Realise ?R'$.  For that, it applies all
 correctness lemmas of the combinators, lifts, value-constructors and deconstructors, and some other auxiliary machines.  It does not apply correctness
 lemmas that are parametrised over an encoding function, e.g.\ the correctness Lemma~\ref{lem:CopyValue_Realise}, because the choice of the encoding
-functions is semantically relevant.  The user can declare more correctness and runtime lemmas to be used by \lstinline!TM_Correct!.  We use the Coq
-plugin \textit{smpl} (see~\cite{SMPL}).  For example, the following code declares the correctness and runtime lemmas of \lstinline!LiftTapes!:
+functions is semantically relevant.  The user can declare more correctness and running time lemmas to be used by \lstinline!TM_Correct!.  We use the Coq
+plugin \textit{smpl} (see~\cite{SMPL}).  For example, the following code declares the correctness and running time lemmas of \lstinline!LiftTapes!:
 
 \begin{lstlisting}
 Ltac smpl_TM_LiftN :=
@@ -174,7 +174,7 @@ The tactic \lstinline!smpl_dupfree! automatically proves that a vector is duplic
 \section{Example Correctness Proof in Coq}
 \label{sec:coq-correctness}
 
-We use the general approach how to prove correctness (or runtime) of a Turing machine, as described in Chapter~\ref{chap:compound}: We show
+We use the general approach how to prove correctness (or running time) of a Turing machine, as described in Chapter~\ref{chap:compound}: We show
 $M \Realise R'$ for some relation $R'$ and it remains to show $R' \subseteq R$.  The first step is done using the tactic
 \lstinline!TM_Correct!  For example, consider the following goal (we use the user-defined Coq notation \lstinline!$\Realise$c(9)! to mean
 $\RealiseIn{9}$).

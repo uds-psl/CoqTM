@@ -395,7 +395,7 @@ For the $\None$ constructor, we simply use $\MS{WriteValue}$
 \subsubsection{Product Types}
 \label{sec:MatchPair}
 
-The deconstructor and constructor machines for product types have to explicitly copy parts of values.  Thus, their runtime depends on the value.  We
+The deconstructor and constructor machines for product types have to explicitly copy parts of values.  Thus, their running time depends on the value.  We
 use the machines $\MS{MoveToSymbol}$ and $\MS{CopySymbols}$.
 
 Let $X$ and $Y$ be encodable on $\Sigma_X$ and $\Sigma_Y$.  The deconstructor $\MS{MatchPair} : \TM_{\Sigma_{X \times Y}^+}^2$ copies the first
@@ -419,7 +419,7 @@ symbol of the encoding of $x$ on tape~$0$ and overwrites it with a new start sym
 \end{definition}
 
 The correctness and termination proofs of $\MS{MatchPair}$ are quite technical.  We have lemmas about the tape-functions of $\MS{CopyValueL}$,
-$\MS{MoveToSymbol}$, and the respective runtime functions.  However, it is interesting to note that we have to do a case-distinction, whether
+$\MS{MoveToSymbol}$, and the respective running time functions.  However, it is interesting to note that we have to do a case-distinction, whether
 $\pi_2(p)$ is empty.  If it is empty, then the first $\MS{MoveToSymbol}~f~id$ moves to the stop symbol.  If it is not empty, it moves to the first
 symbol of the encoding of $\pi_2(p)$.  In both cases, $\MS{Move}~L$ moves to the last symbol of $\pi_1(p)$ (or to the start symbol, if $\pi_1(p)$ is
 empty).
@@ -598,7 +598,7 @@ symbols unchanged.
   $\MS{CopyValue} \Realise CopyValueRel$.
 \end{lemma}
 
-The runtime of $\MS{CopyValue}$ is linear in size of the encoding of $x$.
+The running time of $\MS{CopyValue}$ is linear in size of the encoding of $x$.
 \begin{lemma}[Runtime of $\MS{CopyValue}$][CopyValue_TerminatesIn]
   \label{lem:CopyValue_TerminatesIn}
   ~
@@ -607,7 +607,7 @@ The runtime of $\MS{CopyValue}$ is linear in size of the encoding of $x$.
   \]
 \end{lemma}
 
-Although $\MS{CopyValue}$ terminates for all tapes, we restricted runtime relations to reasonable tapes, i.e.\ in this case tape vectors $t$ that
+Although $\MS{CopyValue}$ terminates for all tapes, we restricted running time relations to reasonable tapes, i.e.\ in this case tape vectors $t$ that
 actually have a symbol on $t[0]$.  The reason for that is, that we want to relate the value to the number of steps.
 
 \subsection{Translate Values}
@@ -745,8 +745,8 @@ and $t[1]$ are input tapes for $x$ and $y$, $t[2]$ is the output tape for $f~x~y
   We say that a machine $M$ computes the function $f$, if $M \Realise FunRel~f$.
 \end{definition}
 
-Similarly, we can define the runtime function of such a machine.
-\begin{definition}[Functional computation runtime relation][Computes2_T]
+Similarly, we can define the running time function of such a machine.
+\begin{definition}[Functional computation running time relation][Computes2_T]
   \label{def:Computes2_T}
   Let $steps : X \to Y \to \Nat$ , where $X$ and $Y$ are encodable on $\Sigma$.  Then $FunT(h) \subseteq \Tape_{\Sigma^+} \times \Nat$ is defined as:
   \begin{alignat*}{2}
@@ -782,10 +782,10 @@ we define $M$ over the smallest alphabet to encode this type on.  On the other h
 Section~\ref{sec:extend-alphabet}.
 
 For the verification of $M$, we first have to give the correctness relation of $\MS{Step}$.  It should encode the loop invariant as general as
-possible.  Then we can define the correctness relation $LoopRel$ of $\MS{Loop}$ and prove $\MS{Loop} \Realise LoopRel$.  After that, we define runtime
+possible.  Then we can define the correctness relation $LoopRel$ of $\MS{Loop}$ and prove $\MS{Loop} \Realise LoopRel$.  After that, we define running time
 relations $StepT$ and $LoopT$, and show $\MS{Step} \TerminatesIn StepT$, and after that $\MS{Loop} \TerminatesIn LoopT$.  Finally, we prove
 $M \Realise FunRel(f)$ and $M \TerminatesIn FunT(steps)$, where $f:X \to Y \to Z$ is the function that $M$ computes and $steps:X \to Y \to \Nat$ the
-runtime function.
+running time function.
 
 
 \section{Case Studies}
@@ -842,7 +842,7 @@ $\MS{MatchNat}$ decreases $b$ and the step machine increases $a$.  Then it termi
   \]
 \end{definition}
 
-Because all parts of $\MS{AddStep}$ terminate in constant time, we get the constant runtime part of the semantics of $\MS{AddStep}$ for free.
+Because all parts of $\MS{AddStep}$ terminate in constant time, we get the constant running time part of the semantics of $\MS{AddStep}$ for free.
 \begin{lemma}[Correctness of $\MS{AddStep}$][Add_Step_Sem]
   \label{lem:Add_Step_Sem}
   $\MS{AddStep} \RealiseIn{9} AddStepRel$ with
@@ -873,7 +873,7 @@ after the execution of the loop, $t'[0]$ contains $a+b$ and $t'[1]$ contains $0$
   inductive hypothesis, we know that $t''[0]$ contains $b' + S~a = a+b$ and $t''[1] \simeq 0$.
 \end{proof}
 
-The runtime of $\MS{AddLoop}$ must be shown separately.  We know that the loop is executed $b+1$ times, each iteration takes $9$ steps.  We have to
+The running time of $\MS{AddLoop}$ must be shown separately.  We know that the loop is executed $b+1$ times, each iteration takes $9$ steps.  We have to
 add $1$ step for each re-iteration of the loop.  So, the total step number is $9+10 \cdot b$.
 \begin{lemma}[Runtime of $\MS{AddLoop}$][Add_Loop_Terminates]
   \label{lem:Add_Loop_TerminatesIn}
@@ -924,7 +924,7 @@ proofs.  We conclude the correctness of $\MS{Add}$.
   $\MS{Add} \Realise FunRel(add)$.
 \end{lemma}
 
-For the runtime function of $\MS{Add}$, we have to add linear components for copying of $m$ and $n$, and a constant for $\MS{Reset}$ and $1$ step for
+For the running time function of $\MS{Add}$, we have to add linear components for copying of $m$ and $n$, and a constant for $\MS{Reset}$ and $1$ step for
 each sequential composition operator.
 \begin{lemma}[Runtime of $\MS{Add}$][Add_Terminates]
   $\MS{Add} \downarrow FunT(stepsAdd)$ with
@@ -936,19 +936,19 @@ each sequential composition operator.
 \begin{table}[h]
   \centering
   \begin{tabular}{l|l|l}
-    Sub-Machine & Runtime & Accumulated runtime \\ \hline
+    Sub-Machine & Runtime & Accumulated running time \\ \hline
     $\LiftTapes{\MS{CopyValue}}{\Vector{1;2}}$  & $37 + 12 \cdot n$ & $98 + 22 \cdot m + 12 \cdot n$ \\
     $\LiftTapes{\MS{CopyValue}}{\Vector{0;3}}$  & $37 + 12 \cdot m$ & $60 + 22 \cdot m$ \\
     $\LiftTapes{\MS{AddLoop}}{\Vector{2;3}}$    & $9 + 10 \cdot m$  & $22 + 10 \cdot m$ \\
     $\LiftTapes{\MS{Reset}}{\Vector{3}}$        & $12$              & $12$ \\
   \end{tabular}
-  \caption{Accumulated sub-runtimes of $\MS{Add}$}
-  \label{tab:runtime-Add}
+  \caption{Accumulated sub-running times of $\MS{Add}$}
+  \label{tab:runningtime-Add}
 \end{table}
 
-When we prove the runtime of sequences of multiple machines, we have to give runtime functions for all suffixes of the sequence in terms of the
-sequence operator.  We accumulate the runtimes from down to top and have to add one additional step for each sequence operator.  This is visualised in
-Table~\ref{tab:runtime-Add}.
+When we prove the running time of sequences of multiple machines, we have to give running time functions for all suffixes of the sequence in terms of the
+sequence operator.  We accumulate the running times from down to top and have to add one additional step for each sequence operator.  This is visualised in
+Table~\ref{tab:runningtime-Add}.
 
 
 \subsection{Multiplication}
@@ -1032,8 +1032,8 @@ $MultStepRel$ :=
     ].
 \end{lstlisting}
 \end{lemma}
-Note that in the correctness Lemma~\ref{lem:Add_Step_Sem}, we also prove termination in constant runtime.  This is not true for $\MS{MultStep}$,
-because it calls $\MS{Add}$, which has not constant runtime.
+Note that in the correctness Lemma~\ref{lem:Add_Step_Sem}, we also prove termination in constant running time.  This is not true for $\MS{MultStep}$,
+because it calls $\MS{Add}$, which has not constant running time.
 
 As usual, we define $\MS{MultLoop} := \While~\MS{MultStep}$.  The correctness statement of $\MS{MultLoop}$ says that if the first three tapes contain
 $m$, $n$, $c$, and all other tapes are right, then after the execution of the loop, the tapes contain $0$, $n$, and $m \cdot n + c$ and the other
@@ -1068,7 +1068,7 @@ It follows that $\MS{Mult}$ computes the function $mult$, w.r.t.\ Definition~\re
   $\MS{Mult} \Realise FunRel(mult)$.
 \end{lemma}
 
-For brevity,  we omit the concrete runtime function here.  
+For brevity,  we omit the concrete running time function here.  
 \begin{lemma}[Runtime of $\MS{Mult}$][Mult_Terminates]
   There is a function $multSteps : \Nat\to\Nat\to\Nat$, such that $multSteps \in \mathcal{O}(m \cdot n^2)$ and
   $\MS{Mult} \TerminatesIn FunT(multSteps)$.
@@ -1244,7 +1244,7 @@ that if $n < \length{l}$, the new value of $n$ will be $0$ and the machine retur
 \end{lemma}
 
 The full machine $\MS{Nth}$ makes copies of $n$ and $l$ and runs $\MS{NthLoop}$ on the copies.  After that, it resets the internal tapes $2$ and $3$
-with the copies of $n$ and $l$.  Note that for the correctness of $\MS{Reset}$ it is only important that there is a value on the tape.  The runtime
+with the copies of $n$ and $l$.  Note that for the correctness of $\MS{Reset}$ it is only important that there is a value on the tape.  The running time
 (which we omit here), does depend on the actual value.
 \begin{definition}[$\MS{Nth}$][Nth]
   \[
@@ -1265,7 +1265,7 @@ It follows that $\MS{Nth}$ computes the function $nth$.
 \end{lemma}
 
 % % This is not proven in Coq
-% For brevity, we omit the concrete runtime function.
+% For brevity, we omit the concrete running time function.
 % \begin{lemma}[Runtime of $\MS{Nth}$][Nth_Terminates]
 %   \label{lem:Nth_TerminatesIn}
 %   There is a function $NthSteps:\List(X)\to\Nat\to\Nat$, such that $NthSteps \in \mathcal{O}(\size{ls})$ and $\MS{Nth} \TerminatesIn NthSteps$.

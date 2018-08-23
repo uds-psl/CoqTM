@@ -229,7 +229,7 @@ The correctness of $\MS{CopySymbols}$ can be expressed using a recursive functio
   To show: $WhileRel~CopySymbolsStepRel \subseteq CopySymbolsRel$.  By $\While$-induction (Lemma~\ref{lem:WhileInduction}).
 \end{proof}
 
-We observe that the runtime of $\MS{CopySymbols}$ only depends on the $0$th tape.  Therefore, we define a function
+We observe that the running time of $\MS{CopySymbols}$ only depends on the $0$th tape.  Therefore, we define a function
 $CopySymbolsSteps : \Tape_\Sigma \to \Nat$ that overestimates the number of steps needed for the loop, depending on the $0$th tape.  Note that
 $\While$ requires one additional step for each repeat of the loop.
 \begin{lemma}[Runtime of $\MS{CopySymbols}$][CopySymbols_TerminatesIn]
@@ -256,7 +256,7 @@ $\While$ requires one additional step for each repeat of the loop.
     \qed
   \end{enumerate}
 \end{proof}
-% Note that we see in the proof that we could replace the $8$s in the non-recursive parts of the runtime functions with $7$s.
+% Note that we see in the proof that we could replace the $8$s in the non-recursive parts of the running time functions with $7$s.
 
 Using the $\MS{Mirror}$ operator, we can define a machine $\MS{CopySymbolsL}$ that copies and goes to the left instead.  We also have to ``mirror''
 the correctness relations and their respective functions.  We do not repeat the definitions here.
@@ -269,7 +269,7 @@ the correctness relations and their respective functions.  We do not repeat the 
 
 We can define a machine $\MS{MoveToSymbol}~h~f : \TM_\Sigma^1$, where $h:\Sigma\to\Bool$ and $f:\Sigma\to\Sigma$.  This machine behaves similar as
 $\MS{CopySymbols}~h$.  Instead of copying the symbols from one tape to another tape, it ``translates'' the symbols it read, until it reads a symbol
-that satisfies the boolean predicate $h$.  We leave out the correctness and runtime statements, as they can be derived from the statements about
+that satisfies the boolean predicate $h$.  We leave out the correctness and running time statements, as they can be derived from the statements about
 $\MS{CopySymbols}$ above.
 
 \begin{definition}[$\MS{MoveToSymbol}$][MoveToSymbol]

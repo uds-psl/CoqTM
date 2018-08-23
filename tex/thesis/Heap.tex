@@ -9,7 +9,7 @@
 
 In this chapter, we use all our developed techniques to implement a multi-tape Turing machine that simulates another abstract machine.  First, we
 define and motivate the semantics of this abstract machine.  After that, we implement the simulator Turing machine and prove its correctness and
-runtime.  We show that this machine reduces the halting problem of the abstract machine to the halting problem of multi-tape Turing machines.
+running time.  We show that this machine reduces the halting problem of the abstract machine to the halting problem of multi-tape Turing machines.
 
 \section{Heap Machine}
 \label{sec:heap}
@@ -517,7 +517,7 @@ control stack.  If it is empty, it immediately terminates in $\Some\unit$.
   \end{alignat*}
 \end{lemma}
 
-For each developed machine, we also have runtime proofs, but we omitted the runtime lemmas for shortness.  We have a function
+For each developed machine, we also have running time proofs, but we omitted the running time lemmas for shortness.  We have a function
 \[
   stepSteps : \List(HClos) \to \List(HClos) \to Heap \to \Nat
 \]
@@ -551,7 +551,7 @@ $(\nil, V', H')$, the tapes of $\MS{Loop}$ contain $(\nil, V', H')$ after the ex
   \end{alignat*}
 \end{lemma}
 
-For the runtime function $loopSteps$, we need the $step$ and $halt$ functions from Lemma~\ref{lem:heap-red}.  The runtime-function of $\MS{Loop}$ is
+For the running time function $loopSteps$, we need the $step$ and $halt$ functions from Lemma~\ref{lem:heap-red}.  The running time-function of $\MS{Loop}$ is
 defined per recursion over the number $k$ of reduction steps of the heap machine.
 \begin{lemma}[Runtime of $\MS{Loop}$][Loop_Terminates]
   \label{lem:Loop_Terminates}
