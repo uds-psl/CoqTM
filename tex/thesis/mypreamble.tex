@@ -197,6 +197,11 @@
 %% Idea from https://tex.stackexchange.com/questions/212710/fill-space-created-by-phantom-with-other-text
 \newcommand{\phalign}[2]{\makebox[0pt][l]{\ensuremath{#2}}\phantom{#1}}
 
+\newcommand{\pthen}{\phalign{\MS{else}}{{\MS{then}}}}
+\newcommand{\pelse}{\phalign{\MS{else}}{{\MS{else}}}}
+\newcommand{\pThen}{\phalign{\MS{Else}}{{\MS{Then}}}}
+\newcommand{\pElse}{\phalign{\MS{Else}}{{\MS{Else}}}}
+
 \lstdefinestyle{semicoqstyle}{
   mathescape=true,
   keywordstyle=\textsf,
@@ -226,11 +231,11 @@
     {Match}{{$\MS{Match}$}}5
     {match}{{$\MS{match}$}}5
     {if}{{$\MS{if}$}}1
-    {then}{{$\phalign{\MS{else}}{{\MS{then}}}$}}3
-    {else}{{$\phalign{\MS{else}}{{\MS{else}}}$}}3
+    {then}{{$\pthen$}}2
+    {else}{{$\pelse$}}2
     {If}{{$\MS{If}$}}2
-    {Then}{{$\phalign{\MS{Else}}{{\MS{Then}}}$}}4
-    {Else}{{$\phalign{\MS{Else}}{{\MS{Else}}}$}}4
+    {Then}{{$\pThen$}}4
+    {Else}{{$\pElse$}}4
   }
 }
 

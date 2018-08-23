@@ -4,7 +4,7 @@
 \newcommand{\subst}[3]{{#1}^{#2}_{#3}}
 \newcommand{\Ter}{\MS{Ter}}
 \newcommand{\red}{\succ}
-\newcommand{\nred}{\nsucc}
+%\newcommand{\nred}{\nsucc}
 
 
 In this chapter, we use all our developed techniques to implement a multi-tape Turing machine that simulates another abstract machine.  First, we
@@ -14,11 +14,10 @@ runtime.  We show that this machine reduces the halting problem of the abstract 
 \section{Heap Machine}
 \label{sec:heap}
 
-The abstract machine we present here is a variant of the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  They show that states of their
-abstract machine can be refined to terms of the weak call-by-value $\lambda$-calculus.  From that it follows that the halting problem of closed terms
-of the weak $\lambda$-calculus reduces to the halting problem of their machine.  They also formalise their results in Coq.
+The abstract machine we present here is a variant of the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  They formally show in Coq, that
+their variant of the machine can simulate the language $L$, which implements the ``call-by-value'' subset of the $\lambda$-calculus.
 
-\subsubsection{Weak Call-By-Value $\lambda$-Calculus}
+\subsubsection{Call-By-Value $\lambda$-Calculus}
 \label{sec:L}
 
 To motivate the heap machine, we briefly define the language $L$, which implements a subset of the $\lambda$-calculus called weak call-by-value
@@ -46,8 +45,8 @@ The reduction relation $s \red t$ is defined inductively on terms:
 \label{sec:heap-def}
 \setCoqFilename{FormalComplexity.TM.LM.Semantics}%
 
-Instead of substituting expressions, the heap machine works with closures.  A closure is a program together with a variable binding.  Variable
-bindings are implemented as pointers to a linked list of closures, called \emph{heap}.  Programs are lists of tokens:
+Instead of substituting expressions, the heap machine works with closures.  A closure is a program together with an environment.  Variable bindings
+are implemented as pointers to a linked list of closures, called \textit{heap}.  Programs are lists of tokens:
 \begin{definition}[Program][Pro]
   \label{def:Tok}
   \begin{alignat*}{2}
@@ -82,7 +81,7 @@ implemented as list indices on the heap entry list.
 
 States of the abstract machine are triples of two closure lists and a heap:
 \[
-  (T, V, H) \quad:\quad \List(Clos) \times \List(Clos) \times Heap.
+  (T, V, H) ~:~ \List(Clos) \times \List(Clos) \times Heap.
 \]
 $T$ is called the control stack.  It contains the closures that the machine has to process.  The second stack $V$ is called the argument stack.  The
 $\MS{APP}$ command fetches the functions and arguments from that stack.
@@ -91,16 +90,17 @@ $\MS{APP}$ command fetches the functions and arguments from that stack.
 We first explain what each rule of the reduction predicate $(T,V,H) \succ (T',V',H')$ does, and then we define it formally.
 
 
-When the first closure on the control stack is $(a, \MS{\textbf{APP}} \cons P)$, the machine fetches two closures $g$ and
-$(b,Q)$ from the argument stack.  The closure $g$ corresponds to the argument of the application.  The second closure
-$(b,Q)$ corresponds to the called function, where $b$ is the pointer to environment in that the argument is free.  It binds the argument to
-$g$, by putting a new heap entry $(g,b)$ on the heap.  The heap machine continues executing $(c,Q)$ and the ``rest closure'' $(a,P)$, where
-$c$ is the pointer to the new heap entry.
+\paragraph{Application Rule}
+When the first closure on the control stack is $(a, \MS{APP} \cons P)$, the machine fetches two closures $g$ and $(b,Q)$ from the argument stack.  The
+closure $g$ corresponds to the argument of the application.  The second closure $(b,Q)$ corresponds to the called function, where $b$ is the pointer
+to environment in that the argument is free.  It binds the argument to $g$, by putting a new heap entry $(g,b)$ on the heap.  The heap machine
+continues executing $(c,Q)$ and the ``rest closure'' $(a,P)$, where $c$ is the pointer to the new heap entry.
 
 
-If the head control closure is $(a, \MS{\mathbf{LAM}} \cons P)$, the machine splits the linearised program $P$ into body $Q$ of the
-$\lambda$-expression and the rest program $P'$.  Then it pushes the closure of the rest program $(a,P')$ on the control stack, and the ``body
-closure'' $(a,Q)$ on the argument stack.  The splitting is realised with the function $\phi : Pro \to \Option(Pro \times Pro)$.  For example, {\small
+\paragraph{$\lambda$-Rule}
+If the head control closure is $(a, \MS{LAM} \cons P)$, the machine splits the linearised program $P$ into body $Q$ of the $\lambda$-expression and
+the rest program $P'$.  Then it pushes the closure of the rest program $(a,P')$ on the control stack, and the ``body closure'' $(a,Q)$ on the argument
+stack.  The splitting is realised with the function $\phi : Pro \to \Option(Pro \times Pro)$.  For example, {\small
   \[
     \phi[\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}; \MS{RET}; \MS{VAR}(1)] = \Some{([\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}], [\MS{VAR}(1)])}.
   \]
@@ -121,10 +121,10 @@ tail-recursive auxiliary function:
 \end{definition}
 
 
-If the first token on the first closure of the control stack is $\MS{\mathbf{VAR}}(n)$, the machine looks up the
-$n$th entry in the environment on the heap at the address $a$.  Then, it pushes this closure to the value stack.  The function $lookup : Heap \to Add
-\to Var \to \Option(Clos)$ starts at the heap entry at the address $a$, and gets the $n$th entry. We write $H[a,n]$ for
-$lookup~H~a~n$.  The function is defined by recursion on $n$:
+\paragraph{Variable Rule}
+If the first token on the first closure of the control stack is $\MS{VAR}(n)$, the machine looks up the $n$th entry in the environment on the heap at
+the address $a$.  Then, it pushes this closure to the argument stack.  The function $lookup : Heap \to Add \to Var \to \Option(Clos)$ starts at the
+heap entry at the address $a$, and gets the $n$th entry. We write $H[a,n]$ for $lookup~H~a~n$.  The function is defined by recursion on~$n$:
 \begin{definition}[$lookup$][lookup]
   \label{def:lookup}
   $H[a,n]$ is defined by recursion on $n$:
@@ -161,7 +161,12 @@ mark the end of the encoding of the body of a $\lambda$-expression.
   \end{alignat*}
 
   We write for $\red^*$ for the reflexive transitive closure of $\red$ (cf.\ Definition~\ref{def:Kleene}) and $\red^k$ for the relational power (cf.\
-  Definition~\ref{def:pow}).  We write $(T,V,H) \nred$ if the state is a terminating state.
+  Definition~\ref{def:pow}).  Furthermore, we use the following notations:
+  \begin{align*}
+                         halt(T,V,H) &:= \forall T'~V'~H'.~\lnot \left((T,V,H) \red (T',V',H')\right) \\
+    (T,V,H) \terminates^k (T',V',H') &:= (T,V,H) \red^k (T',V',H') \land halt(T',V',H') \\
+    (T,V,H) \terminates^* (T',V',H') &:= (T,V,H) \red^* (T',V',H') \land halt(T',V',H')
+  \end{align*}
 \end{definition}
 
 The tail-recursion optimised cons ($\cons_{tr}$) makes sure that no closures with empty closures are pushed on a closure stack.  This is an
@@ -171,15 +176,16 @@ optimisation for space usage with tail recursive programs.
   \label{lem:heap-red}
   ~
   \begin{enumerate}
-  \coqitem[step_iff] \label{lem:step-iff}%
-    The relation $\red$ is functional and computable, i.e.\ there is a function $step$, such that
+    \coqitem[step_iff] \label{lem:step-iff}%
+    The relation $\red$ is functional and computable, i.e.\ there is a function
+    $step : \List(Clos) \times \List(Clos) \times Heap \to \Option\left(\List(Clos) \times \List(Clos) \times Heap\right)$, such that:
     \[
-      (T,V,H) \red (T',V',H') ~\iff~ step(T,V,H)=\Some{(T',V',H')}
+      step(T,V,H)=\Some{(T',V',H')} ~\iff~ (T,V,H) \red (T',V',H')
     \]
-  \coqitem[is_halt_state_correct] \label{lem:halt_state_dec}%
-    $(T,V,H)\nred$ is decidable, i.e.\ there is a function $halt$ such that
+    \coqitem[is_halt_state_correct] \label{lem:halt_state_dec}%
+    $halt(T,V,H)$ is decidable, i.e.\ there is a function $isHalt : \List(Clos) \times \List(Clos) \times Heap \to \Bool$, such that:
     \[
-      halt(T,V,H) = \true ~\iff~ (T,V,H) \nred  
+      isHalt(T,V,H) = \true ~\iff~ halt(T,V,H)
     \]
   \end{enumerate}
 \end{lemma}
@@ -193,9 +199,9 @@ Definition~\ref{def:basic-encodings}.
 \setCoqFilename{FormalComplexity.TM.LM.Alphabets}%
 \begin{definition}[Encoding of heaps][]
   \label{def:Heap-encode}
-  The type of tokens ($Tok$) is isomorphic to the sum of $ATok := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $Var$.  $ATok$ is encodable on itself (since
-  it is finite), and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Tok$ is encodable on $\Sigma_{Tok} := \Sigma_{ATok+\Nat}$.
-  All other types are encodable according to Definition~\ref{def:basic-encodings}.
+  The type $Tok$ is isomorphic to the sum of $ATok := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $Var$.  $ATok$ is encodable on itself (since it is finite),
+  and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Tok$ is encodable on $\Sigma_{Tok} := \Sigma_{ATok+\Nat}$.  All other types
+  are encodable according to Definition~\ref{def:basic-encodings}.
   For completeness, the alphabets are:\\
   $\Sigma_{Pro} := \Sigma_{\List(Tok)}$, $\Sigma_{Add} := \Sigma_\Nat$, $\Sigma_{Clos}:=\Sigma_{Add \times Pro}$,
   $\Sigma_{Entr} := \Sigma_{\Option(Clos \times Add)}$, and $\Sigma_{Heap} := \Sigma_{\List(Entr)}$.
@@ -255,7 +261,7 @@ is the canonical retraction of closures from the heap.
 
 There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depending on whether the number is:
 \begin{enumerate}
-\item an address of the pointer of an heap on the stack alphabet:
+\item a heap address of an closure on the stack alphabet:
   \[
     \coqlink[retr_nat_lookup_clos_ad]{f_{add}} := RetrFst \circ f_{Clos'}
   \]
@@ -273,7 +279,7 @@ There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depen
 Since the function $lookup$ is tail-recursive, we define the step machine with the type $LookupStep : \TM_{\Sigma^+}^5(\Option(\Bool))$.  It first
 calls the list lookup machine ($\MS{Nth'}$).  If it failed, $\MS{Lookup}$ immediately terminates in $\false$.  Else, it makes a case-distinction on
 the heap entry $e : \Option(Clos \times Add)$.  In case it is $\None$, $\MS{Lookup}$ also terminates in $\false$.  Else it destructs the closure
-$g = (g,b)$ and makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ resets the tapes for $b$ and $n$, translates $g$ from $f_{Clos'}$ to
+$g = (P,b)$ and makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ resets the tapes for $b$ and $n$, translates $g$ from $f_{Clos'}$ to
 $f_{Clos}$ and returns $\true$.  Else it translates $b$ from $f_{next}$ to $f_{add}$, moves it to the tape that contained $a$, and repeats the loop.
 We visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~\ref{tab:exec-LookupStep-0}.
 
@@ -281,7 +287,7 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
 %%% This is also buggy, if all table floats are moved on a dedicated floating-page.
 %%% THIS SUCKS!!!
 \begin{table}[t!]
-  \centering
+  % \centering
   \scriptsize
   \begin{tabular}{l||l|l|l|l|l|l|l|l}
     Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{CopyValue}$  & $\MS{Translate}$ & $\MS{Reset}$ & $\MS{Reset}$ \\ \hline
@@ -291,13 +297,13 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
     $3:~\dashv$ &                  &                       & $1: g$               &                 &                   &                  &              & $0:~\dashv$  \\
     $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:b$             &                  & $0:~\dashv$  &              \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{LookupStep}$ %in case $H[a] = \Some{\Some{(g,b)}}$ and $n=S~n'$.  It terminates in the partition $\None$.  The
+  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=S~n'$.  It terminates in the partition $\None$.  The
     translation is from $f_{next}$ to $f_{add}$.}
   \label{tab:exec-LookupStep-S}
-\end{table}
-\begin{table}[t!]
-  \scriptsize
-  \centering
+% \end{table}
+% \begin{table}[t!]
+%   \scriptsize
+%   \centering
   \begin{tabular}{l||l|l|l|l|l|l|l}
     Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{Reset}$ & $\MS{Reset}$ & $\MS{Translate}$ \\ \hline
     $0:H$       & $0:H$            &                       &                      &                 &              &              &                  \\
@@ -306,7 +312,7 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
     $3:~\dashv$ &                  &                       & $1: g$               &                 &              &              & $0:g$            \\
     $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:~\dashv$  &              &                  \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{LookupStep}$ %in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0$.  It terminates in the partition $Some\true$.  The
+  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0$.  It terminates in the partition $Some\true$.  The
     translation is from $f_{Clos'}$ to $f_{Clos}$.}
   \label{tab:exec-LookupStep-0}
 \end{table}
@@ -320,17 +326,17 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
     & \quad \MS{Then}~\MS{If}~(\LiftBoth{\MS{MatchOption}}{RetrList ~\circ~ f_{heap}}{\Vector{4}}) \\
     & \quad \phantom{\MS{Then}}~\MS{Then}~\LiftBoth{\MS{MatchPair}}{RetrOpt \circ RetrList ~\circ~ f_{heap}}{\Vector{4;3}} \Seq \\
     & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{var}}{\Vector{2}}) \\
-    & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}}~\MS{Then}~ \MS{Return}~\bigl(
+    & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{Then}~ \MS{Return}~\bigl(
       \LiftTapes{\MS{CopyValue}}{\Vector{4;1}} \Seq
       \LiftTapes{\MS{Translate}~f_{next}~f_{add}}{\Vector{1}} \Seq \\
-    & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}~\MS{Then}~\MS{Return}\bigl(}
+    & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}~\MS{Return}\bigl(}
       \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq
       \LiftTapes{\MS{Reset}}{\Vector{3}}
       \bigr)~{\None} \\
-    & \quad \phantom{\MS{Then}~\MS{Then}~\MS{Then}}~\MS{Else}~~~ \MS{Return}~\bigl(
+    & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{Else}~~~ \MS{Return}~\bigl(
       \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq
-      \LiftTapes{\MS{Reset}}{\Vector{2}} \Seq \\
-    & \quad \phantom{\phantom{\MS{Then}~\MS{Then}~\MS{Then}}~\MS{Else}~~~ \MS{Return}~\bigl(}
+      \LiftTapes{\MS{Reset}}{\Vector{2}} \\
+    & \quad \phantom{\phantom{\MS{Then}~\MS{Then}}~\MS{Else}~~~\MS{Return}~\bigl(}
       \LiftTapes{\MS{Translate}~f_{Clos'}~f_{Clos}}{\Vector{3}}
       \bigr)~{\Some\true} \\
     & \quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{\Nop}{\Some\false} \\
@@ -375,7 +381,7 @@ $\nil$ case, it returns $\Some{\false}$ so that the loop returns $\false$.  In t
 $\MS{MatchTok}$.  In the case the head token is $\MS{RET}$, it does another case-distinction over $k$.  In the case that the head token is
 $\MS{VAR}(n)$, the machine again applies the $\MS{VAR}$ constructor to $n$ and appends this token to $Q$.  The case-machines use the auxiliary
 parametrised machine $\MS{AppATok}~t$ that appends a finite token (i.e.\ $t$ is either $\MS{APP}$, $\MS{LAM}$, or $\MS{RET}$) to the token list, and
-the machine $AppTok$ that appends a token on a tape to $Q$.
+the machine $\MS{AppTok}$ that appends a token on a tape to $Q$.
 
 
 \begin{definition}[$\MS{SplitBody}$][JumpTarget_Step]
@@ -419,29 +425,28 @@ the machine $AppTok$ that appends a token on a tape to $Q$.
 \end{definition}
 
 \begin{table}[t]
-  \centering
+  % \centering
   \begin{tabular}{l||l|l|l|l}
     Input       & $\MS{MatchList}$ & $\MS{MatchTok}$ & $\MS{MatchNat}$ & $\MS{AppATok}~\MS{RET}$ \\ \hline
     $0:P$       & $0:P'$           &                 &                 &                         \\
     $1:Q$       &                  &                 &                 & $0: Q \app [\MS{RET}]$  \\
     $2:k$       &                  &                 & $0: k'$         &                         \\
-    $3:~\dashv$ & $1: \MS{RET}$    & $0: \dashv$     &                 &                         \\
-    $4:~\dashv$ &                  &                 &                 & $1: \dashv$             \\
+    $3:~\dashv$ & $1: \MS{RET}$    & $0:~\dashv$     &                 &                         \\
+    $4:~\dashv$ &                  &                 &                 & $1:~\dashv$             \\
   \end{tabular}
   \caption{Execution protocol of $\MS{SplitBodyStep}$ for $P=\MS{RET} \cons P'$ and $k=S~k'$.  The step machine terminates in the partition $\None$,
-    thus the loop continues.  Note that tape $4$ is only used as an internal tape for $\MS{AppATok}$.}
+    thus the loop continues.  Note that tape~$4$ is only used as an internal tape for $\MS{AppATok}$.}
   \label{tab:exec-JumpTarget-RET}
-\end{table}
-
-\begin{table}
-  \centering
+% \end{table}
+% \begin{table}
+%   \centering
   \begin{tabular}{l||l|l|l|l}
     Input       & $\MS{MatchList}$ & $\MS{MatchTok}$ & $\MS{ConstrVar}$ & $\MS{AppTok}$              \\ \hline
     $0:P$       & $0:P'$           &                 &                  &                            \\
     $1:Q$       &                  &                 &                  & $0: Q \app [\MS{VAR}(n)]$  \\
     $2:k$       &                  &                 &                  &                            \\
-    $3:~\dashv$ & $1: \MS{VAR}(n)$ & $0: n$          & $0: \MS{VAR}(n)$ & $1: \dashv$                \\
-    $4:~\dashv$ &                  &                 &                  & $2: \dashv$                \\
+    $3:~\dashv$ & $1: \MS{VAR}(n)$ & $0: n$          & $0: \MS{VAR}(n)$ & $1:~\dashv$                \\
+    $4:~\dashv$ &                  &                 &                  & $2:~\dashv$                \\
   \end{tabular}
   \caption{Execution protocol of $\MS{SplitBodyStep}$ for $P=\MS{VAR}(n) \cons P'$.  The step machine terminates in the partition $\None$.}
   \label{tab:exec-JumpTarget-VAR}
@@ -451,7 +456,7 @@ Execution protocols for the step machine are depicted in Table~\ref{tab:exec-Jum
 
 Note that the step machine resets the tape for $k$ before it brakes out of the loop and returns $\true$.  Thus, no resetting is needed after the loop.
 The loop machine halts in $\true$ if and only if $\phi'~k~Q~P$ is not $\None$.  If it is $\Some{(P',Q')}$, then after the execution the first two
-tapes contain $P'$ and $Q$, and the other tapes are right.  If $\phi'~k~Q~P = \None$, the correctness relation only commits that the machine
+tapes contain $P'$ and $Q'$, and the other tapes are right.  If $\phi'~k~Q~P = \None$, the correctness relation only commits that the machine
 terminates in the partition $\false$.
 \begin{lemma}[Correctness of $\MS{SplitBodyLoop}$][JumpTarget_Loop_Realise]
   $\MS{SplitBodyLoop} \Realise SplitBodyLoopRel$.
@@ -488,15 +493,16 @@ terminates in $\None$ and the resulting tapes contain $T',V',H'$.  Otherwise, if
 partition $\Some\unit$.  Furthermore, if $\MS{Step}$ terminates in $\None$, there is a successor state $(T',V',H')$.
 
 We implement auxiliary machines for each of the three step rules.  $\MS{Step}$ first destructs $T$.  For example, in the case that
-$T=(a, (\MS{APP} \cons P)) \cons T'$, the auxiliary machine for $\MS{APP}$ destructs $V$ further and then calls a machine $\MS{App}$ that realise
+$T=(a, (\MS{APP} \cons P)) \cons T'$, the auxiliary machine for $\MS{APP}$ destructs $V$ further and then calls a machine $\MS{App}$ that realises
 list-appending and a machine $\MS{Lenght}$ that computes the length of a list.  After that, it pushes the new closures to $T$ and $V$.  As another
 example, if $T=(a, (\MS{VAR}(n) \cons P)) \cons T'$, the auxiliary machine for $\MS{VAR}$ calls $\MS{Lookup}$ and pushes the output closure to the
-argument stack and the reset closure to the control stack.  If $Lookup$ failed, $\MS{Step}$ immediately terminates in $\Some\unit$, indicating that
-the state was an halting state.
+argument stack and the reset closure to the control stack.  If $\MS{Lookup}$ failed, $\MS{Step}$ immediately terminates in $\Some\unit$, indicating
+that the state was an halting state.
 
-The machine $\MS{Step} : \TM_\Sigma^{11}(\Option(\Unit))$ is defined on an arbitrary alphabet $\Sigma$ with retractions
+The machine $\MS{Step} : \TM_{\Sigma^+}^{11}(\Option(\Unit))$ is defined on an arbitrary alphabet $\Sigma^+$ with retractions
 $f_{Stack} : \Sigma_{List(Clos)} \hookrightarrow \Sigma$ and $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$.  We omit the definition of $\MS{Step}$
-here, since it is quite complex although it is straight-forward.
+here.  Although it is quite complex, no new innovations are required and the designing of the machine was easy.  The machine first matches on the
+control stack.  If it is empty, it immediately terminates in $\Some\unit$.
 
 \begin{lemma}[Correctness of $\MS{Step}$][Step_Realise]
   \label{lem:Step_Realise}
@@ -506,7 +512,7 @@ here, since it is quite complex although it is straight-forward.
     &\quad \lambda t~(y, t').~\forall T~V~H.~ t[0] \simeq T \rightarrow t[1] \simeq V \rightarrow t[2] \simeq H \rightarrow \left(\forall (i:\Fin_8).~isRight~t[3+i]\right) \rightarrow \\
     &\quad \MS{if}~y=\None~\MS{then}~\exists T'~V'~H'.~(T,V,H) \red (T',H',V') ~\land~ \\
     &\quad \phantom{\MS{if}~y=\None~\MS{then}}~ t'[0] \simeq T' \land t'[1] \simeq V' \land t'[2] \simeq H' \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right) \\
-    &\quad \MS{else}~ (T,V,H) \nred ~\land~ \\
+    &\quad \MS{else}~ halt(T,V,H) ~\land~ \\
     &\quad \phantom{\MS{else}}~T=\nil \rightarrow t'[0] \simeq \nil \land t'[1] \simeq V \land t'[2] \simeq H \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right)
   \end{alignat*}
 \end{lemma}
@@ -540,7 +546,7 @@ $(\nil, V', H')$, the tapes of $\MS{Loop}$ contain $(\nil, V', H')$ after the ex
   \begin{alignat*}{1}
     & LoopRel := \\
     &\quad \lambda t~t'.~\forall T~V~H.~ t[0] \simeq T \rightarrow t[1] \simeq V \rightarrow t[2] \simeq H \rightarrow \left(\forall (i:\Fin_8).~isRight~t[3+i]\right) \rightarrow \\
-    &\qquad \exists T'~V'~H'.~ \left(T,V,H\right) \red^* \left(T',V',H'\right) \nred \land \\ 
+    &\qquad \exists T'~V'~H'.~ \left(T,V,H\right) \terminates^* \left(T',V',H'\right) \land \\ 
     &\qquad T' = nil \rightarrow t'[0] \simeq \nil \rightarrow t'[1] \simeq V' \rightarrow t'[2] \simeq H' \rightarrow \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right)
   \end{alignat*}
 \end{lemma}
@@ -551,7 +557,7 @@ defined per recursion over the number $k$ of reduction steps of the heap machine
   \label{lem:Loop_Terminates}
   $\MS{Loop} \TerminatesIn LoopT$ with
   \begin{alignat*}{2}
-    &LoopT &~:=~& \lambda t~k.~\exists T~V~H.~\exists T'~V'~H'~k'.~ \left(T,V,H\right) \red^{k'} \left(T',V',H'\right) \nred \land \\
+    &LoopT &~:=~& \lambda t~k.~\exists T~V~H.~\exists T'~V'~H'~k'.~ \left(T,V,H\right) \terminates^{k'} \left(T',V',H'\right) \\
     &      &    & \phantom{\lambda t~k.}~t[0] \simeq T \land t[1] \simeq V \land t[2] \simeq H \land \left(\forall i:\Fin_8.~isRight~t[3+i]\right) \land \\
     &      &    & \phantom{\lambda t~k.}~loopSteps~T~V~H~k' \leq k
   \end{alignat*}
@@ -597,7 +603,7 @@ such that the first three tapes of $initTape(T,V,H)$ contain $T$, $V$, or $H$, r
   \label{lem:HaltingProblem}
   Let $(T,V,H)$ be a heap state.  Then
   \[
-    \left(\exists (T',V',H').~(T,V,H) \red^* (T',V',H') \nred\right) \iff \left(\exists c~k.~\MS{Loop}(initTapes(T,V,H)) \terminates^k c)\right)
+    \left(\exists (T',V',H').~(T,V,H) \terminates^* (T',V',H') \right) \iff \left(\exists c~k.~\MS{Loop}(initTapes(T,V,H)) \terminates^k c)\right)
   \]
 \end{theorem}
 

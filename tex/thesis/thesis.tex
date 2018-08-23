@@ -29,7 +29,6 @@
 
 \setlength{\headheight}{15pt}
 
-\pagestyle{fancy}
 \renewcommand{\chaptermark}[1]{ \markboth{#1}{} }
 %\renewcommand{\sectionmark}[1]{ \markright{#1}{} }
 
@@ -50,13 +49,12 @@
 
 \renewcommand\cite{\citep}
 
-\thispagestyle{empty}
+\pagestyle{empty}
 \maketitlepage
 
 % Empty page
 \shipout\null
 
-\thispagestyle{empty}
 \statementpage
 
 % Empty page
@@ -82,6 +80,7 @@
 \listoftodos
 
 \clearpage
+\pagestyle{fancy}
 \pagenumbering{arabic}
 
 % Include all chapters here
