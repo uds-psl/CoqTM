@@ -22,15 +22,13 @@ transition function.  The finite nature made it possible to define an always ter
 $\MS{Mirror}$ to the left) end of the tape.  This is in contrast to~\cite{Ciaffaglione:2016:TTC:2956213.2956306}, where tapes are implemented as
 infinite streams of symbols.  Our framework implements five major improvements on~\cite{asperti2015}.  (1) By introducing partitioned machines we make
 it unnecessary to reason about concrete states of machines.  The authors in \cite{asperti2015} already note that reasoning about internal states is
-tedious and therefore do not include the terminating state in their definition of realisation.  (2) We have introduced a certificate for time
-complexity.  Asperti and Ricciotti have two notion of realisation, a strong and a weak one, where the former implies termination.  However, it made no
-commitments over the concrete number of steps needed.  We use a variant of their weak notion of realisation and have introduced a new notion of time
-complexity that relates the inputs to the number of steps needed for the computation.  (3) By introducing an operator $\MS{Match}$ that generalises
-sequential composition and conditional, we simplified the verification of both operators and also introduced a useful operator that was used
-throughout the thesis.  (4) We implemented general lifting operators that make it possible to compose small machines (w.r.t.\ the alphabet and number
-of tapes) to fairly complex machines.  At this point, composing compound machines is reasonably easy, but we (5) have introduced another layer of
-abstraction.  We have made it possible to directly manipulate values of encodable types.  The on-paper design and implementation in Coq of the heap
-machine simulator was straight-forward.
+tedious and therefore do not include the terminating state in their definition of realisation.  (2) We have introduced a notion of time complexity
+that relates the inputs to the number of steps needed for the computation.  (3) By introducing an operator $\MS{Match}$ that generalises sequential
+composition and conditional, we simplified the verification of both operators and also introduced a useful operator that was used throughout the
+thesis.  (4) We implemented general lifting operators that make it possible to compose small machines (w.r.t.\ the alphabet and number of tapes) to
+fairly complex machines.  At this point, composing compound machines is reasonably easy, but we (5) have introduced another layer of abstraction.  We
+have made it possible to directly manipulate values of encodable types.  The on-paper design and implementation in Coq of the heap machine simulator
+was straight-forward.
 
 
 % Norrish`s comment about the "daunting suspect".
