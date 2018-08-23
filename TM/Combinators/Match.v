@@ -221,7 +221,7 @@ Section Match.
   Qed.
 
 
-  (** Correct + constant runtime *)
+  (** Correct + constant running time *)
   Lemma Match_RealiseIn (R1 : Rel _ (F * _)) (R2 : F -> Rel _ (F' * _)) k1 k2:
     pM1 ⊨c(k1) R1 ->
     (forall f : F, pMf f ⊨c(k2) R2 f) ->

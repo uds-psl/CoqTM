@@ -2,7 +2,7 @@ Require Import TM.TM TM.Basic.Mono TM.Combinators.Combinators TM.Compound.Multi.
 Require Import List.
 Require Import TMTac.
 
-(** Useful for runtime stuff *)
+(** Useful for running time stuff *)
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 

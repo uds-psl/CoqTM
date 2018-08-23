@@ -267,7 +267,7 @@ Section MatchPair.
 
 End MatchPair.
 
-(** ** Compatibility of runtime functions with mapping of encodings *)
+(** ** Compatibility of running time functions with mapping of encodings *)
 
 Section Steps_comp.
   Variable (sig tau: finType) (X Y:Type) (cX: codable sig X).

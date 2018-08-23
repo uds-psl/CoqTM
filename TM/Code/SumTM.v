@@ -132,7 +132,7 @@ Section MapSum.
       | inr y => 4 + MatchSum_steps + Translate_steps _ y + M2_steps y + Translate_steps _ y + Constr_inr_steps
       end.
 
-  (** This is useful when we work with runtime polynoms *)
+  (** This is useful when we work with running time polynoms *)
   Local Arguments plus : simpl never.
   Local Arguments mult : simpl never.
 

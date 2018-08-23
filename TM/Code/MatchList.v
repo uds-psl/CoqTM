@@ -423,7 +423,7 @@ Arguments Constr_nil : simpl never.
 Arguments Constr_cons : simpl never.
 
 
-(** ** Compatibility of runtime functions with encoding mapping *)
+(** ** Compatibility of running time functions with encoding mapping *)
 
 Section Steps_comp.
   Variable (sig tau: finType) (X:Type) (cX: codable sig X).
