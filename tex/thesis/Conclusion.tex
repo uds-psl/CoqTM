@@ -10,25 +10,24 @@ In~\cite{KunzeEtAl:2018:Formal}, the authors show that heap machine can simulate
 call-by-value $\lambda$-calculus.  It should be easy to formalise the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our version
 of the heap machine.  By that, we would formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing machines.
 This is, however, outside the scope of this thesis.  It is an ongoing research project~\cite{ForsterLOLA}, to implement a Coq library of
-undecidability reductions, and this thesis provides one step towards this goal.  The reduction from the Post correspondence problem (PCP) to the
-halting problem of single-tape Turing machines has already been formalised in~\cite{PCPITP}.
+undecidability reductions, and this thesis provides one step towards this goal.  The reduction from halting problem of single-tape Turing machines to
+the Post correspondence problem (PCP) has already been mechanised in Coq in~\cite{PCPITP}.
 
 \paragraph{Differences to other implementations of Turing machines}
 We build on Asperti and Ricciotti`s framework from~\cite{asperti2015} inside the theorem prover Matita, and initially ported their definitions of
 tapes and Turing machines to Coq.  We find their inductive definition of the tape in particular practical, because of its symmetric and final nature.
-This is in contrast to the implementation of tapes in~\cite{Xu:2013:MTM:2529315.2529331}, where tapes are split into two halves and the right half
-contains the current symbol.  Because of the symmetric nature of tapes, it was extremely easy to define an operator $\MS{Mirror}$ that mirrors the
-transition function.  The finite nature made it possible to define an always terminating machine that moves the head to the right (or using
-$\MS{Mirror}$ to the left) end of the tape.  This is in contrast to~\cite{Ciaffaglione:2016:TTC:2956213.2956306}, where tapes are implemented as
-infinite streams of symbols.  Our framework implements five major improvements on~\cite{asperti2015}.  (1) By introducing partitioned machines we make
-it unnecessary to reason about concrete states of machines.  The authors in \cite{asperti2015} already note that reasoning about internal states is
-tedious and therefore do not include the terminating state in their definition of realisation.  (2) We have introduced a notion of time complexity
-that relates the inputs to the number of steps needed for the computation.  (3) By introducing an operator $\MS{Match}$ that generalises sequential
-composition and conditional, we simplified the verification of both operators and also introduced a useful operator that was used throughout the
-thesis.  (4) We implemented general lifting operators that make it possible to compose small machines (w.r.t.\ the alphabet and number of tapes) to
-fairly complex machines.  At this point, composing compound machines is reasonably easy, but we (5) have introduced another layer of abstraction.  We
-have made it possible to directly manipulate values of encodable types.  The on-paper design and implementation in Coq of the heap machine simulator
-was straight-forward.
+This is in contrast to the implementation of tapes in~\cite{xu2013}, where tapes are split into two halves and the right half contains the current
+symbol.  Because of the symmetric nature of tapes, it was extremely easy to define an operator $\MS{Mirror}$ that mirrors the transition function.
+The finite nature made it possible to define an always terminating machine that moves the head to the right (or using $\MS{Mirror}$ to the left) end
+of the tape.  This is in contrast to~\cite{ciaffaglione2016}, where tapes are implemented as infinite streams of symbols.  Our framework implements
+five major improvements on~\cite{asperti2015}.  (1) By introducing partitioned machines we make it unnecessary to reason about concrete states of
+machines.  The authors in \cite{asperti2015} already note that reasoning about internal states is tedious and therefore do not include the terminating
+state in their definition of realisation.  (2) We have introduced a notion of time complexity that relates the inputs to the number of steps needed
+for the computation.  (3) By introducing an operator $\MS{Match}$ that generalises sequential composition and conditional, we simplified the
+verification of both operators and also introduced a useful operator that was used throughout the thesis.  (4) We implemented general lifting
+operators that make it possible to compose small machines (w.r.t.\ the alphabet and number of tapes) to fairly complex machines.  At this point,
+composing compound machines is reasonably easy, but we (5) have introduced another layer of abstraction.  We have made it possible to directly
+manipulate values of encodable types.  The on-paper design and implementation in Coq of the heap machine simulator was straight-forward.
 
 
 % Norrish`s comment about the "daunting suspect".
@@ -51,9 +50,9 @@ use an inductive correctness relation for $\MS{While}$ (cf.~Lemma~\ref{lem:While
 co-induction can be avoided.  In fact, we introduced the co-inductive termination relation of $\While$ only for streamlines.
 
 \paragraph{Similarity of realisation and weak Hoare triples}
-As already noted in~\cite{Ciaffaglione:2016:TTC:2956213.2956306}, the notion of realisation is similar to the classic Hoare logic widely used in
-program verification.  For example, consider the classic Hoare proof rule for sequential composition, and had the corresponding relational rule (for
-unpartitioned machines $M_1,M_2 : \TM_\Sigma^n$):
+As already noted in~\cite{ciaffaglione2016}, the notion of realisation is similar to the classic Hoare logic widely used in program verification.  For
+example, consider the classic Hoare proof rule for sequential composition, and had the corresponding relational rule (for unpartitioned machines
+$M_1,M_2 : \TM_\Sigma^n$):
 \[
   \inferrule{\{A\}~P_1~\{B\} \and \{B\}~P_2~\{C\}}{\{A\}~P_1 \Seq P_2~\{C\}}
   \qquad

@@ -8,15 +8,19 @@
 % straight-forwardly to Coq.  The reader of the thesis can click on the theorems to read the source code, if he is interested.
 
 We outline some pearls of the implementation of the framework of this thesis in the theorem prover Coq.  We do not assume additional axioms.  The
-implementation compiles with the Coq versions 8.7 and 8.8.  We use proof scripts to derive proof terms in Coq, using Coq's standard tactical language
-\textit{ltac}.
+implementation compiles with the Coq versions 8.7 and 8.8.  We use proof scripts to derive proof terms in Coq, using Coq's standard tactic language
+\textit{ltac}.  The complete the source code can be downloaded from the homepage of this thesis:
+\begin{center}
+  \url\homepage
+\end{center}
 
-\section{Used Libraries}
+
+\section*{Used Libraries}
 \label{sec:coq-libraries}
 
 Throughout the development, we make use of the \textit{typeclass} mechanism built into Coq.  Typeclasses are first-citizen objects in Coq, that may be
 parametrised over types and other typeclasses.  Coq uses proof-search to infer instances of typeclasses.  For that, the user has to declare
-definitions as typeclass instances.  We refer to Cast{\'e}ran and Sozeau~\cite{casteran2012gentle}, for a more thoughtful description of this feature.
+definitions as typeclass instances.  We refer to Cast{\'e}ran and Sozeau~\cite{casteran2012gentle}, for a more thorough description of this feature.
 
 \paragraph{Base Library and Finite Types}
 
@@ -100,11 +104,11 @@ distinctions over \lstinline!Fin.t (S n)!.  We also introduce a notation for ele
 
 \paragraph{smpl}
 
-We use Sigurd~Schneider's smpl plugin \cite{SMPL}.  I lets the user add tactics to a tactic database and provides a tactic that applies the first
-applicable tactic from the database.  We use this plugin for proof automation, more on that below.
+We use Sigurd~Schneider's smpl plugin\footnote{\url{https://github.com/sigurdschneider/smpl}}.  I lets the user add tactics to a tactic database and
+provides a tactic that applies the first applicable tactic from the database.  We use this plugin for proof automation, more on that below.
 
 
-\section{Value-containment}
+\section*{Value-containment}
 \label{sec:coq-values}
 
 The Coq implementation of the definition of multi-tape Turing machines is straight-forward.  Therefore, we omit code-listings here.  The interested
@@ -134,7 +138,7 @@ We realise the type of the extended alphabet $\Sigma^+$ with $boundary + \Sigma$
 is defined as an inductive type.
 
 
-\section{Automation}
+\section*{Automation}
 \label{sec:coq-automation}
 
 The Coq proof scripts make use of the builtin feature of \textit{existentials}.  An existential $?X$ is a type (that may contain variables referring
@@ -150,11 +154,12 @@ operator.
 The tactic \lstinline!modpon H! instantiates assumptions of the form $H: \forall x~\cdots.~P \rightarrow \cdots \rightarrow Q$.  For each premise that
 the tactic could not solve automatically, it creates a new subgoal with existentials for the quantified variables.
 
-The tactic \lstinline!TM_Correct! instantiates the existential relation $?R'$ and proves $M \Realise ?R'$.  For that, it applies all
-correctness lemmas of the combinators, lifts, value-constructors and deconstructors, and some other auxiliary machines.  It does not apply correctness
-lemmas that are parametrised over an encoding function, e.g.\ the correctness Lemma~\ref{lem:CopyValue_Realise}, because the choice of the encoding
-functions is semantically relevant.  The user can declare more correctness and running time lemmas to be used by \lstinline!TM_Correct!.  We use the Coq
-plugin \textit{smpl} (see~\cite{SMPL}).  For example, the following code declares the correctness and running time lemmas of \lstinline!LiftTapes!:
+The tactic \lstinline!TM_Correct! instantiates the existential relation $?R'$ and proves $M \Realise ?R'$.  For that, it applies all correctness
+lemmas of the combinators, lifts, constructors and deconstructors, and some other auxiliary machines.  It does not apply correctness lemmas that are
+parametrised over an encoding function, e.g.\ the correctness Lemma~\ref{lem:CopyValue_Realise}, because the choice of the encoding functions is
+semantically relevant.  The user can declare more correctness and running time lemmas to be used by \lstinline!TM_Correct!.  We use the Coq plugin
+\textit{smpl}.  For example, the following code declares the correctness and running time
+lemmas of \lstinline!LiftTapes!:
 
 \begin{lstlisting}
 Ltac smpl_TM_LiftN :=
@@ -170,8 +175,11 @@ Smpl Add smpl_TM_LiftN : TM_Correct.
 \end{lstlisting}
 The tactic \lstinline!smpl_dupfree! automatically proves that a vector is duplicate-free.
 
+Note that we do not ``register'' correctness lemmas to \lstinline!TM_Correct! that require the user to insert semantical information.  For example,
+the correctness Lemma~\ref{lem:Reset_Realise} (\lstinline!Reset_Realise!) is parametrised over the encoding of $X$, which the user has to supply.
 
-\section{Example Correctness Proof in Coq}
+
+\section*{Example Correctness Proof in Coq}
 \label{sec:coq-correctness}
 
 We use the general approach how to prove correctness (or running time) of a Turing machine, as described in Chapter~\ref{chap:compound}: We show
@@ -273,18 +281,17 @@ Even for complex machines, the correctness proofs in Coq follow this pattern.  I
 the structure of the machine.  Runtime proofs are analogous.
 
 
-\section{Lines of Code}
+\section*{Lines of Code}
 \label{sec:coq-lines}
 
 In Table~\ref{tab:coq-lines}, we summarise the numbers of Coq code.  We used the tool \texttt{coqwc} to count the lines.%
-\todo{This table is \textit{not} complete!}
+\todo{This table is \textit{not} complete!  Also remove the library part from the total sum.  Recount everything, before releasing the thesis.}
 % XXX: This table excludes:
 % - TMTac, ProgrammingTools
 \begin{table}[h]
   \centering
-  \begin{tabular}{p{7cm}|r|r}
+  \begin{tabular}{p{6.5cm}|r|r}
     Module                                    & Spec & Proof\\ \hline
-    Libraries (incl. our code)                &  153 & 2638 \\
     Preliminary (incl. $\Loop$ and relations) &  228 &  197 \\
     Definition of Turing machines             &  448 &  180 \\
     Basic Machines                            &  122 &   34 \\
@@ -298,12 +305,19 @@ In Table~\ref{tab:coq-lines}, we summarise the numbers of Coq code.  We used the
     $\MS{MapSum}$                             &   47 &  298 \\
     Addition and Multiplication machines      &  181 &  298 \\
     List functions machines                   &  329 &  456 \\
-    Heap Machine Simulator                    &  989 & 1057 \\ \hline\hline
-    Total                                     & 7119 & 7180 \\
+    Heap Machine Simulator                    &  989 & 1057 \\
+    Notations and tactics for compound
+    or programmed machines                    &      &      \\  \hline\hline
+    Total                                     &      &      \\
   \end{tabular}
   \caption{Lines of specification and proof code for the ``modules'' (with several source files)}
   \label{tab:coq-lines}
 \end{table}
+
+The total number of library lines is $153$ spec and $2638$ proof.
+
+Using Coq`s \texttt{Extract} mechanism, we compiled the Coq implementation to Haskell and we were able to count the total number of states of the Heap
+machine simulator: The alphabet of $\MS{Loop}$ consists of $30$ symbols and it has $11537$ states.
 
 
 

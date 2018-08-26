@@ -1,0 +1,123 @@
+\chapter{Primitive Machines}
+\label{chap:basic}
+
+In this chapter, we define several classes of \textit{primitive} (or \textit{basic}) machines.  These machines are defined on an arbitrary alphabet
+$\Sigma$, but they have at most one tape.  They terminate after at most \textit{one} transition.  Primitive machines are the only machines for that we
+give transition functions $\delta$ explicitly.  They are also the only machines, for that we fully specify the type of machine states $Q$.  In the
+following two chapters, we will show how to combine these machines and build (and verify) complex machines without mentioning $Q$ or $\delta$ again.
+
+
+\section{$\MS{Null}$}
+\label{sec:Null}
+
+\setCoqFilename{FormalComplexity.TM.Basic.Null}
+
+
+$\MS{Null}$ is a very simple class of machines.  The machine $\MS{Null}_\Sigma$ is parametrised over the alphabet $\Sigma$.  Because $\Sigma$ is
+always clear from the context, we leave the index out.  We fix an alphabet $\Sigma$.  $\MS{Null}$ has zero tapes and terminates immediately, i.e.\
+after $0$ steps.
+
+\begin{definition}[$\MS{Null}$][Null]
+  \label{def:Null}
+  $\MS{Null} : \TM_\Sigma^{\mkern+1mu 0}$ is defined as follows:
+  \begin{align*}
+    Q          &:= \Unit \\
+    start      &:= \unit \\
+    \delta ~\_ &:= (\unit, \nil) \\
+    halt   ~\_ &:= \true
+  \end{align*}
+\end{definition}
+Note that if we have an unpartitioned machine $M:\TM_\Sigma^n$, we implicitly partition their states over $\Unit$ with the partitioning function
+$part(q)=\unit$.
+
+% The correctness relation says exactly that the tapes don't change:
+The correctness relation is the universal relation, because empty vectors do not have information.  However, the correctness lemma also states that
+the machine terminates in $0$ steps.
+\begin{lemma}[Correctness of $\MS{Null}$][Null_Sem]
+  \label{lem:Null_Sem} $\MS{Null} \RealiseIn0 NullRel$ with $NullRel := \lambda~t~t'.~ \True$.
+\end{lemma}
+\begin{proof}
+  By execution.  The machine terminates after zero steps in the state $\unit$.
+\end{proof}
+
+\section{$\MS{DoAct}$}
+\label{sec:DoAct}
+
+\setCoqFilename{FormalComplexity.TM.Basic.Mono}
+
+Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action $a:\Act$ (i.e.\ they optionally write a symbol and move the head of
+the tape) and terminate.
+\begin{definition}[$\MS{DoAct}~a$][DoAct]
+  \label{def:DoAct}
+  Let $a:\Act_\Sigma$.  Then $\MS{DoAct}~a : \TM_\Sigma^1$ is defined as follows:
+  \begin{align*}
+    Q          &:= \Bool \\
+    start      &:= \false \\
+    \delta ~\_ &:= (\true, \Vector{a}) \\
+    halt   ~ b &:= b
+  \end{align*}
+\end{definition}
+The semantics of $\MS{DoAct}$ is easily expressed using the function $\MS{doAct}$ (see Definition~\ref{def:step}).  The machine terminates after one
+transition:
+\begin{lemma}[Correctness of $\MS{DoAct}$][DoAct_Sem]
+  \label{lem:DoAct_Sem} $\MS{DoAct}~a \RealiseIn1 DoActRel~a$ with
+  \[
+    DoActRel~a := \lambda t~t'.~ t'[0] = \MS{doAct}~t[0]~a.
+  \]
+\end{lemma}
+% \begin{proof}
+%   By execution.
+% \end{proof}
+We define some abbreviations:
+\begin{definition}[Machine classes derived from $\MS{DoAct}$][DoAct_Derived]
+ \label{def:DoAct-derived} 
+ \begin{align*}
+   \MS{Move}       ~d &:= \MS{DoAct} (\None, d) \\
+   \MS{Write}    ~s   &:= \MS{DoAct} (\Some{s}, N) \\
+   \MS{WriteMove}~s~d &:= \MS{DoAct} (\Some{s}, d)
+ \end{align*}
+\end{definition}
+
+
+\section{$\MS{Read}$}
+\label{sec:basic_machines-Read}
+
+$\MS{Read} : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of partitioned one-tape machines.  The machines of this class have one terminating
+state for each symbol of the alphabet $\Sigma$.  They read the current symbol from the tape and terminate in the state that corresponds to that
+symbol.  For the case that there is no current symbol, they also have a distinct terminating state.  The partitioning function maps the terminating
+state for symbol $s$ to the partition $\Some{s}$.
+
+\begin{definition}[$\MS{Read}$][ReadChar]
+  The machine $\MS{Read} : \TM_\Sigma^1(\Option(\Sigma))$ is defined as follows:
+  \begin{align*}
+    Q          &:= \Bool+\Sigma \\
+    start      &:= \inl \false \\
+    \delta (\_, s) &:=
+                     \begin{cases}
+                       (\inl \true, \Vector{(\None, N)}) & s[0] = \None \\
+                       (\inr c, \Vector{(\None, N)})     & s[0] = \Some c
+                     \end{cases} \\
+    halt   ~ (\inl  b) &:= b \\
+    halt   ~ (\inr \_) &:= \true \\
+    part   ~ (\inl  q) &:= \None \\
+    part   ~ (\inr  s) &:= \Some s
+  \end{align*}
+\end{definition}
+
+The correctness lemma of $\MS{Read}$ states that the machine terminates after one step, leaves the tape unchanged, and that the partition of the
+terminating state corresponds to the current symbol on the tape.
+
+\begin{lemma}[Correctness of $\MS{Read}$][ReadChar_Sem]
+  \label{lem:Read_Sem} $\MS{Read} \RealiseIn{1} ReadRel$ with
+  \[
+    ReadRel := \lambda~t~(y,t').~ y = \MS{current}~t[0] \land t' = t
+  \]
+\end{lemma}
+\begin{proof}
+  Case distinction over $\MS{current}~t[0]$.  Both cases follow by executing the machine one step.
+\end{proof}
+
+
+%%% Local Variables:
+%%% TeX-master: "thesis"
+%%% End:

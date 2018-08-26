@@ -2,8 +2,8 @@
 \label{chap:definitions}
 
 In this chapter, we formally define multi-tape Turing machines.  We take the definition of multi-tape Turing machines and their tapes from Asperti and
-Ricciotti \cite{asperti2015}.  We introduce notions for specifying the semantics of machines, which are also based on Asperti and Ricciotti
-\cite{asperti2015}.  We define basic machines and prove their correctness.
+Ricciotti \cite{asperti2015}.  We introduce notions for specifying correctness and time complexity of machines, where the former is also based
+on~\cite{asperti2015}.
 
 \section{Preliminary Definitions}
 \label{sec:prelim}
@@ -81,7 +81,7 @@ Similarly, we can define an operator that takes a binary relation and yields a p
   \label{def:rel-fix}
   Let $R \subseteq A \times A$ and $y : B$.
   \[
-    R \att y := \lambda x~(y, z).~R~x~z \land y'=y
+    R \att y := \lambda x~(y', z).~R~x~z \land y'=y
   \]
 \end{definition}
 
@@ -97,12 +97,12 @@ Similarly, we can define an operator that takes a binary relation and yields a p
 \subsection{Retractions}
 \label{sec:retracts}
 
-Retractions are a natural way to formalise injections $f$ together with a partial inversion function $f^{-1}$.
+Retractions are a natural way to formalise injections $f$ together with their partial inversion function $f^{-1}$.
 
 \begin{definition}[Retraction]
   \label{def:retract}
-  Let $A, B : \Type$.  A pair of functions $f : A \to B$, $f^{-1} : B \to \Option(A)$ is called a retraction between $A$ and $B$, if
-  $ \forall x~y.~f^{-1}(y) = \Some x \iff y = f(x). $
+  Let $A, B : \Type$.  A pair of functions $f : A \to B$, $f^{-1} : B \to \Option(A)$ is called a retraction from $A$ to $B$, if
+  $\forall x~y.~f^{-1}(y) = \Some x \iff y = f(x).$
 \end{definition}
 
 The direction from right to left of Definition~\ref{def:retract} means that $f^{-1}$ inverses $f$.  It is equivalent to the following commutative
@@ -116,8 +116,8 @@ diagram:
 The direction from left to right of Definition~\ref{def:retract} means that $f^{-1}$ only maps values back that are in the image of $f$.  This
 property is called \textit{tightness}.
 
-We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is a retraction.  Note that this notation introduces two variables ($f$
-and $f^{-1}$), but we also overload $f$ with the tuple of both functions.
+We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is a retraction.  Note that this notation introduces two names for
+functions ($f : A \to B$ and $f^{-1} : B \to \Option(A)$), but mostly we use the name $f$ for the \textit{tuple} of both functions.
 
 
 \begin{lemma}[Basic properties of retractions]
@@ -213,19 +213,18 @@ clear.  Our machines behave deterministically, because $\delta$ is a function.
 
 When we want to verify complex machines, we do not want to reason about internal states.  We rather want to reason about partitions of states, e.g.\
 positive or negative states.  In general, if $F$ is a finite type, then $M = (M', part)$ is a \emph{partitioned} machine, where $M'$ is an
-unpartitioned machine and $part \from Q_{M'} \to F$ the partitioning function.  We write $\MS{TM}_\Sigma^n(F)$ for the type%
-\footnote{Formally, it is defined as a sigma type: $\MS{TM}_\Sigma^n(F) := \sum_{M:\MS{TM}_\Sigma^n}\bigl(Q_M \to F\bigr)$.  We use the projections
-  $\pi_1$ and $\pi_2$ implicitly.}%
-of partitioned machines over $F$.  We identify unit-partitioned machines $\TM_\Sigma^n(\Unit)$ with unpartitioned machines $\TM_\Sigma^n$.  We use the
-symbol $M$ for both partitioned and unpartitioned machines $\TM_\Sigma^n$.  It should however be always clear from the context, whether $M$ is a
-partitioned or unpartitioned machine.
+unpartitioned machine and $part \from Q_{M'} \to F$ the partitioning function.  We write $\MS{TM}_\Sigma^n(F)$ for the type of partitioned machines
+over $F$.\footnote{Formally, the type is defined as a sigma type: $\MS{TM}_\Sigma^n(F) := \sum_{M:\MS{TM}_\Sigma^n}\bigl(Q_M \to F\bigr)$.  We use the
+  projections $\pi_1$ and $\pi_2$ implicitly.}  We identify unit-partitioned machines $\TM_\Sigma^n(\Unit)$ with unpartitioned machines
+$\TM_\Sigma^n$.  We use the symbol $M$ for both partitioned and unpartitioned machines $\TM_\Sigma^n$.  It should however be always clear from the
+context, whether $M$ is a partitioned or unpartitioned machine.
 
-On a \emph{tape}, arbitrary much memory can be allocated.  However every tape has only finitely many symbols, i.e.\ there is a left-most and a
+On a \emph{tape}, arbitrarily much memory can be allocated.  However every tape has only finitely many symbols, i.e.\ there is a left-most and a
 right-most symbol.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol under which the (read/write) head of tape is.  It
 is essential that the symbol lists ($ls$ and $rs$) are ordered such that the head of the list is the symbol next to the symbol $m$.  When we think of
 tapes as a finite sequence of symbols from left to right, this means that $ls$ is stored in reversed order.
 
-There are three cases where there is no current symbol: the tape can be completely empty, or the head can be to the left (or right) outermost of the
+There are three cases where there is no current symbol: the tape can be completely empty, or the head can be to the left (or right) outermost of a
 non-empty tape.  Formally, tapes are defined inductively:
 
 \begin{definition}[Tape][tape]
@@ -239,7 +238,7 @@ non-empty tape.  Formally, tapes are defined inductively:
   \end{alignat*}
 \end{definition}
 
-As usual, we leave the subscript $\Sigma$ out, if it is clear from the context.
+Recall that we leave the subscript $\Sigma$ out, if it is clear from the context.
 
 % We introduce a informal notation of tapes, where the symbols are represented from left to right, hence we have to reverse the lists $ls$.  The
 % position of the head is marked by the arrow:
@@ -300,20 +299,20 @@ The functions $\MS{left},~\MS{right} \from \Tape \to \List(\Sigma)$ return the s
 % Note that as a consequence of the informal notation, we have
 % $$\MS{left}(\midtape{ls}{m}{rs}) = \MS{left}(\MS{midtape}~(\rev{ls})~{m}~{rs}) = \rev{ls}.$$
 
-Now we can define the function $\MS{wr} \from \Tape \to \Option(\Move) \to \Tape$, that writes an optional symbol to a tape.  When we write $\Some m$,
-we get a $\MS{midtape}$, where the left and right symbols remain unchanged and $a$ is now in the middle.  For $\None$, the tape remains unchanged.
-Note that there is no way to decrease the number of symbols on a tape, or to write ``blank'' symbols.
+Now we can define the function $\MS{wr} \from \Tape_\Sigma \to \Option(\Sigma) \to \Tape_\Sigma$, that writes an optional symbol to a tape.  When we
+write $\Some a$, we get a $\MS{midtape}$, where the left and right symbols remain unchanged and $a$ is now in the middle.  For $\None$, the tape
+remains unchanged.  Note that there is no way to decrease the number of symbols on a tape, or to write ``blank'' symbols.
 
 \begin{definition}[$\MS{wr}$][tape_write]
   \begin{alignat*}{3}
     \MS{wr}~t &~ \None   &&:= t \\
-    \MS{wr}~t &~ \Some m &&:= \MS{midtape}~(\MS{left}~t)~{m}~(\MS{right}~t)
+    \MS{wr}~t &~ \Some a &&:= \MS{midtape}~(\MS{left}~t)~{a}~(\MS{right}~t)
   \end{alignat*}
 \end{definition}
 
 To define the function $\MS{step} \from \Conf \to \Conf$, we need to know the symbols on the tapes.  Therefore we define a function
-$\MS{current} \from Tape \to \Option(\Sigma)$.  It returns $\None$ if the head is not under a symbol, and $\Some m$ if the head is under the symbol
-$a$.
+$\MS{current} \from Tape \to \Option(\Sigma)$.  It returns $\None$ if the head is not under a symbol, and $\Some m$ if the head is under the
+symbol~$m$.
 
 \begin{definition}[$\MS{current}$][current]
   \begin{alignat*}{2}
@@ -326,12 +325,12 @@ We can state a correctness lemma of the function $\MS{wr}$:
 
 \begin{fact}[Correctness of $\MS{wr}$]
   \label{lem:write}
-  For all tapes $t$ and symbols $\sigma:\Sigma$:
+  For all tapes $t$ and symbols $a:\Sigma$:
   % TODO: Align it, for example like in https://tex.stackexchange.com/questions/12771/mix-align-and-enumerate
   \begin{enumerate}
-  \item $\MS{right}   (\MS{wr}~t~\Some\sigma) = \MS{right}(t)$
-  \item $\MS{left}    (\MS{wr}~t~\Some\sigma) = \MS{left} (t)$
-  \item $\MS{current} (\MS{wr}~t~\Some\sigma) = \Some\sigma$
+  \item $\MS{right}   (\MS{wr}~t~\Some a) = \MS{right}(t)$
+  \item $\MS{left}    (\MS{wr}~t~\Some a) = \MS{left} (t)$
+  \item $\MS{current} (\MS{wr}~t~\Some a) = \Some a$
   \end{enumerate}
 \end{fact}
 % \begin{proof}
@@ -427,13 +426,14 @@ The correctness part is captured by realisation of a (partitioned) relation $R$:
 If $M \Realise R$, we say that $M$ realises the relation $R$.  Informally, this means that the output of the machine is correct w.r.t.\ the relation,
 if the machine terminates.
 
+To show realisation of a machine, it suffices to find a (smaller) relation $R'$ and show that it implies the (target) relation $R$:
 \begin{lemma}[Monotonicity of $M \Realise R$][Realise_monotone]
   \label{lem:Realise_monotone}
   If $M \Realise R'$ and $R' \subseteq R$, then $M \Realise R$.
 \end{lemma}
 
-The running time part of the semantics implies termination of the machine on certain inputs.  It links the input $t:\Tape_\Sigma^n$ to the number of steps
-the machine needs for the computation.
+The running time part of the semantics implies termination of the machine on certain inputs.  It links the input $t:\Tape_\Sigma^n$ to the number of
+steps that the machine needs for the computation.
 
 \begin{definition}[Termination in a running time relation][TerminatesIn]
   \label{def:TerminatesIn}
@@ -445,7 +445,7 @@ the machine needs for the computation.
   \]
 \end{definition}
 
-
+Termination is anti-monotone.  This means that it suffices to show $M \downarrow T$, to find a (bigger) relation $T'$ and show $T \subseteq T'$.
 \begin{lemma}[Anti-monotonicity of $M \TerminatesIn T$][TerminatesIn_monotone]
   \label{lem:TerminatesIn_monotone}
   If $M \TerminatesIn T'$ and $T \subseteq T'$, then $M \TerminatesIn T$.
@@ -463,14 +463,14 @@ For machines that always terminate in a constant number of steps, it is useful t
   \]
 \end{definition}
 
-\begin{lemma}[Specification of realisation in constant time][Realise_total]
+\begin{lemma}[][Realise_total]
   \label{lem:Realise_total}
-  \[
+  $
     M \RealiseIn{k} R
     \quad\iff\quad
     M \Realise R ~\land~
     M \TerminatesIn (\lambda \_~k'.~k \le k')
-  \]
+  $
 \end{lemma}
 
 \begin{lemma}[Monotonicity of $M \RealiseIn{k} R$][RealiseIn_monotone]
@@ -479,122 +479,20 @@ For machines that always terminate in a constant number of steps, it is useful t
   $M \RealiseIn{k} R$.
 \end{lemma}
 
-Asperti and Ricciotti \cite{asperti2015} make a distinction between weak and strong realisation, where the strong version implies termination for
-every input, however, in an uncertain number of steps.  We use their weak realisation extended with the finite partition $F$.  They have no notion of
-time complexity.
+Asperti and Ricciotti~\cite{asperti2015} make a distinction between weak and strong realisation, where the strong version implies termination for
+every input, however, in an uncertain number of steps.  We use their weak realisation extended with state partitioning functions, because we do not
+want to reason about concrete machine states, which is tedious for complex machines.  They have no notion of time complexity.
 
 
-\section{Basic Machines}
-\label{sec:basic_machines}
+% \section{Cannonical Relations}
+% \label{sec:canonical}
 
-We define several classes of \textit{basic} machines.  All complex machines we build are based on these machines.  In the following chapters, we show
-how to combine these basic machines and build complex machines.
+% Similar as in Asperti and Ricciotti~\cite{asperti2015}, we can define correctness relations that every machines realise.  Trivially, every machine
+% realises the universal relation $\lambda t~(y,t'). \True$.
 
-\todo{This could get its own chapter, because basic machines need another motivation.  Duplicating the motivation text on top of the chapter here is
-  not wise.  Also, basic machines are unrelated to the definition.}
+% \begin{fact}
+% \end{fact}
 
-\subsection{$\MS{Null}$}
-\label{sec:Null}
-
-\setCoqFilename{FormalComplexity.TM.Basic.Null}
-
-A very simple class of machines is the zero-tape $\MS{Null}$ machine.  The machine $\MS{Null}_\Sigma$ is parametrised over the alphabet.  Because
-$\Sigma$ is always clear from the context, we leave the index out.  We fix an alphabet $\Sigma$.  $\MS{Null}$ terminates immediately, i.e.\ after $0$
-steps.
-
-\begin{definition}[Null][Null]
-  \label{def:Null}
-  $\MS{Nop}~f: \TM_\Sigma^{\mkern+1mu 0}$ is defined as follows:
-  \begin{align*}
-    Q          &:= \Unit \\
-    start      &:= \unit \\
-    \delta ~\_ &:= (\unit, \nil) \\
-    halt   ~\_ &:= \true
-  \end{align*}
-\end{definition}
-Note that if we have an unpartitioned machine $M:\TM_\Sigma^n$, we implicitly partition it over $\Unit$ with $part(q)=\unit$.
-
-% The correctness relation says exactly that the tapes don't change:
-The correctness relation is the universal relation, because empty vectors do not have information.
-\begin{lemma}[Correctness of $\MS{Null}$][Null_Sem]
-  \label{lem:Null_Sem} $\MS{Null} \RealiseIn0 NullRel$ with $NullRel := \lambda~t~t'.~ \True$.
-\end{lemma}
-\begin{proof}
-  By execution.  The machine terminates after zero steps in the start state.
-\end{proof}
-
-\subsection{$\MS{DoAct}$}
-\label{sec:DoAct}
-
-\setCoqFilename{FormalComplexity.TM.Basic.Mono}
-
-Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action $a:\Act$ (i.e.\ they optionally write a symbol and move the head of
-the tape) and terminate.
-\begin{definition}[$\MS{DoAct}~a$][DoAct]
-  \label{def:DoAct}
-  Let $a:\Act_\Sigma$.  Then $\MS{DoAct}~a : \TM_\Sigma^1$ is defined as follows:
-  \begin{align*}
-    Q          &:= \Bool \\
-    start      &:= \false \\
-    \delta ~\_ &:= (\true, \Vector{a}) \\
-    halt   ~ b &:= b
-  \end{align*}
-\end{definition}
-The semantics of $\MS{DoAct}$ is easily expressed using the function $\MS{doAct}$ (see Definition~\ref{def:step}):
-\begin{lemma}[Correctness of $\MS{DoAct}$][DoAct_Sem]
-  \label{lem:DoAct_Sem} $\MS{DoAct}~a \RealiseIn1 DoActRel~a$ with
-  \[
-    DoActRel~a := \lambda~t~t'.~ t'[0] = \MS{doAct}~t[0]~a.
-  \]
-\end{lemma}
-% \begin{proof}
-%   By execution.
-% \end{proof}
-We define some abbreviations:
-\begin{definition}[Machine classes derived from $\MS{DoAct}$][DoAct_Derived]
- \label{def:DoAct-derived} 
- \begin{align*}
-   \MS{Move}       ~d &:= \MS{DoAct} (\None, d) \\
-   \MS{Write}    ~s   &:= \MS{DoAct} (\Some{s}, N) \\
-   \MS{WriteMove}~s~d &:= \MS{DoAct} (\Some{s}, d)
- \end{align*}
-\end{definition}
-
-
-\subsection{$\MS{Read}$}
-\label{sec:basic_machines-Read}
-
-$\MS{Read} : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of partitioned machines.  The machines of this class have one state for each
-character of the alphabet.  They read a symbol and terminate in the state that corresponds to this symbol.  They also have a distinct terminating
-state for the case that the current symbol is $\None$.
-
-\begin{definition}[$\MS{Read}$][ReadChar]
-  The machine $\MS{Read} : \TM_\Sigma^1(\Option(\Sigma))$ is defined as follows:
-  \begin{align*}
-    Q          &:= \Bool+\Sigma \\
-    start      &:= \inl \false \\
-    \delta (\_, s) &:=
-                     \begin{cases}
-                       (\inl \true, \Vector{(\None, N)}) & s[0] = \None \\
-                       (\inr c, \Vector{(\None, N)})     & s[0] = \Some c
-                     \end{cases} \\
-    halt   ~ (\inl  b) &:= b \\
-    halt   ~ (\inr \_) &:= \true \\
-    part   ~ (\inl  q) &:= \None \\
-    part   ~ (\inr  s) &:= \Some s
-  \end{align*}
-\end{definition}
-
-
-\begin{lemma}[Correctness of $\MS{Read}$][ReadChar_Sem]
-  \label{lem:Read_Sem} $\MS{Read} \RealiseIn{1} ReadRel$ with
-  \[
-    ReadRel := \lambda~t~y~t'.~ y = \MS{current}~t[0] \land t' = t
-  \]
-\end{lemma}
-\begin{proof}
-  Case distinction over $\MS{current}~t[0]$.  Both cases by executing the machine one step.
-\end{proof}
 
 
 
