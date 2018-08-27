@@ -855,40 +855,40 @@ Section Semantics.
 
   (** *** Canonical relations *)
 
-  Section Cannonical_Correctness.
+  Section Canonical_Correctness.
     Variable (n : nat).
     Variable (F : finType).
     Variable (pM : pTM F n).
 
-    Definition R_canonical : pRel F n :=
+    Definition Canonical_Rel : pRel F n :=
       fun t1 '(y, t2) =>
         exists outc k, loopM (M := projT1 pM) (initc (projT1 pM) t1) k = Some outc /\
                   ctapes outc = t2 /\ projT2 pM (cstate outc) = y.
 
-    Lemma Realise_R_mTM :
-      pM ⊨ R_canonical.
+    Fact Canonical_Realise :
+      pM ⊨ Canonical_Rel.
     Proof. hnf. firstorder eauto. Qed.
 
-    Lemma R_canonical_functional : functional R_canonical.
+    Lemma R_canonical_functional : functional Canonical_Rel.
     Proof.
       hnf. intros x (y1&z1) (y2&z2) (c1&k1&H1&<-&H1') (c2&k2&H2&<-&H2').
       pose proof loop_injective H1 H2 as ->. congruence.
     Qed.
 
-  End Cannonical_Correctness.
+  End Canonical_Correctness.
 
-  Section CanonicalRelation2.
+  Section Canonical_Termination.
     Variable (n : nat).
     Variable (M : mTM n).
 
-    Definition T_canonical : tRel n :=
+    Definition Canonical_T : tRel n :=
       fun t k => exists outc, loopM (M := M) (initc M t) k = Some outc.
 
-    Lemma T_canonical_TerminatesIn :
-      M ↓ T_canonical.
+    Lemma Canonical_TerminatesIn :
+      M ↓ Canonical_T.
     Proof. firstorder. Qed.
 
-  End CanonicalRelation2.
+  End Canonical_Termination.
 
 End Semantics.
 
