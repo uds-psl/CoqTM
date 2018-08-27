@@ -1,18 +1,18 @@
-\chapter{Compound Machines}
+\chapter{Simple Machines}
 \label{chap:compound}
 
-In this chapter, we build complex machines, using the combinators developed in Chapter~\ref{chap:combining}, as well as the tapes-lift of
-Chapter~\ref{chap:lifting}.  However, we do not use the alphabet lift in this chapter.  We also prove correctness and time complexity of these
-machines.
+In this chapter, we build and verify simple machines, using the primitive machines from Chapter~\ref{chap:basic}, the combinators developed in
+Chapter~\ref{chap:combining}, and the tapes-lift of Chapter~\ref{chap:lifting}.  The machines in this chapter will be useful in the next chapter.
+However, we do not use the alphabet-lift yet.  We show how we prove correctness and termination of machines in general.
 
-When we prove $M \Realise R$ for some machine $M$ and its correctness relation $R$, the general approach is to first find a relation $R'$ that $M$
+When we prove $M \Realise R$ for a machine $M$ and its correctness relation $R$, the general approach is to first find a relation $R'$ that $M$
 realises.  To find the relation $R'$, we apply the correctness lemmas of the combinators, lifts, and concrete machines.  Then, we apply
 Lemma~\ref{lem:Realise_monotone}, and have to show $R' \subseteq R$.  Finding the relation $R'$ is mechanical, and indeed, we automate this step in
-Coq, see more in Chapter~\ref{chap:implementation}.  So the main part of the proof is showing $R' \subseteq R$.
+Coq, see more in the appendix.  So the main part of the proof is showing $R' \subseteq R$.
 
 When $M$ always terminates in constant time $k$, we show $M \RealiseIn{k} R$ instead.  Using the monotonicity Lemma~\ref{lem:RealiseIn_monotone}, we
-can prove correctness and (constant) time at once.  For (non-constant) running time, we use the dual approach, using the anti-monotonicity
-Lemma~\ref{lem:TerminatesIn_monotone}.
+can prove correctness and constant time at once.  For non-constant running time, we show $M \TerminatesIn T$ for a running time relation~$T$.  For
+that, we use the dual approach and apply the anti-monotonicity Lemma~\ref{lem:TerminatesIn_monotone}.
 
 
 \section{$\Nop$}
@@ -147,7 +147,7 @@ $0$, writes it to tape $1$, and moves both tapes to right, until the read symbol
 terminates.
 
 We first define the machine for the step.  Since we want to apply the $\While$ operator on the step machine, it must be partitioned over
-$\Option(\Unit)$.  $\Some\unit$ means to break out of the loop and $\None$ means to repeat the loop.
+$\Option(\Unit)$.  $\Some\unit$ means to break out of the loop and $\None$ means to repetition the loop.
 \begin{definition}[$\MS{CopySymbolsStep}$][CopySymbols_Step]
   \label{CopySymbols_Step}
   % \begin{multline*}
@@ -245,7 +245,7 @@ $\While$ requires one additional step for each repeat of the loop.
 \end{lemma}
 \begin{proof}
   We have to show $CopySymbolsT \subseteq WhileT~CopySymbolsStepRel~(\lambda \_~k.~7 \leq k)$, using the co-induction
-  Lemma~\ref{lem:WhileCoInduction}.  Let $stepsCopySymbols~t[0] \leq k$.  We chose $k_1 := 7$.  We have two cases.
+  Lemma~\ref{lem:WhileCoInduction}.  Let $stepsCopySymbols~t[0] \leq k$.  We choose $k_1 := 7$.  We have two cases.
   \begin{enumerate}
   \item We have $CopySymbolsStepRel~t~(\Some\unit, t')$.  Therefore, we know that either $\MS{current}(t[0])=\Some{x}$ with $h(x)=\true$, or
     $\MS{current}(t[0])=\None$.  In both cases, we have $stepsCopySymbols(t[0]) = 8$.  Thus, we have

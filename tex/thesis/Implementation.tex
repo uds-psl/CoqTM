@@ -90,10 +90,9 @@ Retract_inl : forall A B C : Type, Retract A B -> Retract A (B + C)
 We also have a library for inhabited types.  Whenever we need a semantically irrelevant value, we can just write \lstinline!default! and Coq infers
 the type and inserts a value with the following typeclass:
 \begin{lstlisting}
-Class inhabitedC (X : Type) :=
-  {
-    default : X;
-  }.
+Class inhabitedC (X : Type) := {
+  default : X;
+}.
 \end{lstlisting}
 
 \paragraph{Vectors and $\Fin_k$}
@@ -108,7 +107,7 @@ We use Sigurd~Schneider's smpl plugin\footnote{\url{https://github.com/sigurdsch
 provides a tactic that applies the first applicable tactic from the database.  We use this plugin for proof automation, more on that below.
 
 
-\section*{Value-containment}
+\section*{Value-Containment}
 \label{sec:coq-values}
 
 The Coq implementation of the definition of multi-tape Turing machines is straight-forward.  Therefore, we omit code-listings here.  The interested
@@ -117,13 +116,9 @@ reader of the PDF version of this thesis might click on the definitions, to get 
 We also use typeclasses to implement the notion of encodable types and value-containment.
 
 \begin{lstlisting}
-Section Codable.
-  Variable (sig: Type).
-  Variable (X: Type).
-  Class codable := mk_codable {
-    encode :> X -> list sig
-  }.
-End Codable.
+Class codable (sig: Type) (X: Type) := {
+  encode : X -> list sig;
+}.
 Arguments encode {sig} {X} {_}.
 Coercion encode : codable >-> Funclass.
 \end{lstlisting}
@@ -133,7 +128,7 @@ is encodable over \lstinline!X!.  This applies the concrete \lstinline!encode! f
 \lstinline!encode x!, due to the fact that encodability is ambiguous, as noted in Section~\ref{sec:value-containment}.  We define the alphabets in
 Definition~\ref{lem:retracts-basic} inductively, and also declare their proofs of finiteness.
 
-We realise the type of the extended alphabet $\Sigma^+$ with $boundary + \Sigma$, where
+We realise the type of the extended alphabet $\Sigma^+ := boundary + \Sigma$, where
 \[ boundary ::= \MS{START} ~|~ \MS{STOP} ~|~ \MS{UNKNOWN} \]%
 is defined as an inductive type.
 
@@ -141,10 +136,10 @@ is defined as an inductive type.
 \section*{Automation}
 \label{sec:coq-automation}
 
-The Coq proof scripts make use of the builtin feature of \textit{existentials}.  An existential $?X$ is a type (that may contain variables referring
-to more existentials) and the environment in which this existential should be typed.  Existentials are refined during unification (e.g.\ using the
-\lstinline!apply! tactic) in the proof script.  Before the proof script can be finished and saved with the \lstinline!Qed! command, all existential
-variables must be bound to values.
+The Coq proof scripts make use of the builtin feature of \textit{existential variable}.  An existential variable $?X$ is a type (that may contain
+variables referring to more existentials) and the environment in which this existential should be typed.  Existentials are refined during unification
+(e.g.\ using the \lstinline!apply! tactic) in the proof script.  Before the proof script can be finished and saved with the \lstinline!Qed! command,
+all existential variables must be bound to values.
 
 The tactic \lstinline!TMSimp! destructs conjunctive assumptions in all hypothesises (i.e.\ logical conjunctions and logical existentials).  It also
 names introduced tapes to \lstinline!tmid!, \lstinline!tmid0! etc.  Furthermore, it instantiates and rewrites with hypothesis of the form
@@ -155,11 +150,10 @@ The tactic \lstinline!modpon H! instantiates assumptions of the form $H: \forall
 the tactic could not solve automatically, it creates a new subgoal with existentials for the quantified variables.
 
 The tactic \lstinline!TM_Correct! instantiates the existential relation $?R'$ and proves $M \Realise ?R'$.  For that, it applies all correctness
-lemmas of the combinators, lifts, constructors and deconstructors, and some other auxiliary machines.  It does not apply correctness lemmas that are
-parametrised over an encoding function, e.g.\ the correctness Lemma~\ref{lem:CopyValue_Realise}, because the choice of the encoding functions is
-semantically relevant.  The user can declare more correctness and running time lemmas to be used by \lstinline!TM_Correct!.  We use the Coq plugin
-\textit{smpl}.  For example, the following code declares the correctness and running time
-lemmas of \lstinline!LiftTapes!:
+lemmas of the primitive machines, combinators, lifts, constructors and deconstructors, and some other auxiliary machines.  It does not apply
+correctness lemmas that are parametrised over an encoding function, e.g.\ the correctness Lemma~\ref{lem:CopyValue_Realise}, because the choice of the
+encoding functions is semantically relevant.  The user can declare more correctness and running time lemmas to be used by \lstinline!TM_Correct!.  We
+use the Coq plugin \textit{smpl}.  For example, the following code declares the correctness and running time lemmas of \lstinline!LiftTapes!:
 
 \begin{lstlisting}
 Ltac smpl_TM_LiftN :=
@@ -285,7 +279,7 @@ the structure of the machine.  Runtime proofs are analogous.
 \label{sec:coq-lines}
 
 In Table~\ref{tab:coq-lines}, we summarise the numbers of Coq code.  We used the tool \texttt{coqwc} to count the lines.%
-\todo{This table is \textit{not} complete!  Also remove the library part from the total sum.  Recount everything, before releasing the thesis.}
+\todo{This table is \textit{not} complete!  Recount everything, before releasing the thesis.}
 % XXX: This table excludes:
 % - TMTac, ProgrammingTools
 \begin{table}[h]
@@ -314,7 +308,8 @@ In Table~\ref{tab:coq-lines}, we summarise the numbers of Coq code.  We used the
   \label{tab:coq-lines}
 \end{table}
 
-The total number of library lines is $153$ spec and $2638$ proof.
+The total number of library lines is $153$ spec and $2638$ proof.  The total compilation time is circa 4:17~minutes.\footnote{Measured on the
+  following hardware: \texttt{Intel(R) Core(TM) i7-4710MQ CPU}; 8 cores @ 2.50GHz; compiled on GNU/Linux with \texttt{make -j8} and Coq 8.8.1.}
 
 Using Coq`s \texttt{Extract} mechanism, we compiled the Coq implementation to Haskell and we were able to count the total number of states of the Heap
 machine simulator: The alphabet of $\MS{Loop}$ consists of $30$ symbols and it has $11537$ states.

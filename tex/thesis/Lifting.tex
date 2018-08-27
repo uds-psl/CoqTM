@@ -1,35 +1,48 @@
 \chapter{Lifting Machines}
 \label{chap:lifting}
 
-We observe that whenever we want to combine machines, the numbers of tapes and alphabets of all involved machines have to match.
+We observe that whenever we want to combine machines, the number of tapes and alphabets of all sub-machines have to agree.  For example, we have the
+following typing rule for the sequential composition of partitioned Turing machines:
+\[
+  \inferrule{M_1 : \TM_\Sigma^n(F_1) \and M_2 : \TM_\Sigma^n(F_2)}{M_1 \Seq M_2 : \TM_\Sigma^n(F_2)}
+\]
+For example, assume that we have a one-tape machine $M_{aux} : \TM_\Sigma^1$ that moves the head to the right of the tape.  If we need a two-tape
+machine $M$ that moves both tapes to the right, we would like to use sequential composition and move one tape after the other tape to the right.  But
+according to the typing rule above, we would need two auxiliary two-tape machines $M_1$ and $M_2$.  $M_1$ moves the first tape to the right and $M_2$
+the second.
 
-For example, assume that we have a one-tape machine that moves the head to the right.  If we need a two-tape machine that moves both tapes to the
-right, we would like to use sequential composition and move one tape after the other tape to right.  But we would need two auxiliary two-tape
-machines: one that moves the first tape to the right and one that moves the second tape to the right.  There are multiple ways to solve this problem.
-For example, we could define a class of $n$-tape machines that move the $i$th tape to the right and leave all other tapes unchanged.  However, it is
-in general easier to build and prove correctness of small machines that operate on a minimal amount of tapes.  Asperti and
-Ricciotti~\cite{asperti2015} define an injecting operator that translates a one-tape machine into a $(1+n)$-tape machine.  We generalise this approach
-and implement an operator that takes an $m$-tape machine and yields an $n$-tape machine, for $m \le n$.
+There are multiple ways to solve this problem.  Maybe the most obvious solution is to define a class of $n$-tape machines $M_i : \TM_\Sigma^n$
+parametrised over the number of tapes and the tape-index $i$ of the tape to move.  The machine $M_i$ moves the $i$th tape to the right.  All other
+tapes are ``inactive'' and remain unchanged.  This approach of parametrising machines over the tape-indexes of ``active'' tapes, however, becomes
+unhandy for machines with a lot of active tapes.
+
+We choose another approach.  We lift the one-tape machine $M_{aux}$ to $n$ different $n$-tape machines, for every $n\ge1$.  Asperti and
+Ricciotti~\cite{asperti2015} implement such an operator that translates a one-tape machine into $n$-tape machines.  It is in general easier to define
+machines with a fixed number of tapes.  We implement a generalised operator that takes an $m$-tape machine and a mapping from $m$-indexes to
+$n$-indexes, and yields an $n$-tape machine, for~$m \le n$.
 
 The second part of this problem is, how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that sums
 (encodings of) natural numbers, we could want to build a machine $\MS{Sum}$ that sums numbers in a list of numbers.  Consider an alphabet
 $\Sigma_\Nat$ where we could encode natural numbers on, and an alphabet $\Sigma_{\List(\Nat)}$ to encode lists of natural numbers.  If the alphabet
 $\Sigma_\Nat$ is included in $\Sigma_{\List(\Nat)}$, we would like to lift $\MS{Add}$ to the alphabet $\Sigma_{\List(\Nat)}$, to define $\MS{Sum}$.
 
-Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem.  They consider a fixed alphabet to encode all needed data on, to implement a
-universal Turing machine.  However, this approach does not scale.  When the alphabet has to be changed, for example because we have to add a new data
-type, they also must change the definitions of all involved auxiliary machines.  That is why we also introduce an operator that lifts a machine to a
-bigger alphabet.
+Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem: agreement of alphabets.  They consider a fixed alphabet to encode all needed data
+on, to implement a universal Turing machine.  However, this approach does not scale when we need to encode many different data types.  Whenever the
+alphabet has to be changed, they also must change the definitions of all auxiliary machines.  That is why we introduce another operator that lifts a
+machine to a bigger alphabet.
+
+Both lifting operators are easy to define and verify using the lemmas of the previous chapter (see Section~\ref{sec:match-proofs}).
 
 
 \section{Tape-Lift}
 \label{sec:n-Lift}
 \setCoqFilename{FormalComplexity.TM.Lifting.LiftTapes}%
 
-The tape-lift takes a machine $M:\TM_\Sigma^m(F)$ and a duplicate-free vector\footnote{ Note that instead of duplicate free index vectors
-  $I:\Fin_n^m$, we could also use injective functions $f: \Fin_m \to \Fin_n$.  We choose index-vectors, because they are easier to define in Coq.}
-$I: \Fin_n^m$, and yields a machine $\LiftTapes{M}{I} : \TM_\Sigma^n(F)$.  The tape of $\LiftTapes{M}{I}$ with the index $i = I[j]$ (with $i:\Fin_n$,
-$j:\Fin_m$), behaves exactly as the tape $j$ of $M$. All other tapes of $\LiftTapes{M}{I}$ that are not in $I$, do not change.
+The tape-lift takes a machine $M:\TM_\Sigma^m(F)$ and a duplicate-free vector $I: \Fin_n^m$, and yields a machine
+$\LiftTapes{M}{I} : \TM_\Sigma^n(F)$.\footnote{ Note that instead of duplicate free index vectors $I:\Fin_n^m$, we could also use injective functions
+  $f: \Fin_m \to \Fin_n$.  We choose index-vectors, because they are easier to define in Coq.}  The tape of $\LiftTapes{M}{I}$ with the index
+$i = I[j]$ (with $i:\Fin_n$, $j:\Fin_m$) behaves exactly as the tape $j$ of $M$.  All other tapes of $\LiftTapes{M}{I}$ that are not in~$I$ are
+inactive and do not change.
 
 
 The transition function of $\LiftTapes{M}{I}$ gets the $n$ read symbols and selects the $m$ relevant symbols.  Then it applies the transition function
@@ -39,12 +52,12 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 \begin{definition}[Vector selecting][select]
   \label{def:select}
   Let $X:\Type$, $m,n:\Nat$, $I : \Fin_n^m$, and $V : X^m$.  $select~I~V : X^n$ with
-  \[ select~I~V := \map{\bigl(\lambda (j:\Fin_m).~V[j] \bigr)}{I}. \]
+  \[ select~I~V := \map{\bigl(\lambda (j:\Fin_m).~V[j] \bigr)}{I} \]
 \end{definition}
 \begin{lemma}[Correctness of $select$][select_nth]
-  By definition, for $k:\Fin_m$, we have
+  By definition, for $j:\Fin_m$, we have
   \[
-    (select~I~V)[k]=V\bigl[I[k]\bigr].
+    (select~I~V)[j]=V\bigl[I[j]\bigr]
   \]
 \end{lemma}
 
@@ -57,7 +70,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   Where $replace : X^n \to \Fin_n \to X \to X^n$ replaces the $i$th element of a vector.
 \end{definition}
 \begin{lemma}[Correctness of $fill$]
-  If $I$ is duplicate-free, then
+  If $I$ is duplicate-free, then:
   \begin{enumerate}
   \coqitem[fill_correct_nth] \label{lem:fill_correct_nth}
     If $I[j]=i$, then $(fill~I~init~V)[i] = V[j]$.

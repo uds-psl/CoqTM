@@ -4,24 +4,24 @@
 \newcommand{\subst}[3]{{#1}^{#2}_{#3}}
 \newcommand{\Ter}{\MS{Ter}}
 \newcommand{\red}{\succ}
-%\newcommand{\nred}{\nsucc}
 
 
-In this chapter, we use all our developed techniques to implement a multi-tape Turing machine that simulates another abstract machine.  First, we
-define and motivate the semantics of this abstract machine.  After that, we implement the simulator Turing machine and prove its correctness and
-running time.  We show that this machine reduces the halting problem of the abstract machine to the halting problem of multi-tape Turing machines.
+In this chapter, we present a large benchmark for our framework.  We implement a multi-tape Turing machine that simulates another abstract machine.
+First, we define and motivate the semantics of this machine.  After that, we implement and verify the simulator Turing machine.  We show that the
+halting problem of the abstract machine reduces to the halting problem of multi-tape Turing machines.
 
 \section{Heap Machine}
 \label{sec:heap}
 
 The abstract machine we present here is a variant of the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  They formally show in Coq, that
-their variant of the machine can simulate the language $L$, which implements the ``call-by-value'' subset of the $\lambda$-calculus.
+their variant of the machine can simulate the language $L$, which implements the ``call-by-value'' subset of the $\lambda$-calculus.  Thus, we
+implement a simulator that also simulates $L$.  Here we define the language $L$ only briefly.  For more a more thoughtful treatment of this language,
+we refer to~\cite{forster2017weak} and~\cite{KunzeEtAl:2018:Formal}.
+
 
 \subsubsection{Call-By-Value $\lambda$-Calculus}
 \label{sec:L}
 
-To motivate the heap machine, we briefly define the language $L$, which implements a subset of the $\lambda$-calculus called weak call-by-value
-$\lambda$-calculus.  For more a more thoughtful treatment of this language, we refer to~\cite{forster2017weak} and~\cite{KunzeEtAl:2018:Formal}.
 Terms of this language are De~Bruijn terms, and are inductively defined by:
 \begin{align*}
   s,t,u,v &~:~\Ter~::=~ (n:\Nat) ~|~ s~t ~|~ \lambda s
@@ -93,7 +93,7 @@ We first explain what each rule of the reduction predicate $(T,V,H) \succ (T',V'
 \paragraph{Application Rule}
 When the first closure on the control stack is $(a, \MS{APP} \cons P)$, the machine fetches two closures $g$ and $(b,Q)$ from the argument stack.  The
 closure $g$ corresponds to the argument of the application.  The second closure $(b,Q)$ corresponds to the called function, where $b$ is the pointer
-to environment in that the argument is free.  It binds the argument to $g$, by putting a new heap entry $(g,b)$ on the heap.  The heap machine
+to the environment in that the argument is free.  It binds the argument to $g$, by putting a new heap entry $(g,b)$ on the heap.  The heap machine
 continues executing $(c,Q)$ and the ``rest closure'' $(a,P)$, where $c$ is the pointer to the new heap entry.
 
 
@@ -154,10 +154,10 @@ mark the end of the encoding of the body of a $\lambda$-expression.
     \end{alignat*}
   }
   with $put~H~c := (\length{H}, H \app [c]) $.\\
-  The tail-recursion optimised $\cons_{tr}$ is defined as follows:
+  The tail-recursion optimisation $(g \cons_{tr} T) : \List(Clos)$ is defined as follows:
   \begin{alignat*}{3}
-    & (a, \nil) &~\cons_{tr}~& H &~:=~& H \\
-    & (a, P   ) &~\cons_{tr}~& H &~:=~& (a, P) \cons H \qquad\text{if $P \neq \nil$}
+    & (a, \nil) &~\cons_{tr}~& T &~:=~& T \\
+    & (a, P   ) &~\cons_{tr}~& T &~:=~& (a, P) \cons T \qquad\text{if $P \neq \nil$}
   \end{alignat*}
 
   We write for $\red^*$ for the reflexive transitive closure of $\red$ (cf.\ Definition~\ref{def:Kleene}) and $\red^k$ for the relational power (cf.\
@@ -169,8 +169,8 @@ mark the end of the encoding of the body of a $\lambda$-expression.
   \end{align*}
 \end{definition}
 
-The tail-recursion optimised cons ($\cons_{tr}$) makes sure that no closures with empty closures are pushed on a closure stack.  This is an
-optimisation for space usage with tail recursive programs.
+The tail-recursion optimisation ($\cons_{tr}$) makes sure that no closures with empty programs are pushed on a closure stack.  This is optimises space
+usage for tail recursive programs.
 
 \begin{lemma}[Basic properties about $\red$]
   \label{lem:heap-red}
@@ -350,8 +350,8 @@ the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}), $\MS
 Because no initialisation or clean-up is needed before or after the loop, we can define $\MS{Lookup} := \While~\MS{LookupStep}$.  The correctness
 relation of $\MS{Lookup}$ says that if it terminated in the partition $\true$, we have $H[a,n] = \Some{g}$ for some closure $g$, and tape~$3$ contains
 $g$ w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still contains $H$ and all other tapes are reseted.  In case $\MS{Lookup}$
-terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there two possible reasons for that: Either $H[a]=\None$ or
-$H[a]=\Some\None$, but we do not distinct these two failure cases.
+terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there are two possible reasons for that: Either $H[a]=\None$ or
+$H[a]=\Some\None$, but we do not separate these two failure cases.
 
 \begin{lemma}[Correctness of $\MS{Lookup}$][Lookup_Step_Realise]
   \label{lem:Lookup_Realise}
@@ -454,7 +454,7 @@ the machine $\MS{AppTok}$ that appends a token on a tape to $Q$.
 
 Execution protocols for the step machine are visualised in Table~\ref{tab:exec-JumpTarget-RET} and Table~\ref{tab:exec-JumpTarget-VAR}.
 
-Note that the step machine resets the tape for $k$ before it brakes out of the loop and returns $\true$.  Thus, no resetting is needed after the loop.
+Note that the step machine resets the tape for $k$ before it breaks out of the loop and returns $\true$.  Thus, no resetting is needed after the loop.
 The loop machine halts in $\true$ if and only if $\phi'~k~Q~P$ is not $\None$.  If it is $\Some{(P',Q')}$, then after the execution the first two
 tapes contain $P'$ and $Q'$, and the other tapes are right.  If $\phi'~k~Q~P = \None$, the correctness relation only commits that the machine
 terminates in the partition $\false$.
@@ -501,8 +501,8 @@ that the state was an halting state.
 
 The machine $\MS{Step} : \TM_{\Sigma^+}^{11}(\Option(\Unit))$ is defined on an arbitrary alphabet $\Sigma^+$ with retractions
 $f_{Stack} : \Sigma_{List(Clos)} \hookrightarrow \Sigma$ and $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$.  We omit the definition of $\MS{Step}$
-here.  Although it is quite complex, no new innovations are required and the designing of the machine was easy.  The machine first matches on the
-control stack.  If it is empty, it immediately terminates in $\Some\unit$.
+here.  Although it is quite complex, no new innovations are required, and the designing of the machine was reasonable easy.  The machine first matches
+on the control stack.  If it is empty, it immediately terminates in $\Some\unit$.
 
 \begin{lemma}[Correctness of $\MS{Step}$][Step_Realise]
   \label{lem:Step_Realise}
@@ -603,7 +603,7 @@ such that the first three tapes of $initTape(T,V,H)$ contain $T$, $V$, or $H$, r
   \label{lem:HaltingProblem}
   Let $(T,V,H)$ be a heap state.  Then
   \[
-    \left(\exists (T',V',H').~(T,V,H) \terminates^* (T',V',H') \right) \iff \left(\exists c~k.~\MS{Loop}(initTapes(T,V,H)) \terminates^k c)\right)
+    \left(\exists T'~V'~H'.~(T,V,H) \terminates^* (T',V',H') \right) \iff \left(\exists c~k.~\MS{Loop}(initTapes(T,V,H)) \terminates^k c)\right)
   \]
 \end{theorem}
 

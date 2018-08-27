@@ -9,7 +9,7 @@ et~al.~\cite{KunzeEtAl:2018:Formal}.  The two variants of the heap machine diffe
 In~\cite{KunzeEtAl:2018:Formal}, the authors show that heap machine can simulate terms of the programming language $L$, which is a subset of the
 call-by-value $\lambda$-calculus.  It should be easy to formalise the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our version
 of the heap machine.  By that, we would formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing machines.
-This is, however, outside the scope of this thesis.  It is an ongoing research project~\cite{ForsterLOLA}, to implement a Coq library of
+This is, however, outside the scope of this thesis.  It is an ongoing research project~\cite{ForsterLOLA2018}, to implement a Coq library of
 undecidability reductions, and this thesis provides one step towards this goal.  The reduction from halting problem of single-tape Turing machines to
 the Post correspondence problem (PCP) has already been mechanised in Coq in~\cite{PCPITP}.
 
@@ -70,8 +70,11 @@ value is encoded on a tape, and to translate values from one encoding to another
 
 
 \paragraph{Comparison of proof assistants}
-Asperti and Ricciotti\cite{asperti2015} propose the formalisation of Turing machines as a benchmark for comparing proof assistants.
-\todo{Comparison of proof assistants}
+Asperti and Ricciotti\cite{asperti2015} propose the formalisation of Turing machines as a benchmark for comparing proof assistants.  We think that the
+formalisation and usability of finite sets could be a benchmark for itself.  However, the task ``formalise Turing machines in proof assistant $X$'' is
+rather broad.  There are many different mathematical formalisations of Turing machines, and some might be easier to implement in one or the other
+proof assistant.  For example, Isabelle does not support dependent types, so this concrete formalisation of Turing machines in this thesis would not
+be possible in Isabelle.
 
 
 
@@ -88,9 +91,10 @@ on rest symbol, i.e.\ decreases the length of the rest by one, and increases the
 $\MS{ConstrS}$ allocates one new symbol.
 
 Further future work could be to show that the running time function of the simulator is polynomial w.r.t.\ the number of steps and the length of the
-encoding of the initial heap machine state.  We could also formalise the reduction from multi-tape Turing machines to single-tape Turing machines, and
-from single-tape Turing machines with arbitrary alphabet to single-tape Turing machines with a binary alphabet.  The opposite reduction from
-multi-tape Turing machines to $L$, i.e.\ programming an $L$ expression that simulates multi-tape Turing machines, is also open for future work.
+encoding of the initial heap machine state, see~\cite{ForsterLOLA2017}.  We could also formalise the reduction from multi-tape Turing machines to
+single-tape Turing machines, and from single-tape Turing machines with arbitrary alphabet to single-tape Turing machines with a binary alphabet.  The
+opposite reduction from multi-tape Turing machines to $L$, i.e.\ programming an $L$ expression that simulates multi-tape Turing machines, is also open
+for future work.
 
 The framework can be used to program other simulator machines, for example, for the ``naive'' substitution-based machine
 in~\cite{KunzeEtAl:2018:Formal}.

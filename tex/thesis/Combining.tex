@@ -10,9 +10,9 @@ correctness of $M_1$ and $M_2$, we can conclude the correctness of the sequentia
 machine states can be \textit{huge} for complex machines, so it is important to not refer to any concrete machine state, either in the definition or
 in the verification of a machine.\footnote{Using this framework, we define and verify a machine with 11537 states.}
 
-We define control flow operators as \textit{first-class citizen} in our meta-logic.\footnote{The calculus of (co-)inductive constructions (CIC), which
-  is the theoretical foundation of Coq} As a result, we get we get a \textit{shallow-embedded} language for programming multi-tape Turing machines in
-an imperative way.  The basic machines defined in Chapter~\ref{chap:basic} serve as the ``primitive instructions'' of our language.  Another possible
+We define control flow operators as \textit{first-class citizen} in our meta-logic.\footnote{The calculus of (co-)inductive constructions (CIC) is the
+  theoretical foundation of Coq.} As a result, we get we get a \textit{shallow-embedded} language for programming multi-tape Turing machines in an
+imperative way.  The primitive machines defined in Chapter~\ref{chap:basic} serve as the ``primitive instructions'' of our language.  Another possible
 approach, called \textit{deep embedding}, is to define a fixed syntax of a language as an inductive data type.  We then would need a compiler from
 syntax trees of Turing machine programs to actual Turing machines.  This compiler would have to be extended, whenever we add a new feature to our
 language.  In our approach, we can just ``extend'' our language by defining a function in the meta-logic, and we use the same verification technique
@@ -49,9 +49,9 @@ operator on partitioned machines, called $\MS{Match}$ and derive sequential comp
     \delta ~&(\inl q, s) &~:=~&
     \begin{cases}
       \bigl(\inr (part_M~q, start_{f (part_M~q)}), (\None, N)^n \bigr) & halt_M(q) \\
-      \Let{(q', acts) := \delta_M(q, s)}{\left(\inl q', acts \right)} & \lnot halt_M(q)
+      \Let{(q', act) := \delta_M(q, s)}{\left(\inl q', act \right)} & \lnot halt_M(q)
     \end{cases} \\
-    \delta ~&(\inr q, s) &~:=~& \Let{(q', acts) := \delta_{f(\pi_1 q)} (\pi_2 q, s)}{\bigl( \inr (\pi_1 q, q'), acts \bigr)} \\
+    \delta ~&(\inr q, s) &~:=~& \Let{(q', act) := \delta_{f(\pi_1 q)} (\pi_2 q, s)}{\bigl( \inr (\pi_1 q, q'), act \bigr)} \\
     halt   ~&(\inl  q)   &~:=~& \false \\
     halt   ~&(\inr  q)   &~:=~& halt_{f(\pi_1~q)} (\pi_2~q) \\
     part   ~&(\inl  q)   &~:=~& \_ \\
