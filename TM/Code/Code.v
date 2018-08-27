@@ -5,19 +5,10 @@ Require Import Coq.Lists.List.
 
 
 (** Class of codable types *)
-Section Codable.
-
-  Variable (sig: Type).
-  Variable (X: Type).
-
-  Class codable :=
-    mk_codable
-      {
-        encode :> X -> list sig
-      }.
-
-End Codable.
-Arguments encode { sig } { X } { _ }.
+Class codable (sig: Type) (X: Type) := {
+  encode : X -> list sig;
+}.
+Arguments encode {sig} {X} {_}.
 
 Hint Extern 4 (codable (FinType(EqType ?sigX)) ?X) => cbn : typeclass_instances.
 
