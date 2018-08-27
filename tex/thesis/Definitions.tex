@@ -484,14 +484,24 @@ every input, however, in an uncertain number of steps.  We use their weak realis
 want to reason about concrete machine states, which is tedious for complex machines.  They have no notion of time complexity.
 
 
-% \section{Cannonical Relations}
-% \label{sec:canonical}
+\section{Canonical Relations}
+\label{sec:canonical}
 
-% Similar as in Asperti and Ricciotti~\cite{asperti2015}, we can define correctness relations that every machines realise.  Trivially, every machine
-% realises the universal relation $\lambda t~(y,t'). \True$.
+Similar as in Asperti and Ricciotti~\cite{asperti2015}, we can define correctness relations that every machines realise.  Trivially, every machine
+realises the universal relation $Univ := \lambda t~(y,t').~\True$.  Every non-terminating (diverging) machine can only realise the empty relation
+$Empty := \lambda t~(y,t').~\False$.  The \textit{canonical relation} is the smallest relation that every machine realises:
 
-% \begin{fact}
-% \end{fact}
+\begin{fact}[Canonical correctness][Canonical_Realise]
+  Let $M : \TM_\Sigma^n(F)$, then
+  \[
+    M \Realise \left( \lambda t~(y,t').~\exists q~k.~M(t) \terminates^k (q,t') \land part_M(q) = y \right)
+  \]
+\end{fact}
+
+Dually, every machine terminates in the empty relation.  The canonical termination relation is the biggest relation in that every machine terminates:
+\begin{fact}[Canonical termination][Canonical_TerminatesIn]
+  Let $M : \TM_\Sigma^n$, then $M \TerminatesIn \left( \lambda t~k.~\exists c.~M(t) \terminates^k c \right)$.
+\end{fact}
 
 
 
