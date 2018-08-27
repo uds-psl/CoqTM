@@ -487,7 +487,7 @@ want to reason about concrete machine states, which is tedious for complex machi
 \section{Canonical Relations}
 \label{sec:canonical}
 
-Similar as in Asperti and Ricciotti~\cite{asperti2015}, we can define correctness relations that every machines realise.  Trivially, every machine
+Similar as in Asperti and Ricciotti~\cite{asperti2015}, we can define correctness relations that every machine realises.  Trivially, every machine
 realises the universal relation $Univ := \lambda t~(y,t').~\True$.  Every non-terminating (diverging) machine can only realise the empty relation
 $Empty := \lambda t~(y,t').~\False$.  The \textit{canonical relation} is the smallest relation that every machine realises:
 
