@@ -1,3 +1,9 @@
 [submodule "external/coqdocjs"]
 	path = external/coqdocjs
 	url = git@github.com:tebbi/coqdocjs.git
+[submodule "external/base"]
+	path = external/base
+	url = https://github.com/mwuttke97/Base-Library
+[submodule "external/smpl"]
+	path = external/smpl
+	url = https://github.com/sigurdschneider/smpl/
