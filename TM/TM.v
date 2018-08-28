@@ -890,6 +890,7 @@ Section Semantics.
 
   End Canonical_Termination.
 
+
 End Semantics.
 
 
@@ -897,7 +898,7 @@ End Semantics.
 (** Notation for parametrised Turing machines *)
 Notation "'(' M ';' partitioning ')'" := (existT (fun x => states x -> _) M partitioning).
 
-(** Notations for semantic certificates *)
+(** Notations for semantic of concrete Turing machines *)
 Notation "M '⊨' R" := (Realise M R) (no associativity, at level 60, format "M  '⊨'  R").
 Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
 Notation "M '↓' t" := (TerminatesIn M t) (no associativity, at level 60, format "M  '↓'  t").
