@@ -15,6 +15,7 @@ The online CoqDoc can be found [here](https://www.ps.uni-saarland.de/~wuttke/bac
 Get the source code and the libraries via
 
 	git clone https://github.com/mwuttke97/CoqTM
+	cd CoqTM
 	git submodule update --init --recursive
 
 Compile the libraries:
