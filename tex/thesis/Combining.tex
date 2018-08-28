@@ -10,25 +10,13 @@ correctness of $M_1$ and $M_2$, we can conclude the correctness of the sequentia
 machine states can be \textit{huge} for complex machines, so it is important to not refer to any concrete machine state, either in the definition or
 in the verification of a machine.\footnote{Using this framework, we define and verify a machine with 11537 states.}
 
-We define control flow operators as \textit{first-class citizen} in our meta-logic.\footnote{The calculus of (co-)inductive constructions (CIC) is the
-  theoretical foundation of Coq.} As a result, we get we get a \textit{shallow-embedded} language for programming multi-tape Turing machines in an
-imperative way.  The primitive machines defined in Chapter~\ref{chap:basic} serve as the ``primitive instructions'' of our language.  Another possible
-approach, called \textit{deep embedding}, is to define a fixed syntax of a language as an inductive data type.  We then would need a compiler from
-syntax trees of Turing machine programs to actual Turing machines.  This compiler would have to be extended, whenever we add a new feature to our
-language.  In our approach, we can just ``extend'' our language by defining a function in the meta-logic, and we use the same verification technique
-(i.e.\ realisation and termination) on each stage of the development.
+We define control flow operators as \textit{first-class citizen} in Coq's type theory.  As a result, we get we get a \textit{shallow-embedded}
+language for programming multi-tape Turing machines in an imperative way.  The primitive machines defined in Chapter~\ref{chap:basic} serve as the
+``primitive instructions'' of our language.  Another possible approach, called \textit{deep embedding}, is to define a fixed syntax of a language as
+an inductive data type.  We would need a compiler from syntax trees of Turing machine programs to actual Turing machines.  This compiler would have to
+be extended, whenever we add a new feature to our language.  In our approach, we can just ``extend'' our language by defining a function, and we use
+the same verification technique (i.e.\ realisation and termination) on each stage of the development.
 
-% Advantages and disadvantages of shallow vs deep embedding
-% Shallow:
-% + Extensible
-% + All features of the meta logic (i.e. Coq)
-% + Thus, it is extendable, e.g. we can easily add new combinators without changing any other definitions
-% + We use the same verification techniques on every "stage" of the development
-% Deep:
-% + We can define meta-properties about programs, e.g. the size of the abstract syntax tree (needless)
-% - We had to implement a compiler from the abstract syntax tree to concrete Turing machines
-% - We had to prove that the combinators are correct with respect to the semantics of the compiled operators
-% - We have to amend the compiler, whenever we want to add a new feature to the language
 
 \section{$\MS{Match}$}
 \label{sec:match}

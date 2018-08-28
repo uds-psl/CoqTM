@@ -168,7 +168,8 @@ $\Option(\Unit)$.  $\Some\unit$ means to break out of the loop and $\None$ means
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{CopySymbolsStep}~h :=$
   Match($\LiftTapes{\MS{Read}}{\Vector{0}}$)
-       ($\lambda (s:\Option(\Sigma)).~\MS{match}~s$
+       ($\lambda (s:\Option(\Sigma)).$
+          $\MS{match}~s$
           [$\Some{x}$=>
             $\MS{if}~h(x)$
             $\pthen$ $\Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit}$ 
@@ -178,7 +179,7 @@ $\MS{CopySymbolsStep}~h :=$
 \end{lstlisting}
 \end{definition}
 
-Note that the $\MS{match}$ denotes pattern matching in the logical language.
+Note that the $\MS{match}$ denotes pattern matching our type theory.
 
 \begin{lemma}[Correctness of $\MS{CopySymbolsStep}$][CopySymbols_Step_Sem]
   \label{lem:CopySymbols_Step_Sem}
