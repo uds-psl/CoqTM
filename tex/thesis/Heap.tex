@@ -112,7 +112,7 @@ tail-recursive auxiliary function:
     &\phi'&~0~   &~Q&~(\MS{RET} \cons P) &&~:=~& \Some{(Q,P')} \\
     &\phi'&~(S~k)&~Q&~(\MS{RET} \cons P) &&~:=~& \phi'~k~(Q \app [\MS{RET}])~P \\
     &\phi'&~k    &~Q&~(\MS{LAM} \cons P) &&~:=~& \phi'~(S~k)~(Q \app [\MS{LAM}])~P \\
-    &\phi'&~k    &~Q&~(t        \cons P) &&~:=~& \phi'~k~(Q \app [t])~P \qquad \text{if $t \neq \MS{RET} \neq \MS{LAM}$} \\
+    &\phi'&~k    &~Q&~(c        \cons P) &&~:=~& \phi'~k~(Q \app [c])~P \qquad \text{if $c \neq \MS{RET} \neq \MS{LAM}$} \\
     &\phi'&~k    &~Q&~              \nil &&~:=~& \None
   \end{alignat*}
 \end{definition}
@@ -166,7 +166,7 @@ to mark the end of the encoding of the body of a $\lambda$-expression.
   \end{align*}
 \end{definition}
 
-The tail-recursion optimisation ($\cons_{tr}$) makes sure that no closures with empty programs are pushed on a closure stack.  This is optimises space
+The tail-recursion optimisation ($\cons_{tr}$) makes sure that no closures with empty programs are pushed on a closure stack.  This optimises space
 usage for tail recursive programs.
 
 \begin{lemma}[Basic properties about $\red$]
@@ -220,7 +220,7 @@ Note that $RetrRgt : \Sigma_{Var} \hookrightarrow \Sigma_{Com}$.
   $\MS{MatchCom} \RealiseIn{11} MatchCom$ with
 \begin{lstlisting}[style=semicoqstyle]
 $MatchComRel :=$
-  $\lambda t~(y, t').~\forall (c:Com).~ t[0] \simeq s \rightarrow \MS{match}~y,c$
+  $\lambda t~(y, t').~\forall (c:Com).~ t[0] \simeq c \rightarrow \MS{match}~y,c$
       [$\Some{\MS{APP}}, \MS{APP} \Rightarrow isRight~t'[0]$
       |$\Some{\MS{LAM}}, \MS{LAM} \Rightarrow isRight~t'[0]$
       |$\Some{\MS{RET}}, \MS{RET} \Rightarrow isRight~t'[0]$
