@@ -1,6 +1,6 @@
 (** * Definition of Multi-Tape Turing Machines *)
 
-(** Definitions of tapes and (unpartioned) multi-tape Turing machines from Asperti, Riciotti "A formalization of multi-tape Turing machines" (2015) and the accompanying Matita foramlisation *)
+(** Definitions of tapes and (unpartioned) multi-tape Turing machines from Asperti, Riciotti "A formalization of multi-tape Turing machines" (2015) and the accompanying Matita code. *)
 
 Require Export TM.Prelim TM.Relations.
 Require Import Shared.Vectors.Vectors.
