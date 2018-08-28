@@ -46,25 +46,22 @@ The reduction relation $s \red t$ is defined inductively on terms:
 \setCoqFilename{ProgrammingTuringMachines.TM.LM.Semantics}%
 
 Instead of substituting expressions, the heap machine works with closures.  A closure is a program together with an environment.  Variable bindings
-are implemented as pointers to a linked list of closures, called \textit{heap}.  Programs are lists of tokens:
+are implemented as pointers to a linked list of closures, called \textit{heap}.  Programs are lists of commands:
 \begin{definition}[Program][Pro]
-  \label{def:Tok}
+  \label{def:Com}
   \begin{alignat*}{2}
     n:   &~Var  &~:=~& \Nat \\
-    t:   &~Tok  &~::=~& \MS{VAR}(n:Var) ~|~ \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET} \\
-    P,Q: &~Pro  &~:=~& \List(Tok)
+    c:   &~Com  &~::=~& \MS{VAR}(n:Var) ~|~ \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET} \\
+    P,Q: &~Pro  &~:=~& \List(Com)
   \end{alignat*}
 \end{definition}
 
 Programs essentially are linearised expressions of $L$.  The function $\gamma$ translates terms of $L$ to programs of the heap machine:
-\begin{definition}[Compiling $L$ expressions]
-  ~
-  \begin{alignat*}{2}
-    &\gamma&~n           &:= [\MS{VAR}~n] \\
-    &\gamma&~(s~t)       &:= \gamma~s \app \gamma~t \app [\MS{APP}] \\
-    &\gamma&~(\lambda s) &:= \MS{LAM} \cons \gamma~s \app [\MS{RET}]
-  \end{alignat*}
-\end{definition}
+\begin{alignat*}{2}
+  &\gamma&~n           &:= [\MS{VAR}~n] \\
+  &\gamma&~(s~t)       &:= \gamma~s \app \gamma~t \app [\MS{APP}] \\
+  &\gamma&~(\lambda s) &:= \MS{LAM} \cons \gamma~s \app [\MS{RET}]
+\end{alignat*}
 
 The heap is implemented as a list of heap entries.  A heap entry may be empty or contain a closure and a pointer to the next heap entry.  Pointers are
 implemented as list indices on the heap entry list.
@@ -122,8 +119,8 @@ tail-recursive auxiliary function:
 
 
 \paragraph{Variable Rule}
-If the first token on the first closure of the control stack is $\MS{VAR}(n)$, the machine looks up the $n$th entry in the environment on the heap at
-the address $a$.  Then, it pushes this closure to the argument stack.  The function $lookup : Heap \to Add \to Var \to \Option(Clos)$ starts at the
+If the first command on the first closure of the control stack is $\MS{VAR}(n)$, the machine looks up the $n$th entry in the environment on the heap
+at the address $a$.  Then, it pushes this closure to the argument stack.  The function $lookup : Heap \to Add \to Var \to \Option(Clos)$ starts at the
 heap entry at the address $a$, and gets the $n$th entry. We write $H[a,n]$ for $lookup~H~a~n$.  The function is defined by recursion on~$n$:
 \begin{definition}[$lookup$][lookup]
   \label{def:lookup}
@@ -140,8 +137,8 @@ heap entry at the address $a$, and gets the $n$th entry. We write $H[a,n]$ for $
 \end{definition}
 
 
-We formally define the reduction rules.  Note that there is no reduction rule for the token $\MS{RET}$, because the purpose of $\MS{RET}$ is solely to
-mark the end of the encoding of the body of a $\lambda$-expression.
+We formally define the reduction rules.  Note that there is no reduction rule for the command $\MS{RET}$, because the purpose of $\MS{RET}$ is solely
+to mark the end of the encoding of the body of a $\lambda$-expression.
 \begin{definition}[Semantics of the heap machine]
   {\small
     \begin{alignat*}{4}
@@ -194,45 +191,45 @@ usage for tail recursive programs.
 \section{Implementation of a Simulator}
 \label{sec:heap-implementation}
 
-First, we notice that all types in Definition~\ref{def:Heap}, except program Tokens ($Tok$), are encodable over canonical alphabets, according to
-Definition~\ref{def:basic-encodings}.
-\setCoqFilename{ProgrammingTuringMachines.TM.LM.Alphabets}%
+First, we notice that all types in Definition~\ref{def:Heap}, except commands ($Com$), are encodable over canonical alphabets, according to
+Definition~\ref{def:basic-encodings}.  \setCoqFilename{ProgrammingTuringMachines.TM.LM.Alphabets}%
 \begin{definition}[Encoding of heaps][]
   \label{def:Heap-encode}
-  The type $Tok$ is isomorphic to the sum of $ATok := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $Var$.  $ATok$ is encodable on itself (since it is finite),
-  and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Tok$ is encodable on $\Sigma_{Tok} := \Sigma_{ATok+\Nat}$.  All other types
-  are encodable according to Definition~\ref{def:basic-encodings}.
+  The type $Com$ is isomorphic to the sum of $ACom := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $Var$.  $ACom$ is encodable on itself (since it is
+  finite), and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Com$ is encodable on $\Sigma_{Com} := \Sigma_{ACom+\Nat}$.  All
+  other types are encodable according to Definition~\ref{def:basic-encodings}.
   For completeness, the alphabets are:\\
-  $\Sigma_{Pro} := \Sigma_{\List(Tok)}$, $\Sigma_{Add} := \Sigma_\Nat$, $\Sigma_{Clos}:=\Sigma_{Add \times Pro}$,
+  $\Sigma_{Pro} := \Sigma_{\List(Com)}$, $\Sigma_{Add} := \Sigma_\Nat$, $\Sigma_{Clos}:=\Sigma_{Add \times Pro}$,
   $\Sigma_{Entr} := \Sigma_{\Option(Clos \times Add)}$, and $\Sigma_{Heap} := \Sigma_{\List(Entr)}$.
 \end{definition}
 
-First, we derive constructor and deconstructor machines for tokens.  As the type of tokens essentially is the sum of two encodable types ($ATok$ and
-$\Nat$), we can combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
+First, we derive constructor and deconstructor machines for commands.  As the type of commands essentially is the sum of two encodable types ($ACom$
+and $\Nat$), we can combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
 \setCoqFilename{ProgrammingTuringMachines.TM.LM.MatchTok}%
-\begin{definition}[$\MS{MatchTok}$][MatchTok]
-  $\MS{MatchTok} : \TM_{\Sigma^+_{Tok}}^1(\Option(ATok))$ is defined by
+\begin{definition}[$\MS{MatchCom}$][MatchTok]
+  $\MS{MatchCom} : \TM_{\Sigma^+_{Com}}^1(\Option(ACom))$ is defined by
   \begin{alignat*}{2}
-    & \MS{MatchTok} &~:=~& \MS{If}~\MS{MatchSum} \\
+    & \MS{MatchCom} &~:=~& \MS{If}~\MS{MatchSum} \\
     &               &    & \MS{Then}~   \Return{\Nop}{\None} \\
     &               &    & \MS{Else}~~~ \MS{ChangePartition}~(\LiftAlphabet{\MS{MatchFin}}{RetrRgt})~(\Some\cdot)
   \end{alignat*}
 \end{definition}
-\begin{lemma}[Correctness of $\MS{MatchTok}$][MatchTok_Sem]
-  \label{lem:MatchTok_Sem}
-  $\MS{MatchTok} \RealiseIn{11} MatchTokRel$ with
+Note that $RetrRgt : \Sigma_{Var} \hookrightarrow \Sigma_{Com}$.
+\begin{lemma}[Correctness of $\MS{MatchCom}$][MatchTok_Sem]
+  \label{lem:MatchCom_Sem}
+  $\MS{MatchCom} \RealiseIn{11} MatchCom$ with
 \begin{lstlisting}[style=semicoqstyle]
-$MatchTokRel :=$
-  $\lambda t~(y, t').~\forall (T:Tok).~ t[0] \simeq s \rightarrow \MS{match}~y,T$
+$MatchComRel :=$
+  $\lambda t~(y, t').~\forall (c:Com).~ t[0] \simeq s \rightarrow \MS{match}~y,c$
       [$\Some{\MS{APP}}, \MS{APP} \Rightarrow isRight~t'[0]$
       |$\Some{\MS{LAM}}, \MS{LAM} \Rightarrow isRight~t'[0]$
       |$\Some{\MS{RET}}, \MS{RET} \Rightarrow isRight~t'[0]$
-      |$\None, n \Rightarrow t'[0] \simeq n$
+      |$\None, \MS{VAR}~n \Rightarrow t'[0] \simeq n$
       |_,_=>$\False$
       ].
 \end{lstlisting}
 \end{lemma}
-The $\MS{VAR}$ constructor is defined with $\MS{ConstrInr}$ and the constructor for $ATok$ is defined with $\MS{WriteSymbol}$.
+The $\MS{VAR}$ constructor is defined with $\MS{ConstrInr}$ and the constructor for $ACom$ is defined with $\MS{WriteSymbol}$.
 
 For the functions $\phi$ and $lookup$, we define machines that \textit{compute} these functions in a lesser strict sense than
 Definition~\ref{def:Computes2_Rel}.  The Turing machines only save the input-values that a caller machine needs again.  For example, we have a machine
@@ -256,7 +253,9 @@ First we consider the alphabet of $\MS{Lookup}$.  We can encode closures on the 
 $H[a,n]$, $a$ and $n$ are encoded on an alphabet of the closures of a closure stack.  Thus, we define $\MS{Lookup}$ on an alphabet $\Sigma$, with
 retractions $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$ and $f_{Clos} : \Sigma_{Clos} \hookrightarrow \Sigma$.  The second retraction correspond
 to the closure alphabet where $a$ and $n$ are encoded.  The retraction
-\[ \coqlink[retr_clos_lookup_heap]{f_{Clos'}} : \Sigma_{Clos} \hookrightarrow \Sigma := RetrFst \circ RetrOpt \circ RetrList \circ f_{Heap} \]%
+\[
+  \coqlink[retr_clos_lookup_heap]{f_{Clos'}} : \Sigma_{Clos} \hookrightarrow \Sigma := RetrFst \circ RetrOpt \circ RetrList \circ f_{Heap}
+\]
 is the canonical retraction of closures from the heap.
 
 There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depending on whether the number is:
@@ -265,11 +264,10 @@ There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depen
   \[
     \coqlink[retr_nat_lookup_clos_ad]{f_{add}} := RetrFst \circ f_{Clos'}
   \]
-\item a variable in a token of a closure on the stack alphabet:
+\item a variable in a command of a closure on the stack alphabet:
   \[
     \coqlink[retr_nat_lookup_clos_var]{f_{var}} := RetrRgt \circ RetrList \circ RetrSnd \circ f_{Clos'}
   \]
-  Note that $RetrRgt : \Sigma_{Var} \hookrightarrow \Sigma_{Tok}$.
 \item a pointer to the next heap entry:
   \[
     \coqlink[retr_nat_lookup_entry]{f_{next}} := RetrSnd \circ RetrOpt \circ RetrList \circ f_{Heap}
@@ -283,11 +281,7 @@ $g = (P,b)$ and makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ 
 $f_{Clos}$ and returns $\true$.  Else it translates $b$ from $f_{next}$ to $f_{add}$, moves it to the tape that contained $a$, and repeats the loop.
 We visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~\ref{tab:exec-LookupStep-0}.
 
-%%% BUG! When I move these two tables on the same page, aligns around the page get HUGE extra vertical spaces.
-%%% This is also buggy, if all table floats are moved on a dedicated floating-page.
-%%% THIS SUCKS!!!
-\begin{table}[t!]
-  % \centering
+\begin{table}[H]
   \scriptsize
   \begin{tabular}{l||l|l|l|l|l|l|l|l}
     Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{CopyValue}$  & $\MS{Translate}$ & $\MS{Reset}$ & $\MS{Reset}$ \\ \hline
@@ -300,10 +294,6 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
   \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=S~n'$.  It terminates in the partition $\None$.  The
     translation is from $f_{next}$ to $f_{add}$.}
   \label{tab:exec-LookupStep-S}
-% \end{table}
-% \begin{table}[t!]
-%   \scriptsize
-%   \centering
   \begin{tabular}{l||l|l|l|l|l|l|l}
     Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{Reset}$ & $\MS{Reset}$ & $\MS{Translate}$ \\ \hline
     $0:H$       & $0:H$            &                       &                      &                 &              &              &                  \\
@@ -335,7 +325,7 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
       \bigr)~{\None} \\
     & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{Else}~~~ \MS{Return}~\bigl(
       \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq
-      \LiftTapes{\MS{Reset}}{\Vector{2}} \\
+      \LiftTapes{\MS{Reset}}{\Vector{2}} \Seq \\
     & \quad \phantom{\phantom{\MS{Then}~\MS{Then}}~\MS{Else}~~~\MS{Return}~\bigl(}
       \LiftTapes{\MS{Translate}~f_{Clos'}~f_{Clos}}{\Vector{3}}
       \bigr)~{\Some\true} \\
@@ -377,11 +367,11 @@ implementation of this machine is straight-forward, because $\phi'$ is defined t
 $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$ computes $\phi'$, and $\MS{SplitBody}$ initialises the accumulators before executing the loop.
 
 The step machine $\MS{SplitBodyStep} : \TM_{\Sigma^+_{Pro}}^5(\Option(\Bool))$ first makes a case-distinction over the program on tape $0$.  In the
-$\nil$ case, it returns $\Some{\false}$ so that the loop returns $\false$.  In the cons-case, it makes a case-distinction over the token, using
-$\MS{MatchTok}$.  In the case the head token is $\MS{RET}$, it does another case-distinction over $k$.  In the case that the head token is
-$\MS{VAR}(n)$, the machine again applies the $\MS{VAR}$ constructor to $n$ and appends this token to $Q$.  The case-machines use the auxiliary
-parametrised machine $\MS{AppATok}~t$ that appends a finite token (i.e.\ $t$ is either $\MS{APP}$, $\MS{LAM}$, or $\MS{RET}$) to the token list, and
-the machine $\MS{AppTok}$ that appends a token on a tape to $Q$.
+$\nil$ case, it returns $\Some{\false}$ so that the loop returns $\false$.  In the cons-case, it makes a case-distinction over the command, using
+$\MS{MatchCom}$.  In the case the head command is $\MS{RET}$, it does another case-distinction over $k$.  In the case that the head command is
+$\MS{VAR}(n)$, the machine again applies the $\MS{VAR}$ constructor to $n$ and appends this command to $Q$.  The case-machines use the auxiliary
+parametrised machine $\MS{AppACom}~t$ that appends a finite command (i.e.\ $t$ is either $\MS{APP}$, $\MS{LAM}$, or $\MS{RET}$) to the command list,
+and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
 
 
 \begin{definition}[$\MS{SplitBody}$][JumpTarget_Step]
@@ -392,14 +382,14 @@ the machine $\MS{AppTok}$ that appends a token on a tape to $Q$.
   \begin{alignat*}{1}
     & \MS{SplitBodyStep} := \\
     & \quad \MS{If}~(\LiftTapes{\MS{MatchList}}{\Vector{0;3}}) \\
-    & \quad \MS{Then}~\Match~(\LiftBoth{\MS{MatchTok}}{RetrList}{\Vector{3}}) \\
-    & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ATok)).~\MS{match}~y\\
+    & \quad \MS{Then}~\Match~(\LiftBoth{\MS{MatchCom}}{RetrList}{\Vector{3}}) \\
+    & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ACom)).~\MS{match}~y\\
     & \quad \phantom{\MS{Then}~(\lambda}~[~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{RET}}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{Var}}{\Vector{2}}) \\
-    & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppAtok~\MS{RET}}}{\Vector{1;4}})}{\None} \\
+    & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppACom~\MS{RET}}}{\Vector{1;4}})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Else}~~~ \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\Some\true} \\
-    & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{LAM}}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{f_{Var}}{\Vector{2}} \Seq \MS{AppATok}~\MS{LAM})}{\None} \\
-    & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{APP}}} \Rightarrow \Return{(\MS{AppATok}~\MS{APP})}{\None} \\
-    & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\None} \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{f_{Var}}{\Vector{3}} \Seq \LiftTapes{\MS{AppTok}}{1;3;4})}{\None} \\
+    & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{LAM}}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{f_{Var}}{\Vector{2}} \Seq \MS{AppACom}~\MS{LAM})}{\None} \\
+    & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{APP}}} \Rightarrow \Return{(\MS{AppACom}~\MS{APP})}{\None} \\
+    & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\None} \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{f_{Var}}{\Vector{3}} \Seq \LiftTapes{\MS{AppCom}}{1;3;4})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda}~]) \\
     & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}.
   \end{alignat*}
@@ -407,14 +397,14 @@ the machine $\MS{AppTok}$ that appends a token on a tape to $Q$.
   % \begin{alignat*}{1}
   %   & \MS{SplitBodyStep} := \\
   %   & \quad \MS{If}~(\LiftTapes{\MS{MatchList}}{\Vector{0;3}}) \\
-  %   & \quad \MS{Then}~\Match~(\LiftBoth{\MS{MatchTok}}{RetrList}{\Vector{3}}) \\
-  %   & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ATok)).~\MS{match}~y\\
+  %   & \quad \MS{Then}~\Match~(\LiftBoth{\MS{MatchCom}}{RetrList}{\Vector{3}}) \\
+  %   & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ACom)).~\MS{match}~y\\
   %   & \quad \phantom{\MS{Then}~(\lambda}~[~ \Some{\MS{RET}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{RetrRgt \circ RetrList}{\Vector{2}}) \\
-  %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppAtok~\MS{RET}}}{\Vector{1;4}})}{\None} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppACom~\MS{RET}}}{\Vector{1;4}})}{\None} \\
   %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Else}~~~ \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\Some\true} \\
-  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{LAM}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{RetrRgt \circ RetrList}{\Vector{2}} \Seq \MS{AppATok}~\MS{LAM})}{\None} \\
-  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{APP}} \Rightarrow \Return{(\MS{AppATok}~\MS{APP})}{\None} \\
-  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \None \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{RetrRgt \circ RetrList}{\Vector{3}} \Seq \LiftTapes{\MS{AppTok}}{1;3;4})}{\None} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{LAM}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{RetrRgt \circ RetrList}{\Vector{2}} \Seq \MS{AppACom}~\MS{LAM})}{\None} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{APP}} \Rightarrow \Return{(\MS{AppACom}~\MS{APP})}{\None} \\
+  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \None \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{RetrRgt \circ RetrList}{\Vector{3}} \Seq \LiftTapes{\MS{AppCom}}{1;3;4})}{\None} \\
   %   & \quad \phantom{\MS{Then}~(\lambda}~]) \\
   %   & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}.
   % \end{alignat*}
@@ -427,7 +417,7 @@ the machine $\MS{AppTok}$ that appends a token on a tape to $Q$.
 \begin{table}[t]
   % \centering
   \begin{tabular}{l||l|l|l|l}
-    Input       & $\MS{MatchList}$ & $\MS{MatchTok}$ & $\MS{MatchNat}$ & $\MS{AppATok}~\MS{RET}$ \\ \hline
+    Input       & $\MS{MatchList}$ & $\MS{MatchCom}$ & $\MS{MatchNat}$ & $\MS{AppACom}~\MS{RET}$ \\ \hline
     $0:P$       & $0:P'$           &                 &                 &                         \\
     $1:Q$       &                  &                 &                 & $0: Q \app [\MS{RET}]$  \\
     $2:k$       &                  &                 & $0: k'$         &                         \\
@@ -435,13 +425,13 @@ the machine $\MS{AppTok}$ that appends a token on a tape to $Q$.
     $4:~\dashv$ &                  &                 &                 & $1:~\dashv$             \\
   \end{tabular}
   \caption{Execution protocol of $\MS{SplitBodyStep}$ for $P=\MS{RET} \cons P'$ and $k=S~k'$.  The step machine terminates in the partition $\None$,
-    thus the loop continues.  Note that tape~$4$ is only used as an internal tape for $\MS{AppATok}$.}
+    thus the loop continues.  Note that tape~$4$ is only used as an internal tape for $\MS{AppACom}$.}
   \label{tab:exec-JumpTarget-RET}
 % \end{table}
 % \begin{table}
 %   \centering
   \begin{tabular}{l||l|l|l|l}
-    Input       & $\MS{MatchList}$ & $\MS{MatchTok}$ & $\MS{ConstrVar}$ & $\MS{AppTok}$              \\ \hline
+    Input       & $\MS{MatchList}$ & $\MS{MatchCom}$ & $\MS{ConstrVar}$ & $\MS{AppCom}$              \\ \hline
     $0:P$       & $0:P'$           &                 &                  &                            \\
     $1:Q$       &                  &                 &                  & $0: Q \app [\MS{VAR}(n)]$  \\
     $2:k$       &                  &                 &                  &                            \\

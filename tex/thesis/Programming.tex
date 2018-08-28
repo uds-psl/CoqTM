@@ -1151,9 +1151,9 @@ $nth : \List(X) \to \Nat \to \Option(X)$.  We assume retractions $f_{\List(X)} :
 $f_{\Option(X)} : \Sigma_{\Option(X)} \hookrightarrow \Sigma$, and $f_\Nat : \Sigma_\Nat \hookrightarrow \Sigma$.  Now there are two ways to encode
 $X$ on $\Sigma$: via $RetrOpt \circ f_{\Option(X)}$ and $RetrList \circ f_{\List(X)}$.
 
-The tape assignment is visualised in Figure~\ref{fig:tapes-Nth}.
+The tape assignment is visualised in Table~\ref{fig:tapes-Nth}.
 
-\begin{figure}[!htb]
+\begin{table}[!htb]
   \centering
   \begin{tabular}{l|l|l|l}
     Tape of $\MS{Nth}$ & Variable & Role & Tape in $\MS{NthStep}$ \\ \hline
@@ -1164,8 +1164,8 @@ The tape assignment is visualised in Figure~\ref{fig:tapes-Nth}.
     $3$ & $n$ (copy) & Internal & $1$ \\
   \end{tabular}
   \caption{Tape assignment for $\MS{Nth}$ and $\MS{NthStep}$}
-  \label{fig:tapes-Nth}
-\end{figure}
+  \label{tab:tapes-Nth}
+\end{table}
 
 
 The step machine first destructs $n$.  If it was $0$ and the list is empty, it writes $\None$ to the output tape.  Else, it applies the $\Some{\cdot}$
