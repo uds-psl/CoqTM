@@ -278,31 +278,29 @@ the structure of the machine.  Runtime proofs are analogous.
 \section*{Lines of Code}
 \label{sec:coq-lines}
 
-In Table~\ref{tab:coq-lines}, we summarise the numbers of Coq code.  We used the tool \texttt{coqwc} to count the lines.%
-\todo{This table is \textit{not} complete!  Recount everything, before releasing the thesis.}
-% XXX: This table excludes:
-% - TMTac, ProgrammingTools
+In Table~\ref{tab:coq-lines}, we summarise the numbers of Coq code.  We used the tool \texttt{coqwc} to count the lines.  The case-studies are under
+the horizontal line in the middle.
 \begin{table}[h]
   \centering
   \begin{tabular}{p{6.5cm}|r|r}
     Module                                    & Spec & Proof\\ \hline
-    Preliminary (incl. $\Loop$ and relations) &  228 &  197 \\
-    Definition of Turing machines             &  448 &  180 \\
-    Basic Machines                            &  122 &   34 \\
-    Combinators                               &  422 &  383 \\
-    Lifting                                   &  361 &  193 \\
-    Compound Machines                         &  378 &  278 \\
-    Value containment                         &  424 &  119 \\
+    Preliminary (incl. $\Loop$ and relations) &  176 &   84 \\
+    Definition of Turing machines             &  430 &  194 \\
+    Primitive Machines                        &  122 &   34 \\
+    Control-flow operators                    &  425 &  383 \\
+    Lifting                                   &  362 &  193 \\
+    Simple Machines                           &  380 &  278 \\
+    Value containment                         &  394 &  119 \\
     Copying and writing values                &  411 &  288 \\
-    Alphabet-Lift with values                 &  134 &  269 \\
-    Deconstructors and constructors           &  492 &  492 \\
-    $\MS{MapSum}$                             &   47 &  298 \\
-    Addition and Multiplication machines      &  181 &  298 \\
-    List functions machines                   &  329 &  456 \\
-    Heap Machine Simulator                    &  989 & 1057 \\
+    Alphabet-Lift with values                 &  133 &  147 \\
+    Deconstructors and constructors           &  486 &  482 \\
     Notations and tactics for compound
-    or programmed machines                    &      &      \\  \hline\hline
-    Total                                     &      &      \\
+    or programmed machines                    &  165 &   15 \\  \hline
+    $\MS{MapSum}$                             &   47 &  110 \\
+    Addition and Multiplication machines      &  181 &  298 \\
+    List functions machines                   &  326 &  456 \\
+    Heap Machine Simulator                    &  981 & 1040 \\ \hline\hline
+    Total                                     & 5019 & 4121 \\
   \end{tabular}
   \caption{Lines of specification and proof code for the ``modules'' (with several source files)}
   \label{tab:coq-lines}
