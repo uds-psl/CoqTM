@@ -1,0 +1,39 @@
+-R . "Shared"
+-install none
+COQDOCFLAGS = "--charset utf-8 -s --parse-comments --with-header ../website/resources/header.html --with-footer ../website/resources/footer.html --index indexpage"
+
+Base.v
+
+Tactics/Tactics.v
+Tactics/AutoIndTac.v
+Prelim.v
+EqDec.v
+Numbers.v
+Bijection.v
+Retracts.v
+Inhabited.v
+FCI.v
+
+Lists/BaseLists.v
+Lists/Cardinality.v
+Lists/Dupfree.v
+Lists/Filter.v
+Lists/Position.v
+Lists/Power.v
+Lists/Removal.v
+
+Vectors/Fin.v
+Vectors/Vectors.v
+Vectors/FinNotation.v
+Vectors/VectorDupfree.v
+
+FiniteTypes.v
+FiniteTypes/BasicDefinitions.v
+FiniteTypes/FinTypes.v
+FiniteTypes/BasicFinTypes.v
+FiniteTypes/CompoundFinTypes.v
+FiniteTypes/FiniteFunction.v
+FiniteTypes/Cardinality.v
+FiniteTypes/DepPairs.v
+FiniteTypes/Arbitrary.v
+FiniteTypes/VectorFin.v
