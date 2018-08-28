@@ -5,7 +5,7 @@ Maximilian Wuttke's Bachelor's Thesis at the [Programming Sytems Lab](http://www
 
 The project's home page is [https://www.ps.uni-saarland.de/~wuttke/bachelor.php](here).
 
-The online CoqDoc can be found [here](https://www.ps.uni-saarland.de/~wuttke/bachelor/coqdoc/toc.html).
+The online CoqDoc can be found [https://www.ps.uni-saarland.de/~wuttke/bachelor/coqdoc/toc.html](here).
 
 
 ## Compilation
