@@ -5,13 +5,13 @@
 We have formalised multi-tape Turing machines in Coq.  We developed a framework for programming and proving correctness and time complexity of
 multi-tape Turing machines.  We have demonstrated the power of this framework by implementing a multi-tape Turing machine that simulates a two-stack
 machine for a variant of the $\lambda$-calculus.  This abstract machine is a variation from the heap machine in Kunze
-et~al.~\cite{KunzeEtAl:2018:Formal}.  The two variants of the heap machine differ in that the programs in our version are linearised lists of
-commands.  In~\cite{KunzeEtAl:2018:Formal}, the authors show that heap machine can simulate terms of the programming language $L$, which is a subset
-of the call-by-value $\lambda$-calculus.  It should be easy to formalise the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our
-version of the heap machine.  By that, we would formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing
-machines.  This is, however, outside the scope of this thesis.  It is an ongoing research project~\cite{ForsterLOLA2018}, to implement a Coq library
-of undecidability reductions, and this thesis provides one step towards this goal.  The reduction from halting problem of single-tape Turing machines
-to the Post correspondence problem (PCP) has already been mechanised in Coq in~\cite{PCPITP}.
+et~al.~\cite{KunzeEtAl:2018:Formal}.  The two variants of the heap machine differ in that the programs in our version are linearised lists of tokens.
+In~\cite{KunzeEtAl:2018:Formal}, the authors show that heap machine can simulate terms of the programming language $L$, which is a subset of the
+call-by-value $\lambda$-calculus.  It should be easy to formalise the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our version
+of the heap machine.  By that, we would formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing machines.
+This is, however, outside the scope of this thesis.  It is an ongoing research project~\cite{ForsterLOLA2018}, to implement a Coq library of
+undecidability reductions, and this thesis provides one step towards this goal.  The reduction from halting problem of single-tape Turing machines to
+the Post correspondence problem (PCP) has already been mechanised in Coq in~\cite{PCPITP}.
 
 \paragraph{Differences to other implementations of Turing machines}
 We build on Asperti and Ricciotti`s framework from~\cite{asperti2015} inside the theorem prover Matita, and initially ported their definitions of
