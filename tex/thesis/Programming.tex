@@ -21,7 +21,7 @@ show a general pattern how to program and verify Turing machines, and present mo
 We first want to define what it means that a tape $t$ \emph{contains} a value $x$, written as $t \simeq x$.  Tapes, as defined in
 Definition~\ref{def:tape}, are essentially a list of symbols, so we have to linearise values to strings.
 
-\setCoqFilename{FormalComplexity.TM.Code.Code}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.Code}%
 \begin{definition}[Encodable types][codable]
   \label{def:encodable}
   We say that a type $X$ is encodable on a finite alphabet $\Sigma_X$, if there is a function $encode : X \to \List(\Sigma_X)$.
@@ -98,7 +98,7 @@ $\Sigma_{X+X}$.  Now there are two possibilities how to encode $X$ on $\Sigma_{X
 with this problem, when we program and verify Turing machines, by explicitly specifying the right retractions.
 
 If $X$ is encodable on $\Sigma$, we encode values of $x$ on tapes with an extended alphabet $\Sigma^+$ that has an additional start and stop symbol.
-\setCoqFilename{FormalComplexity.TM.Code.CodeTM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.CodeTM}%
 \begin{definition}[$\Sigma^+$][boundary]
   Let $\Sigma$ be an alphabet.
   \[
@@ -139,7 +139,7 @@ tapes, if the head of the tape is on the right-most symbol.
 In Section~\ref{sec:sigma-Lift}, we defined the alphabet-lift operator.  We noted that we need a semantically \textit{relevant} default symbol in the
 smaller alphabet $\Sigma$.  All ``programmed'' Turing machines are defined on an extended alphabet $\Sigma^+$.  It seems therefore useful to introduce
 a uniform default symbol $\MS{UNKNOWN}$ to $\Sigma^+$.  Intuitively, nothing can go wrong, because, by definition, $\MS{UNKNOWN}$ is not part of any
-encoding.  This intuition is confirmed by the following lemma: \setCoqFilename{FormalComplexity.TM.Code.ChangeAlphabet}%
+encoding.  This intuition is confirmed by the following lemma: \setCoqFilename{ProgrammingTuringMachines.TM.Code.ChangeAlphabet}%
 \begin{lemma}[$surject$ and value-containment][contains_translate_tau]
   \label{lem:contains_translate_tau}
   Let $f: \Sigma \hookrightarrow \Tau$ be a retraction between two alphabets.  Let $x:X$, where $X$ is encodable on $\Sigma$. Then, for
@@ -162,7 +162,7 @@ number.  Another very useful operation is to copy a value from one tape to anoth
 
 \subsection{Write Value}
 \label{sec:WriteValue}
-\setCoqFilename{FormalComplexity.TM.Code.WriteValue}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.WriteValue}%
 
 We define a wrapper around the machine class $\MS{WriteString}$ from Section~\ref{sec:WriteString}.  Instead of a string $str : \Sigma^+$, the machine
 $\MS{WriteValue}~str : \TM_{\Sigma^+}^1$ is parametrised over an encoding $str:\List(\Sigma)$ of a value as parameter.\footnote{The reason why
@@ -202,7 +202,7 @@ They may have additional tapes for storing additional arguments of constructors.
 
 \subsubsection{Natural numbers}
 \label{sec:match-nat}
-\setCoqFilename{FormalComplexity.TM.Code.MatchNat}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchNat}%
 
 We consider the inductive type $\Nat$, that has two constructors: $S$ and $0$.  The constructor machine $\MS{ConstrO}$ writes the number $0$ on a
 right tape.  The constructor machine $\MS{ConstrS}$ assumes that $t[0]$ contains a number $n$, and increases that number.
@@ -297,7 +297,7 @@ To show that $t'[i]$ contains the same value as $t[i]$, we would have to apply a
 Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  $\MS{MatchSum} : \TM_{\Sigma_{X+Y}^+}^1(\Bool)$ reads a value $s:X+Y$.  If it is
 $\inl x$ (or $\inr~y$), it replaces the $\MS{INL}$ (or $\MS{INR}$) symbol with a new start symbol and terminates in $\true$ (or $\false$).
 
-\setCoqFilename{FormalComplexity.TM.Code.MatchSum}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchSum}%
 \begin{definition}[$\MS{MatchSum}$][MatchSum]
   \label{def:MatchSum}
   ~
@@ -411,7 +411,7 @@ stop symbol on tape~$1$.  Then, it seeks the last character of the encoding of $
 tape~$1$, including the start symbol.  At this point, tape $0$ contains $(x,y)$ and tape $1$ contains $x$.  Then it again moves tape $0$ to last
 symbol of the encoding of $x$ on tape~$0$ and overwrites it with a new start symbol.
 
-\setCoqFilename{FormalComplexity.TM.Code.MatchPair}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchPair}%
 \begin{definition}[$\MS{MatchPair}$][MatchPair]
   \label{def:MatchPair}
   ~
@@ -477,7 +477,7 @@ that, it overwrites the start symbol on tape $1$ with the last symbol of the enc
 
 \subsubsection{List Types}
 \label{sec:MatchList}
-\setCoqFilename{FormalComplexity.TM.Code.MatchList}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchList}%
 
 The definition of $\MS{MatchList}$ is quite complex.  For brevity we only state the correctness statements of the match-machine here.  The machine
 $\MS{MatchList} : \TM_{\Sigma_{\List(X)}^+}^2(\Bool)$ expects a list on tape $0$.  If it is $\nil$, it terminates in the partition $\false$ and leaves
@@ -539,7 +539,7 @@ All finite types $\Sigma$ can be encoded on themself, i.e.\ $encode(x)=[x]$ for 
 from the starting symbol to the symbol and reads it.  After that, it moves the head one further so that the tape is right and terminates in the
 partition corresponding to the read symbol.
 
-\setCoqFilename{FormalComplexity.TM.Code.MatchFin}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchFin}%
 \begin{definition}[$\MS{MatchFin}$][MatchFin]
   \label{def:MatchFin}
   Let $def:\Sigma$.
@@ -569,7 +569,7 @@ Section~\ref{sec:MoveToSymbol}, we also defined a machine that moves the head to
 that copies a value from tape $t[0]$ on tape $t[1]$.  By the convention we set up in Section~\ref{sec:value-containment}, if we write new symbols on a
 tape, this tape must be right.  With other words, the machine $\MS{CopySymbols}$ can assume that the ``target'' tape is right.  Formally, the
 correctness relation is defined as:
-\setCoqFilename{FormalComplexity.TM.Code.Copy}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.Copy}%
 \begin{definition}[Correctness relation of $\MS{CopyValue}$][CopyValue_Rel]
   \label{def:CopyValue_Rel}
   ~
@@ -710,7 +710,7 @@ on $M_1$ and $M_2$.
 
 \section{Designing Machines}
 \label{sec:programming-design}
-\setCoqFilename{FormalComplexity.TM.Code.CodeTM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.CodeTM}%
 
 As noted above, when we speak of ``programming'' Turing machines, we mean that we use tapes as registers, and use the combinators and lifting
 operators to compose machines.  Moreover, we only use machines that directly change the values of registers (tapes).  We have machines that do a
@@ -804,7 +804,7 @@ function-computing machines, we implement a few machines that compute functions.
 
 \subsection{Addition}
 \label{sec:Add}
-\setCoqFilename{FormalComplexity.TM.Code.NatTM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.NatTM}%
 
 We want to implement the functions $add,mult:\Nat\to\Nat\to\Nat$, according to Definition~\ref{def:Computes2_Rel}.  First, we define the machine
 $\MS{Add}$ that computes the addition function.  We reuse this machine to implement a machine $\MS{Mult}$ that computes the multiplication function.
@@ -1084,7 +1084,7 @@ For brevity,  we omit the concrete running time function here.
 
 \subsection{Mapping of Sum Functions}
 \label{sec:SumTM}
-\setCoqFilename{FormalComplexity.TM.Code.SumTM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.SumTM}%
 
 Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function $(f+g) : X+Y \to Z$ by $(f+g)(\inl x):=f(x)$ and
 $(f+g)(\inr y):=g(y)$.  We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a
@@ -1141,7 +1141,7 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
 
 \subsection{List Access}
 \label{sec:Nth}
-\setCoqFilename{FormalComplexity.TM.Code.ListTM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.ListTM}%
 
 In this section, we show how to implement machines that compute the function $nth : \List(X) \to \Nat \to \Option(X)$.  Again, we use the technique
 for extending alphabets of Section~\ref{sec:extend-alphabet}.

@@ -43,7 +43,7 @@ The reduction relation $s \red t$ is defined inductively on terms:
 
 \subsubsection{Heap Machine}
 \label{sec:heap-def}
-\setCoqFilename{FormalComplexity.TM.LM.Semantics}%
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.Semantics}%
 
 Instead of substituting expressions, the heap machine works with closures.  A closure is a program together with an environment.  Variable bindings
 are implemented as pointers to a linked list of closures, called \textit{heap}.  Programs are lists of tokens:
@@ -196,7 +196,7 @@ usage for tail recursive programs.
 
 First, we notice that all types in Definition~\ref{def:Heap}, except program Tokens ($Tok$), are encodable over canonical alphabets, according to
 Definition~\ref{def:basic-encodings}.
-\setCoqFilename{FormalComplexity.TM.LM.Alphabets}%
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.Alphabets}%
 \begin{definition}[Encoding of heaps][]
   \label{def:Heap-encode}
   The type $Tok$ is isomorphic to the sum of $ATok := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $Var$.  $ATok$ is encodable on itself (since it is finite),
@@ -209,7 +209,7 @@ Definition~\ref{def:basic-encodings}.
 
 First, we derive constructor and deconstructor machines for tokens.  As the type of tokens essentially is the sum of two encodable types ($ATok$ and
 $\Nat$), we can combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
-\setCoqFilename{FormalComplexity.TM.LM.MatchTok}%
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.MatchTok}%
 \begin{definition}[$\MS{MatchTok}$][MatchTok]
   $\MS{MatchTok} : \TM_{\Sigma^+_{Tok}}^1(\Option(ATok))$ is defined by
   \begin{alignat*}{2}
@@ -246,7 +246,7 @@ machine.
 
 \subsection{$\MS{Lookup}$}
 \label{sec:Lookup}
-\setCoqFilename{FormalComplexity.TM.LM.LookupTM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.LookupTM}%
 
 The machine $\MS{Lookup} : \TM_{\Sigma^+}^5(\Bool)$ realises the heap $lookup$ function.  Note, that the heap is just a linked list of closures, where
 the pointers are indices.  It uses the machine $\MS{Nth}' : \TM_{\Sigma^+}^4(\Bool)$ which is like $\MS{Nth}$ from Section~\ref{sec:Nth}, but with the
@@ -370,7 +370,7 @@ $H[a]=\Some\None$, but we do not separate these two failure cases.
 
 \subsection{$\MS{SplitBody}$}
 \label{sec:SplitBody}
-\setCoqFilename{FormalComplexity.TM.LM.JumpTargetTM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.JumpTargetTM}%
 
 The machine $\MS{SplitBody} : \TM_{\Sigma^+_{Pro}}^5(\Bool)$ computes the function $\phi$ (cf.\ Definition~\ref{def:jumpTarget}).  The
 implementation of this machine is straight-forward, because $\phi'$ is defined tail-recursively.  The machine
@@ -484,7 +484,7 @@ Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$.
 
 \subsection{$\MS{Step}$}
 \label{sec:heap-Step}
-\setCoqFilename{FormalComplexity.TM.LM.StepTM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.StepTM}%
 
 
 We define a machine $\MS{Step}_\Sigma^{11} : \TM(\Option(\Unit))$ that simulates steps of the heap machine.  The tapes $0$, $1$, and $2$ contain the
@@ -534,7 +534,7 @@ such that $\MS{Step}$ terminates in $stepSteps~T~V~H$ steps when the first three
 
 \subsection{$\MS{Loop}$}
 \label{sec:heap-Loop}
-\setCoqFilename{FormalComplexity.TM.LM.HaltingProblem}%
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.HaltingProblem}%
 
 We instantiate $\Sigma := \Sigma_{\List(Clos)} + \Sigma_{Heap}$ and define $\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if
 the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  Moreover, if the heap state terminates with an empty control stack
@@ -594,9 +594,9 @@ such that the first three tapes of $initTape(T,V,H)$ contain $T$, $V$, or $H$, r
   \[
     initTapes(T,V,H) := initValue(T) \cons initValue(V) \cons initValue(H) \cons initRight^8
   \]
-  \setCoqFilename{FormalComplexity.TM.Code.CodeTM}%
+  \setCoqFilename{ProgrammingTuringMachines.TM.Code.CodeTM}%
   With $\coqlink[initValue]{initValue}(x) := \MS{midtape}~\nil~\MS{START}~(encode(x) \app [\MS{STOP}])$ and $initRight := \MS{midtape}~\nil~\MS{STOP}~\nil$.
-  \setCoqFilename{FormalComplexity.TM.LM.HaltingProblem}%
+  \setCoqFilename{ProgrammingTuringMachines.TM.LM.HaltingProblem}%
 \end{definition}
 
 \begin{theorem}[Halting problem reduction][HaltingProblem]

@@ -36,7 +36,7 @@ Both lifting operators are easy to define and verify using the lemmas of the pre
 
 \section{Tape-Lift}
 \label{sec:n-Lift}
-\setCoqFilename{FormalComplexity.TM.Lifting.LiftTapes}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Lifting.LiftTapes}%
 
 The tape-lift takes a machine $M:\TM_\Sigma^m(F)$ and a duplicate-free vector $I: \Fin_n^m$, and yields a machine
 $\LiftTapes{M}{I} : \TM_\Sigma^n(F)$.\footnote{ Note that instead of duplicate free index vectors $I:\Fin_n^m$, we could also use injective functions
@@ -132,7 +132,7 @@ We apply this lemma in the proof of Lemma~\ref{lem:LiftTapes_Realise} with $g :=
 
 \section{Alphabet-Lift}
 \label{sec:sigma-Lift}
-\setCoqFilename{FormalComplexity.TM.Lifting.LiftAlphabet}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Lifting.LiftAlphabet}%
 
 Let $M : \TM_\Sigma^n(F)$ be a machine over the alphabet $\Sigma$, and $f : \Sigma \hookrightarrow \Tau$ a retraction on another alphabet $\Tau$.
 Note that then $\Tau$ has at least as many symbols as $\Sigma$.  We need a default symbol $def:\Sigma$.  In contrast to the default partition we
@@ -165,13 +165,13 @@ $act' : (\Option(\Tau) \times \MS{Move})^n$.
   $mapAct : \forall (\Sigma~\Tau:\Type).~(\Sigma\to\Tau) \to \Act_\Sigma \to \Act_\Tau$.
 \end{definition}
 
-\setCoqFilename{FormalComplexity.TM.TM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.TM}%
 For the correctness and running time lemmas, we also need the canonical function
 \[
   \coqlink[mapTape]{mapTape}:\forall (\Tau~\Sigma:\Type).~(\Tau\to\Sigma)\to\Tape_\Tau\to\Tape_\Sigma
 \]
 that maps every symbol on a tape.  We write $\coqlink[mapTapes]{mapTapes}$ for the respective tape-vector function.
-\setCoqFilename{FormalComplexity.TM.Lifting.LiftAlphabet}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Lifting.LiftAlphabet}%
 
 \begin{lemma}[Correctness of $\LiftAlphabet{M}{(f,def)}$][LiftAlphabet_Realise]
   \label{lem:LiftAlphabet_Realise}

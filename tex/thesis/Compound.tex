@@ -17,7 +17,7 @@ that, we use the dual approach and apply the anti-monotonicity Lemma~\ref{lem:Te
 
 \section{$\Nop$}
 \label{sec:Nop}
-\setCoqFilename{FormalComplexity.TM.Compound.Multi}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Compound.Multi}%
 
 
 Using the tapes-lift (Definition~\ref{def:LiftTapes}) and $\MS{Null}$ (Definition~\ref{def:Null}), it is easy to define an $n$-tape machine
@@ -53,7 +53,7 @@ can be automated in Coq.
 
 \section{$\MS{WriteString}$}
 \label{sec:WriteString}
-\setCoqFilename{FormalComplexity.TM.Compound.WriteString}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Compound.WriteString}%
 
 The machine $\MS{WriteString}~d~str$ writes a fixed string $str:\List(\Sigma)$ in the direction $d$.  It is defined by recursion over the string:
 \begin{definition}[$\MS{WriteString}$][WriteString]
@@ -109,7 +109,7 @@ particular example, the former approach seems to be easier.
 
 \section{$\MS{MovePar}$}
 \label{sec:MovePar}
-\setCoqFilename{FormalComplexity.TM.Compound.Multi}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Compound.Multi}%
 
 The two-tape machine $\MS{MovePar}~d_0~d_1$ combines two $\MS{Move}$ machines.  It first moves the $0$th\footnote{To avoid confusion with zero-based
   indices used throughout this thesis, we write ``the $0$th or $1$st tape'', instead of ``the first or second tape.''} tape in direction $d_0$ and
@@ -140,7 +140,7 @@ Thus, we also do not present more proofs of this kind on paper.
 
 \section{$\MS{CopySymbols}$}
 \label{sec:CopySymbols}
-\setCoqFilename{FormalComplexity.TM.Compound.CopySymbols}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Compound.CopySymbols}%
 
 The machine $\MS{CopySymbols}~h : \TM_\Sigma^2$, where $h:\Sigma\to\Bool$, is a compound machine involving a $\While$-loop.  It reads a symbol on tape
 $0$, writes it to tape $1$, and moves both tapes to right, until the read symbol satisfies $h$.  If there was no current symbol on tape $0$, it also

@@ -22,7 +22,7 @@ where $X^n$ denotes the type of vectors over $X$ of size $n$.  We usually leave 
 
 \subsection{Relations}
 \label{sec:relations}
-\setCoqFilename{FormalComplexity.TM.Relations}
+\setCoqFilename{ProgrammingTuringMachines.TM.Relations}
 
 We define the semantics of concrete Turing machines in terms of relations.  We write $R \subseteq A \times B$ as a notation for
 $R : A \to B \to \Prop$.  We call relations of the form $R \subseteq A \times (B \times A)$ \emph{partitioned relations} and write
@@ -181,7 +181,7 @@ functions ($f : A \to B$ and $f^{-1} : B \to \Option(A)$), but mostly we use the
 \section{Machines and Tapes}
 \label{sec:machine-tapes}
 
-\setCoqFilename{FormalComplexity.TM.TM}
+\setCoqFilename{ProgrammingTuringMachines.TM.TM}
 
 % There are many variations of Turing machines.  We have chosen multi-Tape
 
@@ -353,7 +353,7 @@ $\delta$ yielded for it.  The machine ends up in a new state $q'$.
 To define the execution of a machine, we first define an abstract recursive function
 $\Loop \from (A \to A) \to (A \to \Bool) \to A \to \Nat \to \Option(A)$ (for every $A:\Type$):
 
-\setCoqFilename{FormalComplexity.TM.Prelim}
+\setCoqFilename{ProgrammingTuringMachines.TM.Prelim}
 \begin{definition}[$\Loop$][loop]
   \begin{align*}
     \Loop~f~h~a~k :=
@@ -386,7 +386,7 @@ We can show some basic facts about $\Loop$.
   Claims~\ref{lem:loop_monotone},~\ref{lem:loop_injective}, and~\ref{lem:loop_fulfills} follow by induction on $k : \Nat$.  Claim~\ref{lem:loop_0}
   follows by Definition.  Claim~\ref{lem:loop_eq_0} is a direct consequence of claim~\ref{lem:loop_0}.
 \end{proof}
-\setCoqFilename{FormalComplexity.TM.TM}
+\setCoqFilename{ProgrammingTuringMachines.TM.TM}
 
 
 We instantiate the abstract $\Loop$ function and get a function $\MS{loopM} \from \Conf \to \Nat \to \Option(\Conf)$ that executes $k$ steps of the

@@ -33,7 +33,7 @@ language.  In our approach, we can just ``extend'' our language by defining a fu
 \section{$\MS{Match}$}
 \label{sec:match}
 
-\setCoqFilename{FormalComplexity.TM.Combinators.Match}
+\setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Match}
 
 Asperti and Ricciotti~\cite{asperti2015} define the control-flow operators sequential composition, conditional, and while.  Their conditional operator
 takes a concrete machine state as parameter.  We noticed that that is not acceptable for a control-flow operator.  We now introduce a generalised
@@ -126,7 +126,7 @@ We can combine the correctness and running time lemma, in case $M$ and every $f~
 
 As mentioned above, conditional and sequential composition can be defined as instances of the Match operator.  For the sequential composition
 $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$, the function $f : F \to \TM_\Sigma^n(F')$, maps all partitions to the
-machine $M_2$.  \setCoqFilename{FormalComplexity.TM.Combinators.SequentialComposition}%
+machine $M_2$.  \setCoqFilename{ProgrammingTuringMachines.TM.Combinators.SequentialComposition}%
 \begin{definition}[Sequential composition][Seq]
   \label{def:Seq}
   Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
@@ -171,7 +171,7 @@ For the conditional $\If{M_1}{M_2}{M_3}$ with $M_1 : \TM_\Sigma^n(\Bool)$, $M_2,
 simply maps $\true$ to $M_2$ and $\false$ to $M_3$.  The machine $\If{M_1}{M_2}{M_3}$, as defined below, first executes $M_1$.  If terminated in a
 positive state, it continues the execution in $M_2$, else in $M_3$.
 
-\setCoqFilename{FormalComplexity.TM.Combinators.If}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Combinators.If}%
 \begin{definition}[Conditional][If]
   \label{def:If}
   Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F)$.
@@ -219,7 +219,7 @@ steps.
 \subsection{Proof of $\Match$}
 \label{sec:match-proofs}
 
-\setCoqFilename{FormalComplexity.TM.Prelim}
+\setCoqFilename{ProgrammingTuringMachines.TM.Prelim}
 
 The idea of the proofs of Lemma~\ref{lem:Match_Realise} and Lemma~\ref{lem:Match_Terminates} is to abstract two features of the machine: lifting of
 configurations from one abstract machine to another abstract machines, and sequencing of two executions.  We formalise these two concepts for abstract
@@ -328,7 +328,7 @@ state and tapes component of $c_k$.
 
 The execution steps of $\Match$ are essentially a sequence of first, the lifted steps of execution of $M$, second, a ``nop'' transition, and third,
 the lifted steps of the execution of $f~y$.  We give the concrete lifting functions from $M$ to $\Match$ and from $M~y$ to $\Match$:
-\setCoqFilename{FormalComplexity.TM.Combinators.Match}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Match}%
 \begin{definition}[Liftings of $\Match$][lift_confL]
   We define the functions \\$liftL : \Conf_M \to \Conf_\Match$ and $liftR_y : \Conf_{f(y)} \to \Conf_\Match$ for all $y:F$:
   \begin{alignat*}{2}
@@ -392,7 +392,7 @@ Asperti and Ricciotti~\cite{asperti2015} have a version of Lemma~\ref{lem:loop_l
 
 \section{$\MS{While}$}
 \label{sec:While}
-\setCoqFilename{FormalComplexity.TM.Combinators.While}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Combinators.While}%
 
 The machine $\While~M$ essentially behaves like a ``do-while'' loop in imperative languages like C.  At the end of the execution of the loop body $M$,
 $M$ decides either to continue or break out of the loop.  If $M$ terminated in the partition $\None$, then the loop is continued, and if $M$
@@ -615,7 +615,7 @@ to the right instead.  For example, we define a machine $\MS{MoveToSymbol}$ belo
 symbol.  Using this operator, we get a machine ``for free'' that moves the head to the left instead.  However, we still have to copy or parametrise
 the correctness and running time relations.
 
-\setCoqFilename{FormalComplexity.TM.TM}%
+\setCoqFilename{ProgrammingTuringMachines.TM.TM}%
 Using the proving techniques developed in the previous sections, verifying the $\MS{Mirror}$ operator is very easy.  The function
 $\coqlink[mirror_tape]{\MS{mirror}} : \Tape_\Sigma \to \Tape_\Sigma$ swaps the left and right part of a tape.  %
 % \begin{definition}[Mirror tape][mirror_tape]
@@ -648,7 +648,7 @@ $\coqlink[mirror_tape]{\MS{mirror}} : \Tape_\Sigma \to \Tape_\Sigma$ swaps the l
 % %   By case analysis over the tape(s).
 % % \end{proof}
 Furthermore, we assume an injective and involutive function $\coqlink[mirror_move]{\MS{swap}}:\MS{Move} \to \MS{Move}$ that simply swaps the movements
-$L$ and $R$.  \setCoqFilename{FormalComplexity.TM.Combinators.Mirror}%
+$L$ and $R$.  \setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Mirror}%
 \begin{definition}[$\MS{Mirror}~M$][Mirror]
   \label{def:Mirror}
   Let $M:\TM_\Sigma^n(F)$.  The machine $\MS{Mirror}~M : \TM_\Sigma^n(F)$ has the same components as $M$, except:
@@ -708,7 +708,7 @@ $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \
 
 \section{Partition Operators}
 \label{sec:partition-op}
-\setCoqFilename{FormalComplexity.TM.Combinators.Combinators}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Combinators}%
 
 The operators of the above sections of this Chapter modify the behaviour of the machine.  We can also define simple operators that modify the
 partitioning function $part : Q \to F$.  This is for example useful, if we want some (partitioned) machine to terminate in one particular partition.
