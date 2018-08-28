@@ -14,7 +14,7 @@ clean: Makefile.coq
 	rm -f website/*html
 
 Makefile.coq: _CoqProject
-	coq_makefile -f _CoqProject > Makefile.coq
+	coq_makefile -f _CoqProject -o Makefile.coq
 	echo ".PHONY: html" >> Makefile.coq
 
 .PHONY: all html clean
