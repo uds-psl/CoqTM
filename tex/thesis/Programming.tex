@@ -360,7 +360,7 @@ this case, the tape moves one step to the right:
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{MatchOption}$][MatchOption_Sem]
-  \label{lem:MatchSum_Realise}
+  \label{lem:MatchOption_Realise}
   $\MS{MatchOption} \RealiseIn{7} MatchOptionRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $MatchOptionRel :=$
@@ -1049,7 +1049,6 @@ tapes are right.  Thus, when we instantiate the $c$-tape with the value $0$, the
 
 \begin{lemma}[Correctness of $\MS{MultLoop}$][Mult_Loop_Realise]
   \label{lem:Mult_Loop_Realise}
-  \label{lem:Mult_Loop_Realise}
   $\MS{MultLoop} \Realise MultLoopRel$ with
   \begin{alignat*}{2}
     & MultLoopRel ~&:=& \lambda t~t'.~\forall (c~m~n:\Nat). \\
@@ -1151,7 +1150,7 @@ $nth : \List(X) \to \Nat \to \Option(X)$.  We assume retractions $f_{\List(X)} :
 $f_{\Option(X)} : \Sigma_{\Option(X)} \hookrightarrow \Sigma$, and $f_\Nat : \Sigma_\Nat \hookrightarrow \Sigma$.  Now there are two ways to encode
 $X$ on $\Sigma$: via $RetrOpt \circ f_{\Option(X)}$ and $RetrList \circ f_{\List(X)}$.
 
-The tape assignment is visualised in Table~\ref{fig:tapes-Nth}.
+The tape assignment is visualised in Table~\ref{tab:tapes-Nth}.
 
 \begin{table}[!htb]
   \centering
