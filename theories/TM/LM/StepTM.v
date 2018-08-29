@@ -28,19 +28,19 @@ Section StepMachine.
 
   (** Retracts *)
   (* Closures *)
-  Local Definition retr_clos_step : Retract sigHClos sigStep := ComposeRetract _ retr_closures_step.
+  Local Definition retr_clos_step : Retract sigHClos sigStep := ComposeRetract retr_closures_step _.
 
   (* Closure addresses *)
 
   Definition retr_pro_clos : Retract sigPro sigHClos := _.
-  Local Definition retr_pro_step : Retract sigPro sigStep := ComposeRetract retr_pro_clos retr_clos_step.
-  Local Definition retr_tok_step : Retract sigTok sigStep := ComposeRetract _ retr_pro_step.
+  Local Definition retr_pro_step : Retract sigPro sigStep := ComposeRetract retr_clos_step retr_pro_clos.
+  Local Definition retr_tok_step : Retract sigTok sigStep := ComposeRetract retr_pro_step _.
 
   Local Definition retr_nat_clos_ad : Retract sigNat sigHClos := Retract_sigPair_X _ (Retract_id _).
-  Local Definition retr_nat_step_clos_ad : Retract sigNat sigStep := ComposeRetract retr_nat_clos_ad retr_clos_step.
+  Local Definition retr_nat_step_clos_ad : Retract sigNat sigStep := ComposeRetract retr_clos_step retr_nat_clos_ad.
 
   Local Definition retr_nat_clos_var : Retract sigNat sigHClos := Retract_sigPair_Y _ _.
-  Local Definition retr_nat_step_clos_var : Retract sigNat sigStep := ComposeRetract retr_nat_clos_var retr_clos_step.
+  Local Definition retr_nat_step_clos_var : Retract sigNat sigStep := ComposeRetract retr_clos_step retr_nat_clos_var.
 
   (** Instance of the [Lookup] and [JumpTarget] machine *)
   Local Definition Step_Lookup := Lookup retr_clos_step retr_heap_step.
@@ -334,13 +334,13 @@ Section StepMachine.
 
 
 
-  Local Definition retr_nat_step_hent : Retract sigNat sigStep := ComposeRetract retr_nat_heap_entry retr_heap_step.
+  Local Definition retr_nat_step_hent : Retract sigNat sigStep := ComposeRetract retr_heap_step retr_nat_heap_entry.
 
-  Local Definition retr_clos_step_hent : Retract sigHClos sigStep := ComposeRetract retr_clos_heap retr_heap_step.
+  Local Definition retr_clos_step_hent : Retract sigHClos sigStep := ComposeRetract retr_heap_step retr_clos_heap.
 
-  Local Definition retr_hent'_step : Retract sigHEnt' sigStep := ComposeRetract retr_hent'_heap retr_heap_step.
+  Local Definition retr_hent'_step : Retract sigHEnt' sigStep := ComposeRetract retr_heap_step retr_hent'_heap.
 
-  Local Definition retr_hent_step : Retract sigHEnt sigStep := ComposeRetract retr_hent_heap retr_heap_step.
+  Local Definition retr_hent_step : Retract sigHEnt sigStep := ComposeRetract retr_heap_step retr_hent_heap.
   
   Definition Put : pTM sigStep^+ unit 6 :=
     Length retr_heap_step retr_nat_step_clos_ad @ [|Fin0; Fin3; Fin4; Fin5|];;
@@ -656,7 +656,7 @@ Section StepMachine.
                (true))
        (Return Nop false).
 
-  Local Definition retr_closure_step : Retract sigHClos sigStep := ComposeRetract _ retr_closures_step.
+  Local Definition retr_closure_step : Retract sigHClos sigStep := ComposeRetract retr_closures_step _.
 
   Lemma Step_var_Realise : Step_var ⊨ Step_var_Rel.
   Proof.

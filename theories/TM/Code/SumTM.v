@@ -40,11 +40,11 @@ Section MapSum.
 
 
   (** Now we observe that there a two possible ways how to encode [X] and [Y] on [sigM], by composing retracts. *)
-  Local Definition retr_sigX_sigMap  : Retract sigX sigMap := ComposeRetract retr_sigX_sigM retr_sigM_sigMap.
-  Local Definition retr_sigX_sigMap' : Retract sigX sigMap := ComposeRetract (Retract_sigSum_X _ _) retr_sigSum_sigMap.
+  Local Definition retr_sigX_sigMap  : Retract sigX sigMap := ComposeRetract retr_sigM_sigMap  retr_sigX_sigM.
+  Local Definition retr_sigX_sigMap' : Retract sigX sigMap := ComposeRetract retr_sigSum_sigMap (Retract_sigSum_X _ _).
 
-  Local Definition retr_sigY_sigMap  : Retract sigY sigMap := ComposeRetract retr_sigY_sigM retr_sigM_sigMap.
-  Local Definition retr_sigY_sigMap' : Retract sigY sigMap := ComposeRetract (Retract_sigSum_Y _ _) retr_sigSum_sigMap.
+  Local Definition retr_sigY_sigMap  : Retract sigY sigMap := ComposeRetract retr_sigM_sigMap retr_sigY_sigM.
+  Local Definition retr_sigY_sigMap' : Retract sigY sigMap := ComposeRetract retr_sigSum_sigMap (Retract_sigSum_Y _ _).
   
 
   

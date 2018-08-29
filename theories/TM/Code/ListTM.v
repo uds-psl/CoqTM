@@ -20,8 +20,8 @@ Section Nth.
   Variable (sig sigX : finType) (X : Type) (cX : codable sigX X).
 
   Variable (retr1 : Retract (sigList sigX) sig) (retr2 : Retract sigNat sig) (retr3 : Retract (sigOption sigX ) sig).
-  Local Instance retr_X_list : Retract sigX sig := ComposeRetract (Retract_sigList_X _) retr1.
-  Local Instance retr_X_opt : Retract sigX sig := ComposeRetract (Retract_sigOption_X _) retr3.
+  Local Instance retr_X_list : Retract sigX sig := ComposeRetract retr1 (Retract_sigList_X _).
+  Local Instance retr_X_opt : Retract sigX sig := ComposeRetract retr3 (Retract_sigOption_X _).
 
   (*
   Check _ : codable sig (list X).
@@ -220,7 +220,7 @@ Section Nth'.
   (* Hypothesis (defX: inhabitedC sigX). *)
 
   Variable (retr1 : Retract (sigList sigX) sig) (retr2 : Retract sigNat sig).
-  Local Instance retr_X_list' : Retract sigX sig := ComposeRetract (Retract_sigList_X _) retr1.
+  Local Instance retr_X_list' : Retract sigX sig := ComposeRetract retr1 (Retract_sigList_X _).
 
   Check _ : codable sig (list X).
   Check _ : codable sig nat.

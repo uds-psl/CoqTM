@@ -34,30 +34,30 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
   Definition retr_nat_clos_ad : Retract sigNat sigHClos :=
     Retract_sigPair_X _ _.
   Definition retr_nat_lookup_clos_ad : Retract sigNat sigLookup :=
-    ComposeRetract retr_nat_clos_ad retr_clos_lookup.
+    ComposeRetract retr_clos_lookup retr_nat_clos_ad.
 
   (** No 2 *)
   Definition retr_nat_clos_var : Retract sigNat sigHClos :=
     Retract_sigPair_Y _ _.
   Definition retr_nat_lookup_clos_var : Retract sigNat sigLookup :=
-    ComposeRetract retr_nat_clos_var retr_clos_lookup.
+    ComposeRetract retr_clos_lookup retr_nat_clos_var.
 
   (** No 3 *)
   Definition retr_nat_heap_entry : Retract sigNat sigHeap :=
     Retract_sigList_X (Retract_sigOption_X (Retract_sigPair_Y _ (Retract_id _))).
   Local Definition retr_nat_lookup_entry : Retract sigNat sigLookup :=
-    ComposeRetract retr_nat_heap_entry retr_heap_lookup.
+    ComposeRetract retr_heap_lookup retr_nat_heap_entry.
 
   
   (** Encoding of a closure on the heap alphabet *)
   Definition retr_clos_heap : Retract sigHClos sigHeap := _.
-  Definition retr_clos_lookup_heap : Retract sigHClos sigLookup := ComposeRetract retr_clos_heap retr_heap_lookup.
+  Definition retr_clos_lookup_heap : Retract sigHClos sigLookup := ComposeRetract retr_heap_lookup retr_clos_heap.
 
   Definition retr_hent_heap : Retract sigHEnt sigHeap := _.
-  Local Definition retr_hent_lookup : Retract sigHEnt sigLookup := ComposeRetract retr_hent_heap retr_heap_lookup.
+  Local Definition retr_hent_lookup : Retract sigHEnt sigLookup := ComposeRetract retr_heap_lookup retr_hent_heap.
 
   Definition retr_hent'_heap : Retract sigHEnt' sigHeap := _.
-  Local Definition retr_hent'_lookup : Retract sigHEnt' sigLookup := ComposeRetract retr_hent'_heap retr_heap_lookup.
+  Local Definition retr_hent'_lookup : Retract sigHEnt' sigLookup := ComposeRetract retr_heap_lookup retr_hent'_heap.
   
   (*
   Tapes:

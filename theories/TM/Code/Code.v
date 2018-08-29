@@ -101,7 +101,7 @@ Section Encode_map_comp.
   Variable (I1 : Retract sig1 sig2) (I2 : Retract sig2 sig3).
 
   Lemma Encode_map_comp x :
-    Encode_map (Encode_map cX I1) I2 x = Encode_map cX (ComposeRetract I1 I2) x.
+    Encode_map (Encode_map cX I1) I2 x = Encode_map cX (ComposeRetract I2 I1) x.
   Proof. cbn. rewrite List.map_map. reflexivity. Qed.
   
 End Encode_map_comp.
