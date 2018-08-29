@@ -6,7 +6,7 @@ Require Import Shared.Base.
 
 
 (*
- * A retract between types [A] and [B] is a tuple of two functions,
+ * A retraction between types [A] and [B] is a tuple of two functions,
  * [f : A -> B] (called the injection function) and [g : B -> option A] (called the retract function),
  * such that the following triangle shaped diagram commutes:
  *
@@ -97,7 +97,7 @@ Ltac retract_adjoint :=
 
 
 (*
- * We can compose Compose retracts, as shown in the following commuting diagram
+ * We can compose retractions, as shown in the following commuting diagram
  *
  *            f1        f2
  *      A --------> B --------> C
@@ -121,15 +121,15 @@ Ltac retract_adjoint :=
 Section ComposeRetracts.
   Variable A B C : Type.
 
-  Definition retr_comp_f (f1 : A -> B) (f2 : B -> C) : A -> C := fun a => f2 (f1 a).
-  Definition retr_comp_g (g1 : B -> option A) (g2 : C -> option B) :=
-    fun c => match g2 c with
-          | Some b => g1 b
+  Definition retr_comp_f (f1 : B -> C) (f2 : A -> B) : A -> C := fun a => f1 (f2 a).
+  Definition retr_comp_g (g1 : C -> option B) (g2 : B -> option A) : C -> option A :=
+    fun c => match g1 c with
+          | Some b => g2 b
           | None => None
           end.
 
   (* No instance (outside of this section), for obvious reasons... *)
-  Local Instance ComposeRetract (retr1 : Retract A B) (retr2 : Retract B C) : Retract A C :=
+  Local Instance ComposeRetract (retr1 : Retract B C) (retr2 : Retract A B) : Retract A C :=
     {|
       Retr_f := retr_comp_f Retr_f Retr_f;
       Retr_g := retr_comp_g Retr_g Retr_g;
