@@ -254,23 +254,23 @@ $H[a,n]$, $a$ and $n$ are encoded on an alphabet of the closures of a closure st
 retractions $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$ and $f_{Clos} : \Sigma_{Clos} \hookrightarrow \Sigma$.  The second retraction correspond
 to the closure alphabet where $a$ and $n$ are encoded.  The retraction
 \[
-  \coqlink[retr_clos_lookup_heap]{f_{Clos'}} : \Sigma_{Clos} \hookrightarrow \Sigma := RetrFst \circ RetrOpt \circ RetrList \circ f_{Heap}
+  \coqlink[retr_clos_lookup_heap]{f_{Clos'}} : \Sigma_{Clos} \hookrightarrow \Sigma := f_{Heap} \circ RetrList \circ RetrOpt \circ RetrFst 
 \]
 is the canonical retraction of closures from the heap.
 
 There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depending on whether the number is:
 \begin{enumerate}
-\item a heap address of an closure on the stack alphabet:
+\item a heap address of a closure on the stack alphabet:
   \[
-    \coqlink[retr_nat_lookup_clos_ad]{f_{add}} := RetrFst \circ f_{Clos'}
+    \coqlink[retr_nat_lookup_clos_ad]{f_{add}} := f_{Clos'} \circ RetrFst
   \]
 \item a variable in a command of a closure on the stack alphabet:
   \[
-    \coqlink[retr_nat_lookup_clos_var]{f_{var}} := RetrRgt \circ RetrList \circ RetrSnd \circ f_{Clos'}
+    \coqlink[retr_nat_lookup_clos_var]{f_{var}} := f_{Clos'} \circ RetrSnd \circ RetrList \circ RetrRgt
   \]
 \item a pointer to the next heap entry:
   \[
-    \coqlink[retr_nat_lookup_entry]{f_{next}} := RetrSnd \circ RetrOpt \circ RetrList \circ f_{Heap}
+    \coqlink[retr_nat_lookup_entry]{f_{next}} :=  f_{Heap} \circ RetrList \circ RetrOpt \circ RetrSnd 
   \]
 \end{enumerate}
 
@@ -313,8 +313,8 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
   \begin{align*}
     & \MS{LookupStep} := \\
     & \quad \MS{If}~(\MS{Nth'}~f_{heap}~f_{add}) \\
-    & \quad \MS{Then}~\MS{If}~(\LiftBoth{\MS{MatchOption}}{RetrList ~\circ~ f_{heap}}{\Vector{4}}) \\
-    & \quad \phantom{\MS{Then}}~\MS{Then}~\LiftBoth{\MS{MatchPair}}{RetrOpt \circ RetrList ~\circ~ f_{heap}}{\Vector{4;3}} \Seq \\
+    & \quad \MS{Then}~\MS{If}~(\LiftBoth{\MS{MatchOption}}{f_{heap} \circ RetrList}{\Vector{4}}) \\
+    & \quad \phantom{\MS{Then}}~\MS{Then}~\LiftBoth{\MS{MatchPair}}{f_{heap} \circ RetrList \circ RetrOpt}{\Vector{4;3}} \Seq \\
     & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{var}}{\Vector{2}}) \\
     & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{Then}~ \MS{Return}~\bigl(
       \LiftTapes{\MS{CopyValue}}{\Vector{4;1}} \Seq
@@ -376,7 +376,7 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
 
 \begin{definition}[$\MS{SplitBody}$][JumpTarget_Step]
   \label{def:JumpTarget}
-  We define the canonical retraction $f_{Var} : Var \to \Sigma_{Pro}$ by $f_{Var} := RetrRgt \circ RetrList$.
+  We define the canonical retraction $f_{Var} : Var \hookrightarrow \Sigma_{Pro}$ by $f_{Var} := RetrList \circ RetrRgt$.
   %% This is a bad hack, but I think it looks nice...
   %% This hack assumes that $\MS{LAM}$ is the wider than of $\MS{RET}$ and $\MS{APP}$
   \begin{alignat*}{1}

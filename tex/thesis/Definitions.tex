@@ -165,10 +165,10 @@ functions ($f : A \to B$ and $f^{-1} : B \to \Option(A)$), but mostly we use the
 
 \begin{definition}[Composition of retractions]
   \label{def:retract-compose}
-  Let $f : A \hookrightarrow B$ and $g : B \hookrightarrow C$.  Then $f \circ g : A \hookrightarrow C$ is defined as the following retraction:
+  Let $g : B \hookrightarrow C$ and $f : A \hookrightarrow B$.  Then $g \circ f : A \hookrightarrow C$ is defined as the following retraction:
   \begin{alignat*}{2}
-    & (f \circ g)      & (a) &:= g(f(a)) \\
-    & (f \circ g)^{-1} & (c) &:=
+    & (g \circ f)      & (a) &:= g(f(a)) \\
+    & (g \circ f)^{-1} & (c) &:=
     \begin{cases}
       f^{-1}(b) & g^{-1}(c) = \Some{b} \\
       \None & g^{-1}(c) = \None

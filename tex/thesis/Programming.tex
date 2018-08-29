@@ -44,16 +44,18 @@ encoding with the composition of both retractions:
   \label{lem:Encode_map_comp}
   Let $X$ be encodable on $\Sigma$ with the function $encode_\Sigma : X \to \List(\Sigma)$.  Let $f : \Sigma \hookrightarrow \Tau$ and
   $g : \Tau \hookrightarrow \Delta$ be retractions.  Then there is only one way how $X$ can be encoded on $\Delta$, i.e.:
-  \[ encodeMap~(encodeMap~f~encode_\Sigma)~g~(x) = encodeMap~encode_\Sigma~(f \circ g)~x. \]
+  \[
+    encodeMap~(encodeMap~f~encode_\Sigma)~g~x = encodeMap~encode_\Sigma~(g \circ f)~x
+  \]
 \end{lemma}
 
 For each type $X$, we have an alphabet $\Sigma_X$.  If $X$ is encodable on $\Sigma_X$, then $P(X)$ is defined on an alphabet $\Sigma_{P(X)}$.  We
-define the basic encodings:
+define encodings for several types:
 \begin{definition}[Basic encodings]
   \label{def:basic-encodings}
   ~
   \begin{enumerate}
-  \coqitem[Encode_unit] We encode $\Unit$ on the empty alphabet $\False$: $encode~\unit := \nil$
+  \coqitem[Encode_unit] We encode $\Unit$ on the empty alphabet $\False$ with $encode~\unit := \nil$
   \coqitem[Encode_fin] The types $\Bool$ and $\Fin_k$ are encoded on themself, i.e.\ $encode(x):=[x]$.
   \coqitem[Encode_option] Let $X$ be encodable on $\Sigma_X$.  Then $\Option(X)$ is encodable on
     \[ \Sigma_{\Option(X)} ::= \MS{NONE} ~|~ \MS{SOME} ~|~ (x:\Sigma_X) \]
@@ -145,14 +147,14 @@ encoding.  This intuition is confirmed by the following lemma: \setCoqFilename{P
   Let $f: \Sigma \hookrightarrow \Tau$ be a retraction between two alphabets.  Let $x:X$, where $X$ is encodable on $\Sigma$. Then, for
   $t:\Tape_{\Tau^+}$
   \[
-    mapTape~(surject~(f \circ RetrPlus)~\MS{UNKNOWN})~t \simeq x ~\iff~ t \simeq_f x
+    mapTape~(surject~(RetrPlus \circ f)~\MS{UNKNOWN})~t \simeq x ~\iff~ t \simeq_f x
   \]
 \end{lemma}
 Note that the encoding on the right side is mapped with the retraction $f$.
 
-We write $\LiftAlphabet{M}{f}$ for $\LiftAlphabet{M}{(f \circ RetrPlus, \MS{UNKNOWN})}$.  Note that we also use the $\Uparrow$ notation for the tapes-lift, but it is
-always clear whether we mean the tape-lift or alphabet-lift.  We use the notation $\LiftBoth{M}{f}{I} := \LiftTapes{(\LiftAlphabet{M}{f})}{I}$, for
-first applying the alphabet-lift, and after that the tapes-lift.
+We write $\LiftAlphabet{M}{f}$ for $\LiftAlphabet{M}{(RetrPlus \circ f , \MS{UNKNOWN})}$.  Note that we also use the $\Uparrow$ notation for the
+tapes-lift, but it is always clear whether we mean the tape-lift or alphabet-lift.  We use the notation
+$\LiftBoth{M}{f}{I} := \LiftTapes{(\LiftAlphabet{M}{f})}{I}$, for first applying the alphabet-lift, and after that the tapes-lift.
 
 \section{Value-Manipulating Machines}
 \label{sec:value-manipulate}
@@ -285,8 +287,8 @@ does not change, we use the weaker postcondition that the tape $t'$ still contai
 convention has the advantage that when we apply the alphabet-lift with the retraction $f$, we would otherwise get assumptions in correctness proofs
 like:
 \begin{align*}
-  & mapTapes~\left(surject~(f \circ RetrPlus)~\MS{UNKNOWN}\right)~t = \\
-  & mapTapes~\left(surject~(f \circ RetrPlus)~\MS{UNKNOWN}\right)~t'
+  & mapTapes~\left(surject~(RetrPlus \circ f)~\MS{UNKNOWN}\right)~t = \\
+  & mapTapes~\left(surject~(RetrPlus \circ f)~\MS{UNKNOWN}\right)~t'
 \end{align*}
 To show that $t'[i]$ contains the same value as $t[i]$, we would have to apply a lemma.  Using this convention we get this for free.
 
@@ -1095,9 +1097,9 @@ assume that $\Sigma_M$ includes $\Sigma_X$, $\Sigma_Y$, and $\Sigma_Z$.  Formall
 $\Sigma_X, \Sigma_Y, \Sigma_Z$ and $\Sigma_M$.  Let $\Sigma$ be the alphabet for $\MS{MapSum}$, with a retraction
 $f_M : \Sigma_M \hookrightarrow \Sigma$.  Furthermore, it should be possible to encode $X+Y$ on $\Sigma$, so we assume a retraction
 $f_{X+Y} : \Sigma_{X+Y} \hookrightarrow \Sigma$.  We notice that there are now two possibilities how to encode $X$ (and dually $Y$) on $\Sigma$: via
-the retractions $f_X \circ f_M$ and $RetrInl \circ f_{X+Y}$.  These retractions might be extensionally equal for concrete choices of alphabets, but we
-want to be as general as possible.  As a consequence, we need to translate between these representations, using the $\MS{Translate}$ machine of
-Section~\ref{sec:Translate}.  Note that there is only one way to encode $Z$ on $\Sigma$, namely via $f_Z \circ f_M$.
+the retractions $f_M \circ f_X$ and $f_{X+Y} \circ RetrInl $.  These retractions might be extensionally equal for concrete choices of alphabets, but
+we want to be as general as possible.  As a consequence, we need to translate between these representations, using $\MS{Translate}$ of
+Section~\ref{sec:Translate}.  Note that there is only one way to encode $Z$ on $\Sigma$, namely via $f_M \circ f_Z $.
 
 The machine $\MS{MapSum}$ first makes a case-distinction on the value $s:X+Y$ on the input tape $0$.  If it is $x$ (on the alphabet $\Sigma_{X+Y}$),
 it is translated to the alphabet of $M_1$.  Then we execute the alphabet-lifted machine $M_1$.  This writes the output $f_1(x)$ on the output tape $1$
@@ -1110,26 +1112,15 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
   \begin{align*}
     & \MS{MapSum}~:= \\
     &\quad \MS{If}~{\LiftBoth{\MS{MatchSum}}{f_{X+Y}}{\Vector{0}}} \\
-    &\quad \MS{Then}~ \LiftTapes{(\MS{Translate}~(RetrInl \circ f_{X+Y})~(f_X \circ f_M))}{\Vector{0}} \Seq \\
+    &\quad \MS{Then}~ \LiftTapes{(\MS{Translate}~(f_{X+Y} \circ RetrInl)~(f_M \circ f_X))}{\Vector{0}} \Seq \\
     &\quad \phantom{\MS{Then}}~ \LiftAlphabet{M_1}{f_M} \Seq \\
-    &\quad \phantom{\MS{Then}}~ \LiftTapes{(\MS{Translate}~(f_X \circ f_M)~(RetrInl \circ f_{X+Y}))}{\Vector{0}} \Seq \\
+    &\quad \phantom{\MS{Then}}~ \LiftTapes{(\MS{Translate}~(f_M \circ f_X)~(f_{X+Y} \circ RetrInl))}{\Vector{0}} \Seq \\
     &\quad \phantom{\MS{Then}}~ \LiftBoth{\MS{ConstrInl}}{f_{X+Y}}{\Vector{0}} \\
-    &\quad \MS{Else}~~~ \LiftTapes{(\MS{Translate}~(RetrInr \circ f_{X+Y})~(f_Y \circ f_M))}{\Vector{0}} \Seq \\
+    &\quad \MS{Else}~~~ \LiftTapes{(\MS{Translate}~(f_{X+Y} \circ RetrInr)~(f_M \circ f_Y))}{\Vector{0}} \Seq \\
     &\quad \phantom{\MS{Then}}~ \LiftAlphabet{M_2}{f_M} \Seq \\
-    &\quad \phantom{\MS{Then}}~ \LiftTapes{(\MS{Translate}~(f_Y \circ f_M)~(RetrInr \circ f_{X+Y}))}{\Vector{0}} \Seq \\
-    &\quad \phantom{\MS{Then}}~ \LiftBoth{\MS{ConstrInr}}{f_{X+Y}}{\Vector{0}}.
+    &\quad \phantom{\MS{Then}}~ \LiftTapes{(\MS{Translate}~(f_M \circ f_Y)~(f_{X+Y} \circ RetrInr))}{\Vector{0}} \Seq \\
+    &\quad \phantom{\MS{Then}}~ \LiftBoth{\MS{ConstrInr}}{f_{X+Y}}{\Vector{0}}
   \end{align*}
-
-% \begin{lstlisting}[style=semicoqstyle]
-% $\MS{MapSum} :=$
-%   $\MS{If}$ $\LiftBoth{\MS{MatchSum}}{f_{X+Y}}{\Vector{0}}$
-%   $\MS{Then}$     $\LiftTapes{(\MS{Translate}~(RetrInl \circ f_{X+Y})~(f_X \circ f_M))}{\Vector{0}} \Seq \LiftAlphabet{M_1}{f_M} \Seq$
-%        $\LiftTapes{(\MS{Translate}~(f_X \circ f_M)~(RetrInl \circ f_{X+Y}))}{\Vector{0}} \Seq$
-%        $\LiftBoth{\MS{ConstrInl}}{f_{X+Y}}{\Vector{0}}$
-%   $\MS{Else}$     $\LiftTapes{(\MS{Translate}~(RetrInr \circ f_{X+Y})~(f_Y \circ f_M))}{\Vector{0}} \Seq \LiftAlphabet{M_2}{f_M} \Seq$
-%        $\LiftTapes{(\MS{Translate}~(f_Y \circ f_M)~(RetrInr \circ f_{X+Y}))}{\Vector{0}} \Seq$
-%        $\LiftBoth{\MS{ConstrInr}}{f_{X+Y}}{\Vector{0}}.$
-% \end{lstlisting}
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{MapSum}$][Mult_Sum_Computes]
@@ -1148,7 +1139,7 @@ for extending alphabets of Section~\ref{sec:extend-alphabet}.
 Let $X$ be encodable on $\Sigma_X$.  We implement a machine $\MS{Nth} : \TM_{\Sigma^+}^4$ that computes the function
 $nth : \List(X) \to \Nat \to \Option(X)$.  We assume retractions $f_{\List(X)} : \Sigma_{\List(X)} \hookrightarrow \Sigma$,
 $f_{\Option(X)} : \Sigma_{\Option(X)} \hookrightarrow \Sigma$, and $f_\Nat : \Sigma_\Nat \hookrightarrow \Sigma$.  Now there are two ways to encode
-$X$ on $\Sigma$: via $RetrOpt \circ f_{\Option(X)}$ and $RetrList \circ f_{\List(X)}$.
+$X$ on $\Sigma$: via $f_{\Option(X)} \circ RetrOpt$ and $f_{\List(X)} \circ RetrList$.
 
 The tape assignment is visualised in Table~\ref{tab:tapes-Nth}.
 
@@ -1182,7 +1173,7 @@ temporary stored on the output tape) and continues the loop.
     &\quad \phantom{\MS{Then}}~\MS{Then}~   \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\None} \\
     &\quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{(\LiftBoth{\MS{ConstrNone}}{f_{\Option(X)}}{\Vector{2}})}{\Some\unit} \\
     &\quad \MS{Else}~~~ \MS{If}~\LiftBoth{\MS{MatchList}}{f_{\List(X)}}{\Vector{0;2}} \\
-    &\quad \phantom{\MS{Then}}~\MS{Then}~   \Return{(\LiftTapes{(\MS{Translate}~(RetrList \circ f_{\List(X)})~(RetrOpt \circ f_{\Option(X)}) \Seq \\
+    &\quad \phantom{\MS{Then}}~\MS{Then}~   \Return{(\LiftTapes{(\MS{Translate}~(f_{\List(X)} \circ RetrList)~(f_{\Option(X)} \circ RetrOpt) \Seq \\
     &\quad \phantom{\phantom{\MS{Then}}~\MS{Then}~\MS{Return}}\quad\quad~~ \LiftAlphabet{\MS{ContrSome}}{f_{\Option(X)}})}{\Vector{2}})}{\Some\unit} \\
     &\quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{(\LiftBoth{\MS{ConstrNone}}{f_{\Option(X)}}{\Vector{2}})}{\Some\unit}
   \end{align*}

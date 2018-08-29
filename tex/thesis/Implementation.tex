@@ -77,9 +77,9 @@ The retraction composition operator is not defined as an instance, to avoid dive
 applied arbitrary many times.  Although it is not declared as an instance of the typeclass of retractions, \lstinline!ComposeRetract! can be applied
 manually.
 \begin{lstlisting}
-ComposeRetract : forall A B C : Type, Retract A B -> Retract B C -> Retract A C
+ComposeRetract : forall A B C : Type, Retract B C -> Retract A B -> Retract A C
 \end{lstlisting}
-We embed composition of retraction into retraction operators.  For example, instead of defining a retraction $RetrLft : X \hookrightarrow X+Y$, we
+We embed composition of retractions into retraction operators.  For example, instead of defining a retraction $RetrLft : X \hookrightarrow X+Y$, we
 define (and declare as an instance) an operator on retractions:
 \begin{lstlisting}
 Retract_inl : forall A B C : Type, Retract A B -> Retract A (B + C)
