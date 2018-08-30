@@ -252,7 +252,7 @@ $\MS{S}$ with a new start symbol and terminates on this symbol in the partition 
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchNat} :=$
   $\MS{Move}~R$; 
-  $\Match~\MS{Read}$ 
+  $\Switch~\MS{Read}$ 
        ($\lambda(o:\Option(\Sigma_\Nat^+)).~\MS{match}~o$
           [$\Some {\MS{S}}$=>$\Return{(\MS{Write}~\MS{START})}{\true}$
           |$\Some {\MS{O}}$=>$\Return{(\MS{Move}~L)}{\false}$
@@ -307,7 +307,7 @@ $\inl x$ (or $\inr~y$), it replaces the $\MS{INL}$ (or $\MS{INR}$) symbol with a
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchSum} :=$
   $\MS{Move}~R\Seq$
-  $\MS{Match}~\MS{Read}$
+  $\Switch~\MS{Read}$
        ($\lambda(o:\Option(\Sigma_{X+Y}^+)).~\MS{match}~o$
          [$\Some {\MS{INL}}$=>$\Return{(\MS{Write}~\MS{START})}{\true}$
          |$\Some {\MS{INR}}$=>$\Return{(\MS{Write}~\MS{START})}{\false}$
@@ -548,7 +548,7 @@ partition corresponding to the read symbol.
   \small
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MatchFin} :=$
-  $\MS{Move}~R \Seq \Match~\MS{Read}$($\lambda s.~\MS{match}~s$[$\Some{x} \Rightarrow \Return{(\MS{Move}~R)}{x}$|_$\Rightarrow\Return{\Nop}{def}$])
+  $\MS{Move}~R \Seq \Switch~\MS{Read}$($\lambda s.~\MS{match}~s$[$\Some{x} \Rightarrow \Return{(\MS{Move}~R)}{x}$|_$\Rightarrow\Return{\Nop}{def}$])
 \end{lstlisting}
 \end{definition}
 

@@ -18,18 +18,18 @@ be extended, whenever we add a new feature to our language.  In our approach, we
 the same verification technique (i.e.\ realisation and termination) on each stage of the development.
 
 
-\section{$\MS{Match}$}
-\label{sec:match}
+\section{$\Switch$}
+\label{sec:switch}
 
-\setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Match}
+\setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Switch}
 
 Asperti and Ricciotti~\cite{asperti2015} define the control-flow operators sequential composition, conditional, and while.  Their conditional operator
 takes a concrete machine state as parameter.  We noticed that that is not acceptable for a control-flow operator.  We now introduce a generalised
-operator on partitioned machines, called $\MS{Match}$ and derive sequential composition and conditional.
+operator on partitioned machines, called $\MS{Switch}$ and derive sequential composition and conditional.
 
-\begin{definition}[$\MS{Match}~M~f$][Match]
-  \label{def:Match}
-  Let $M : \TM_\Sigma^n(F)$ and $f : F \to \TM_\Sigma^n(F')$.  We define the machine $\MS{Match}~M~f : \TM_\Sigma^n(F')$ with the following
+\begin{definition}[$\MS{Switch}~M~f$][Switch]
+  \label{def:Switch}
+  Let $M : \TM_\Sigma^n(F)$ and $f : F \to \TM_\Sigma^n(F')$.  We define the machine $\MS{Switch}~M~f : \TM_\Sigma^n(F')$ with the following
   components:
   \begin{alignat*}{3}
     & Q                  &~:=~& Q_M +  \sum_{y:F} Q_{f(y)} \\
@@ -47,79 +47,79 @@ operator on partitioned machines, called $\MS{Match}$ and derive sequential comp
   \end{alignat*}
 \end{definition}
 
-In Definition~\ref{def:Match}, the $part$ value for $\inl$ is unimportant, because the lifted states of $M$ are not terminating states for
-$\MS{Match}~M~f$.  We just use a canonical value.
+In Definition~\ref{def:Switch}, the $part$ value for $\inl$ is unimportant, because the lifted states of $M$ are not terminating states for
+$\MS{Switch}~M~f$.  We just use a canonical value.
 
 \begin{figure}
   \center
-  \input{fig-MatchExample}
-  \caption{Example of a $\MS{Match}$.  The left box stands for the first machine $M_1:\TM_\Sigma^n(\Bool)$.  The final states $q_1$ and $q_2$ are
-    mapped to $\true$ and $q_3$ to $\false$.  After $\MS{Match}$ reaches one of the injections of the terminal states $q_1, q_2, q_3$ of $M_1$, it
-    continues its execution either in the top case machine $M_2$ or in the bottom case machine $M_3$.  The halting states of $\MS{Match}$ are exactly
+  \input{fig-SwitchExample}
+  \caption{Example of a $\MS{Switch}$.  The left box stands for the first machine $M_1:\TM_\Sigma^n(\Bool)$.  The final states $q_1$ and $q_2$ are
+    mapped to $\true$ and $q_3$ to $\false$.  After $\MS{Switch}$ reaches one of the injections of the terminal states $q_1, q_2, q_3$ of $M_1$, it
+    continues its execution either in the top case machine $M_2$ or in the bottom case machine $M_3$.  The halting states of $\MS{Switch}$ are exactly
     the injections of the halting states of the case-machines.}
   \label{fig:match}
 \end{figure}
 
-$\MS{Match}~M~f$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
-to the injection of the start state of the machine $f(part_M~q)$.  When $\MS{Match}~M~f$ reaches a state that is the injection of a final state of a
+$\MS{Switch}~M~f$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
+to the injection of the start state of the machine $f(part_M~q)$.  When $\MS{Switch}~M~f$ reaches a state that is the injection of a final state of a
 machine $f~y$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
 
-\begin{lemma}[Correctness of $\MS{Match}~M~f$][Match_Realise]
-  \label{lem:Match_Realise}
+\begin{lemma}[Correctness of $\MS{Switch}~M~f$][Switch_Realise]
+  \label{lem:Switch_Realise}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$ and $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$ for all $y:F$.
   If $M \Realise R$ and $f~y \Realise R'~y$ for all $y:F$, then
   \[
-    \MS{Match}~M~f \Realise MatchRel~R~R'
+    \MS{Switch}~M~f \Realise SwitchRel~R~R'
   \]
   with
   \[
-    MatchRel~R~R' := \bigcup_{y:F} \bigl( R\at y \circ R'~y \bigr)
+    SwitchRel~R~R' := \bigcup_{y:F} \bigl( R\at y \circ R'~y \bigr)
   \]
 \end{lemma}
 
 Note that in the correctness relation, we compose the unpartitioned relation $R \at y \subseteq \Tape_\Sigma^n \times \Tape_\Sigma^n$ with the
-partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Match~M~f$ terminates in a partition of
+partitioned relation $R'~y \subseteq \Tape_\Sigma^n \times F' \times \Tape_\Sigma^n$.  This means that $\Switch~M~f$ terminates in a partition of
 $f~y$, which has type $F'$.
 
-To specify the running time of $\MS{Match}~M~f$, we need to know the running time relation in that $M$ terminates, and for each $y:F$ the running time
+To specify the running time of $\MS{Switch}~M~f$, we need to know the running time relation in that $M$ terminates, and for each $y:F$ the running time
 relation of $f~y$.  We also need to know the correctness relation of $M$, because the running time of $f~y$ depends on the output of $M$, which is the
 input of $f~y$, and the choice of the case machine depends on the partition of the terminating state of $M$.
 
-\begin{lemma}[Running Time of $\MS{Match}~M~f$][Match_TerminatesIn]
-  \label{lem:Match_Terminates}
+\begin{lemma}[Running Time of $\MS{Switch}~M~f$][Switch_TerminatesIn]
+  \label{lem:Switch_Terminates}
   Let $R \subseteq \Tape_\Sigma^n \times F \times \Tape_\Sigma^n$, $T \subseteq \Tape_\Sigma^n \times \Nat$, and
   $T'~y \subseteq \Tape_\Sigma^n \times \Nat$ for all $y:F$.  If $M \Realise R$, $M \TerminatesIn T$, and $f~y \TerminatesIn T'~y$ for all $y:F$, then
-  $\MS{Match}~M~f \TerminatesIn MatchT~R~T~T'$, where
+  $\MS{Switch}~M~f \TerminatesIn SwitchT~R~T~T'$, where
   \[
-    MatchT~R~T~T' :=
+    SwitchT~R~T~T' :=
     \lambda~t~k.~ \exists~k_1~k_2.~T~t~k_1 \land 1+k_1+k_2 \le k \land
       \forall~y~t'.~ R~t~(y,t') \rightarrow T'(y)~t'~k_2
   \]
 \end{lemma}
 
 We can combine the correctness and running time lemma, in case $M$ and every $f~y$ terminates in constant time.
-\begin{lemma}[Correctness of $\MS{Match}~M~f$ in constant time][Match_RealiseIn]
-  \label{lem:Match_RealiseIn}
+\begin{lemma}[Correctness of $\MS{Switch}~M~f$ in constant time][Switch_RealiseIn]
+  \label{lem:Switch_RealiseIn}
   Let $k_1, k_2:\Nat$.\\
   If $M \RealiseIn{k_1} R$ and $f~y \RealiseIn{k_2} R'~y$ for every $y:F$, then
-  \[ \MS{Match}~M~f \RealiseIn{1+k_1+k_2} MatchRel~R~R' \]
+  \[ \MS{Switch}~M~f \RealiseIn{1+k_1+k_2} SwitchRel~R~R' \]
 \end{lemma}
 \begin{proof}
-  Follows with the Lemmas~\ref{lem:Realise_total},~\ref{lem:Match_Realise}, and~\ref{lem:Match_Terminates}.
+  Follows with the Lemmas~\ref{lem:Realise_total},~\ref{lem:Switch_Realise}, and~\ref{lem:Switch_Terminates}.
 \end{proof}
 
 
 \subsection{Derived Operators}
 \label{sec:match-derived-operators}
 
-As mentioned above, conditional and sequential composition can be defined as instances of the Match operator.  For the sequential composition
+As mentioned above, conditional and sequential composition can be defined as instances of the Switch operator.  For the sequential composition
 $M_1 \Seq M_2$ with $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$, the function $f : F \to \TM_\Sigma^n(F')$, maps all partitions to the
 machine $M_2$.  \setCoqFilename{ProgrammingTuringMachines.TM.Combinators.SequentialComposition}%
 \begin{definition}[Sequential composition][Seq]
   \label{def:Seq}
   Let $M_1 : \TM_\Sigma^n(F)$ and $M_2 : \TM_\Sigma^n(F')$ .
   \[
-    M_1 \Seq M_2 := \Match~M_1~
+    M_1 \Seq M_2 := \Switch~M_1~
     \bigl(
     \lambda~\_.~M_2
     \bigr)
@@ -142,7 +142,7 @@ $\left(\bigcup_{y:F} R_1\at y\right) \circ R_2 \equiv R_1 \at \unit \circ R_2 = 
 relations with unpartitioned relations.  This means that sequential composition of two machines amounts to composing their correctness relations.
 
 In case either $M_1$ or $M_2$ do not have constant running time, we need the running time lemma, which can be derived from
-Lemma~\ref{lem:Match_Terminates}.
+Lemma~\ref{lem:Switch_Terminates}.
 \begin{lemma}[Running Time of sequential composition][Seq_TerminatesIn]
   \label{lem:Seq_TerminatesIn}
   If $M_1 \Realise R_1$, $M_1 \TerminatesIn T_1$, and $M_2 \TerminatesIn T_2$, then
@@ -164,7 +164,7 @@ positive state, it continues the execution in $M_2$, else in $M_3$.
   \label{def:If}
   Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(F)$.
   \[
-    \If{M_1}{M_2}{M_3} := \Match~M_1~
+    \If{M_1}{M_2}{M_3} := \Switch~M_1~
     \left(\lambda b.~\cond{b}{M_2}{M_3} \right)
   \]
 \end{definition}
@@ -181,7 +181,7 @@ The correctness relation $(R_1\at\true \circ R_2) \cup (R_1\at\false \circ R_3)$
 terminated, than the copy of $M_1$ either terminated in the partition $\true$ or $\false$.  In the first case, the conditional continued in $M_2$,
 else in $M_3$.
 
-The running time lemma of the conditional can also be derived from Lemma~\ref{lem:Match_Terminates}.
+The running time lemma of the conditional can also be derived from Lemma~\ref{lem:Switch_Terminates}.
 \begin{lemma}[Running Time of the conditional][If_TerminatesIn]
   \label{lem:If_TerminatesIn}
   If $M_1 \Realise R_1$, $M_1 \TerminatesIn T_1$, $M_2 \TerminatesIn T_2$, and $M_3 \TerminatesIn T_3$, then
@@ -197,19 +197,19 @@ Asperti and Ricciotti~\cite{asperti2015} also define sequential composition and 
 differences.  First, they define and verify each operator separately.  Secondly, they do not consider state partitioning functions.  Their conditional
 operator takes one concrete ``negative'' state, i.e.\ the machine $M_3$ is only executed if $M_1$ terminated in this state.  This makes programming
 and reasoning about concrete machines tedious, because complex machines also have many states.  By introducing state-partitioned machines and by
-implementing the more general $\Match$ combinator, we solve both problems.  We no longer have to specify concrete machine states in the definition and
-verification of machines.  Moreover, we often exploit the convenient generality of the $\Match$ operator.  For example, it can be used to implement a
+implementing the more general $\Switch$ combinator, we solve both problems.  We no longer have to specify concrete machine states in the definition and
+verification of machines.  Moreover, we often exploit the convenient generality of the $\Switch$ operator.  For example, it can be used to implement a
 machine that copies a symbol from one tape to another tape, as demonstrated in Chapter~\ref{chap:combining}.  Also note, that Asperti and
 Ricciotti~\cite{asperti2015} have no notion of time complexity; their strong notion of realisation only implies termination in an uncertain number of
 steps.
 
 
-\subsection{Proof of $\Match$}
+\subsection{Proof of $\Switch$}
 \label{sec:match-proofs}
 
 \setCoqFilename{ProgrammingTuringMachines.TM.Prelim}
 
-The idea of the proofs of Lemma~\ref{lem:Match_Realise} and Lemma~\ref{lem:Match_Terminates} is to abstract two features of the machine: lifting of
+The idea of the proofs of Lemma~\ref{lem:Switch_Realise} and Lemma~\ref{lem:Switch_Terminates} is to abstract two features of the machine: lifting of
 configurations from one abstract machine to another abstract machines, and sequencing of two executions.  We formalise these two concepts for abstract
 machines, i.e.\ we argue on the abstract $\Loop$ function.
 
@@ -311,21 +311,21 @@ $h, h' \from A \to \Bool$.  We assume, that if $a$ is a halting state w.r.t.\ $h
 \end{proof}
 
 
-Back to the verification of $\Match~M~f$.  In the following, we simply write $\Match$.  For a configuration $c_k$, we write $q_k$ and $t_k$ for the
+Back to the verification of $\Switch~M~f$.  In the following, we simply write $\Switch$.  For a configuration $c_k$, we write $q_k$ and $t_k$ for the
 state and tapes component of $c_k$.
 
-The execution steps of $\Match$ are essentially a sequence of first, the lifted steps of execution of $M$, second, a ``nop'' transition, and third,
-the lifted steps of the execution of $f~y$.  We give the concrete lifting functions from $M$ to $\Match$ and from $M~y$ to $\Match$:
-\setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Match}%
-\begin{definition}[Liftings of $\Match$][lift_confL]
-  We define the functions \\$liftL : \Conf_M \to \Conf_\Match$ and $liftR_y : \Conf_{f(y)} \to \Conf_\Match$ for all $y:F$:
+The execution steps of $\Switch$ are essentially a sequence of first, the lifted steps of execution of $M$, second, a ``nop'' transition, and third,
+the lifted steps of the execution of $f~y$.  We give the concrete lifting functions from $M$ to $\Switch$ and from $M~y$ to $\Switch$:
+\setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Switch}%
+\begin{definition}[Liftings of $\Switch$][lift_confL]
+  We define the functions \\$liftL : \Conf_M \to \Conf_\Switch$ and $liftR_y : \Conf_{f(y)} \to \Conf_\Switch$ for all $y:F$:
   \begin{alignat*}{2}
     & liftL   & (q, t) &:= (\inl q,      t) \\
     & liftR_y & (q, t) &:= (\inr (y, q), t)
   \end{alignat*}
 \end{definition}
 
-For the sequential part, we also have to define the lifted halting function of \\$haltConfL : \Conf_\Match \to \Bool$:
+For the sequential part, we also have to define the lifted halting function of \\$haltConfL : \Conf_\Switch \to \Bool$:
 \begin{definition}[Lifted halting function][halt_liftL]
   \begin{alignat*}{2}
     & haltConfL & (\inl~q, t) &:= halt_M(q) \\
@@ -334,36 +334,36 @@ For the sequential part, we also have to define the lifted halting function of \
 \end{definition}
 
 Using Lemma~\ref{lem:loop_merge} and~\ref{lem:loop_lift}, we can show the lemma we need for running time:
-\begin{lemma}[Merging parts of executions of $\Match$][Match_merge]
-  \label{lem:Match_merge}
+\begin{lemma}[Merging parts of executions of $\Switch$][Switch_merge]
+  \label{lem:Switch_merge}
   Let $t : \Tape_\Sigma^n$, $k_1, k_2:\Nat$, $c_1 : \Conf_M$ and $c_2 : \Conf_{f(part_M~q_1)}$.
   \begin{alignat*}{1}
     & M(t) \terminates^{k_1} c_1 \rightarrow\\
     & \bigl( f~(part_M~q_1) \bigr) (t_1) \terminates^{k_2} c_2 \rightarrow\\
-    & \Match(t) \terminates^{1+k_1+k_2} liftR(c_2)
+    & \Switch(t) \terminates^{1+k_1+k_2} liftR(c_2)
   \end{alignat*}
 \end{lemma}
 \begin{proof}
   We apply Lemma~\ref{lem:loop_merge} and have to show:
   \begin{enumerate}
-  \item $\forall a:\Conf_\Match.~ \lnot haltConfL~a \rightarrow \lnot \MS{haltConf}~a$.  This holds trivially by case-analysis over $a$.
-  \item $\Loop~step_\Match~haltConfL~(\MS{initConf}_\Match~t)~k_1 =
-    \Some{liftL~c_1}$.  By definition, we have $\MS{initConf}_\Match~t=liftL(\MS{initConf}_M~t)$.  The claim follows with Lemma~\ref{lem:loop_lift}.
-  \item $\Loop~step_\Match~haltConf_\Match~(liftL~c1)~(1+k_2) =
+  \item $\forall a:\Conf_\Switch.~ \lnot haltConfL~a \rightarrow \lnot \MS{haltConf}~a$.  This holds trivially by case-analysis over $a$.
+  \item $\Loop~step_\Switch~haltConfL~(\MS{initConf}_\Switch~t)~k_1 =
+    \Some{liftL~c_1}$.  By definition, we have $\MS{initConf}_\Switch~t=liftL(\MS{initConf}_M~t)$.  The claim follows with Lemma~\ref{lem:loop_lift}.
+  \item $\Loop~step_\Switch~haltConf_\Switch~(liftL~c1)~(1+k_2) =
     \Some{liftR(c_2)}$.  By definition, we know that the first step must be a ``nop'' transition from
     $liftL~c_1$ to\\
     $liftR~\bigl(\MS{initConf}_{f(part_M~q_1)}~t_1 \bigr)$.  It remains to show that
-    $$\Loop~step_\Match~haltConf_\Match~liftR \bigl(\MS{initConf}_{f(part_M~q_1)}~t_1 \bigr)~k_2 = \Some{liftR(c_2)}$$
+    $$\Loop~step_\Switch~haltConf_\Switch~liftR \bigl(\MS{initConf}_{f(part_M~q_1)}~t_1 \bigr)~k_2 = \Some{liftR(c_2)}$$
     This follows with Lemma~\ref{lem:loop_merge}.
   \end{enumerate}
 \end{proof}
-The running time Lemma~\ref{lem:Match_Terminates} follows directly from Lemma~\ref{lem:Match_merge}.
+The running time Lemma~\ref{lem:Switch_Terminates} follows directly from Lemma~\ref{lem:Switch_merge}.
 
-\begin{lemma}[Splitting execution of $\Match$][Match_split]
-  \label{lem:Match_split}
-  Let $t : \Tape_\Sigma^n$, $k : \Nat$, $c : \Conf_\Match$.
+\begin{lemma}[Splitting execution of $\Switch$][Switch_split]
+  \label{lem:Switch_split}
+  Let $t : \Tape_\Sigma^n$, $k : \Nat$, $c : \Conf_\Switch$.
   \begin{align*}
-    & \Match(t) \terminates^k c \rightarrow \\
+    & \Switch(t) \terminates^k c \rightarrow \\
     & \exists (k_1~k_2 : \Nat)~(c_1 : \Conf_M)~(c_2 : \Conf_{f(part_M~q_1)}). \\
     & \quad M(t) \terminates^{k_1} c_1 ~\land~ \\
     & \quad \bigl( f (part_M~q_1) \bigr) (t_1) \terminates^{k_2} c_2 ~\land~ \\
@@ -371,9 +371,9 @@ The running time Lemma~\ref{lem:Match_Terminates} follows directly from Lemma~\r
   \end{align*}
 \end{lemma}
 \begin{proof}
-  Analogous to the proof of Lemma~\ref{lem:Match_merge}, using Lemmas~\ref{lem:loop_split} and~\ref{lem:loop_unlift}.
+  Analogous to the proof of Lemma~\ref{lem:Switch_merge}, using Lemmas~\ref{lem:loop_split} and~\ref{lem:loop_unlift}.
 \end{proof}
-The correctness Lemma~\ref{lem:Match_Realise} follows directly from Lemma~\ref{lem:Match_split}.
+The correctness Lemma~\ref{lem:Switch_Realise} follows directly from Lemma~\ref{lem:Switch_split}.
 
 
 Asperti and Ricciotti~\cite{asperti2015} have a version of Lemma~\ref{lem:loop_lift} and Lemma~\ref{lem:loop_merge}.
@@ -507,9 +507,9 @@ the ``nop''-transition back to the starting state.
 \subsection{Proof of $\While$}
 \label{sec:while-proofs}
 
-The running time and correctness proofs are similar to the proofs of $\Match$, as explained in Section~\ref{sec:match-proofs}.  The configurations of
-$\Match$ are exactly the configurations of $M$, so the lifting function is the identity function.  However, the fundamental difference between
-$\Match$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction on step-numbers, in
+The running time and correctness proofs are similar to the proofs of $\Switch$, as explained in Section~\ref{sec:match-proofs}.  The configurations of
+$\Switch$ are exactly the configurations of $M$, so the lifting function is the identity function.  However, the fundamental difference between
+$\Switch$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction on step-numbers, in
 addition to the loop-splitting and loop-merging lemmas.  We present the key lemmas here and the most important parts of the proofs.
 
 We simply write $\While$ instead of $\While~M$ in this section.  Since we have $\Conf_M = \Conf_\While$, we also only write $\Conf$.
@@ -645,7 +645,7 @@ $L$ and $R$.  \setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Mirror}%
   \]
 \end{definition}
 
-The correctness and termination proofs are similar to the proofs of $\MS{Match}$ and $\MS{While}$.  The ``lifting'' between configurations of $M$ and
+The correctness and termination proofs are similar to the proofs of $\MS{Switch}$ and $\MS{While}$.  The ``lifting'' between configurations of $M$ and
 $\MS{Mirror}$ is the injective and involutive function $mirrorConf : \Conf \to \Conf$ that simply mirrors the tapes.
 
 \begin{definition}[Mirror configuration][mirrorConf]

@@ -160,7 +160,7 @@
 %% Control flow operators
 \newcommand{\While}{\MS{While}}
 \newcommand{\Seq}{;~}
-\newcommand{\Match}{\MS{Match}}
+\newcommand{\Switch}{\MS{Switch}}
 \newcommand{\If}[3]{\MS{If}~#1~\MS{Then}~#2~\MS{Else}~#3}
 \newcommand{\Let}[2]{\MS{let}~#1~\MS{in}~#2}
 \newcommand{\cond}[3]{\MS{if}~#1~\MS{then}~#2~\MS{else}~#3}
@@ -184,7 +184,7 @@
 
 % Style and language to define complex multi-line definitions similar to Coq code
 \lstdefinelanguage{semicoq}{
-  keywords={if,then,else,true,false,match,Match,If,Then,Else,Nop,Return,Move,Reset,DoAct,WriteMove,L,R,N},
+  keywords={if,then,else,true,false,match,Switch,If,Then,Else,Nop,Return,Move,Reset,DoAct,WriteMove,L,R,N},
   comment=[s]{(*}{*)},
 }
 
@@ -228,7 +228,7 @@
     {(}{{$($}}{1}
     {)}{{$)$}}{1}
     {;}{{$;$}}{1}
-    {Match}{{$\MS{Match}$}}5
+    {Switch}{{$\MS{Switch}$}}5
     {match}{{$\MS{match}$}}5
     {if}{{$\MS{if}$}}1
     {then}{{$\pthen$}}2

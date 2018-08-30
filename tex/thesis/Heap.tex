@@ -382,7 +382,7 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
   \begin{alignat*}{1}
     & \MS{SplitBodyStep} := \\
     & \quad \MS{If}~(\LiftTapes{\MS{MatchList}}{\Vector{0;3}}) \\
-    & \quad \MS{Then}~\Match~(\LiftBoth{\MS{MatchCom}}{RetrList}{\Vector{3}}) \\
+    & \quad \MS{Then}~\Switch~(\LiftBoth{\MS{MatchCom}}{RetrList}{\Vector{3}}) \\
     & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ACom)).~\MS{match}~y\\
     & \quad \phantom{\MS{Then}~(\lambda}~[~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{RET}}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{Var}}{\Vector{2}}) \\
     & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppACom~\MS{RET}}}{\Vector{1;4}})}{\None} \\
@@ -397,7 +397,7 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
   % \begin{alignat*}{1}
   %   & \MS{SplitBodyStep} := \\
   %   & \quad \MS{If}~(\LiftTapes{\MS{MatchList}}{\Vector{0;3}}) \\
-  %   & \quad \MS{Then}~\Match~(\LiftBoth{\MS{MatchCom}}{RetrList}{\Vector{3}}) \\
+  %   & \quad \MS{Then}~\Switch~(\LiftBoth{\MS{MatchCom}}{RetrList}{\Vector{3}}) \\
   %   & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ACom)).~\MS{match}~y\\
   %   & \quad \phantom{\MS{Then}~(\lambda}~[~ \Some{\MS{RET}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{RetrRgt \circ RetrList}{\Vector{2}}) \\
   %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppACom~\MS{RET}}}{\Vector{1;4}})}{\None} \\

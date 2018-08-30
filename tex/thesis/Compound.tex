@@ -167,7 +167,7 @@ $\Option(\Unit)$.  $\Some\unit$ means to break out of the loop and $\None$ means
   % \todo{Decide!}
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{CopySymbolsStep}~h :=$
-  Match($\LiftTapes{\MS{Read}}{\Vector{0}}$)
+  Switch($\LiftTapes{\MS{Read}}{\Vector{0}}$)
        ($\lambda (s:\Option(\Sigma)).$
           $\MS{match}~s$
           [$\Some{x}$=>
@@ -179,7 +179,7 @@ $\MS{CopySymbolsStep}~h :=$
 \end{lstlisting}
 \end{definition}
 
-Note that the $\MS{match}$ denotes pattern matching our type theory.
+Note that ``$\MS{match}~[~\cdots~]$'' denotes pattern matching our type theory.
 
 \begin{lemma}[Correctness of $\MS{CopySymbolsStep}$][CopySymbols_Step_Sem]
   \label{lem:CopySymbols_Step_Sem}
@@ -277,7 +277,7 @@ $\MS{CopySymbols}$ above.
   ~
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{MoveToSymbolStep}~h~f :=$
-  Match($\MS{Read}$)
+  Switch($\MS{Read}$)
        ($\lambda (s:\Option(\Sigma)).~\MS{match}~s$
           [$\Some{x}$=> 
             if $h(x)$
