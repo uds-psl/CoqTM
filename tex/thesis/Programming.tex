@@ -82,7 +82,7 @@ define encodings for several types:
     With the retraction $RetrList : \Sigma_X \hookrightarrow \Sigma_{\List(X)}$ and
     \begin{alignat*}{3}
       &encode~&&(\nil      ) &~:=~& [\MS{NIL}] \\
-      &encode~&&(l \cons ls) &~:=~& \MS{CONS} \cons encode(x) \app encode(ls)
+      &encode~&&(y \cons ls) &~:=~& \MS{CONS} \cons encode(x) \app encode(ls)
     \end{alignat*}
   \coqitem[Encode_nat] Natural numbers $\Nat$ are encodable on $\Sigma_\Nat ::= \MS{S} ~|~ \MS{0} $ with
     \begin{alignat*}{3}
@@ -195,16 +195,16 @@ then after the execution the tape contains the value $x$ that has the encoding $
 \label{sec:constructors-deconstructors}
 
 
-For each encodable type $X$, there is a set of machines: constructor machines and a deconstructor machine.  These machines are defined on the minimal
-alphabet $\Sigma_X^+$.  Constructor machines, informally, ``apply'' a constructor of the inductive type $X$ to the value on the tape $t[0]$.  In
-general, we have one constructor machine for each constructor of the inductive type.  If the constructor has additional arguments, these are encoded
-on more input tapes $t[1], t[2], \cdots$.  There is only one deconstructor machine for each type.  It has one partition for each constructor.  A
-deconstructor machine makes a case-distinction over the value of the tape, and it terminates in the partition that corresponds to the constructor.
-They may have additional tapes for storing additional arguments of constructors.
+For each encodable type $X$, there is a set of machines: constructor machines and one deconstructor machine.  These machines are defined on the
+minimal alphabet $\Sigma_X^+$.  Constructor machines, informally, ``apply'' a constructor of the inductive type $X$ to the value on the tape $t[0]$.
+In general, we have one constructor machine for each constructor of the inductive type.  If the constructor has additional arguments, these are
+encoded on more input tapes $t[1], t[2], \cdots$.  There is only one deconstructor machine for each type.  The deconstructor machine for $X$ has one
+label for every constructor of $X$.  It makes a case-distinction over the value of the tape, and it terminates in the label that corresponds to the
+constructor.  Deconstructor machines may have additional tapes for storing additional arguments of constructors.
 
 \subsubsection{Natural numbers}
 \label{sec:match-nat}
-\setCoqFilename{ProgrammingTuringMachines.TM.Code.Nat}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.CaseNat}%
 
 We consider the inductive type $\Nat$, that has two constructors: $S$ and $0$.  The constructor machine $\MS{ConstrO}$ writes the number $0$ on a
 right tape.  The constructor machine $\MS{ConstrS}$ assumes that $t[0]$ contains a number $n$, and increases that number.
@@ -238,13 +238,13 @@ The $S$ constructor overwrites the current symbol (which is the start symbol) wi
 
 
 $\MS{CaseNat}$ is the deconstructor machine for $\Nat$.  It reads a number from tape $t[0]$.  If it is $0$, $\MS{CaseNat}$ terminates leaves the
-number unchanged and terminates in the partition $\false$.  Else, it decreases the number and terminates in~$\true$.
+number unchanged and terminates in the label $\false$.  Else, it decreases the number and terminates in~$\true$.
 
 Initially, the tape $t[0]$ contains some number $n$.  So the head of $t[0]$ must be on the start symbol.  The machine moves one step right and reads
 the first symbol of the encoding.  This symbol either is $\MS{S}$ or $\MS{O}$.  If the machine read the symbol $\MS{O}$, this means that the number
-$n$ is $0$, so the machine moves back to the start symbol and terminates in the partition $\false$, indicating that the number was $0$.  On the other
+$n$ is $0$, so the machine moves back to the start symbol and terminates in the label $\false$, indicating that the number was $0$.  On the other
 side, if the machine read $\MS{S}$, this means the number $n$ is the successor of some number $n'$.  To decrement $n$, it overwrites the current
-$\MS{S}$ with a new start symbol and terminates on this symbol in the partition $\true$.
+$\MS{S}$ with a new start symbol and terminates on this symbol in the label $\true$.
 
 \begin{definition}[$\MS{CaseNat}$][CaseNat]
   \label{def:CaseNat}
@@ -269,8 +269,8 @@ under the head that is either $\MS{S}$ or $\MS{O}$, so this part of the machine 
   $\MS{CaseNat} \RealiseIn{5} CaseNatRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $CaseNatRel :=$
-  $\lambda t~(y, t').~\forall (n:\Nat).~t[0] \simeq n \rightarrow$
-    $\MS{match}~y,n$
+  $\lambda t~(l, t').~\forall (n:\Nat).~t[0] \simeq n \rightarrow$
+    $\MS{match}~l,n$
     [$\false,O$=>$t'[0] \simeq 0$
     |$\true,S~n'$=>$t'[0] \simeq n'$
     |_,_=>$\False$
@@ -297,7 +297,7 @@ To show that $t'[i]$ contains the same value as $t[i]$, we would have to apply a
 \label{sec:match-sum}
 
 Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  $\MS{CaseSum} : \TM_{\Sigma_{X+Y}^+}^1(\Bool)$ reads a value $s:X+Y$.  If it is
-$\inl x$ (or $\inr~y$), it replaces the $\MS{INL}$ (or $\MS{INR}$) symbol with a new start symbol and terminates in $\true$ (or $\false$).
+$\inl x$ (or $\inr~l$), it replaces the $\MS{INL}$ (or $\MS{INR}$) symbol with a new start symbol and terminates in $\true$ (or $\false$).
 
 \setCoqFilename{ProgrammingTuringMachines.TM.Code.CaseSum}%
 \begin{definition}[$\MS{CaseSum}$][CaseSum]
@@ -321,9 +321,9 @@ $\MS{CaseSum} :=$
   $\MS{CaseSum} \RealiseIn{5} CaseSumRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $CaseSumRel :=$
-  $\lambda t~(y, t').$ $\forall (s:X+Y).$ $t[0] \simeq s \rightarrow \MS{match}~y,s$
+  $\lambda t~(l, t').$ $\forall (s:X+Y).$ $t[0] \simeq s \rightarrow \MS{match}~l,s$
     [$\false$, $\inl x$=>$t'[0] \simeq x$
-    |$\true$, $\inr y$=>$t'[0] \simeq y$
+    |$\true$, $\inr l$=>$t'[0] \simeq l$
     |_,_=>$\False$
     ]
 \end{lstlisting}
@@ -351,8 +351,8 @@ are also isomorphic.  We can use this fact to derive a match machine and constru
 $f : \Sigma_{X+\Unit} \hookrightarrow \Sigma_{\Option(X)}$ be the canonical retraction.  Then, we can define $\MS{CaseOption}$ as
 $\LiftAlphabet{\MS{CaseSum}}{f}$.  However, in the case that $o=\None$, the output tape $t'$ contains $\unit$.  Thus, the tape has form
 $t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]$ (for some $ls$).  However, we want that the tape is right in this case.  That is, because $\Option(X)$
-is not a recursive data type and the information that $o=\None$ is already encoded in the partition in which $\MS{CaseOption}$ terminates.  So in
-this case, the tape moves one step to the right:
+is not a recursive data type and the information that $o=\None$ is already encoded in the label of the state in which $\MS{CaseOption}$ terminates.
+So in this case, the tape moves one step to the right:
 \begin{definition}[$\MS{CaseOption}$][CaseOption]
   \label{def:CaseOption}
   ~
@@ -366,7 +366,7 @@ this case, the tape moves one step to the right:
   $\MS{CaseOption} \RealiseIn{7} CaseOptionRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $CaseOptionRel :=$
-  $\lambda t~(y, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow \MS{match}~y, o$
+  $\lambda t~(l, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow \MS{match}~l, o$
     [$\false$, $\None$     =>$isRight(t'[0])$
     |$\true$, $\Some x$=>$t'[0] \simeq x$
     |_,_=>$\False$
@@ -428,10 +428,9 @@ symbol of the encoding of $x$ on tape~$0$ and overwrites it with a new start sym
 \end{definition}
 
 The correctness and termination proofs of $\MS{CasePair}$ are quite technical.  We have lemmas about the tape-functions of $\MS{CopyValueL}$,
-$\MS{MoveToSymbol}$, and the respective running time functions.  However, it is interesting to note that we have to do a case-distinction, whether
-$\pi_2(p)$ is empty.  If it is empty, then the first $\MS{MoveToSymbol}~f~id$ moves to the stop symbol.  If it is not empty, it moves to the first
-symbol of the encoding of $\pi_2(p)$.  In both cases, $\MS{Move}~L$ moves to the last symbol of $\pi_1(p)$ (or to the start symbol, if $\pi_1(p)$ is
-empty).
+$\MS{MoveToSymbol}$, and the respective running time functions.  However, it is interesting to note that we have to do a case-distinction, whether $y$
+is empty.  If it is empty, then the first $\MS{MoveToSymbol}~f~id$ moves to the stop symbol.  If it is not empty, it moves to the first symbol of the
+encoding of $y$.  In both cases, $\MS{Move}~L$ moves to the last symbol of $x$ (or to the start symbol, if $x$ is empty).
 
 \begin{lemma}[Correctness of $\MS{CasePair}$][CasePair_Realise]
   \label{lem:CasePair_Realise}
@@ -449,7 +448,7 @@ empty).
   \]
 \end{lemma}
 
-The constructor copies the first component $x$ from tape $0$ to tape $1$, which initially contains the second component $y$, from right to left.  By
+The constructor copies the first component $x$ from tape $0$ to tape $1$, which initially contains the second component $l$, from right to left.  By
 that, it overwrites the start symbol on tape $1$ with the last symbol of the encoding of $x$.
 
 \begin{definition}[$\MS{ConstrPair}$][Constr_pair]
@@ -482,17 +481,17 @@ that, it overwrites the start symbol on tape $1$ with the last symbol of the enc
 \setCoqFilename{ProgrammingTuringMachines.TM.Code.CaseList}%
 
 The definition of $\MS{CaseList}$ is quite complex.  For brevity we only state the correctness statements of the match-machine here.  The machine
-$\MS{CaseList} : \TM_{\Sigma_{\List(X)}^+}^2(\Bool)$ expects a list on tape $0$.  If it is $\nil$, it terminates in the partition $\false$ and leaves
-the tapes unchanged.  If the list is $x \cons xs$, it copies moves $x$ to tape $1$ and terminates in the partition $\true$.
+$\MS{CaseList} : \TM_{\Sigma_{\List(X)}^+}^2(\Bool)$ expects a list on tape $0$.  If it is $\nil$, it terminates in the label $\false$ and leaves the
+tapes unchanged.  If the list is $x \cons xs$, it copies moves $x$ to tape $1$ and terminates in the label $\true$.
 
 \begin{lemma}[Correctness of $\MS{CaseList}$][CaseList_Realise]
   \label{lem:CaseList_Realise}
   $\MS{CaseList} \Realise CaseListRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $CaseListRel :=$
-  $\lambda t~(y, t').~\forall (l:\List(X)).~t[0] \simeq l \rightarrow isRight~t[1] \rightarrow \MS{match}~y, l$
+  $\lambda t~(l, t').~\forall (xs:\List(X)).~t[0] \simeq xs \rightarrow isRight~t[1] \rightarrow \MS{match}~l, xs$
     [$\false, \nil$ => $t'[0] \simeq \nil \land isRight~t'[1]$
-    |$\true, x \cons xs$ => $t'[0] \simeq xs \land t'[1] \simeq x$
+    |$\true, x \cons xs'$ => $t'[0] \simeq xs' \land t'[1] \simeq x$
     |_,_ => $\False$
     ].
 \end{lstlisting}
@@ -538,8 +537,8 @@ symbol on tape $0$.
 \subsubsection{Finite Types}
 
 All finite types $\Sigma$ can be encoded on themself, i.e.\ $encode(x)=[x]$ for $x:\Sigma$.  The deconstructor machine for finite types moves the head
-from the starting symbol to the symbol and reads it.  After that, it moves the head one further so that the tape is right and terminates in the
-partition corresponding to the read symbol.
+from the starting symbol to the symbol and reads it.  After that, it moves the head one further so that the tape is right and terminates in the label
+corresponding to the read symbol.
 
 \setCoqFilename{ProgrammingTuringMachines.TM.Code.CaseFin}%
 \begin{definition}[$\MS{CaseFin}$][CaseFin]
@@ -556,7 +555,7 @@ $\MS{CaseFin} :=$
   \label{lem:CaseFin_Sem}
   $\MS{CaseFin} \RealiseIn{5} CaseFinRel$ with
   \[
-    CaseFinRel := \lambda t~(y,t').~\forall(x:\Sigma).~t[0] \simeq x \rightarrow isRight~t'[0] ~\land~ y=x.
+    CaseFinRel := \lambda t~(l,t').~\forall(x:\Sigma).~t[0] \simeq x \rightarrow isRight~t'[0] ~\land~ l=x.
   \]
 \end{lemma}
 
@@ -738,18 +737,18 @@ unchanged.  After the loop, the internal tape for the copy is reseted.
 
 
 With this distinction of input, output, and internal tapes, we can formalise a convention for functional computation of binary functions: The tapes
-$t[0]$ and $t[1]$ are the input tapes for $x$ and $y$, $t[2]$ is the output tape for $f~x~y$, and all other tapes are internal tapes.
+$t[0]$ and $t[1]$ are the input tapes for $x$ and $l$, $t[2]$ is the output tape for $f~x~l$, and all other tapes are internal tapes.
 \begin{definition}[Functional computation correctness relation][Computes2_Rel]
   \label{def:Computes2_Rel}
   Let $f : X \to Y \to Z$, where $X$ and $Y$ are encodable on $\Sigma$.  Then
   $FunRel(f) \subseteq \Tape_{\Sigma^+}^{3+n} \times \Tape_{\Sigma^+}^{3+n}$ is defined as:
   \begin{alignat*}{2}
-     FunRel(f) &:= \lambda t~t'.~\forall (x:X)~(y:Y). \\
-    &\qquad t[0] \simeq x \rightarrow t[1] \simeq y \rightarrow \\
+     FunRel(f) &:= \lambda t~t'.~\forall (x:X)~(l:Y). \\
+    &\qquad t[0] \simeq x \rightarrow t[1] \simeq l \rightarrow \\
     &\qquad isRight~t[2] \rightarrow \\
     &\qquad \left(\forall (i:\Fin_n).~isRight~t[3+i] \right) \rightarrow \\
-    &\qquad t'[0] \simeq x ~\land~ t'[1] \simeq y ~\land~ \\
-    &\qquad t'[2] \simeq f~x~y ~\land~ \\
+    &\qquad t'[0] \simeq x ~\land~ t'[1] \simeq l ~\land~ \\
+    &\qquad t'[2] \simeq f~x~l ~\land~ \\
     &\qquad \left(\forall (i:\Fin_n).~isRight~t'[3+i] \right).
   \end{alignat*}
   We say that a machine $M$ computes the function $f$, if $M \Realise FunRel~f$.
@@ -761,11 +760,11 @@ Similarly, we can define the running time function of such a machine.
   Let $steps : X \to Y \to \Nat$ , where $X$ and $Y$ are encodable on $\Sigma$.  Then $FunT(steps) \subseteq \Tape_{\Sigma^+}^{3+n} \times \Nat$ is
   defined~as:
   \begin{alignat*}{2}
-     FunT(steps) &:= \lambda t~k.~\exists (x:X)~(y:Y). \\
-    &\qquad t[0] \simeq x ~\land~ t[1] \simeq y ~\land~ \\
+     FunT(steps) &:= \lambda t~k.~\exists (x:X)~(l:Y). \\
+    &\qquad t[0] \simeq x ~\land~ t[1] \simeq l ~\land~ \\
     &\qquad isRight~t[2] ~\land~ \\
     &\qquad \left(\forall (i:\Fin_n).~isRight~t[3+i] \right) ~\land~ \\
-    &\qquad steps~x~y \leq k
+    &\qquad steps~x~l \leq k
   \end{alignat*}
 \end{definition}
 
@@ -779,12 +778,12 @@ computes a binary function $f$, is the following:
        & \LiftTapes{\MS{Loop}}{\Vector{3; 4; 2; 5; 6; 7; \cdots}} \Seq \\
        & \LiftTapes{\MS{Reset}}{\Vector{3}} \Seq \LiftTapes{\MS{Reset}}{\Vector{4}} \Seq \LiftTapes{\MS{Reset}}{\Vector{5}} \Seq \cdots
 \end{align*}
-with $\MS{Loop} := \While(\MS{Step})$.  $\MS{Step}$ is partitioned over $\Option(\Unit)$, where $\Some\unit$ means to break out of the loop and
-$\None$ to continue.  Note that $\MS{Step}$ and $\MS{Loop}$ have only ``access'' to the copies of $x$ and $y$, but not to the ``original'' on $t[0]$
-and $t[1]$ of $M$.  This also means that $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $y$ is on the $0$st and $1$st tape of
+with $\MS{Loop} := \While(\MS{Step})$.  $\MS{Step}$ is labelled over $\Option(\Unit)$, where $\Some\unit$ means to break out of the loop and
+$\None$ to continue.  Note that $\MS{Step}$ and $\MS{Loop}$ have only ``access'' to the copies of $x$ and $l$, but not to the ``original'' on $t[0]$
+and $t[1]$ of $M$.  This also means that $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $l$ is on the $0$st and $1$st tape of
 $\MS{Step}$, the output is on tape $2$, all further tapes are internal tapes.  Before the loop, some tapes may be initialised with values (using
 either $\MS{WriteValue}$, or constructors).  After the loop, all tapes that $\MS{Step}$ did not reset, including the tapes that contain the modified
-copies of $x$ and $y$ and additional internal tapes, are reseted by $M$.
+copies of $x$ and $l$ and additional internal tapes, are reseted by $M$.
 
 Before we can define the machine $M$, we first have to decide on which alphabet $M$ is defined.  If the machine operates on only one data type, then
 we define $M$ over the smallest alphabet to encode this type on.  On the other hand, if $M$ operates on more alphabets, we use the technique from
@@ -858,9 +857,9 @@ Because all parts of $\MS{AddStep}$ terminate in constant time, we get the const
   $\MS{AddStep} \RealiseIn{9} AddStepRel$ with
 \begin{lstlisting}[style=semicoqstyle]
 $AddStepRel$ :=
-  $\lambda~t~(y, t').~ \forall (a~b:\Nat).$
+  $\lambda~t~(l, t').~ \forall (a~b:\Nat).$
     $t[0] \simeq a \rightarrow t[1] \simeq b \rightarrow$
-    $\MS{match}~y, b$
+    $\MS{match}~l, b$
     [$\Some\unit, O$=>$t'[0] \simeq a ~\land~ t'[1] \simeq b$
     |$\None, S~b'$=>$t'[0] \simeq S~a ~\land~ t'[1] \simeq b'$
     |_,_=>$\False$
@@ -1033,9 +1032,9 @@ relation of $\MS{MultStep}$ is analogous to $\MS{AddStep}$.
   \small
 \begin{lstlisting}[style=semicoqstyle]
 $MultStepRel$ :=
-  $\lambda~t~(y, t').~ \forall (c~m~n:\Nat).$
+  $\lambda~t~(l, t').~ \forall (c~m~n:\Nat).$
     $t[0] \simeq m \rightarrow t[1] \simeq n \rightarrow t[2] \simeq c \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow$
-    $\MS{match}~y, m$
+    $\MS{match}~l, m$
     [$\Some\unit, O \Rightarrow t'[0] \simeq 0 ~\land~ t'[1] \simeq n ~\land~ t'[2] \simeq c ~\land~ isRight~t'[3] ~\land~ isRight~t'[4]$
     |$\None, S~m' \Rightarrow t'[0] \simeq m' ~\land~ t'[1] \simeq n ~\land~ t'[2] \simeq n+c ~\land~ isRight~t'[3] ~\land~ isRight~t'[4]$
     |_,_ => $\False$
@@ -1088,7 +1087,7 @@ For brevity,  we omit the concrete running time function here.
 \setCoqFilename{ProgrammingTuringMachines.TM.Code.SumTM}%
 
 Let $f : X \to Z$ and $g : Y \to Z$.  Then we can define the canonical function $(f+g) : X+Y \to Z$ by $(f+g)(\inl x):=f(x)$ and
-$(f+g)(\inr y):=g(y)$.  We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a
+$(f+g)(\inr l):=g(l)$.  We want to define an operator that takes machines $M_1, M_2$ that compute the unary functions $f$ and $g$, and yields a
 machine $\MS{MapSum}$ that computes the function $(f+g)$.
 
 First we have to define precisely, which machine has which alphabet.  Let $X, Y$ be encodable over $\Sigma_X, \Sigma_Y$.  We assume
@@ -1104,7 +1103,7 @@ Section~\ref{sec:Translate}.  Note that there is only one way to encode $Z$ on $
 The machine $\MS{MapSum}$ first makes a case-distinction on the value $s:X+Y$ on the input tape $0$.  If it is $x$ (on the alphabet $\Sigma_{X+Y}$),
 it is translated to the alphabet of $M_1$.  Then we execute the alphabet-lifted machine $M_1$.  This writes the output $f_1(x)$ on the output tape $1$
 and leaves $x$ unchanged.  After that, $\MS{MapSum}$ translates $x$ back to the alphabet $\Sigma_{X+Y}$ and applies the constructor $\inl$, so the
-input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is symmetric.
+input tape contains $\inl x$ again.  The case when the input was $s=\inl l$ is symmetric.
 
 \begin{definition}[$\MS{MapSum}$][MapSum]
   \label{def:MapSum}
@@ -1147,11 +1146,11 @@ The tape assignment is visualised in Table~\ref{tab:tapes-Nth}.
   \centering
   \begin{tabular}{l|l|l|l}
     Tape of $\MS{Nth}$ & Variable & Role & Tape in $\MS{NthStep}$ \\ \hline
-    $0$ & $l$        & Input    & --  \\
-    $1$ & $n$        & Input    & --  \\
-    $2$ & $x$        & Output   & $2$ \\
-    $2$ & $l$ (copy) & Internal & $0$ \\
-    $3$ & $n$ (copy) & Internal & $1$ \\
+    $0$ & $xs$         & Input    & --  \\
+    $1$ & $n$          & Input    & --  \\
+    $2$ & $x$          & Output   & $2$ \\
+    $2$ & $xs$ (copy)  & Internal & $0$ \\
+    $3$ & $n$ (copy)   & Internal & $1$ \\
   \end{tabular}
   \caption{Tape assignment for $\MS{Nth}$ and $\MS{NthStep}$}
   \label{tab:tapes-Nth}
@@ -1187,13 +1186,13 @@ The correctness relation of $\MS{NthStep}$ has to capture all four cases.
   \small
 \begin{lstlisting}[style=semicoqstyle]
 $NthStepRel :=$
-  $\lambda t~(y, t').$
-    $\forall (l : \List(X))~(n : \Nat).$
-      $t[0] \simeq l \rightarrow t[1] \simeq n \rightarrow isRight~t[2]$ ->
-      $\MS{match}~y, n, l$
-      [$\None, S~n', x \cons l' \Rightarrow t'[0] \simeq l' \land t'[1] \simeq n' ~\land~ isRight~t'[2]$
+  $\lambda t~(l, t').$
+    $\forall (xs : \List(X))~(n : \Nat).$
+      $t[0] \simeq xs \rightarrow t[1] \simeq n \rightarrow isRight~t[2]$ ->
+      $\MS{match}~l, n, xs$
+      [$\None, S~n', x \cons xs' \Rightarrow t'[0] \simeq xs' \land t'[1] \simeq n' ~\land~ isRight~t'[2]$
       |$\Some\unit, S~n', \nil \Rightarrow t'[0] \simeq l~ \land t'[1] \simeq n' \land t'[2] \simeq \None$
-      |$\Some\unit, 0, x \cons l' \Rightarrow t'[0] \simeq l' \land t'[1] \simeq 0 \land t'[2] \simeq \Some x$
+      |$\Some\unit, 0, x \cons xs' \Rightarrow t'[0] \simeq xs' \land t'[1] \simeq 0 \land t'[2] \simeq \Some x$
       |$\Some\unit, 0, \nil \Rightarrow t'[0] \simeq l \land t'[1] \simeq n \land t'[2] \simeq \None$
       |_,_,_=>$\False$
       ].
@@ -1201,20 +1200,20 @@ $NthStepRel :=$
 \end{lemma}
 
 Now, we can prove the correctness of the loop, $\MS{NthLoop} := \While~\MS{NthStep}$.  When the loop terminates, the value of the variable $n$ will be
-$n - (1 + \length{l})$.  The new value of $l$ will be $skipn~(S~n)~l$, where $skipn : \Nat \to \List(X) \to \List(X)$ applies $\tl$ $n$-times.  Note
-that if $n < \length{l}$, the new value of $n$ will be $0$ and the machine returns a $\Some\cdot$ value.
+$n - (1 + \length{xs})$.  The new value of $xs$ will be $skipn~(S~n)~xs$, where $skipn : \Nat \to \List(X) \to \List(X)$ applies $\tl$ $n$-times.  Note
+that if $n < \length{xs}$, the new value of $n$ will be $0$ and the machine returns a $\Some\cdot$ value.
 
 \begin{lemma}[Correctness of $\MS{NthLoop}$][Nth_Loop_Realise]
   \label{lem:Nth_Loop_Realise}
   $\MS{NthLoop} \Realise NthLoopRel$ with
   \begin{alignat*}{2}
-    & NthLoopRel &~:=~& \lambda t~t'.~\forall (l:\List(X))~(n:\Nat).~t[0] \simeq l \rightarrow t[1] \simeq n \rightarrow isRight~t[2] \rightarrow \\
-    &            &~  ~& \phantom{\lambda t~t'.}~t'[0] \simeq skipn~(S~n)~l \land t'[1] \simeq n-(1+\length{l}) \land t'[2] \simeq nth~l~n.
+    & NthLoopRel &~:=~& \lambda t~t'.~\forall (xs:\List(X))~(n:\Nat).~t[0] \simeq xs \rightarrow t[1] \simeq n \rightarrow isRight~t[2] \rightarrow \\
+    &            &~  ~& \phantom{\lambda t~t'.}~t'[0] \simeq skipn~(S~n)~l \land t'[1] \simeq n-(1+\length{xs}) \land t'[2] \simeq nth~xs~n.
   \end{alignat*}
 \end{lemma}
 
-The full machine $\MS{Nth}$ makes copies of $n$ and $l$ and runs $\MS{NthLoop}$ on the copies.  After that, it resets the internal tapes $2$ and $3$
-with the copies of $n$ and $l$.  Note that for the correctness of $\MS{Reset}$ it is only important that there is a value on the tape.  The running time
+The full machine $\MS{Nth}$ makes copies of $n$ and $xs$ and runs $\MS{NthLoop}$ on the copies.  After that, it resets the internal tapes $2$ and $3$
+with the copies of $n$ and $xs$.  Note that for the correctness of $\MS{Reset}$ it is only important that there is a value on the tape.  The running time
 (which we omit here), does depend on the actual value.
 \begin{definition}[$\MS{Nth}$][Nth]
   \[

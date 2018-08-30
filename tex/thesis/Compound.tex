@@ -146,7 +146,7 @@ The machine $\MS{CopySymbols}~h : \TM_\Sigma^2$, where $h:\Sigma\to\Bool$, is a 
 $0$, writes it to tape $1$, and moves both tapes to right, until the read symbol satisfies $h$.  If there was no current symbol on tape $0$, it also
 terminates.
 
-We first define the machine for the step.  Since we want to apply the $\While$ operator on the step machine, it must be partitioned over
+We first define the machine for the step.  Since we want to apply the $\While$ operator on the step machine, it must be labelled over
 $\Option(\Unit)$.  $\Some\unit$ means to break out of the loop and $\None$ means to repetition the loop.
 \begin{definition}[$\MS{CopySymbolsStep}$][CopySymbols_Step]
   \label{CopySymbols_Step}
@@ -175,11 +175,11 @@ Note that ``$\MS{match}~[~\cdots~]$'' denotes pattern matching our type theory.
   with
   \small
   \begin{multline*}
-    CopySymbolsStepRel := \lambda t~(y, t').~\\
+    CopySymbolsStepRel := \lambda t~(l, t').~\\
     \begin{cases}
-      t'[0] = t[0]           \land t'[1]=\MS{wr}~t[1]~\Some{x}         \land y=\Some\unit & \MS{current}~t[0]=\Some{x} \land       h(x) \\
-      t'[0] = \MS{mv}~R~t[0] \land t'[1]=\MS{doAct}~t[1]~(\Some{x}, R) \land y=\None      & \MS{current}~t[0]=\Some{x} \land \lnot h(x) \\
-      t' = t \land y=\Some\unit                                                           & \text{else}
+      t'[0] = t[0]           \land t'[1]=\MS{wr}~t[1]~\Some{x}         \land l=\Some\unit & \MS{current}~t[0]=\Some{x} \land       h(x) \\
+      t'[0] = \MS{mv}~R~t[0] \land t'[1]=\MS{doAct}~t[1]~(\Some{x}, R) \land l=\None      & \MS{current}~t[0]=\Some{x} \land \lnot h(x) \\
+      t' = t \land l=\Some\unit                                                           & \text{else}
     \end{cases}
   \end{multline*}
 \end{lemma}

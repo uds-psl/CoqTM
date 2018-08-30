@@ -28,8 +28,8 @@ after $0$ steps.
     halt   ~\_ &:= \true
   \end{align*}
 \end{definition}
-Note that if we have an unpartitioned machine $M:\TM_\Sigma^n$, we implicitly partition their states over $\Unit$ with the partitioning function
-$part(q)=\unit$.
+Note that if we have an unlabelled machine $M:\TM_\Sigma^n$, we implicitly label their states over $\Unit$ with the labelling function
+$lab_M(q):=\unit$.
 
 % The correctness relation says exactly that the tapes don't change:
 The correctness relation is the universal relation, because empty vectors do not have information.  However, the correctness lemma also states that
@@ -46,7 +46,7 @@ the machine terminates in $0$ steps.
 
 \setCoqFilename{ProgrammingTuringMachines.TM.Basic.Mono}
 
-Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(F)$, do only one action $a:\Act$ (i.e.\ they optionally write a symbol and move the head of
+Machines of the next class, $\MS{DoAct}~a : \TM_\Sigma^1(L)$, do only one action $a:\Act$ (i.e.\ they optionally write a symbol and move the head of
 the tape) and terminate.
 \begin{definition}[$\MS{DoAct}~a$][DoAct]
   \label{def:DoAct}
@@ -83,10 +83,10 @@ We define some abbreviations:
 \section{$\MS{Read}$}
 \label{sec:basic_machines-Read}
 
-$\MS{Read} : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of partitioned one-tape machines.  The machines of this class have one terminating
+$\MS{Read} : \TM_\Sigma^1(\Option(\Sigma))$ is an interesting class of labelled one-tape machines.  The machines of this class have one terminating
 state for each symbol of the alphabet $\Sigma$.  They read the current symbol from the tape and terminate in the state that corresponds to that
-symbol.  For the case that there is no current symbol, they also have a distinct terminating state.  The partitioning function maps the terminating
-state for symbol $s$ to the partition $\Some{s}$.
+symbol.  For the case that there is no current symbol, they also have a distinct terminating state.  The labelling function maps the terminating state
+for the symbol $s$ to the label $\Some{s}$.
 
 \begin{definition}[$\MS{Read}$][ReadChar]
   The machine $\MS{Read} : \TM_\Sigma^1(\Option(\Sigma))$ is defined as follows:
@@ -100,18 +100,18 @@ state for symbol $s$ to the partition $\Some{s}$.
                      \end{cases} \\
     halt   ~ (\inl  b) &:= b \\
     halt   ~ (\inr \_) &:= \true \\
-    part   ~ (\inl  q) &:= \None \\
-    part   ~ (\inr  s) &:= \Some s
+    lab    ~ (\inl \_) &:= \None \\
+    lab    ~ (\inr  s) &:= \Some s
   \end{align*}
 \end{definition}
 
-The correctness lemma of $\MS{Read}$ states that the machine terminates after one step, leaves the tape unchanged, and that the partition of the
+The correctness lemma of $\MS{Read}$ states that the machine terminates after one step, leaves the tape unchanged, and that the label of the
 terminating state corresponds to the current symbol on the tape.
 
 \begin{lemma}[Correctness of $\MS{Read}$][ReadChar_Sem]
   \label{lem:Read_Sem} $\MS{Read} \RealiseIn{1} ReadRel$ with
   \[
-    ReadRel := \lambda~t~(y,t').~ y = \MS{current}~t[0] \land t' = t
+    ReadRel := \lambda~t~(l,t').~ l = \MS{current}~t[0] \land t' = t
   \]
 \end{lemma}
 \begin{proof}

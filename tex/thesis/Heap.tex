@@ -102,7 +102,7 @@ stack.  The splitting is realised with the function $\phi : Pro \to \Option(Pro 
     \phi[\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}; \MS{RET}; \MS{VAR}(1)] = \Some{([\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}], [\MS{VAR}(1)])}.
   \]
 }%
-The first $\MS{RET}$ matches to the $\MS{LAM}$ in the program above, so it is part of the first partition.  $\phi$ is formally defined with a
+The first $\MS{RET}$ matches to the $\MS{LAM}$ in the program above, so it is part of the first half.  $\phi$ is formally defined with a
 tail-recursive auxiliary function:
 \begin{definition}[$\phi$][jumpTarget]
   \label{def:jumpTarget}
@@ -211,7 +211,7 @@ and $\Nat$), we can combine constructors and deconstructors from Section~\ref{se
   \begin{alignat*}{2}
     & \MS{CaseCom} &~:=~& \MS{If}~\MS{CaseSum} \\
     &               &    & \MS{Then}~   \Return{\Nop}{\None} \\
-    &               &    & \MS{Else}~~~ \MS{ChangePartition}~(\LiftAlphabet{\MS{CaseFin}}{RetrRgt})~(\Some\cdot)
+    &               &    & \MS{Else}~~~ \MS{Relabel}~(\LiftAlphabet{\MS{CaseFin}}{RetrRgt})~(\Some\cdot)
   \end{alignat*}
 \end{definition}
 Note that $RetrRgt : \Sigma_{Var} \hookrightarrow \Sigma_{Com}$.
@@ -220,7 +220,7 @@ Note that $RetrRgt : \Sigma_{Var} \hookrightarrow \Sigma_{Com}$.
   $\MS{CaseCom} \RealiseIn{11} CaseCom$ with
 \begin{lstlisting}[style=semicoqstyle]
 $CaseComRel :=$
-  $\lambda t~(y, t').~\forall (c:Com).~ t[0] \simeq c \rightarrow \MS{match}~y,c$
+  $\lambda t~(l, t').~\forall (c:Com).~ t[0] \simeq c \rightarrow \MS{match}~l,c$
       [$\Some{\MS{APP}}, \MS{APP} \Rightarrow isRight~t'[0]$
       |$\Some{\MS{LAM}}, \MS{LAM} \Rightarrow isRight~t'[0]$
       |$\Some{\MS{RET}}, \MS{RET} \Rightarrow isRight~t'[0]$
@@ -234,8 +234,8 @@ The $\MS{VAR}$ constructor is defined with $\MS{ConstrInr}$ and the constructor 
 For the functions $\phi$ and $lookup$, we define machines that \textit{compute} these functions in a lesser strict sense than
 Definition~\ref{def:Computes2_Rel}.  The Turing machines only save the input-values that a caller machine needs again.  For example, we have a machine
 $\MS{Nth'}$ that saves the list, but not the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the
-alphabet with $\Sigma_{\Option(X)}$.  Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the partition $\Bool$.  In case that the
-output is $\None$, the machine terminates in $\false$ and the output tape stays right.
+alphabet with $\Sigma_{\Option(X)}$.  Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the label type $\Bool$.  In case that
+the output is $\None$, the machine terminates in $\false$ and the output tape stays right.
 
 After we have defined and verified machines that compute $\phi$ and $lookup$, we define a machine $\MS{Step}$ that simulates a single step of the heap
 machine.
@@ -291,7 +291,7 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
     $3:~\dashv$ &                  &                       & $1: g$               &                 &                   &                  &              & $0:~\dashv$  \\
     $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:b$             &                  & $0:~\dashv$  &              \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=S~n'$.  It terminates in the partition $\None$.  The
+  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=S~n'$.  It terminates in the label $\None$.  The
     translation is from $f_{next}$ to $f_{add}$.}
   \label{tab:exec-LookupStep-S}
   \begin{tabular}{l||l|l|l|l|l|l|l}
@@ -302,7 +302,7 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
     $3:~\dashv$ &                  &                       & $1: g$               &                 &              &              & $0:g$            \\
     $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:~\dashv$  &              &                  \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0$.  It terminates in the partition $Some\true$.  The
+  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0$.  It terminates in the label $Some\true$.  The
     translation is from $f_{Clos'}$ to $f_{Clos}$.}
   \label{tab:exec-LookupStep-0}
 \end{table}
@@ -338,8 +338,8 @@ The step machine terminates in $\Some\false$ in two cases.  Either the list look
 the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}), $\MS{LookupStep}$ resets the afterwards unneeded tapes.
 
 Because no initialisation or clean-up is needed before or after the loop, we can define $\MS{Lookup} := \While~\MS{LookupStep}$.  The correctness
-relation of $\MS{Lookup}$ says that if it terminated in the partition $\true$, we have $H[a,n] = \Some{g}$ for some closure $g$, and tape~$3$ contains
-$g$ w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still contains $H$ and all other tapes are reseted.  In case $\MS{Lookup}$
+relation of $\MS{Lookup}$ says that if it terminated in the label $\true$, we have $H[a,n] = \Some{g}$ for some closure $g$, and tape~$3$ contains $g$
+w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still contains $H$ and all other tapes are reseted.  In case $\MS{Lookup}$
 terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there are two possible reasons for that: Either $H[a]=\None$ or
 $H[a]=\Some\None$, but we do not separate these two failure cases.
 
@@ -350,9 +350,9 @@ $H[a]=\Some\None$, but we do not separate these two failure cases.
   \small
   \begin{alignat*}{1}
     & LookupRel := \\
-    &\quad \lambda t~(y, t').~\forall H~a~n.~ t[0] \simeq H \rightarrow t[1] \simeq_{f_{add}} a \rightarrow t[2] \simeq_{f_{var}} n \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow \\
-    &\quad\quad \MS{if}~y~\MS{then}~\bigl(\exists g.~H[a,n] = \Some{g} \land \\
-    &\quad\quad \phantom{\MS{if}~y~\MS{then}~\bigl(\exists g.~} t'[0] \simeq H \land isRight~t'[1] \land isRight~t'[2] \land t'[3] \simeq_{f_{Clos}} g \land isRight~t[4]\bigr) \\
+    &\quad \lambda t~(l, t').~\forall H~a~n.~ t[0] \simeq H \rightarrow t[1] \simeq_{f_{add}} a \rightarrow t[2] \simeq_{f_{var}} n \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow \\
+    &\quad\quad \MS{if}~l~\MS{then}~\bigl(\exists g.~H[a,n] = \Some{g} \land \\
+    &\quad\quad \phantom{\MS{if}~l~\MS{then}~\bigl(\exists g.~} t'[0] \simeq H \land isRight~t'[1] \land isRight~t'[2] \land t'[3] \simeq_{f_{Clos}} g \land isRight~t[4]\bigr) \\
     &\quad\quad \MS{else}~ H[a,n] = \None.
 \end{alignat*}
 \end{lemma}
@@ -383,7 +383,7 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
     & \MS{SplitBodyStep} := \\
     & \quad \MS{If}~(\LiftTapes{\MS{CaseList}}{\Vector{0;3}}) \\
     & \quad \MS{Then}~\Switch~(\LiftBoth{\MS{CaseCom}}{RetrList}{\Vector{3}}) \\
-    & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ACom)).~\MS{match}~y\\
+    & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ACom)).~\MS{match}~l\\
     & \quad \phantom{\MS{Then}~(\lambda}~[~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{RET}}} \Rightarrow \MS{If}~(\LiftBoth{\MS{CaseNat}}{f_{Var}}{\Vector{2}}) \\
     & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppACom~\MS{RET}}}{\Vector{1;4}})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Else}~~~ \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\Some\true} \\
@@ -409,8 +409,8 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
     $3:~\dashv$ & $1: \MS{RET}$    & $0:~\dashv$     &                 &                         \\
     $4:~\dashv$ &                  &                 &                 & $1:~\dashv$             \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{SplitBodyStep}$ for $P=\MS{RET} \cons P'$ and $k=S~k'$.  The step machine terminates in the partition $\None$,
-    thus the loop continues.  Note that tape~$4$ is only used as an internal tape for $\MS{AppACom}$.}
+  \caption{Execution protocol of $\MS{SplitBodyStep}$ for $P=\MS{RET} \cons P'$ and $k=S~k'$.  The step machine terminates in the label $\None$, thus
+    the loop continues.  Note that tape~$4$ is only used as an internal tape for $\MS{AppACom}$.}
   \label{tab:exec-JumpTarget-RET}
 % \end{table}
 % \begin{table}
@@ -423,7 +423,7 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
     $3:~\dashv$ & $1: \MS{VAR}(n)$ & $0: n$          & $0: \MS{VAR}(n)$ & $1:~\dashv$                \\
     $4:~\dashv$ &                  &                 &                  & $2:~\dashv$                \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{SplitBodyStep}$ for $P=\MS{VAR}(n) \cons P'$.  The step machine terminates in the partition $\None$.}
+  \caption{Execution protocol of $\MS{SplitBodyStep}$ for $P=\MS{VAR}(n) \cons P'$.  The step machine terminates in the label $\None$.}
   \label{tab:exec-JumpTarget-VAR}
 \end{table}
 
@@ -432,14 +432,14 @@ Execution protocols for the step machine are visualised in Table~\ref{tab:exec-J
 Note that the step machine resets the tape for $k$ before it breaks out of the loop and returns $\true$.  Thus, no resetting is needed after the loop.
 The loop machine halts in $\true$ if and only if $\phi'~k~Q~P$ is not $\None$.  If it is $\Some{(P',Q')}$, then after the execution the first two
 tapes contain $P'$ and $Q'$, and the other tapes are right.  If $\phi'~k~Q~P = \None$, the correctness relation only commits that the machine
-terminates in the partition $\false$.
+terminates in the label $\false$.
 \begin{lemma}[Correctness of $\MS{SplitBodyLoop}$][JumpTarget_Loop_Realise]
   $\MS{SplitBodyLoop} \Realise SplitBodyLoopRel$.
   \begin{alignat*}{1}
     & SplitBodyLoopRel := \\
-    &\quad \lambda t~(y, t').~\forall P~Q~k.~t[0] \simeq P \rightarrow t[1] \simeq Q \rightarrow t[2] \simeq k \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow \\
-    &\quad\quad \MS{if}~y~\MS{then}~\exists P'~Q'.~ \phi'~k~Q~P = \Some{(Q', P')} \land \\
-    &\quad\quad \phantom{\MS{if}~y~\MS{then}}~t'[0] \simeq P' \land t'[1] \simeq Q' \land \forall(i:\Fin_3).~isRigth~t'[2+i] \\
+    &\quad \lambda t~(l, t').~\forall P~Q~k.~t[0] \simeq P \rightarrow t[1] \simeq Q \rightarrow t[2] \simeq k \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow \\
+    &\quad\quad \MS{if}~l~\MS{then}~\exists P'~Q'.~ \phi'~k~Q~P = \Some{(Q', P')} \land \\
+    &\quad\quad \phantom{\MS{if}~l~\MS{then}}~t'[0] \simeq P' \land t'[1] \simeq Q' \land \forall(i:\Fin_3).~isRigth~t'[2+i] \\
     &\quad\quad \MS{else}~\phi'~k~Q~P=\None.
 \end{alignat*}
 \end{lemma}
@@ -449,9 +449,9 @@ Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$.
   $\MS{SplitBody} \Realise SplitLoopRel$ with
   \begin{alignat*}{1}
     & SplitBodyRel := \\
-    &\quad \lambda t~(y, t').~\forall P.~t[0] \simeq P \rightarrow isRigth~t[1] \rightarrow (\forall(i:\Fin_3).~isRigth~t[2+i]) \rightarrow \\
-    &\quad\quad \MS{if}~y~\MS{then}~\exists P'~Q.~ \phi~P = \Some{(Q, P')} \land \\
-    &\quad\quad \phantom{\MS{if}~y~\MS{then}}~t'[0] \simeq P' \land t'[1] \simeq Q \land \left(\forall(i:\Fin_3).~isRigth~t'[2+i]\right) \\
+    &\quad \lambda t~(l, t').~\forall P.~t[0] \simeq P \rightarrow isRigth~t[1] \rightarrow (\forall(i:\Fin_3).~isRigth~t[2+i]) \rightarrow \\
+    &\quad\quad \MS{if}~l~\MS{then}~\exists P'~Q.~ \phi~P = \Some{(Q, P')} \land \\
+    &\quad\quad \phantom{\MS{if}~l~\MS{then}}~t'[0] \simeq P' \land t'[1] \simeq Q \land \left(\forall(i:\Fin_3).~isRigth~t'[2+i]\right) \\
     &\quad\quad \MS{else}~\phi~P=\None.
 \end{alignat*}
 \end{lemma}
@@ -464,8 +464,8 @@ Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$.
 
 We define a machine $\MS{Step}_\Sigma^{11} : \TM(\Option(\Unit))$ that simulates steps of the heap machine.  The tapes $0$, $1$, and $2$ contain the
 control stack $T$, the argument stack $V$, and the heap $H$, respectively.  If the heap machine does a step $(T,V,H) \red (T',V',H')$, $\MS{Step}$
-terminates in $\None$ and the resulting tapes contain $T',V',H'$.  Otherwise, if $(T,V,H)$ is a terminating state, $\MS{Step}$ terminates in the
-partition $\Some\unit$.  Furthermore, if $\MS{Step}$ terminates in $\None$, there is a successor state $(T',V',H')$.
+terminates in $\None$ and the resulting tapes contain $T',V',H'$.  Otherwise, if $(T,V,H)$ is a terminating state, $\MS{Step}$ terminates in the label
+$\Some\unit$.  Furthermore, if $\MS{Step}$ terminates in $\None$, there is a successor state $(T',V',H')$.
 
 We implement auxiliary machines for each of the three step rules.  $\MS{Step}$ first destructs $T$.  For example, in the case that
 $T=(a, (\MS{APP} \cons P)) \cons T'$, the auxiliary machine for $\MS{APP}$ destructs $V$ further and then calls a machine $\MS{App}$ that realises
@@ -484,9 +484,9 @@ on the control stack.  If it is empty, it immediately terminates in $\Some\unit$
   $\MS{Step} \Realise StepRel$ with
   \begin{alignat*}{1}
     & StepRel := \\
-    &\quad \lambda t~(y, t').~\forall T~V~H.~ t[0] \simeq T \rightarrow t[1] \simeq V \rightarrow t[2] \simeq H \rightarrow \left(\forall (i:\Fin_8).~isRight~t[3+i]\right) \rightarrow \\
-    &\quad \MS{if}~y=\None~\MS{then}~\exists T'~V'~H'.~(T,V,H) \red (T',H',V') ~\land~ \\
-    &\quad \phantom{\MS{if}~y=\None~\MS{then}}~ t'[0] \simeq T' \land t'[1] \simeq V' \land t'[2] \simeq H' \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right) \\
+    &\quad \lambda t~(l, t').~\forall T~V~H.~ t[0] \simeq T \rightarrow t[1] \simeq V \rightarrow t[2] \simeq H \rightarrow \left(\forall (i:\Fin_8).~isRight~t[3+i]\right) \rightarrow \\
+    &\quad \MS{if}~l=\None~\MS{then}~\exists T'~V'~H'.~(T,V,H) \red (T',H',V') ~\land~ \\
+    &\quad \phantom{\MS{if}~l=\None~\MS{then}}~ t'[0] \simeq T' \land t'[1] \simeq V' \land t'[2] \simeq H' \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right) \\
     &\quad \MS{else}~ halt(T,V,H) ~\land~ \\
     &\quad \phantom{\MS{else}}~T=\nil \rightarrow t'[0] \simeq \nil \land t'[1] \simeq V \land t'[2] \simeq H \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right)
   \end{alignat*}

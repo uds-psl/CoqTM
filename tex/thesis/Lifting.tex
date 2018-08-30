@@ -2,9 +2,9 @@
 \label{chap:lifting}
 
 We observe that whenever we want to combine machines, the number of tapes and alphabets of all sub-machines have to agree.  For example, we have the
-following typing rule for the sequential composition of partitioned Turing machines:
+following typing rule for the sequential composition of labelled Turing machines:
 \[
-  \inferrule{M_1 : \TM_\Sigma^n(F_1) \and M_2 : \TM_\Sigma^n(F_2)}{M_1 \Seq M_2 : \TM_\Sigma^n(F_2)}
+  \inferrule{M_1 : \TM_\Sigma^n(L_1) \and M_2 : \TM_\Sigma^n(L_2)}{M_1 \Seq M_2 : \TM_\Sigma^n(L_2)}
 \]
 For example, assume that we have a one-tape machine $M_{aux} : \TM_\Sigma^1$ that moves the head to the right of the tape.  If we need a two-tape
 machine $M$ that moves both tapes to the right, we would like to use sequential composition and move one tape after the other tape to the right.  But
@@ -38,8 +38,8 @@ Both lifting operators are easy to define and verify using the lemmas of the pre
 \label{sec:n-Lift}
 \setCoqFilename{ProgrammingTuringMachines.TM.Lifting.LiftTapes}%
 
-The tape-lift takes a machine $M:\TM_\Sigma^m(F)$ and a duplicate-free vector $I: \Fin_n^m$, and yields a machine
-$\LiftTapes{M}{I} : \TM_\Sigma^n(F)$.\footnote{ Note that instead of duplicate free index vectors $I:\Fin_n^m$, we could also use injective functions
+The tape-lift takes a machine $M:\TM_\Sigma^m(L)$ and a duplicate-free vector $I: \Fin_n^m$, and yields a machine
+$\LiftTapes{M}{I} : \TM_\Sigma^n(L)$.\footnote{ Note that instead of duplicate free index vectors $I:\Fin_n^m$, we could also use injective functions
   $f: \Fin_m \to \Fin_n$.  We choose index-vectors, because they are easier to define in Coq.}  The tape of $\LiftTapes{M}{I}$ with the index
 $i = I[j]$ (with $i:\Fin_n$, $j:\Fin_m$) behaves exactly as the tape $j$ of $M$.  All other tapes of $\LiftTapes{M}{I}$ that are not in~$I$ are
 inactive and do not change.
@@ -84,7 +84,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 
 \begin{definition}[$\LiftTapes{M}{I}$][LiftTapes]
   \label{def:LiftTapes}
-  Let $M:\TM_\Sigma^m(F)$ and $I : \Fin_n^m$.  We define $\LiftTapes{M}{I} : \TM_\Sigma^n(F)$.  All components are the same as in $M$, except:
+  Let $M:\TM_\Sigma^m(L)$ and $I : \Fin_n^m$.  We define $\LiftTapes{M}{I} : \TM_\Sigma^n(L)$.  All components are the same as in $M$, except:
   \begin{alignat*}{2}
     &\delta(q,s) &~:=~& \Let{(q', act) := \delta_M(q, select~I~sym)}{\\%
     &            &~  ~& (q', fill~I~(\None,N)^n~act)}
@@ -93,15 +93,15 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 
 \begin{lemma}[Correctness of $\LiftTapes{M}{I}$][LiftTapes_Realise]
   \label{lem:LiftTapes_Realise}
-  Let $M : \TM_\Sigma^m(F)$ and $I : \Fin_n^m$ duplicate-free.  If $M \Realise R$, then $\LiftTapes{M}{I} \Realise \LiftTapes{R}{I}$ with
+  Let $M : \TM_\Sigma^m(L)$ and $I : \Fin_n^m$ duplicate-free.  If $M \Realise R$, then $\LiftTapes{M}{I} \Realise \LiftTapes{R}{I}$ with
   \[
-    \LiftTapes{R}{I} := \lambda t~(y,t').~ R~(select~I~t)~(y, select~I~t') \land \forall i:\Fin_n.~i \notin I \rightarrow t'[i]=t[i].
+    \LiftTapes{R}{I} := \lambda t~(l,t').~ R~(select~I~t)~(l, select~I~t') \land \forall i:\Fin_n.~i \notin I \rightarrow t'[i]=t[i].
   \]
 \end{lemma}
 
 \begin{lemma}[Runtime of $\LiftTapes{M}{I}$][LiftTapes_TerminatesIn]
   \label{lem:LiftTapes_TerminatesIn}
-  Let $M : \TM_\Sigma^m(F)$ and $I : \Fin_n^m$ duplicate-free. If $M \TerminatesIn T$, then $\LiftTapes{M}{R} \TerminatesIn \LiftTapes{T}{I}$ with
+  Let $M : \TM_\Sigma^m(L)$ and $I : \Fin_n^m$ duplicate-free. If $M \TerminatesIn T$, then $\LiftTapes{M}{R} \TerminatesIn \LiftTapes{T}{I}$ with
   $ \LiftTapes{T}{I} := \lambda t~k.~ T~(select~I~t)~k.  $
 \end{lemma}
 
@@ -115,7 +115,7 @@ However, for the second part of the correctness, i.e.\ tapes that are not in $I$
 
 \begin{lemma}[Mapping loops][loop_map]
   \label{lem:loop_map}
-  Let $A:\Type$, $f:A \to A$, $h:A \to \Bool$.  Let $B:\Type$ and $g : A \to B$.  If $g(f~a)=g(a)$ for all $a:A$, then
+  Let $A:\Type$, $f : A \to A$, $h:A \to \Bool$.  Let $B:\Type$ and $g : A \to B$.  If $g(f~a)=g(a)$ for all $a:A$, then
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(a_1~a_2 : A). \\
     & \quad loop~f~h~k~a_1 = \Some{a_2} \rightarrow \\
@@ -134,10 +134,10 @@ We apply this lemma in the proof of Lemma~\ref{lem:LiftTapes_Realise} with $g :=
 \label{sec:sigma-Lift}
 \setCoqFilename{ProgrammingTuringMachines.TM.Lifting.LiftAlphabet}%
 
-Let $M : \TM_\Sigma^n(F)$ be a machine over the alphabet $\Sigma$, and $f : \Sigma \hookrightarrow \Tau$ a retraction on another alphabet $\Tau$.
-Note that then $\Tau$ has at least as many symbols as $\Sigma$.  We need a default symbol $def:\Sigma$.  In contrast to the default partition we
-needed in the definition of $\While$, the choice of $def$ is semantically relevant.  This means that $def$ should be a symbol that $M$ does not expect
-to read.  The alphabet-lift $\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n$ is a machine over the bigger alphabet $\Tau$.
+Let $M : \TM_\Sigma^n(L)$ be a machine over the alphabet $\Sigma$, and $f : \Sigma \hookrightarrow \Tau$ a retraction on another alphabet $\Tau$.
+Note that then $\Tau$ has at least as many symbols as $\Sigma$.  We need a default symbol $def:\Sigma$.  In contrast to the default label we needed in
+the definition of $\While$, the choice of $def$ is semantically relevant.  This means that $def$ should be a symbol that $M$ does not expect to read.
+The alphabet-lift $\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n(L)$ is a machine over the bigger alphabet $\Tau$.
 
 The transition function of the lifted machine $\LiftAlphabet{M}{(f,def)}$ reads the $n$ optional symbols $s : \Option(\Tau)^n$.  It tries to translate
 these symbols to $s': \Option(\Sigma)^n$, using the partial inversion function $f^{-1} : \Tau \to \Option(\Sigma)$.  If the symbol $\tau:\Tau$ has no
@@ -147,8 +147,8 @@ $act' : (\Option(\Tau) \times \MS{Move})^n$.
 
 \begin{definition}[$\LiftAlphabet{M}{(f,def)}$][LiftAlphabet]
   \label{def:LiftAlphabet}
-  Let $f : \Sigma \hookrightarrow \Tau$, $def:\Sigma$, and $M : \TM_\Sigma^n(F)$.  We define the machine %
-  $\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n(F)$ with the same components as $M$, except:
+  Let $f : \Sigma \hookrightarrow \Tau$, $def:\Sigma$, and $M : \TM_\Sigma^n(L)$.  We define the machine %
+  $\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n(L)$ with the same components as $M$, except:
   \begin{alignat*}{2}
     & \delta(q,s)    &~:=~& \Let{(q', act) := \delta_M(q, \map{(mapOpt~(surject~f~def))}{s})}{\\%
     &                &~  ~& (q', \map{(mapAct~f)}{act})} \\
@@ -178,7 +178,7 @@ that maps every symbol on a tape.  We write $\coqlink[mapTapes]{mapTapes}$ for t
   If $M \Realise R$, then $\LiftAlphabet{M}{(f,def)} \Realise \LiftAlphabet{R}{(f,def)}$ with
   \small
   \[
-    \LiftAlphabet{R}{(f,def)} := \lambda t~(y, t').~R~(mapTapes~(surject~f~def)~t)~(y, mapTapes~(surject~f~def)~t').
+    \LiftAlphabet{R}{(f,def)} := \lambda t~(l, t').~R~(mapTapes~(surject~f~def)~t)~(l, mapTapes~(surject~f~def)~t').
   \]
 \end{lemma}
 

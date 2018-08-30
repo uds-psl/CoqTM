@@ -16,11 +16,11 @@ abstract machine model, but define the transition function between the models of
 
 In this thesis, we aim to define, specify, and formally verify Turing machines in a framework built in the theorem prover Coq~\cite{Coq}.  First of
 all, we address the problems above.  Instead of defining machines in terms of transition tables, we compose machines using functions of Coq's
-dependent type theory -- the \textit{Calculus of (Co)Inductive Constructions} (also known as Cic).  For example, we define a function that builds the
-sequential composition of two machines.  To eliminate the need to reason about concrete internal states, we only reason about partitions of states.
-We address the problem that machines are low-level, by introducing abstractions, so that Turing machines directly manipulate values of arbitrary
-encodable types.  This makes programming of (and reasoning about) Turing machines comparable to register machines, but we are not restricted to
-natural numbers.
+dependent type theory -- the \textit{Calculus of (Co)Inductive Constructions} (also known as CIC).  For example, we define a function that builds the
+sequential composition of two machines.  To eliminate the need to reason about concrete machine states, we give all states a label (e.g.\ $\true$ or
+$\false$) and only have to reason about these labels.  We address the problem that machines are low-level, by introducing abstractions, so that Turing
+machines directly manipulate values of arbitrary encodable types.  This makes programming of (and reasoning about) Turing machines comparable to
+register machines, but we are not restricted to natural numbers.
 
 There are many variations of Turing machines.  We choose multi-tape Turing machines with arbitrary alphabets.  Our plan is, that each tape should
 contain a value.  We choose a finite model of tapes, i.e.\ each tape has only finitely many symbols but may allocate arbitrary many symbols.

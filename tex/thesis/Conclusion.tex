@@ -20,7 +20,7 @@ This is in contrast to the implementation of tapes in~\cite{xu2013}, where tapes
 symbol.  Because of the symmetric nature of tapes, it was extremely easy to define an operator $\MS{Mirror}$ that mirrors the transition function.
 The finite nature made it possible to define an always terminating machine that moves the head to the right (or using $\MS{Mirror}$ to the left) end
 of the tape.  This is in contrast to~\cite{ciaffaglione2016}, where tapes are implemented as infinite streams of symbols.  Our framework implements
-five major improvements on~\cite{asperti2015}.  (1) By introducing partitioned machines we make it unnecessary to reason about concrete states of
+five major improvements on~\cite{asperti2015}.  (1) By introducing labelled machines we make it unnecessary to reason about concrete states of
 machines.  The authors in \cite{asperti2015} already note that reasoning about internal states is tedious and therefore do not include the terminating
 state in their definition of realisation.  (2) We have introduced a notion of time complexity that relates the inputs to the number of steps needed
 for the computation.  (3) By introducing an operator $\Switch$ that generalises sequential composition and conditional, we simplified the verification
@@ -51,7 +51,7 @@ Co-induction can be avoided.  In fact, we introduced the co-inductive terminatio
 
 \paragraph{Similarity of realisation and weak Hoare triples}
 As already noted in~\cite{ciaffaglione2016}, the notion of realisation is similar to the classic Hoare logic widely used in program verification.  For
-example, consider the classic Hoare proof rule for sequential composition, and had the corresponding relational rule (for unpartitioned machines
+example, consider the classic Hoare proof rule for sequential composition, and had the corresponding relational rule (for unlabelled machines
 $M_1,M_2 : \TM_\Sigma^n$):
 \[
   \inferrule{\{A\}~P_1~\{B\} \and \{B\}~P_2~\{C\}}{\{A\}~P_1 \Seq P_2~\{C\}}
@@ -59,7 +59,7 @@ $M_1,M_2 : \TM_\Sigma^n$):
   \inferrule{M_1 \Realise R_1 \and M_2 \Realise R_2}{M_1 \Seq M_2 \Realise R_1 \circ R_2}
 \]
 We encode preconditions and postconditions inside correctness relations.  This means that if the precondition is not true for the input tape $t$, then
-$R~t~(y,t')$ is logically equivalent to $\True$.  Sequential composition of machines amounts to relational composition of correctness relations
+$R~t~(l,t')$ is logically equivalent to $\True$.  Sequential composition of machines amounts to relational composition of correctness relations
 (cf.~Lemma~\ref{lem:Seq_RealiseIn}).  However, we are not aware of a Hoare-style logical calculus for reasoning about termination in a concrete number
 of steps that is dual to classical Hoare logic, like in our duality between realisation and termination.
 

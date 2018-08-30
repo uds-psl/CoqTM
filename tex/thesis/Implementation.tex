@@ -31,7 +31,7 @@ predicates and finite types:
 
 \begin{lstlisting}
 Definition dec (P:Prop) := {P} + {~ P}.
-Definition eq_dec (X:Type) := forall x y, dec (x=y).
+Definition eq_dec (X:Type) := forall x l, dec (x=l).
 Structure eqType := EqType {
   eqtype :> Type;
   decide_eq : eq_dec eqtype
@@ -48,8 +48,8 @@ Structure finType : Type := FinType {
 Canonical Structure finType_CS (X:Type) {p : eq_dec X} {class : finTypeC (EqType X)} : finType := FinType (EqType X).
 \end{lstlisting}%
 
-The coercions (\lstinline!:>!) make it possible to use finite types \lstinline{F:finType} as types, i.e.\ we can write \lstinline!x:F!.  The canonical
-structures enable automatic inference of the structure, for example we have a function \lstinline!index : forall F:finType, F -> nat! and we can write
+The coercions (\lstinline!:>!) make it possible to use finite types \lstinline{L:finType} as types, i.e.\ we can write \lstinline!x:L!.  The canonical
+structures enable automatic inference of the structure, for example we have a function \lstinline!index : forall L:finType, L -> nat! and we can write
 \lstinline!index true!.
 
 \paragraph{Retraction Library}
@@ -59,7 +59,7 @@ We implemented a library for retractions.  We use a typeclass for the existence 
 Section Retract.
   Variable X Y : Type.
   Definition retract (f : X -> Y) (g : Y -> option X) :=
-    forall x y, g y = Some x <-> y = f x.
+    forall x l, g l = Some x <-> l = f x.
   Class Retract := {
     Retr_f : X -> Y;
     Retr_g : Y -> option X;
