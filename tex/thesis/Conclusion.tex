@@ -23,11 +23,11 @@ of the tape.  This is in contrast to~\cite{ciaffaglione2016}, where tapes are im
 five major improvements on~\cite{asperti2015}.  (1) By introducing partitioned machines we make it unnecessary to reason about concrete states of
 machines.  The authors in \cite{asperti2015} already note that reasoning about internal states is tedious and therefore do not include the terminating
 state in their definition of realisation.  (2) We have introduced a notion of time complexity that relates the inputs to the number of steps needed
-for the computation.  (3) By introducing an operator $\MS{Match}$ that generalises sequential composition and conditional, we simplified the
-verification of both operators and also introduced a useful operator that was used throughout the thesis.  (4) We implemented general lifting
-operators that make it possible to compose small machines (w.r.t.\ the alphabet and number of tapes) to fairly complex machines.  At this point,
-composing compound machines is reasonably easy, but we (5) have introduced another layer of abstraction.  We have made it possible to directly
-manipulate values of encodable types.  The on-paper design and implementation in Coq of the heap machine simulator was straight-forward.
+for the computation.  (3) By introducing an operator $\Switch$ that generalises sequential composition and conditional, we simplified the verification
+of both operators and also introduced a useful operator that was used throughout the thesis.  (4) We implemented general lifting operators that make
+it possible to compose small machines (w.r.t.\ the alphabet and number of tapes) to fairly complex machines.  At this point, composing compound
+machines is reasonably easy, but we (5) have introduced another layer of abstraction.  We have made it possible to directly manipulate values of
+encodable types.  The on-paper design and implementation in Coq of the heap machine simulator was straight-forward.
 
 
 % Norrish`s comment about the "daunting suspect".
@@ -85,7 +85,7 @@ correctness relations with commitments about the space-usage of each tape.  Aspe
 this regard, because their tapes never decrease the number of symbols.  This means that the total space usage of a tape is just the number of symbols
 on the tape.  Our idea is that we parametrise the notion of value-containment over the length $l$ of the ``rest list'' on the left, and write
 $t \simeq_{l} x$.  Note that, by definition, there are no symbols beyond the stop symbol on the right side of the tape, so the total size of the tape
-only depends of the length of the encoding and the length of the left rest.  For example, $\MS{MatchNat}$ does not change the amount of totally
+only depends of the length of the encoding and the length of the left rest.  For example, $\MS{CaseNat}$ does not change the amount of totally
 allocate memory, but decreases the length of the encoding and increases the length of the rest by one.  On the other side, $\MS{ConstrS}$ ``consumes''
 on rest symbol, i.e.\ decreases the length of the rest by one, and increases the length of the encoding by one.  Thus, if the rest is empty,
 $\MS{ConstrS}$ allocates one new symbol.

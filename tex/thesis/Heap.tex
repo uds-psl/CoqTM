@@ -205,21 +205,21 @@ Definition~\ref{def:basic-encodings}.  \setCoqFilename{ProgrammingTuringMachines
 
 First, we derive constructor and deconstructor machines for commands.  As the type of commands essentially is the sum of two encodable types ($ACom$
 and $\Nat$), we can combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
-\setCoqFilename{ProgrammingTuringMachines.TM.LM.MatchTok}%
-\begin{definition}[$\MS{MatchCom}$][MatchTok]
-  $\MS{MatchCom} : \TM_{\Sigma^+_{Com}}^1(\Option(ACom))$ is defined by
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.CaseTok}%
+\begin{definition}[$\MS{CaseCom}$][CaseTok]
+  $\MS{CaseCom} : \TM_{\Sigma^+_{Com}}^1(\Option(ACom))$ is defined by
   \begin{alignat*}{2}
-    & \MS{MatchCom} &~:=~& \MS{If}~\MS{MatchSum} \\
+    & \MS{CaseCom} &~:=~& \MS{If}~\MS{CaseSum} \\
     &               &    & \MS{Then}~   \Return{\Nop}{\None} \\
-    &               &    & \MS{Else}~~~ \MS{ChangePartition}~(\LiftAlphabet{\MS{MatchFin}}{RetrRgt})~(\Some\cdot)
+    &               &    & \MS{Else}~~~ \MS{ChangePartition}~(\LiftAlphabet{\MS{CaseFin}}{RetrRgt})~(\Some\cdot)
   \end{alignat*}
 \end{definition}
 Note that $RetrRgt : \Sigma_{Var} \hookrightarrow \Sigma_{Com}$.
-\begin{lemma}[Correctness of $\MS{MatchCom}$][MatchTok_Sem]
-  \label{lem:MatchCom_Sem}
-  $\MS{MatchCom} \RealiseIn{11} MatchCom$ with
+\begin{lemma}[Correctness of $\MS{CaseCom}$][CaseTok_Sem]
+  \label{lem:CaseCom_Sem}
+  $\MS{CaseCom} \RealiseIn{11} CaseCom$ with
 \begin{lstlisting}[style=semicoqstyle]
-$MatchComRel :=$
+$CaseComRel :=$
   $\lambda t~(y, t').~\forall (c:Com).~ t[0] \simeq c \rightarrow \MS{match}~y,c$
       [$\Some{\MS{APP}}, \MS{APP} \Rightarrow isRight~t'[0]$
       |$\Some{\MS{LAM}}, \MS{LAM} \Rightarrow isRight~t'[0]$
@@ -284,7 +284,7 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
 \begin{table}[H]
   \scriptsize
   \begin{tabular}{l||l|l|l|l|l|l|l|l}
-    Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{CopyValue}$  & $\MS{Translate}$ & $\MS{Reset}$ & $\MS{Reset}$ \\ \hline
+    Input       & $\MS{Nth'}$      & $\MS{CaseOption}$       & $\MS{CasePair}$     & $\MS{CaseNat}$ & $\MS{CopyValue}$  & $\MS{Translate}$ & $\MS{Reset}$ & $\MS{Reset}$ \\ \hline
     $0:H$       & $0:H$            &                       &                      &                 &                   &                  &              &              \\
     $1:a$       & $1:~\dashv$      &                       &                      &                 & $1:b$             & $0:b$            &              &              \\
     $2:n$       &                  &                       &                      & $0:n'$          &                   &                  &              &              \\
@@ -295,7 +295,7 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
     translation is from $f_{next}$ to $f_{add}$.}
   \label{tab:exec-LookupStep-S}
   \begin{tabular}{l||l|l|l|l|l|l|l}
-    Input       & $\MS{Nth'}$      & $\MS{MatchOpt}$       & $\MS{MatchPair}$     & $\MS{MatchNat}$ & $\MS{Reset}$ & $\MS{Reset}$ & $\MS{Translate}$ \\ \hline
+    Input       & $\MS{Nth'}$      & $\MS{CaseOption}$       & $\MS{CasePair}$     & $\MS{CaseNat}$ & $\MS{Reset}$ & $\MS{Reset}$ & $\MS{Translate}$ \\ \hline
     $0:H$       & $0:H$            &                       &                      &                 &              &              &                  \\
     $1:a$       & $1:~\dashv$      &                       &                      &                 &              &              &                  \\
     $2:n$       &                  &                       &                      & $0:0$           &              & $0:~\dashv$  &                  \\
@@ -313,9 +313,9 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
   \begin{align*}
     & \MS{LookupStep} := \\
     & \quad \MS{If}~(\MS{Nth'}~f_{heap}~f_{add}) \\
-    & \quad \MS{Then}~\MS{If}~(\LiftBoth{\MS{MatchOption}}{f_{heap} \circ RetrList}{\Vector{4}}) \\
-    & \quad \phantom{\MS{Then}}~\MS{Then}~\LiftBoth{\MS{MatchPair}}{f_{heap} \circ RetrList \circ RetrOpt}{\Vector{4;3}} \Seq \\
-    & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{var}}{\Vector{2}}) \\
+    & \quad \MS{Then}~\MS{If}~(\LiftBoth{\MS{CaseOption}}{f_{heap} \circ RetrList}{\Vector{4}}) \\
+    & \quad \phantom{\MS{Then}}~\MS{Then}~\LiftBoth{\MS{CasePair}}{f_{heap} \circ RetrList \circ RetrOpt}{\Vector{4;3}} \Seq \\
+    & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{If}~(\LiftBoth{\MS{CaseNat}}{f_{var}}{\Vector{2}}) \\
     & \quad \phantom{\MS{Then}~\MS{Then}}~\MS{Then}~ \MS{Return}~\bigl(
       \LiftTapes{\MS{CopyValue}}{\Vector{4;1}} \Seq
       \LiftTapes{\MS{Translate}~f_{next}~f_{add}}{\Vector{1}} \Seq \\
@@ -368,7 +368,7 @@ $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$ computes $\phi'$, and $\MS{Spl
 
 The step machine $\MS{SplitBodyStep} : \TM_{\Sigma^+_{Pro}}^5(\Option(\Bool))$ first makes a case-distinction over the program on tape $0$.  In the
 $\nil$ case, it returns $\Some{\false}$ so that the loop returns $\false$.  In the cons-case, it makes a case-distinction over the command, using
-$\MS{MatchCom}$.  In the case the head command is $\MS{RET}$, it does another case-distinction over $k$.  In the case that the head command is
+$\MS{CaseCom}$.  In the case the head command is $\MS{RET}$, it does another case-distinction over $k$.  In the case that the head command is
 $\MS{VAR}(n)$, the machine again applies the $\MS{VAR}$ constructor to $n$ and appends this command to $Q$.  The case-machines use the auxiliary
 parametrised machine $\MS{AppACom}~t$ that appends a finite command (i.e.\ $t$ is either $\MS{APP}$, $\MS{LAM}$, or $\MS{RET}$) to the command list,
 and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
@@ -381,10 +381,10 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
   %% This hack assumes that $\MS{LAM}$ is the wider than of $\MS{RET}$ and $\MS{APP}$
   \begin{alignat*}{1}
     & \MS{SplitBodyStep} := \\
-    & \quad \MS{If}~(\LiftTapes{\MS{MatchList}}{\Vector{0;3}}) \\
-    & \quad \MS{Then}~\Switch~(\LiftBoth{\MS{MatchCom}}{RetrList}{\Vector{3}}) \\
+    & \quad \MS{If}~(\LiftTapes{\MS{CaseList}}{\Vector{0;3}}) \\
+    & \quad \MS{Then}~\Switch~(\LiftBoth{\MS{CaseCom}}{RetrList}{\Vector{3}}) \\
     & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ACom)).~\MS{match}~y\\
-    & \quad \phantom{\MS{Then}~(\lambda}~[~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{RET}}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{f_{Var}}{\Vector{2}}) \\
+    & \quad \phantom{\MS{Then}~(\lambda}~[~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{RET}}} \Rightarrow \MS{If}~(\LiftBoth{\MS{CaseNat}}{f_{Var}}{\Vector{2}}) \\
     & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppACom~\MS{RET}}}{\Vector{1;4}})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Else}~~~ \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\Some\true} \\
     & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{LAM}}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{f_{Var}}{\Vector{2}} \Seq \MS{AppACom}~\MS{LAM})}{\None} \\
@@ -393,21 +393,6 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
     & \quad \phantom{\MS{Then}~(\lambda}~]) \\
     & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}.
   \end{alignat*}
-  % Ok-ish version, without the hack for aligning the "=>"s
-  % \begin{alignat*}{1}
-  %   & \MS{SplitBodyStep} := \\
-  %   & \quad \MS{If}~(\LiftTapes{\MS{MatchList}}{\Vector{0;3}}) \\
-  %   & \quad \MS{Then}~\Switch~(\LiftBoth{\MS{MatchCom}}{RetrList}{\Vector{3}}) \\
-  %   & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ACom)).~\MS{match}~y\\
-  %   & \quad \phantom{\MS{Then}~(\lambda}~[~ \Some{\MS{RET}} \Rightarrow \MS{If}~(\LiftBoth{\MS{MatchNat}}{RetrRgt \circ RetrList}{\Vector{2}}) \\
-  %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppACom~\MS{RET}}}{\Vector{1;4}})}{\None} \\
-  %   & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{RET} \Rightarrow}}~\MS{Else}~~~ \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\Some\true} \\
-  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{LAM}} \Rightarrow \Return{(\LiftBoth{\MS{ConstrS}}{RetrRgt \circ RetrList}{\Vector{2}} \Seq \MS{AppACom}~\MS{LAM})}{\None} \\
-  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \Some{\MS{APP}} \Rightarrow \Return{(\MS{AppACom}~\MS{APP})}{\None} \\
-  %   & \quad \phantom{\MS{Then}~(\lambda}~|~ \None \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{RetrRgt \circ RetrList}{\Vector{3}} \Seq \LiftTapes{\MS{AppCom}}{1;3;4})}{\None} \\
-  %   & \quad \phantom{\MS{Then}~(\lambda}~]) \\
-  %   & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}.
-  % \end{alignat*}
   We furthermore define $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$ and
   \[
     \MS{SplitBody} := \LiftTapes{\MS{ConstrNil}}{\Vector{1}} \Seq \LiftBoth{\MS{ConstrO}}{f_{Var}}{\Vector{2}} \Seq \MS{SplitBodyLoop}.
@@ -417,7 +402,7 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
 \begin{table}[t]
   % \centering
   \begin{tabular}{l||l|l|l|l}
-    Input       & $\MS{MatchList}$ & $\MS{MatchCom}$ & $\MS{MatchNat}$ & $\MS{AppACom}~\MS{RET}$ \\ \hline
+    Input       & $\MS{CaseList}$ & $\MS{CaseCom}$ & $\MS{CaseNat}$ & $\MS{AppACom}~\MS{RET}$ \\ \hline
     $0:P$       & $0:P'$           &                 &                 &                         \\
     $1:Q$       &                  &                 &                 & $0: Q \app [\MS{RET}]$  \\
     $2:k$       &                  &                 & $0: k'$         &                         \\
@@ -431,7 +416,7 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
 % \begin{table}
 %   \centering
   \begin{tabular}{l||l|l|l|l}
-    Input       & $\MS{MatchList}$ & $\MS{MatchCom}$ & $\MS{ConstrVar}$ & $\MS{AppCom}$              \\ \hline
+    Input       & $\MS{CaseList}$ & $\MS{CaseCom}$ & $\MS{ConstrVar}$ & $\MS{AppCom}$              \\ \hline
     $0:P$       & $0:P'$           &                 &                  &                            \\
     $1:Q$       &                  &                 &                  & $0: Q \app [\MS{VAR}(n)]$  \\
     $2:k$       &                  &                 &                  &                            \\
@@ -560,7 +545,7 @@ $loopSteps~T~V~H~k := ~$
   |$S~k'$ =>
    match$step(T, V, H)$
    [$\Some{(T',V',H')}$ =>
-    if $halt(T',V',H')$
+    if $isHalt(T',V',H')$
     then $1 + stepSteps~T~V~H + stepSteps~T'~V'~H'$
     else $1 + stepSteps~T~V~H + loopSteps~T'~V'~H'~k'$
    |$\None$ => $stepSteps~T~V~H$
@@ -574,7 +559,7 @@ Lemma~\ref{lem:Loop_Terminates} says that if heap machine terminates, so does $\
 
 The last step of the reduction of the halting problem of the heap machine to the halting problem of multi-tape Turing machines is to define a function
 \[
-  initTapes : \left(\List(Clos) \times \List(Clos) \times Heap\right) \to \Tape_\Sigma^{11}
+  initTapes : \List(Clos) \times \List(Clos) \times Heap \to \Tape_\Sigma^{11}
 \]
 such that the first three tapes of $initTape(T,V,H)$ contain $T$, $V$, or $H$, respectively, and the rest tapes are right.
 

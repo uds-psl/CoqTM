@@ -204,7 +204,7 @@ They may have additional tapes for storing additional arguments of constructors.
 
 \subsubsection{Natural numbers}
 \label{sec:match-nat}
-\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchNat}%
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.Nat}%
 
 We consider the inductive type $\Nat$, that has two constructors: $S$ and $0$.  The constructor machine $\MS{ConstrO}$ writes the number $0$ on a
 right tape.  The constructor machine $\MS{ConstrS}$ assumes that $t[0]$ contains a number $n$, and increases that number.
@@ -237,7 +237,7 @@ The $S$ constructor overwrites the current symbol (which is the start symbol) wi
 \end{lemma}
 
 
-$\MS{MatchNat}$ is the deconstructor machine for $\Nat$.  It reads a number from tape $t[0]$.  If it is $0$, $\MS{MatchNat}$ terminates leaves the
+$\MS{CaseNat}$ is the deconstructor machine for $\Nat$.  It reads a number from tape $t[0]$.  If it is $0$, $\MS{CaseNat}$ terminates leaves the
 number unchanged and terminates in the partition $\false$.  Else, it decreases the number and terminates in~$\true$.
 
 Initially, the tape $t[0]$ contains some number $n$.  So the head of $t[0]$ must be on the start symbol.  The machine moves one step right and reads
@@ -246,11 +246,11 @@ $n$ is $0$, so the machine moves back to the start symbol and terminates in the 
 side, if the machine read $\MS{S}$, this means the number $n$ is the successor of some number $n'$.  To decrement $n$, it overwrites the current
 $\MS{S}$ with a new start symbol and terminates on this symbol in the partition $\true$.
 
-\begin{definition}[$\MS{MatchNat}$][MatchNat]
-  \label{def:MatchNat}
+\begin{definition}[$\MS{CaseNat}$][CaseNat]
+  \label{def:CaseNat}
   ~
 \begin{lstlisting}[style=semicoqstyle]
-$\MS{MatchNat} :=$
+$\MS{CaseNat} :=$
   $\MS{Move}~R$; 
   $\Switch~\MS{Read}$ 
        ($\lambda(o:\Option(\Sigma_\Nat^+)).~\MS{match}~o$
@@ -262,13 +262,13 @@ $\MS{MatchNat} :=$
 \end{definition}
 
 Note, that the placeholder $\_$ stands for some unspecified machine, e.g.\ in this case $\Return{\Nop}{b}$ where $b:\Bool$ can be chosen arbitrary.
-We do not give this part explicitly here, since the premise of the correctness relation of $\MS{MatchNat}$ guaranties that there must be a symbol
+We do not give this part explicitly here, since the premise of the correctness relation of $\MS{CaseNat}$ guaranties that there must be a symbol
 under the head that is either $\MS{S}$ or $\MS{O}$, so this part of the machine must never execute.
 
-\begin{lemma}[Correctness of $\MS{MatchNat}$][MatchNat_Sem]
-  $\MS{MatchNat} \RealiseIn{5} MatchNatRel$ with
+\begin{lemma}[Correctness of $\MS{CaseNat}$][CaseNat_Sem]
+  $\MS{CaseNat} \RealiseIn{5} CaseNatRel$ with
 \begin{lstlisting}[style=semicoqstyle]
-$MatchNatRel :=$
+$CaseNatRel :=$
   $\lambda t~(y, t').~\forall (n:\Nat).~t[0] \simeq n \rightarrow$
     $\MS{match}~y,n$
     [$\false,O$=>$t'[0] \simeq 0$
@@ -296,16 +296,16 @@ To show that $t'[i]$ contains the same value as $t[i]$, we would have to apply a
 \subsubsection{Sum Types}
 \label{sec:match-sum}
 
-Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  $\MS{MatchSum} : \TM_{\Sigma_{X+Y}^+}^1(\Bool)$ reads a value $s:X+Y$.  If it is
+Let $X$ be encodable over $\Sigma_X$ and $Y$ over $\Sigma_Y$.  $\MS{CaseSum} : \TM_{\Sigma_{X+Y}^+}^1(\Bool)$ reads a value $s:X+Y$.  If it is
 $\inl x$ (or $\inr~y$), it replaces the $\MS{INL}$ (or $\MS{INR}$) symbol with a new start symbol and terminates in $\true$ (or $\false$).
 
-\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchSum}%
-\begin{definition}[$\MS{MatchSum}$][MatchSum]
-  \label{def:MatchSum}
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.CaseSum}%
+\begin{definition}[$\MS{CaseSum}$][CaseSum]
+  \label{def:CaseSum}
   ~
   \small
 \begin{lstlisting}[style=semicoqstyle]
-$\MS{MatchSum} :=$
+$\MS{CaseSum} :=$
   $\MS{Move}~R\Seq$
   $\Switch~\MS{Read}$
        ($\lambda(o:\Option(\Sigma_{X+Y}^+)).~\MS{match}~o$
@@ -316,11 +316,11 @@ $\MS{MatchSum} :=$
 \end{lstlisting}
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{MatchSum}$][MatchSum_Sem]
-  \label{lem:MatchSum_Realise}
-  $\MS{MatchSum} \RealiseIn{5} MatchSumRel$ with
+\begin{lemma}[Correctness of $\MS{CaseSum}$][CaseSum_Sem]
+  \label{lem:CaseSum_Realise}
+  $\MS{CaseSum} \RealiseIn{5} CaseSumRel$ with
 \begin{lstlisting}[style=semicoqstyle]
-$MatchSumRel :=$
+$CaseSumRel :=$
   $\lambda t~(y, t').$ $\forall (s:X+Y).$ $t[0] \simeq s \rightarrow \MS{match}~y,s$
     [$\false$, $\inl x$=>$t'[0] \simeq x$
     |$\true$, $\inr y$=>$t'[0] \simeq y$
@@ -348,24 +348,24 @@ write a new start symbol one step further left.
 
 The types $\Option(X)$ and $X+\Unit$ are isomorphic.  Furthermore, the alphabets to encode these types on, $\Sigma_{\Option(X)}$ and $\Sigma_{X+1}$,
 are also isomorphic.  We can use this fact to derive a match machine and constructor machines for the type $\Option(X)$.  Let
-$f : \Sigma_{X+\Unit} \hookrightarrow \Sigma_{\Option(X)}$ be the canonical retraction.  Then, we can define $\MS{MatchOption}$ as
-$\LiftAlphabet{\MS{MatchSum}}{f}$.  However, in the case that $o=\None$, the output tape $t'$ contains $\unit$.  Thus, the tape has form
+$f : \Sigma_{X+\Unit} \hookrightarrow \Sigma_{\Option(X)}$ be the canonical retraction.  Then, we can define $\MS{CaseOption}$ as
+$\LiftAlphabet{\MS{CaseSum}}{f}$.  However, in the case that $o=\None$, the output tape $t'$ contains $\unit$.  Thus, the tape has form
 $t' = \MS{midtape}~ls~\MS{START}~[\MS{STOP}]$ (for some $ls$).  However, we want that the tape is right in this case.  That is, because $\Option(X)$
-is not a recursive data type and the information that $o=\None$ is already encoded in the partition in which $\MS{MatchOption}$ terminates.  So in
+is not a recursive data type and the information that $o=\None$ is already encoded in the partition in which $\MS{CaseOption}$ terminates.  So in
 this case, the tape moves one step to the right:
-\begin{definition}[$\MS{MatchOption}$][MatchOption]
-  \label{def:MatchOption}
+\begin{definition}[$\MS{CaseOption}$][CaseOption]
+  \label{def:CaseOption}
   ~
   \[
-    \MS{MatchOption} := \If{\LiftAlphabet{\MS{MatchSum}}{f}}{\Return{\Nop}{\true}}{\Return{(\MS{Move}~R)}{\false}}.
+    \MS{CaseOption} := \If{\LiftAlphabet{\MS{CaseSum}}{f}}{\Return{\Nop}{\true}}{\Return{(\MS{Move}~R)}{\false}}.
   \]
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{MatchOption}$][MatchOption_Sem]
-  \label{lem:MatchOption_Realise}
-  $\MS{MatchOption} \RealiseIn{7} MatchOptionRel$ with
+\begin{lemma}[Correctness of $\MS{CaseOption}$][CaseOption_Sem]
+  \label{lem:CaseOption_Realise}
+  $\MS{CaseOption} \RealiseIn{7} CaseOptionRel$ with
 \begin{lstlisting}[style=semicoqstyle]
-$MatchOptionRel :=$
+$CaseOptionRel :=$
   $\lambda t~(y, t').$ $\forall (o:\Option(X)).$ $t[0] \simeq o \rightarrow \MS{match}~y, o$
     [$\false$, $\None$     =>$isRight(t'[0])$
     |$\true$, $\Some x$=>$t'[0] \simeq x$
@@ -402,23 +402,23 @@ For the $\None$ constructor, we simply use $\MS{WriteValue}$
 
 
 \subsubsection{Product Types}
-\label{sec:MatchPair}
+\label{sec:CasePair}
 
 The deconstructor and constructor machines for product types have to explicitly copy parts of values.  Thus, their running time depends on the value.  We
 use the machines $\MS{MoveToSymbol}$ and $\MS{CopySymbols}$.
 
-Let $X$ and $Y$ be encodable on $\Sigma_X$ and $\Sigma_Y$.  The deconstructor $\MS{MatchPair} : \TM_{\Sigma_{X \times Y}^+}^2$ copies the first
+Let $X$ and $Y$ be encodable on $\Sigma_X$ and $\Sigma_Y$.  The deconstructor $\MS{CasePair} : \TM_{\Sigma_{X \times Y}^+}^2$ copies the first
 component of the pair $(x,y):X \times Y$ to tape~$1$, the second component remains on tape~$0$.  The machine works as follows: first it writes the
 stop symbol on tape~$1$.  Then, it seeks the last character of the encoding of $x$ on tape $0$, copies the encoding of $x$ from right to left to
 tape~$1$, including the start symbol.  At this point, tape $0$ contains $(x,y)$ and tape $1$ contains $x$.  Then it again moves tape $0$ to last
 symbol of the encoding of $x$ on tape~$0$ and overwrites it with a new start symbol.
 
-\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchPair}%
-\begin{definition}[$\MS{MatchPair}$][MatchPair]
-  \label{def:MatchPair}
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.CasePair}%
+\begin{definition}[$\MS{CasePair}$][CasePair]
+  \label{def:CasePair}
   ~
   \begin{alignat*}{2}
-    &\MS{MatchPair}&~:=~& \LiftTapes{(\MS{WriteMove}~\MS{STOP}~L)}{\Vector{1}} \Seq \\
+    &\MS{CasePair}&~:=~& \LiftTapes{(\MS{WriteMove}~\MS{STOP}~L)}{\Vector{1}} \Seq \\
     &              &    & \LiftTapes{(\MS{MoveToSymbol}~f~id \Seq \MS{Move}~L)}{\Vector{0}} \Seq \\
     &              &    & \MS{CopySymbolsL}~g\Seq \\
     &              &    & \LiftTapes{(\MS{MoveToSymbol}~f~id \Seq \MS{Move}~L \Seq \MS{Write}~\MS{START})}{\Vector{0}}
@@ -427,25 +427,25 @@ symbol of the encoding of $x$ on tape~$0$ and overwrites it with a new start sym
   $s=\MS{START}$.
 \end{definition}
 
-The correctness and termination proofs of $\MS{MatchPair}$ are quite technical.  We have lemmas about the tape-functions of $\MS{CopyValueL}$,
+The correctness and termination proofs of $\MS{CasePair}$ are quite technical.  We have lemmas about the tape-functions of $\MS{CopyValueL}$,
 $\MS{MoveToSymbol}$, and the respective running time functions.  However, it is interesting to note that we have to do a case-distinction, whether
 $\pi_2(p)$ is empty.  If it is empty, then the first $\MS{MoveToSymbol}~f~id$ moves to the stop symbol.  If it is not empty, it moves to the first
 symbol of the encoding of $\pi_2(p)$.  In both cases, $\MS{Move}~L$ moves to the last symbol of $\pi_1(p)$ (or to the start symbol, if $\pi_1(p)$ is
 empty).
 
-\begin{lemma}[Correctness of $\MS{MatchPair}$][MatchPair_Realise]
-  \label{lem:MatchPair_Realise}
-  $\MS{MatchPair} \Realise MatchPairRel$ with
+\begin{lemma}[Correctness of $\MS{CasePair}$][CasePair_Realise]
+  \label{lem:CasePair_Realise}
+  $\MS{CasePair} \Realise CasePairRel$ with
   \small
   \[
-    MatchPairRel := \lambda t~t'.~\forall (p: X \times Y).~t[0] \simeq p \rightarrow isRight~t[1] \rightarrow t'[0] \simeq \pi_2(p) \land t'[1] \simeq \pi_1(p).
+    CasePairRel := \lambda t~t'.~\forall (p: X \times Y).~t[0] \simeq p \rightarrow isRight~t[1] \rightarrow t'[0] \simeq \pi_2(p) \land t'[1] \simeq \pi_1(p).
   \]
 \end{lemma}
-\begin{lemma}[Runtime of $\MS{MatchPair}$][MatchPair_Terminates]
-  \label{lem:MatchPair_TerminatesIn}
-  $\MS{MatchPair} \TerminatesIn MatchPairT$ with
+\begin{lemma}[Runtime of $\MS{CasePair}$][CasePair_Terminates]
+  \label{lem:CasePair_TerminatesIn}
+  $\MS{CasePair} \TerminatesIn CasePairT$ with
   \[
-    MatchPairT := \lambda t~k.~\exists (p: X \times Y).~t[0] \simeq p \land 34 + 16 \cdot \size{\pi_1(p)} \leq k.
+    CasePairT := \lambda t~k.~\exists (p: X \times Y).~t[0] \simeq p \land 34 + 16 \cdot \size{\pi_1(p)} \leq k.
   \]
 \end{lemma}
 
@@ -458,7 +458,7 @@ that, it overwrites the start symbol on tape $1$ with the last symbol of the enc
   \[
     \MS{ConstrPair} := \LiftTapes{(\MS{MoveToSymbol})}{\Vector{0}}~h~id \Seq \MS{CopySymbolsL}~g
   \]
-  Where $g$ is the same function as in Definition~\ref{def:MatchPair}.  $h(s)$ is $\true$ if and only if $s=\MS{STOP}$.
+  Where $g$ is the same function as in Definition~\ref{def:CasePair}.  $h(s)$ is $\true$ if and only if $s=\MS{STOP}$.
 \end{definition}
 
 \begin{lemma}[Correctness of $\MS{ConstrPair}$][Constr_pair_Realise]
@@ -478,18 +478,18 @@ that, it overwrites the start symbol on tape $1$ with the last symbol of the enc
 \end{lemma}
 
 \subsubsection{List Types}
-\label{sec:MatchList}
-\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchList}%
+\label{sec:CaseList}
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.CaseList}%
 
-The definition of $\MS{MatchList}$ is quite complex.  For brevity we only state the correctness statements of the match-machine here.  The machine
-$\MS{MatchList} : \TM_{\Sigma_{\List(X)}^+}^2(\Bool)$ expects a list on tape $0$.  If it is $\nil$, it terminates in the partition $\false$ and leaves
+The definition of $\MS{CaseList}$ is quite complex.  For brevity we only state the correctness statements of the match-machine here.  The machine
+$\MS{CaseList} : \TM_{\Sigma_{\List(X)}^+}^2(\Bool)$ expects a list on tape $0$.  If it is $\nil$, it terminates in the partition $\false$ and leaves
 the tapes unchanged.  If the list is $x \cons xs$, it copies moves $x$ to tape $1$ and terminates in the partition $\true$.
 
-\begin{lemma}[Correctness of $\MS{MatchList}$][MatchList_Realise]
-  \label{lem:MatchList_Realise}
-  $\MS{MatchList} \Realise MatchListRel$ with
+\begin{lemma}[Correctness of $\MS{CaseList}$][CaseList_Realise]
+  \label{lem:CaseList_Realise}
+  $\MS{CaseList} \Realise CaseListRel$ with
 \begin{lstlisting}[style=semicoqstyle]
-$MatchListRel :=$
+$CaseListRel :=$
   $\lambda t~(y, t').~\forall (l:\List(X)).~t[0] \simeq l \rightarrow isRight~t[1] \rightarrow \MS{match}~y, l$
     [$\false, \nil$ => $t'[0] \simeq \nil \land isRight~t'[1]$
     |$\true, x \cons xs$ => $t'[0] \simeq xs \land t'[1] \simeq x$
@@ -541,22 +541,22 @@ All finite types $\Sigma$ can be encoded on themself, i.e.\ $encode(x)=[x]$ for 
 from the starting symbol to the symbol and reads it.  After that, it moves the head one further so that the tape is right and terminates in the
 partition corresponding to the read symbol.
 
-\setCoqFilename{ProgrammingTuringMachines.TM.Code.MatchFin}%
-\begin{definition}[$\MS{MatchFin}$][MatchFin]
-  \label{def:MatchFin}
+\setCoqFilename{ProgrammingTuringMachines.TM.Code.CaseFin}%
+\begin{definition}[$\MS{CaseFin}$][CaseFin]
+  \label{def:CaseFin}
   Let $def:\Sigma$.
   \small
 \begin{lstlisting}[style=semicoqstyle]
-$\MS{MatchFin} :=$
+$\MS{CaseFin} :=$
   $\MS{Move}~R \Seq \Switch~\MS{Read}$($\lambda s.~\MS{match}~s$[$\Some{x} \Rightarrow \Return{(\MS{Move}~R)}{x}$|_$\Rightarrow\Return{\Nop}{def}$])
 \end{lstlisting}
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{MatchFin}$][MatchFin_Sem]
-  \label{lem:MatchFin_Sem}
-  $\MS{MatchFin} \RealiseIn{5} MatchFinRel$ with
+\begin{lemma}[Correctness of $\MS{CaseFin}$][CaseFin_Sem]
+  \label{lem:CaseFin_Sem}
+  $\MS{CaseFin} \RealiseIn{5} CaseFinRel$ with
   \[
-    MatchFinRel := \lambda t~(y,t').~\forall(x:\Sigma).~t[0] \simeq x \rightarrow isRight~t'[0] ~\land~ y=x.
+    CaseFinRel := \lambda t~(y,t').~\forall(x:\Sigma).~t[0] \simeq x \rightarrow isRight~t'[0] ~\land~ y=x.
   \]
 \end{lemma}
 
@@ -731,10 +731,10 @@ kind of tapes have an invariant, which is encoded in the correctness relation of
 on the tape is not changed by the computation.  Output tapes are initially right, and contain a value after the execution.  Internal tapes are right
 before and after the execution.
 
-The deconstructor machines do case-distinctions over the value on a tape, and may thereby alter the value on the tape.  Each match is reversible using
-the corresponding constructor machine.  However, if we use deconstructors inside a loop, we can not restore the value that the tape contained before
-the loop.  We have to copy the value to an internal tape, use the copy for the computation, and leave the ``original'' value unchanged.  After the
-loop, the internal tape for the copy is reseted.
+The deconstructor machines do case-distinctions over the value on a tape, and may thereby alter the value on the tape.  Each deconstruction is
+reversible using the corresponding constructor machine.  However, if we use deconstructors inside a loop, we can not restore the value that the tape
+contained before the loop.  We have to copy the value to an internal tape, use the copy for the computation, and leave the ``original'' value
+unchanged.  After the loop, the internal tape for the copy is reseted.
 
 
 With this distinction of input, output, and internal tapes, we can formalise a convention for functional computation of binary functions: The tapes
@@ -843,12 +843,12 @@ Because the machine only operates on natural numbers, we choose $\Sigma_\Nat^+$ 
 
 The next step is to implement the step machine.  $\MS{AddStep}$ has only access to the variables $a$ and $b$, that are stored on tape $0$ and $1$, as
 also visualised in Table~\ref{tab:tapes-Add}.  The decrement operation and test whether $b$ was $0$ is implemented using the deconstructor machine
-$\MS{MatchNat}$.  In the case that $b$ is $0$, the step machine terminates in $\Some\unit$, so that the loop brakes.  In case $b$ is greater then $0$,
-$\MS{MatchNat}$ decreases $b$ and the step machine increases $a$.  Then it terminates in $\None$, so that the loop continues.
+$\MS{CaseNat}$.  In the case that $b$ is $0$, the step machine terminates in $\Some\unit$, so that the loop brakes.  In case $b$ is greater then $0$,
+$\MS{CaseNat}$ decreases $b$ and the step machine increases $a$.  Then it terminates in $\None$, so that the loop continues.
 \begin{definition}[$\MS{AddStep}$][Add_Step]
   \label{def:Add_Step}
   \[
-    \MS{AddStep} := \If{\LiftTapes{\MS{MatchNat}}{\Vector{1}}}{\Return{(\LiftTapes{\MS{ConstrS}}{\Vector{0}})}{\None}}{\Return{\Nop}{\Some\unit}}.
+    \MS{AddStep} := \If{\LiftTapes{\MS{CaseNat}}{\Vector{1}}}{\Return{(\LiftTapes{\MS{ConstrS}}{\Vector{0}})}{\None}}{\Return{\Nop}{\Some\unit}}.
   \]
 \end{definition}
 
@@ -1000,7 +1000,7 @@ addition to an intermediate variable (i.e.\ internal tape), which has to be rese
 \begin{table}[t]
   \centering
   \begin{tabular}{l||l|l|l|l|l}
-    Input       & $\MS{MatchNat}$ & $\MS{Add}$  & $\MS{Reset}$ & $\MS{CopyValue}$ & $\MS{Reset}$   \\ \hline
+    Input       & $\MS{CaseNat}$ & $\MS{Add}$  & $\MS{Reset}$ & $\MS{CopyValue}$ & $\MS{Reset}$   \\ \hline
     $0: m$      & $0 : m'$        &             &              &                  &                \\
     $1: n$      &                 & $0: n$      &              &                  &                \\
     $2: c$      &                 & $1: c$      & $0:~\dashv$  & $1: n+c$         &                \\
@@ -1017,7 +1017,7 @@ mapped to tape $0$ of $\MS{MultStep}$.  In the following, we use also use the na
   \label{def:Mult_Step}
   \begin{alignat*}{2}
     &\MS{MultStep} &~:=~&
-           \MS{If}~\LiftTapes{\MS{MatchNat}}{\Vector{0}} \\
+           \MS{If}~\LiftTapes{\MS{CaseNat}}{\Vector{0}} \\
     &&& \MS{Then}  ~\Return{\left( \LiftTapes{\MS{Add}}{\Vector{1;2;3;4}} \Seq
                                 \LiftTapes{\MS{Reset}}{\Vector{2}} \Seq
                                 \LiftTapes{\MS{CopyValue}}{\Vector{3;2}} \Seq
@@ -1111,7 +1111,7 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
   ~
   \begin{align*}
     & \MS{MapSum}~:= \\
-    &\quad \MS{If}~{\LiftBoth{\MS{MatchSum}}{f_{X+Y}}{\Vector{0}}} \\
+    &\quad \MS{If}~{\LiftBoth{\MS{CaseSum}}{f_{X+Y}}{\Vector{0}}} \\
     &\quad \MS{Then}~ \LiftTapes{(\MS{Translate}~(f_{X+Y} \circ RetrInl)~(f_M \circ f_X))}{\Vector{0}} \Seq \\
     &\quad \phantom{\MS{Then}}~ \LiftAlphabet{M_1}{f_M} \Seq \\
     &\quad \phantom{\MS{Then}}~ \LiftTapes{(\MS{Translate}~(f_M \circ f_X)~(f_{X+Y} \circ RetrInl))}{\Vector{0}} \Seq \\
@@ -1168,11 +1168,11 @@ temporary stored on the output tape) and continues the loop.
   ~
   \begin{align*}
     & \MS{MapSum}~:= \\
-    &\quad \MS{If}~\LiftBoth{\MS{MatchNat}}{f_\Nat}{\Vector{1}} \\
-    &\quad \MS{Then}~ \MS{If}~\LiftBoth{\MS{MatchList}}{f_{\List(X)}}{\Vector{0;2}} \\
+    &\quad \MS{If}~\LiftBoth{\MS{CaseNat}}{f_\Nat}{\Vector{1}} \\
+    &\quad \MS{Then}~ \MS{If}~\LiftBoth{\MS{CaseList}}{f_{\List(X)}}{\Vector{0;2}} \\
     &\quad \phantom{\MS{Then}}~\MS{Then}~   \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\None} \\
     &\quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{(\LiftBoth{\MS{ConstrNone}}{f_{\Option(X)}}{\Vector{2}})}{\Some\unit} \\
-    &\quad \MS{Else}~~~ \MS{If}~\LiftBoth{\MS{MatchList}}{f_{\List(X)}}{\Vector{0;2}} \\
+    &\quad \MS{Else}~~~ \MS{If}~\LiftBoth{\MS{CaseList}}{f_{\List(X)}}{\Vector{0;2}} \\
     &\quad \phantom{\MS{Then}}~\MS{Then}~   \Return{(\LiftTapes{(\MS{Translate}~(f_{\List(X)} \circ RetrList)~(f_{\Option(X)} \circ RetrOpt) \Seq \\
     &\quad \phantom{\phantom{\MS{Then}}~\MS{Then}~\MS{Return}}\quad\quad~~ \LiftAlphabet{\MS{ContrSome}}{f_{\Option(X)}})}{\Vector{2}})}{\Some\unit} \\
     &\quad \phantom{\MS{Then}}~\MS{Else}~~~ \Return{(\LiftBoth{\MS{ConstrNone}}{f_{\Option(X)}}{\Vector{2}})}{\Some\unit}

@@ -150,21 +150,6 @@ We first define the machine for the step.  Since we want to apply the $\While$ o
 $\Option(\Unit)$.  $\Some\unit$ means to break out of the loop and $\None$ means to repetition the loop.
 \begin{definition}[$\MS{CopySymbolsStep}$][CopySymbols_Step]
   \label{CopySymbols_Step}
-  % \begin{multline*}
-  %   \MS{CopySymbolsStep}~h :=
-  %   \Match(\LiftTapes{Read}{\Vector{0}}) \\
-  %   \Biggl(
-  %   \lambda s.
-  %   \begin{cases}
-  %     \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}}\bigr)}{\Some\unit} & s=\Some{x} ~\land~ h(x)=\true \\
-  %     \Return{\bigl(\LiftTapes{(\MS{Write}~x)}{\Vector{1}} \Seq \MS{MovePar}~R~R\bigr)}{\None} & s=\Some{x} ~\land~ h(x)=\false \\
-  %     \Return{\Nop}{\Some\unit} & s=\None
-  %   \end{cases}
-  %   \Biggr)
-  % \end{multline*}
-  % \centerline{\emph{versus}}
-  % \small
-  % \todo{Decide!}
 \begin{lstlisting}[style=semicoqstyle]
 $\MS{CopySymbolsStep}~h :=$
   Switch($\LiftTapes{\MS{Read}}{\Vector{0}}$)

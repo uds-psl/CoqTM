@@ -212,7 +212,7 @@ subgoal 3 is:
 After focusing the first subgoal, we unfold the definition of \lstinline!Add_Step!:
 \begin{lstlisting}
 ============================
-If (LiftTapes MatchNat [|Fin1|])
+If (LiftTapes CaseNat [|Fin1|])
    (Return (LiftTapes Constr_S [|Fin0|]) None)
    (Return Nop (Some tt)) $\Realise$(?k') ?R'
 \end{lstlisting}
@@ -220,17 +220,17 @@ If (LiftTapes MatchNat [|Fin1|])
 The tactic \lstinline!repeat TM_Correct! automatically applies the correctness lemmas of the conditional, tape-lifting, etc.  It instantiates
 \lstinline!?R'! to the following relation:
 \begin{lstlisting}
-?R' := (LiftTapes_Rel [|Fin1|] MatchNat_Rel|_true $\circ$
+?R' := (LiftTapes_Rel [|Fin1|] CaseNat_Rel|_true $\circ$
         ($\bigcup_{f:\Unit}$ LiftTapes_Rel [|Fin0|] S_Rel|_f)||_None)
        $\cup$
-       (LiftTapes_Rel [|Fin1|] MatchNat_Rel|_false $\circ$
+       (LiftTapes_Rel [|Fin1|] CaseNat_Rel|_false $\circ$
         ($\bigcup_{f:\Unit}$ Nop_Rel|_f)||_(Some tt))
 \end{lstlisting}
 It also instantiates
 \begin{lstlisting}
-?k' := 1 + MatchNat_steps + Nat.max Constr_S_steps 0
+?k' := 1 + CaseNat_steps + Nat.max Constr_S_steps 0
 \end{lstlisting}
-where \lstinline!MatchNat_steps! is the constant number of steps required for $\MS{MatchNat}$ (i.e.\ $5$) and \lstinline!Constr_S_steps! is $3$.  By
+where \lstinline!CaseNat_steps! is the constant number of steps required for $\MS{CaseNat}$ (i.e.\ $5$) and \lstinline!Constr_S_steps! is $3$.  By
 simplification, the second goal reduces to \lstinline!9<=9!, which is solved by reflexivity of $\leq$.
 
 The main part of the proof is the third goal.  We prove it with the following proof script:
