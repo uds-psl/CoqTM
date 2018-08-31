@@ -38,6 +38,32 @@ Arguments Nop {sig n}.
 Arguments Nop : simpl never.
 
 
+(** ** Diverge *)
+
+Section Diverge.
+  Variable sig : finType.
+  Variable n : nat.
+
+  Definition Diverge : pTM sig unit n := While (Return Nop None).
+
+  Definition Diverge_Rel : pRel sig unit n :=
+    ignoreParam (fun t t' => False).
+
+  Lemma Diverge_Realise : Diverge ⊨ Diverge_Rel.
+  Proof.
+    eapply Realise_monotone.
+    { unfold Diverge. TM_Correct. eapply RealiseIn_Realise. apply Nop_Sem. }
+    { eapply WhileInduction; intros; cbn in *; TMSimp; auto. }
+  Qed.
+
+End Diverge.
+
+Arguments Diverge_Rel {sig n} x y/.
+Arguments Diverge {sig n}.
+Arguments Diverge : simpl never.
+
+
+
 (** ** Move two tapes *)
 
 Section MovePar.
@@ -160,6 +186,8 @@ Ltac smpl_TM_Multi :=
   | [ |- Nop ⊨ _ ] => eapply RealiseIn_Realise; apply Nop_Sem
   | [ |- Nop ⊨c(_) _ ] => eapply Nop_Sem
   | [ |- projT1 (Nop) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Nop_Sem
+
+  | [ |- Diverge ⊨ _ ] => apply Diverge_Realise
 
   | [ |- MovePar _ _ ⊨ _ ] => eapply RealiseIn_Realise; eapply MovePar_Sem
   | [ |- MovePar _ _ ⊨c(_) _ ] => eapply MovePar_Sem
