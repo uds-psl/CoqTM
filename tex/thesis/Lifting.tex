@@ -13,23 +13,23 @@ the second.
 
 There are multiple ways to solve this problem.  Maybe the most obvious solution is to define a class of $n$-tape machines $M_i : \TM_\Sigma^n$
 parametrised over the number of tapes and the tape-index $i$ of the tape to move.  The machine $M_i$ moves the $i$th tape to the right.  All other
-tapes are ``inactive'' and remain unchanged.  This approach of parametrising machines over the tape-indexes of ``active'' tapes, however, becomes
+tapes are ``inactive'' and remain unchanged.  This approach of parametrising machines over the tape-indices of ``active'' tapes, however, becomes
 unhandy for machines with a lot of active tapes.
 
 We choose another approach.  We lift the one-tape machine $M_{aux}$ to $n$ different $n$-tape machines, for every $n\ge1$.  Asperti and
 Ricciotti~\cite{asperti2015} implement such an operator that translates a one-tape machine into $n$-tape machines.  It is in general easier to define
-machines with a fixed number of tapes.  We implement a generalised operator that takes an $m$-tape machine and a mapping from $m$-indexes to
-$n$-indexes, and yields an $n$-tape machine, for~$m \le n$.
+machines with a fixed number of tapes.  We implement a generalised operator that takes an $m$-tape machine and a mapping from $\Fin_m$ to $\Fin_n$ and
+yields an $n$-tape machine, for~$m \le n$.
 
-The second part of this problem is, how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that sums
+The second part of this problem is how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that sums
 (encodings of) natural numbers, we could want to build a machine $\MS{Sum}$ that sums numbers in a list of numbers.  Consider an alphabet
 $\Sigma_\Nat$ where we could encode natural numbers on, and an alphabet $\Sigma_{\List(\Nat)}$ to encode lists of natural numbers.  If the alphabet
 $\Sigma_\Nat$ is included in $\Sigma_{\List(\Nat)}$, we would like to lift $\MS{Add}$ to the alphabet $\Sigma_{\List(\Nat)}$, to define $\MS{Sum}$.
 
-Asperti and Ricciotti~\cite{asperti2015} avoid the latter problem: agreement of alphabets.  They consider a fixed alphabet to encode all needed data
-on, to implement a universal Turing machine.  However, this approach does not scale when we need to encode many different data types.  Whenever the
-alphabet has to be changed, they also must change the definitions of all auxiliary machines.  That is why we introduce another operator that lifts a
-machine to a bigger alphabet.
+Asperti and Ricciotti~\cite{asperti2015} avoid the problem of agreement of alphabets.  They consider a fixed alphabet to encode all needed data on and
+implement a universal Turing machine.  However, this approach does not scale when we need to encode many different data types.  Whenever the alphabet
+has to be changed, they also must change the definitions of all auxiliary machines.  That is why we introduce another operator that lifts a machine to
+a bigger alphabet.
 
 Both lifting operators are easy to define and verify using the lemmas of the previous chapter (see Section~\ref{sec:match-proofs}).
 
@@ -38,8 +38,8 @@ Both lifting operators are easy to define and verify using the lemmas of the pre
 \label{sec:n-Lift}
 \setCoqFilename{ProgrammingTuringMachines.TM.Lifting.LiftTapes}%
 
-The tape-lift takes a machine $M:\TM_\Sigma^m(L)$ and a duplicate-free vector $I: \Fin_n^m$, and yields a machine
-$\LiftTapes{M}{I} : \TM_\Sigma^n(L)$.\footnote{ Note that instead of duplicate free index vectors $I:\Fin_n^m$, we could also use injective functions
+The tape-lift takes a machine $M:\TM_\Sigma^m(L)$ and a duplicate-free vector $I: \Fin_n^m$ and yields a machine
+$\LiftTapes{M}{I} : \TM_\Sigma^n(L)$.\footnote{ Note that instead of duplicate free index vectors $I:\Fin_n^m$ we could also use injective functions
   $f: \Fin_m \to \Fin_n$.  We choose index-vectors, because they are easier to define in Coq.}  The tape of $\LiftTapes{M}{I}$ with the index
 $i = I[j]$ (with $i:\Fin_n$, $j:\Fin_m$) behaves exactly as the tape $j$ of $M$.  All other tapes of $\LiftTapes{M}{I}$ that are not in~$I$ are
 inactive and do not change.
@@ -51,8 +51,8 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 
 \begin{definition}[Vector selecting][select]
   \label{def:select}
-  Let $X:\Type$, $m,n:\Nat$, $I : \Fin_n^m$, and $V : X^m$.  $select~I~V : X^n$ with
-  \[ select~I~V := \map{\bigl(\lambda (j:\Fin_m).~V[j] \bigr)}{I} \]
+  Let $X:\Type$, $m,n:\Nat$, $I : \Fin_n^m$, and $V : X^m$.  Then $select~I~V : X^n$ is defined by
+  $select~I~V := \map{\bigl(\lambda (j:\Fin_m).~V[j] \bigr)}{I}$
 \end{definition}
 \begin{lemma}[Correctness of $select$][select_nth]
   By definition, for $j:\Fin_m$, we have
@@ -62,7 +62,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 \end{lemma}
 
 \begin{definition}[Vector filling][fill]
-  Let $X:\Type$, $m,n:\Nat$,$I:\Fin_n^m$, $init:X^n$, and $V:X^m$:
+  Let $X:\Type$, $m,n:\Nat$,$I:\Fin_n^m$, $init:X^n$, and $V:X^m$.  Then $fill~I~init~V : X^n$ is defined per recursion:
   \begin{alignat*}{3}
     & fill~(\nil      )&& ~init~V &~:=~& init \\
     & fill~(i \cons I')&& ~init~V &~:=~& replace~(fill~I'~(\tl V))~i~(\hd V)

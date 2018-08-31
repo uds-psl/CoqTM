@@ -1,14 +1,19 @@
 \chapter{Simple Machines}
 \label{chap:compound}
 
-In this chapter, we build and verify simple machines, using the primitive machines from Chapter~\ref{chap:basic}, the combinators developed in
+In this chapter, we build and verify simple machines using the primitive machines from Chapter~\ref{chap:basic}, the combinators developed in
 Chapter~\ref{chap:combining}, and the tapes-lift of Chapter~\ref{chap:lifting}.  The machines in this chapter will be useful in the next chapter.
 However, we do not use the alphabet-lift yet.  We show how we prove correctness and termination of machines in general.
 
 When we prove $M \Realise R$ for a machine $M$ and its correctness relation $R$, the general approach is to first find a relation $R'$ that $M$
-realises.  To find the relation $R'$, we apply the correctness lemmas of the combinators, lifts, and concrete machines.  Then, we apply
-Lemma~\ref{lem:Realise_monotone}, and have to show $R' \subseteq R$.  Finding the relation $R'$ is mechanical, and indeed, we automate this step in
-Coq, see more in the appendix.  So the main part of the proof is showing $R' \subseteq R$.
+realises.  We derive the relation $R'$ by applying the correctness lemmas of the combinators, lifts, and concrete machines.  Using the monotonicity
+Lemma~\ref{lem:Realise_monotone}, it remains to show $R' \subseteq R$.  Deriving the relation $R'$ is mechanical and does in general not depend on
+arbitrary choices (with a few exceptions).  So the main part of the proof is showing $R' \subseteq R$.  The derived relation respects the
+``structure'' of the machine.  The ``canonical relation'' of Section~\ref{sec:canonical} is for that reason not suited for the choice of $R'$.  For
+example the relation of a sequential composition is the relational composition of two relations.  Note that we do not have to reason about machine
+states at all, since the correctness relations are only relations between tapes and labels.  Also note that because the relation $R'$ respects the
+structure of $M$, the actual proofs of $R' \subseteq R$ also follows its structure.  As another example, the relation for a conditional is
+$(R_1 \at \true \circ R_2) \cup (R_1 \at \false \circ R_3)$.  From that it follows that we do a case-distinction for both branches in the proof.
 
 When $M$ always terminates in constant time $k$, we show $M \RealiseIn{k} R$ instead.  Using the monotonicity Lemma~\ref{lem:RealiseIn_monotone}, we
 can prove correctness and constant time at once.  For non-constant running time, we show $M \TerminatesIn T$ for a running time relation~$T$.  For
@@ -238,7 +243,7 @@ $\While$ requires one additional step for each repeat of the loop.
     $$ 7 \leq CopySymbolSteps(t[0]) = 8 \leq k. $$
   \item We have $CopySymbolsStepRel~t~(\None, t')$.  Therefore, we have $\MS{current}(t[0])=\Some{x}$ with $h(x)=\false$, and $t'[0]=\MS{mv}~R~t[0]$.
     Then, we have
-    $$ 1+7+CopySymbolSteps(t'[0]) = CopySymbolSteps(t[0]) \leq k.$$
+    $$1+7+CopySymbolSteps(t'[0]) = CopySymbolSteps(t[0]) \leq k$$
     \qed
   \end{enumerate}
 \end{proof}
@@ -252,6 +257,8 @@ the correctness relations and their respective functions.  We do not repeat the 
 
 \section{$\MS{MoveToSymbol}$}
 \label{sec:MoveToSymbol}
+
+\enlargethispage{0.5cm}
 
 We can define a machine $\MS{MoveToSymbol}~h~f : \TM_\Sigma^1$, where $h:\Sigma\to\Bool$ and $f:\Sigma\to\Sigma$.  This machine behaves similar as
 $\MS{CopySymbols}~h$.  Instead of copying the symbols from one tape to another tape, it ``translates'' the symbols it read, until it reads a symbol

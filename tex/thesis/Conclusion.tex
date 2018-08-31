@@ -6,7 +6,7 @@ We have formalised multi-tape Turing machines in Coq.  We developed a framework 
 multi-tape Turing machines.  We have demonstrated the power of this framework by implementing a multi-tape Turing machine that simulates a two-stack
 machine for a variant of the $\lambda$-calculus.  This abstract machine is a variation from the heap machine in Kunze
 et~al.~\cite{KunzeEtAl:2018:Formal}.  The two variants of the heap machine differ in that the programs in our version are linearised lists of
-commands.  In~\cite{KunzeEtAl:2018:Formal}, the authors show that heap machine can simulate terms of the programming language $L$, which is a subset
+commands.  In~\cite{KunzeEtAl:2018:Formal}, the authors show that heap machines can simulate terms of the programming language $L$, which is a subset
 of the call-by-value $\lambda$-calculus.  It should be easy to formalise the reduction from the heap machine in~\cite{KunzeEtAl:2018:Formal} to our
 version of the heap machine.  By that, we would formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing
 machines.  This is, however, outside the scope of this thesis.  It is an ongoing research project~\cite{ForsterLOLA2018}, to implement a Coq library
@@ -30,14 +30,14 @@ machines is reasonably easy, but we (5) have introduced another layer of abstrac
 encodable types.  The on-paper design and implementation in Coq of the heap machine simulator was straight-forward.
 
 
-% Norrish`s comment about the "daunting suspect".
-In~\cite{NorrishComputabilityTheory}, Norrish concludes that:
+% Norrish`s comment about the "daunting prospect".
+In~\cite{norrish2011mechanised}, Norrish concludes that:
 \begin{quote}
   If register machines are unappealing because of their general fiddliness, Turing machines are an even more daunting prospect.
 \end{quote}
-We disagree.  The restriction on register machines that the registers can only contain numbers is unsatisfying for us.  We showed that multi-tape
-Turing machines can be programmed with less effort than usually suspected, because we introduced the abstraction that Turing machines directly
-manipulate values of \textit{arbitrary} encodable types.  This was the main innovation to implement a simulator for $L$.
+Certainly, Turing machines are not appealing.  We have spent considerable efforts (ca.\ one year) to make programming and verifying Turing machines
+feasible.  Interestingly, we ended up at a point, where programming and verifying Turing machines can be (in some sense) \textit{easier} than for
+register machines, because register machines are restricted to natural numbers.
 
 
 \paragraph{Duality correctness and time complexity}
@@ -47,7 +47,7 @@ $T$ if all pairs of input tapes $t$ and step numbers $k$, the machine terminates
 (cf.~Lemma~\ref{lem:Realise_monotone}) and termination is anti-monotone (cf.~Lemma~\ref{lem:TerminatesIn_monotone}).  We find it remarkable that we
 use an inductive correctness relation for $\MS{While}$ (cf.~Lemma~\ref{lem:While_Realise}) and a co-inductive termination relation
 (cf.~Lemma~\ref{lem:While_TerminatesIn}).  We use induction to show correctness and co-induction for termination of instances of $\While$.
-Co-induction can be avoided.  In fact, we introduced the co-inductive termination relation of $\While$ only for streamlining.
+
 
 \paragraph{Similarity of realisation and weak Hoare triples}
 As already noted in~\cite{ciaffaglione2016}, the notion of realisation is similar to the classic Hoare logic widely used in program verification.  For
@@ -74,7 +74,8 @@ Asperti and Ricciotti\cite{asperti2015} propose the formalisation of Turing mach
 formalisation and usability of finite sets could be a benchmark for itself.  However, the task ``formalise Turing machines in proof assistant $X$'' is
 rather broad.  There are many different mathematical formalisations of Turing machines, and some might be easier to implement in one or the other
 proof assistant.  For example, Isabelle does not support dependent types, so this concrete formalisation of Turing machines in this thesis would not
-be possible in Isabelle.
+be possible in Isabelle.  Dependent types are quite central in our formalisation of Turing machines.  For example, defining the $\Switch$ without them
+would probably be considerable harder.
 
 
 
@@ -92,12 +93,12 @@ $\MS{ConstrS}$ allocates one new symbol.
 
 Further future work could be to show that the running time function of the simulator is polynomial w.r.t.\ the number of steps and the length of the
 encoding of the initial heap machine state, see~\cite{ForsterLOLA2017}.  We could also formalise the reduction from multi-tape Turing machines to
-single-tape Turing machines, and from single-tape Turing machines with arbitrary alphabet to single-tape Turing machines with a binary alphabet.  The
-opposite reduction from multi-tape Turing machines to $L$, i.e.\ programming an $L$ expression that simulates multi-tape Turing machines, is also open
-for future work.
-
-The framework can be used to program other simulator machines, for example, for the ``naive'' substitution-based machine
-in~\cite{KunzeEtAl:2018:Formal}.
+single-tape Turing machines, and from single-tape Turing machines with arbitrary finite alphabet to single-tape Turing machines with a binary
+alphabet.  The framework can be used to program other simulator machines, for example, for the ``naive'' substitution-based machine
+in~\cite{KunzeEtAl:2018:Formal}.  We could implement a universal Turing machines as in~\cite{asperti2015}, and formalise results of computationally
+and complexity theory, for example the undecidability of the halting problem and Rice`s theorem.  The opposite reduction from multi-tape Turing
+machines to $L$, i.e.\ programming an $L$ expression that simulates multi-tape Turing machines, is also open for future work.  This should be a ``less
+daunting prospect'', because there is a framework for verified extraction of Coq terms to expressions of $L$, see~\cite{LExtractITP}.
 
 
 %%% Local Variables:

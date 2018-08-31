@@ -2,7 +2,7 @@
 \label{chap:combining}
 
 Recall that Turing machines are unstructured -- the execution of a machine could continue from one state to any other state of the machine.  There is
-also no trivial way how to sequentially compose two machines.  We fix these problem and introduce \textit{control flow} operators, like ``if then
+also no trivial way how to sequentially compose two machines.  We fix these problems and introduce \textit{control flow} operators, like ``if then
 else'', ``sequential composition'', and ``while''.  Thus we do not need to define transition functions $\delta$ or even states $Q$ for complex
 machines, because we only combine machines using these operators.  The transition function of the sequential composition of $M_1$ and $M_2$ is derived
 from the transition functions of $M_1$ and $M_2$.  But maybe more importantly, this also makes correctness of machines compositional: From the
@@ -10,12 +10,12 @@ correctness of $M_1$ and $M_2$, we can conclude the correctness of the sequentia
 machine states can be \textit{huge} for complex machines, so it is important to not refer to any concrete machine state, either in the definition or
 in the verification of a machine.\footnote{Using this framework, we define and verify a machine with 11537 states.}
 
-We define control flow operators as \textit{first-class citizen} in Coq's type theory.  As a result, we get we get a \textit{shallow-embedded}
-language for programming multi-tape Turing machines in an imperative way.  The primitive machines defined in Chapter~\ref{chap:basic} serve as the
-``primitive instructions'' of our language.  Another possible approach, called \textit{deep embedding}, is to define a fixed syntax of a language as
-an inductive data type.  We would need a compiler from syntax trees of Turing machine programs to actual Turing machines.  This compiler would have to
-be extended, whenever we add a new feature to our language.  In our approach, we can just ``extend'' our language by defining a function, and we use
-the same verification technique (i.e.\ realisation and termination) on each stage of the development.
+We define control flow operators as \textit{first-class citizen} in Coq's type theory.  As a result, we get a \textit{shallow-embedded} language for
+programming multi-tape Turing machines in an imperative way.  The primitive machines defined in Chapter~\ref{chap:basic} serve as the ``primitive
+instructions'' of our language.  Another possible approach, called \textit{deep embedding}, is to define a fixed syntax of a language as an inductive
+data type.  We would need a compiler from syntax trees of Turing machine programs to actual Turing machines.  This compiler would have to be extended,
+whenever we add a new feature to our language.  In our approach, we can just ``extend'' our language by defining a function, and we use the same
+verification technique (i.e.\ realisation and termination) on each stage of the development.
 
 
 \section{$\Switch$}

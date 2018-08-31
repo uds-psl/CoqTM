@@ -2,28 +2,30 @@
 \label{chap:intro}
 
 
-There are multiple reasons why reasoning about Turing machines is considered tedious.  First, their semantics is unstructured: from each state of the
-machine, the execution can continue in each other state, similar to the infamous \textit{goto} statement~\cite{dijkstra2002go}.  But even worse,
-Turing machines are not compositional.  Sequential composition or loops of Turing machines are not directly available.  Even the formal specification
-of machines is a burden, because complex machines may have a huge number of internal states.  Last but not least, they are low-level, because each
-step of the machine is primitive: read a symbol from the tape, write a symbol to the tape, or move the head in a direction.
+Although Turing machines are a simple (but not quite simplistic) model of computation, there are not many \textit{rigorous} proofs about Turing
+machines in the literature.  We think that the following points are reasons for that.  First, their semantics is \textit{unstructured}: from every
+state of the machine, the execution can continue in each other state, similar to the infamous \textit{goto} statement~\cite{dijkstra2002go}.  But even
+worse, Turing machines are not \textit{compositional}.  Sequential composition or loops of Turing machines are not \textit{per~se} available.  Even
+the formal specification of machines is a burden, because complex machines may have a huge number of internal states.  Last but not least, they are
+\textit{low-level}, because steps are primitive: read a symbol from the tape, write a symbol to the tape, or move the head in a direction.
 
-For the above reasons, textbooks like Boolos et~al.~\cite{boolos2007computability} leave out formal proofs of correctness.  They also often only give
-an informal description of machines, which obviously makes formal reasoning impossible.  Even if they define the whole machine, they leave out formal
-specification of invariants to figure out for the reader.  To establish that a function is Turing computable, authors often give an informal
+For the above reasons, textbooks like Boolos et~al.~\cite{boolos2007computability} leave out detailed proofs of correctness.  They also often only
+give an informal description of machines, which obviously makes formal reasoning impossible.  Even if they define the whole machine, they leave out
+formal specification of invariants to figure out for the reader.  To establish that a function is Turing computable, authors often give an informal
 description of the algorithm and conclude, using the \textit{Church-Turing thesis}, that the function is Turing-computable. Or they switch to another
-abstract machine model, but define the transition function between the models of computation only informally.
+abstract machine model, but define the compilation function between the models of computation only informally.
 
 In this thesis, we aim to define, specify, and formally verify Turing machines in a framework built in the theorem prover Coq~\cite{Coq}.  First of
 all, we address the problems above.  Instead of defining machines in terms of transition tables, we compose machines using functions of Coq's
 dependent type theory -- the \textit{Calculus of (Co)Inductive Constructions} (also known as CIC).  For example, we define a function that builds the
 sequential composition of two machines.  To eliminate the need to reason about concrete machine states, we give all states a label (e.g.\ $\true$ or
-$\false$) and only have to reason about these labels.  We address the problem that machines are low-level, by introducing abstractions, so that Turing
-machines directly manipulate values of arbitrary encodable types.  This makes programming of (and reasoning about) Turing machines comparable to
-register machines, but we are not restricted to natural numbers.
+$\false$) and only have to reason about these labels.  The number of labels is reasonable small, compared to the potential huge amount of states.  We
+address the problem that machines are low-level, by introducing abstractions, so that we can define Turing machines that directly manipulate values of
+arbitrary encodable types.  This gives the advantages of register machines, but we are not restricted to natural numbers.
 
-There are many variations of Turing machines.  We choose multi-tape Turing machines with arbitrary alphabets.  Our plan is, that each tape should
-contain a value.  We choose a finite model of tapes, i.e.\ each tape has only finitely many symbols but may allocate arbitrary many symbols.
+There are many variants of Turing machines.  All variants can be shown to be computationally equivalent.  In this thesis, we choose multi-tape Turing
+machines with arbitrary finite alphabets.  Our plan is that each tape should contain a value.  We choose a finite model of tapes, i.e.\ each tape has
+only finitely many symbols but may allocate arbitrarily many symbols.
 
 
 \section{Contributions}
@@ -49,21 +51,22 @@ machine and also formalise the reduction from multi-tape Turing machines to sing
 of Turing machines as a benchmark for comparing proof assistants.
 
 Xu, Zhang, and Urban~\cite{xu2013} formalise single-tape Turing machines over a binary alphabet in Isabelle/HOL.  They follow the textbook of Boolos
-et~al.~\cite{boolos2007computability} and use Hoare-logic to specify the semantics of Turing machines.  They translate \textit{abacus programs} and
-\textit{partial recursive functions} to Turing machines and prove the undecidability of the halting problem of Turing machines.
+et~al.~\cite{boolos2007computability} and use Hoare-logic to specify the semantics of concrete Turing machines.  They implement formally verified
+translation functions from \textit{abacus programs} and \textit{partial recursive functions} to Turing machines and prove the undecidability of the
+halting problem of Turing machines.
 
 Ciaffaglione et~al.~\cite{ciaffaglione2016} define tapes of Turing machines as infinite streams.  They verify Turing machines using induction and
 co-induction and also show the undecidability of the halting problem in Coq.
 
 Forster, Heiter, and Smolka~\cite{PCPITP} formally reduce the the halting problem of single-tape Turing machines to the \textit{Post correspondence
-  problem} (PCP) in Coq.  They use the same definition of Turing machines as we use, but restricted to one tape.  This definition was originally
-presented in~\cite{asperti2012}.
+  problem} (PCP) in Coq.  They use the same definition of Turing machines as we use, but restricted to one tape.  This definition of single-tape
+Turing machines was originally presented in~\cite{asperti2012}.
 
-There are other mechanisations of abstract machine models.  For example, Kunze et~al.~\cite{KunzeEtAl:2018:Formal} formalise reductions from the
-programming language $L$ to several stack-machines.  The stack-machine for that we build a simulator is a variant of a machine of this paper.  Forster
-and Smolka~\cite{forster2017weak} formalise the theory of computation in Coq, based on the language $L$.  Norrish~\cite{NorrishComputabilityTheory}
-formalises computability theory in HOL4; he considers a variant of the $\lambda$-calculus and recursive functions, and show that both models of
-computations are equivalent
+There are other mechanisations of abstract machine models.  For example, Forster and Smolka~\cite{forster2017weak} formalise the theory of computation
+in Coq, based on the language~$L$, which is also known as the (weak) call-by-value $\lambda$-calculus.  Norrish~\cite{norrish2011mechanised}
+formalises computability theory in HOL4.  He considers a variant of the $\lambda$-calculus and recursive functions, and show that both models of
+computations are computationally equivalent.  Kunze et~al.~\cite{KunzeEtAl:2018:Formal} formalise reductions from the programming language $L$ to
+several stack-machines.  The stack-machine for that we build a simulator is a variant of a machine of this paper.
 
 
 

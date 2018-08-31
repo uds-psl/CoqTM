@@ -2,17 +2,18 @@
 \label{chap:programming}
 
 
-We can define Turing machines by combining sub-machines in an imperative style, where we use primitive machines like $\MS{DoAct}$ as primitive
+We can define Turing machines by combining sub-machines in an imperative style, where we use primitive machines like $\MS{DoAct}$ as the primitive
 instructions of our language for Turing machines.  Furthermore, we can reuse machines in bigger contexts (w.r.t.\ number of tapes and symbols).
 Recall that we do not reason about internal states of machines anymore.
 
-At this point, we want to abstract from concrete tapes.  We think of tapes as \textit{registers} that may either contain a value of an arbitrarily
-encodable type, or it may be reseted.  Note that this notion of a ``general register machine'' is more general than usual register machines, because
-registers can usually only contain numbers.  %We will define what it means that a tape contains a value.
+At this point, we want to abstract from concrete tapes.  We think of tapes as \textit{registers} that may either contain a value of an arbitrary
+encodable type, or may be reseted.  Note that this notion of a ``general register machine'' is more general than usual register machines, because
+registers can usually only contain numbers.
 
-When we ``program'' Turing machines, this means that instead of using primitive machines we only use machines that directly change the value of a
-tape.  Using the definition of value-containment, we can also specify a ``callee-saving'' convention for computation of functions.  Furthermore, we
-show a general pattern how to program and verify Turing machines, and present more complex case studies.
+When we ``program'' Turing machines, this means that instead of using primitive machines (like $\MS{DoAct}$) we only use machines that directly change
+the value of a tape (like $\MS{ConstrS}$, which increases a number).  Using the definition of value-containment, we can also specify a
+``callee-saving'' convention for computation of functions.  Furthermore, we show a general pattern how to program and verify Turing machines, and
+present more complex case studies in this chapter.
 
 
 \section{Value-Containment}
