@@ -25,7 +25,7 @@ Section CaseSum.
 
   Definition CaseSum : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> bool } :=
     Move R;; (* skip the [START] symbol *)
-    Match (ReadChar) (* read the "constructor" symbol *)
+    Switch (ReadChar) (* read the "constructor" symbol *)
           (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding partition *)
                  | Some (inr sigSum_inl) => Return (Write (inl START)) true  (* inl *)
                  | Some (inr sigSum_inr) => Return (Write (inl START)) false (* inr *)
@@ -122,7 +122,7 @@ Smpl Add smpl_TM_CaseSum : TM_Correct.
 
 Section CaseOption.
 
-  (* Matching of option reduces to matching of sums with [Empty_set] *)
+  (* Switching of option reduces to matching of sums with [Empty_set] *)
 
   Variable X : Type.
   Variable (sigX : finType).

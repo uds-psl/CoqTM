@@ -19,7 +19,7 @@ Section CopySymbols.
   Variable f : sig -> bool.
 
   Definition CopySymbols_Step : pTM sig (option unit) 2 :=
-    Match (ReadChar_at Fin0)
+    Switch (ReadChar_at Fin0)
           (fun b : option sig =>
              match b with
              | Some x =>
@@ -53,7 +53,7 @@ Section CopySymbols.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold CopySymbols_Step. eapply Match_RealiseIn. cbn. eapply LiftTapes_RealiseIn; [vector_dupfree| eapply ReadChar_Sem].
+      unfold CopySymbols_Step. eapply Switch_RealiseIn. cbn. eapply LiftTapes_RealiseIn; [vector_dupfree| eapply ReadChar_Sem].
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e); swap 1 2.

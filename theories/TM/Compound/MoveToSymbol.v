@@ -29,7 +29,7 @@ Section MoveToSymbol.
    * Else, write [g s] and move right, return [None] (continue the loop).
    *)
   Definition MoveToSymbol_Step : pTM sig (option unit) 1 :=
-    Match (ReadChar)
+    Switch (ReadChar)
           (fun b : option sig =>
              match b with
              | Some x => if f x
@@ -65,7 +65,7 @@ Section MoveToSymbol.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold MoveToSymbol_Step. eapply Match_RealiseIn. eapply ReadChar_Sem. cbn.
+      unfold MoveToSymbol_Step. eapply Switch_RealiseIn. eapply ReadChar_Sem. cbn.
       instantiate (2 := fun o : option sig => match o with Some x => if f x then _ else _ | None => _ end).
       intros [ | ]; cbn.
       - destruct (f e). 

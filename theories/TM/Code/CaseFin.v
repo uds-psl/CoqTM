@@ -9,7 +9,7 @@ Section CaseFin.
 
   Definition CaseFin : pTM sig^+ sig 1 :=
     Move R;;
-    Match (ReadChar)
+    Switch (ReadChar)
     (fun s => match s with
            | Some (inr x) => Return (Move R) x
            | _ => Return (Nop) default

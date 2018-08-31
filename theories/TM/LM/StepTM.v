@@ -745,7 +745,7 @@ Section StepMachine.
       (If (CaseList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|])
           (CasePair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
            If (CaseList sigTok_fin ⇑ retr_pro_step @ [|Fin3; Fin5|])
-              (Match (CaseCom ⇑ retr_tok_step @ [|Fin5|])
+              (Switch (CaseCom ⇑ retr_tok_step @ [|Fin5|])
                      (fun t : option ATok =>
                         match t with
                         | Some lamAT =>

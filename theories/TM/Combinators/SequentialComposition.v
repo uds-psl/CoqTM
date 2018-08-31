@@ -1,4 +1,4 @@
-Require Import Match.
+Require Import Switch.
 
 Section Composition.
   
@@ -12,7 +12,7 @@ Section Composition.
   Variable F2 : finType.
   Variable pM2 : pTM sig F2 n.
   
-  Definition Seq := Match pM1 (fun _ => pM2).
+  Definition Seq := Switch pM1 (fun _ => pM2).
 
   Lemma Seq_Realise R1 R2 :
     pM1 ⊨ R1 ->
@@ -21,7 +21,7 @@ Section Composition.
   Proof.
     intros.
     eapply Realise_monotone.
-    eapply (Match_Realise (R1 := R1) (R2 := (fun _ => R2))); eauto.
+    eapply (Switch_Realise (R1 := R1) (R2 := (fun _ => R2))); eauto.
     firstorder.
   Qed.
 
@@ -35,7 +35,7 @@ Section Composition.
   Proof.
     intros HRealise HTerm1 HTerm2.
     eapply TerminatesIn_monotone.
-    - eapply Match_TerminatesIn; eauto. instantiate (1 := fun _ => T2). auto.
+    - eapply Switch_TerminatesIn; eauto. instantiate (1 := fun _ => T2). auto.
     - intros tin i (i1&i2&Hi&HT1&HT2). exists i1, i2; repeat split; auto.
   Qed.
 
@@ -47,7 +47,7 @@ Section Composition.
   Proof.
     intros H1 H2.
     eapply RealiseIn_monotone.
-    eapply (Match_RealiseIn).
+    eapply (Switch_RealiseIn).
     - eapply H1.
     - intros f.  eapply H2.
     - omega.

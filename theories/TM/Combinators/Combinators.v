@@ -1,7 +1,7 @@
 (** * Combinators *)
 
 (** Export Modules for Combinators *)
-Require Export Match If SequentialComposition While Mirror.
+Require Export Switch If SequentialComposition While Mirror.
 
 (** ** Simple Combinators *)
 
@@ -91,7 +91,7 @@ Arguments Return : simpl never.
 
 (** Helper tactics for match *)
 
-(** This tactic destructs a variable recursivle and shelves each goal where it couldn't destruct the variable further. The purpose of this tactic is to pre-instantiate functions to relations with holes of the form [Param -> Rel _ _]. We need this for the [Match] Machine.
+(** This tactic destructs a variable recursivle and shelves each goal where it couldn't destruct the variable further. The purpose of this tactic is to pre-instantiate functions to relations with holes of the form [Param -> Rel _ _]. We need this for the [Switch] Machine.
 The implementation of this tactic is quiete uggly but works for parameters with up to 9 constructor arguments. This tactic may generates a lot of warnings, which can be ignored. *)
 Ltac destruct_shelve e :=
   cbn in e;
@@ -130,13 +130,13 @@ Ltac smpl_match_case_solve_RealiseIn :=
 
 Ltac smpl_match_RealiseIn :=
   lazymatch goal with
-  | [ |- Match ?M1 ?M2 ⊨c(?k1) ?R] =>
+  | [ |- Switch ?M1 ?M2 ⊨c(?k1) ?R] =>
     is_evar R;
     let tM2 := type of M2 in
     let x := fresh "x" in
     match tM2 with
     | ?F -> _ =>
-      eapply (Match_RealiseIn
+      eapply (Switch_RealiseIn
                 (F := FinType(EqType F))
                 (R2 := ltac:(now (print_goal; intros x; destruct_shelve x))));
       [
@@ -149,13 +149,13 @@ Ltac smpl_match_RealiseIn :=
 
 Ltac smpl_match_Realise :=
   lazymatch goal with
-  | [ |- Match ?M1 ?M2 ⊨ ?R] =>
+  | [ |- Switch ?M1 ?M2 ⊨ ?R] =>
     is_evar R;
     let tM2 := type of M2 in
     let x := fresh "x" in
     match tM2 with
     | ?F -> _ =>
-      eapply (Match_Realise
+      eapply (Switch_Realise
                 (F := FinType(EqType F))
                 (R2 := ltac:(now (intros x; destruct_shelve x))));
       [
@@ -167,13 +167,13 @@ Ltac smpl_match_Realise :=
 
 Ltac smpl_match_Terminates :=
   lazymatch goal with
-  | [ |- projT1 (Match ?M1 ?M2) ↓ ?R] =>
+  | [ |- projT1 (Switch ?M1 ?M2) ↓ ?R] =>
     is_evar R;
     let tM2 := type of M2 in
     let x := fresh "x" in
     match tM2 with
     | ?F -> _ =>
-      eapply (Match_TerminatesIn
+      eapply (Switch_TerminatesIn
                 (F := FinType(EqType F))
                 (T2 := ltac:(now (intros x; destruct_shelve x))));
       [ (* show weak realisation of the machine over which is matched *)
@@ -188,9 +188,9 @@ Ltac smpl_match_Terminates :=
 (* There is no rule for [Id] on purpose. *)
 Ltac smpl_TM_Combinators :=
   lazymatch goal with
-  | [ |- Match _ _ ⊨ _] => smpl_match_Realise
-  | [ |- Match _ _ ⊨c(_) _] => smpl_match_RealiseIn
-  | [ |- projT1 (Match _ _) ↓ _] => smpl_match_Terminates
+  | [ |- Switch _ _ ⊨ _] => smpl_match_Realise
+  | [ |- Switch _ _ ⊨c(_) _] => smpl_match_RealiseIn
+  | [ |- projT1 (Switch _ _) ↓ _] => smpl_match_Terminates
   | [ |- If _ _ _ ⊨ _] => eapply If_Realise
   | [ |- If _ _ _ ⊨c(_) _] => eapply If_RealiseIn
   | [ |- projT1 (If _ _ _) ↓ _] => eapply If_TerminatesIn

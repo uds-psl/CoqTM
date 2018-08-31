@@ -76,7 +76,7 @@ Section Copy.
   Variable f : sig -> sig.
 
   Definition CopyChar : pTM sig unit 2 :=
-    Match (LiftTapes ReadChar [|Fin.F1|])
+    Switch (LiftTapes ReadChar [|Fin.F1|])
           (fun s : option sig =>
              match s with
              | None =>  Nop
@@ -94,7 +94,7 @@ Section Copy.
   Proof.
     eapply RealiseIn_monotone.
     {
-      unfold CopyChar. eapply Match_RealiseIn; cbn.
+      unfold CopyChar. eapply Switch_RealiseIn; cbn.
       - apply LiftTapes_RealiseIn. vector_dupfree. apply ReadChar_Sem.
       - instantiate (2 := fun o : option sig => match o with Some s => _ | None => _ end).
         intros [ s | ]; cbn.

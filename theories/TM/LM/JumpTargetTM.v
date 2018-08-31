@@ -181,7 +181,7 @@ Qed.
 
 Definition JumpTarget_Step : pTM sigPro^+ (option bool) 5 :=
   If (CaseList sigTok_fin @ [|Fin0; Fin3|])
-     (Match (ChangeAlphabet CaseCom _ @ [|Fin3|])
+     (Switch (ChangeAlphabet CaseCom _ @ [|Fin3|])
              (fun t : option ATok =>
                 match t with
                 | Some retAT =>

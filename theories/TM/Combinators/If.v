@@ -1,4 +1,4 @@
-Require Import Match.
+Require Import Switch.
 
 Section If.
 
@@ -11,7 +11,7 @@ Section If.
   Variable pM2 : pTM sig F n.
   Variable pM3 : pTM sig F n.
 
-  Definition If := Match pM1 (fun b => if b then pM2 else pM3).
+  Definition If := Switch pM1 (fun b => if b then pM2 else pM3).
 
   Lemma If_Realise R1 R2 R3 :
     pM1 ⊨ R1 ->
@@ -21,7 +21,7 @@ Section If.
   Proof.
     intros.
     eapply Realise_monotone.
-    - eapply (Match_Realise (R1 := R1) (R2 := (fun b => if b then R2 else R3))); eauto.
+    - eapply (Switch_Realise (R1 := R1) (R2 := (fun b => if b then R2 else R3))); eauto.
       now intros [].
     - hnf. intros H2 (f& t). intros ([ | ]& (y & H3&H3')). left. hnf. eauto. right. hnf. eauto.
   Qed.
@@ -39,7 +39,7 @@ Section If.
   Proof.
     intros HRelalise HTerm1 HTerm2 HTerm3.
     eapply TerminatesIn_monotone.
-    - eapply Match_TerminatesIn; cbn; eauto. instantiate (1 := fun f => if f then T2 else T3). intros [ | ]; cbn; auto.
+    - eapply Switch_TerminatesIn; cbn; eauto. instantiate (1 := fun f => if f then T2 else T3). intros [ | ]; cbn; auto.
     - intros tin k (i1&i2&Hi&HT1&HT2). exists i1, i2. repeat split; eauto.
       intros tout b HRel. specialize (HT2 tout b HRel). destruct b; auto.
   Qed.
@@ -54,7 +54,7 @@ Section If.
   Proof.
     intros.
     eapply RealiseIn_monotone.
-    eapply Match_RealiseIn; eauto.
+    eapply Switch_RealiseIn; eauto.
     - intros. cbn in f. destruct f.
       + eapply RealiseIn_monotone. destruct pM2. eassumption. instantiate (1 := Nat.max k2 k3); firstorder.
         instantiate (1 := fun t => match t with true => R2 | _ => R3 end). reflexivity.

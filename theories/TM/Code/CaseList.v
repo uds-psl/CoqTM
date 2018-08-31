@@ -33,7 +33,7 @@ Section CaseList.
 
   Definition CaseList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
     LiftTapes (Move R) [|Fin0|];;
-    Match (LiftTapes (ReadChar) [|Fin0|])
+    Switch (LiftTapes (ReadChar) [|Fin0|])
           (fun s => match s with
                  | Some (inr sigList_nil) => (* nil *)
                    Return (LiftTapes (Move L) [|Fin0|]) false 
@@ -284,7 +284,7 @@ Section CaseList.
 
   Definition IsNil : pTM (sigList sigX)^+ bool 1 :=
     Move R;;
-    Match ReadChar
+    Switch ReadChar
     (fun s =>
        match s with
        | Some (inr sigList_nil) =>
