@@ -1,17 +1,17 @@
 (** * Constructors and Deconstructors for Tokens *)
 
 Require Import ProgrammingTools.
-Require Import TM.Code.MatchNat TM.Code.MatchSum TM.Code.MatchFin.
+Require Import TM.Code.CaseNat TM.Code.CaseSum TM.Code.CaseFin.
 Require Import TM.LM.Semantics TM.LM.Alphabets.
 
-Definition MatchTok : { M : mTM sigTok^+ 1 & states M -> option ATok } :=
-  If (MatchSum _ _)
+Definition CaseCom : { M : mTM sigTok^+ 1 & states M -> option ATok } :=
+  If (CaseSum _ _)
      (Return Nop None)
-     (ChangePartition (ChangeAlphabet (MatchFin (FinType(EqType(ATok))) ) _) Some)
+     (ChangePartition (ChangeAlphabet (CaseFin (FinType(EqType(ATok))) ) _) Some)
 .
      
 
-Definition MatchTok_Rel : pRel sigTok^+ (FinType (EqType (option ATok))) 1 :=
+Definition CaseCom_Rel : pRel sigTok^+ (FinType (EqType (option ATok))) 1 :=
   fun tin '(yout, tout) =>
     forall t : Tok,
       tin[@Fin0] ≃ t ->
@@ -24,13 +24,13 @@ Definition MatchTok_Rel : pRel sigTok^+ (FinType (EqType (option ATok))) 1 :=
       end
 .
 
-Definition MatchTok_steps := 11.
+Definition CaseCom_steps := 11.
 
-Lemma MatchTok_Sem : MatchTok ⊨c(MatchTok_steps) MatchTok_Rel.
+Lemma CaseCom_Sem : CaseCom ⊨c(CaseCom_steps) CaseCom_Rel.
 Proof.
-  unfold MatchTok_steps. eapply RealiseIn_monotone.
-  { unfold MatchTok. TM_Correct.
-    - apply LiftAlphabet_RealiseIn. apply MatchFin_Sem.
+  unfold CaseCom_steps. eapply RealiseIn_monotone.
+  { unfold CaseCom. TM_Correct.
+    - apply LiftAlphabet_RealiseIn. apply CaseFin_Sem.
   }
   { cbn. reflexivity. }
   {
@@ -42,9 +42,9 @@ Proof.
       destruct t; auto.
     }
     { (* "Else" branche *)
-      rename H into HMatchSum.
+      rename H into HCaseSum.
       simpl_tape in *; cbn in *.
-      specialize (HMatchSum t HEncT).
+      specialize (HCaseSum t HEncT).
       destruct t; cbn in *; eauto; modpon H1; subst; eauto.
     }
   }
@@ -82,6 +82,6 @@ Proof.
 Qed.
 
 
-Arguments MatchTok : simpl never.
+Arguments CaseCom : simpl never.
 Arguments Constr_ATok : simpl never.
 Arguments Constr_varT : simpl never.

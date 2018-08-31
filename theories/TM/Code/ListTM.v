@@ -1,7 +1,7 @@
 (** * Machines that compute list functions *)
 
 Require Import ProgrammingTools.
-Require Import MatchNat MatchList MatchSum. (* [TM.Code.MatchSum] contains [Constr_Some] and [Constr_None]. *)
+Require Import CaseNat CaseList CaseSum. (* [TM.Code.CaseSum] contains [Constr_Some] and [Constr_None]. *)
 
 
 Local Arguments skipn { A } !n !l.
@@ -82,11 +82,11 @@ Section Nth.
 
 
   Definition Nth_Step : { M : mTM sig^+ 3 & states M -> option unit } :=
-    If (LiftTapes (ChangeAlphabet MatchNat _) [|Fin1|])
-       (If (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
+    If (LiftTapes (ChangeAlphabet CaseNat _) [|Fin1|])
+       (If (LiftTapes (ChangeAlphabet (CaseList sigX) _) [|Fin0; Fin2|])
            (Return (LiftTapes (Reset _) [|Fin2|]) (None))
            (Return (LiftTapes (ChangeAlphabet (Constr_None _) _) [|Fin2|]) (Some tt)))
-       (If (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|])
+       (If (LiftTapes (ChangeAlphabet (CaseList sigX) _) [|Fin0; Fin2|])
            (Return (LiftTapes (Translate retr_X_list retr_X_opt;;
                             ChangeAlphabet (Constr_Some sigX) _) [|Fin2|]) (Some tt))
            (Return (LiftTapes (ChangeAlphabet (Constr_None _) _) [|Fin2|]) (Some tt)))
@@ -253,11 +253,11 @@ Section Nth'.
 
 
   Definition Nth'_Step : { M : mTM sig^+ 3 & states M -> option bool } :=
-    If (LiftTapes (ChangeAlphabet MatchNat _) [|Fin1|])
-       (If (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) (* n = S n' *)
+    If (LiftTapes (ChangeAlphabet CaseNat _) [|Fin1|])
+       (If (LiftTapes (ChangeAlphabet (CaseList sigX) _) [|Fin0; Fin2|]) (* n = S n' *)
            (Return (LiftTapes (Reset _) [|Fin2|]) None) (* l = x :: l'; continue *)
            (Return Nop (Some false))) (* l = nil; return false *)
-       (ChangePartition (LiftTapes (ChangeAlphabet (MatchList sigX) _) [|Fin0; Fin2|]) Some) (* n = 0 *)
+       (ChangePartition (LiftTapes (ChangeAlphabet (CaseList sigX) _) [|Fin0; Fin2|]) Some) (* n = 0 *)
   .
 
   Lemma Nth'_Step_Realise : Nth'_Step ⊨ Nth'_Step_Rel.
@@ -270,20 +270,20 @@ Section Nth'.
       intros tin (yout, tout) H.
       intros l n HEncL HEncN HRight.
       destruct H; TMSimp.
-      { (* First "Then"; n = S n' *) rename H into HMatchNat, H0 into HIf.
-        modpon HMatchNat. destruct n as [ | n']; auto; simpl_surject.
+      { (* First "Then"; n = S n' *) rename H into HCaseNat, H0 into HIf.
+        modpon HCaseNat. destruct n as [ | n']; auto; simpl_surject.
         destruct HIf; TMSimp.
-        { (* Second "Then"; l = x :: l' *) rename H into HMatchList, H0 into HReset.
-          modpon HMatchList. destruct l as [ | x l']; auto. modpon HMatchList.
+        { (* Second "Then"; l = x :: l' *) rename H into HCaseList, H0 into HReset.
+          modpon HCaseList. destruct l as [ | x l']; auto. modpon HCaseList.
           modpon HReset. repeat split; auto.
         }
-        { (* Second "Else"; l = nil *) rename H into HMatchList.
-          modpon HMatchList. destruct l as [ | x l']; auto. modpon HMatchList. repeat split; auto.
+        { (* Second "Else"; l = nil *) rename H into HCaseList.
+          modpon HCaseList. destruct l as [ | x l']; auto. modpon HCaseList. repeat split; auto.
         }
       }
-      { (* The first "Else"; n = 0 *) rename H into HMatchNat, H0 into HMatchList.
-        modpon HMatchNat. destruct n as [ | n']; auto; simpl_surject.
-        modpon HMatchList. destruct ymid, l; auto; modpon HMatchList; repeat split; auto. contains_ext.
+      { (* The first "Else"; n = 0 *) rename H into HCaseNat, H0 into HCaseList.
+        modpon HCaseNat. destruct n as [ | n']; auto; simpl_surject.
+        modpon HCaseList. destruct ymid, l; auto; modpon HCaseList; repeat split; auto. contains_ext.
       }
     }
   Qed.
@@ -291,13 +291,13 @@ Section Nth'.
   Definition Nth'_Step_steps (l : list X) (n : nat) :=
     match n, l with
     | S n', x :: l' =>
-      2 + MatchNat_steps + MatchList_steps_cons _ x + Reset_steps _ x
+      2 + CaseNat_steps + CaseList_steps_cons _ x + Reset_steps _ x
     | S n', nil =>
-      2 + MatchNat_steps + MatchList_steps_nil
+      2 + CaseNat_steps + CaseList_steps_nil
     | O, x :: l' =>
-      1 + MatchNat_steps + MatchList_steps_cons _ x
+      1 + CaseNat_steps + CaseList_steps_cons _ x
     | O, nil =>
-      1 + MatchNat_steps + MatchList_steps_nil
+      1 + CaseNat_steps + CaseList_steps_nil
     end.
 
   Definition Nth'_Step_T : tRel sig^+ 3 :=
@@ -316,23 +316,23 @@ Section Nth'.
       intros tin k. intros (l&n&HEncL&HEncN&HRight2&Hk). unfold Nth'_Step_steps in Hk.
       destruct n as [ | n'] eqn:E1, l as [ | x l'] eqn:E2; cbn.
       - (* [n = 0] and [l = nil] *)
-        exists (MatchNat_steps), (MatchList_steps_nil). repeat split; auto; try omega.
-        intros tmid b (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct b; auto; simpl_surject.
+        exists (CaseNat_steps), (CaseList_steps_nil). repeat split; auto; try omega.
+        intros tmid b (HCaseNat&HCaseNatInj); TMSimp. modpon HCaseNat. destruct b; auto; simpl_surject.
         { eexists; repeat split; simpl_surject; eauto. }
       - (* [n = 0] and [l = x :: l'] *)
-        exists MatchNat_steps, (MatchList_steps_cons _ x). repeat split; cbn; auto.
+        exists CaseNat_steps, (CaseList_steps_cons _ x). repeat split; cbn; auto.
         intros tmid b (H&HInj1); TMSimp. modpon H. destruct b; cbn in *; auto; simpl_surject.
         { eexists; repeat split; simpl_surject; eauto. }
       - (* [n = S n'] and [l = nil] *) 
-        exists (MatchNat_steps), (S (MatchList_steps_nil)). repeat split; try omega.
-        intros tmid b (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct b; auto. simpl_surject.
-        exists (MatchList_steps_nil), 0. repeat split; try omega.
+        exists (CaseNat_steps), (S (CaseList_steps_nil)). repeat split; try omega.
+        intros tmid b (HCaseNat&HCaseNatInj); TMSimp. modpon HCaseNat. destruct b; auto. simpl_surject.
+        exists (CaseList_steps_nil), 0. repeat split; try omega.
         { eexists; repeat split; simpl_surject; eauto. }
-        intros tmid0 b (HMatchList&HMatchListInj); TMSimp. modpon HMatchList. destruct b; auto.
+        intros tmid0 b (HCaseList&HCaseListInj); TMSimp. modpon HCaseList. destruct b; auto.
       - (* [n = S n'] and [l = x :: l'] *)
-        exists MatchNat_steps, (S (MatchList_steps_cons _ x + Reset_steps _ x)). repeat split; cbn; auto.
+        exists CaseNat_steps, (S (CaseList_steps_cons _ x + Reset_steps _ x)). repeat split; cbn; auto.
         intros tmid b (H&HInj1); TMSimp. modpon H. destruct b; cbn in *; auto; simpl_surject.
-        exists (MatchList_steps_cons _ x), (Reset_steps _ x). repeat split; cbn; try omega.
+        exists (CaseList_steps_cons _ x), (Reset_steps _ x). repeat split; cbn; try omega.
         { exists (x :: l'). repeat split; simpl_surject; auto. }
         intros tmid2 b (H2&HInj2); TMSimp. modpon H2. destruct b; cbn in *; auto; simpl_surject; modpon H2.
         exists x. repeat split; eauto. contains_ext. unfold Reset_steps. now rewrite Encode_map_hasSize.
@@ -390,7 +390,7 @@ Section Nth'.
     | S n', x :: l'  => S (Nth'_Step_steps l n) + Nth'_Loop_steps l' n' (* continue *)
     | S n', nil => Nth'_Step_steps l n (* return *)
     | O, x :: l' => Nth'_Step_steps l n (* return *)
-    | O, nil => Nth'_Step_steps l n (* only [MatchNat] and [If] *)
+    | O, nil => Nth'_Step_steps l n (* only [CaseNat] and [If] *)
     end.
   
 
@@ -776,7 +776,7 @@ Section Lenght.
 
 
   Definition Length_Step : pTM sig^+ (option unit) 3 :=
-    If (LiftTapes (ChangeAlphabet (MatchList _) _) [|Fin0; Fin2|])
+    If (LiftTapes (ChangeAlphabet (CaseList _) _) [|Fin0; Fin2|])
        (Return (LiftTapes (Reset _) [|Fin2|];;
                 LiftTapes (ChangeAlphabet (Constr_S) _) [|Fin1|])
                (None)) (* continue *)
@@ -811,12 +811,12 @@ Section Lenght.
     {
       intros tin (yout, tout) H. cbn. intros xs n HEncXS HEncN HRight.
       destruct H; TMSimp.
-      { (* Then *) rename H into HMatchList, H0 into HReset, H1 into HS.
-        modpon HMatchList. destruct xs as [ | x xs']; cbn in *; auto; modpon HMatchList.
+      { (* Then *) rename H into HCaseList, H0 into HReset, H1 into HS.
+        modpon HCaseList. destruct xs as [ | x xs']; cbn in *; auto; modpon HCaseList.
         modpon HReset. modpon HS. repeat split; auto.
       }
-      { (* Then *) rename H into HMatchList.
-        modpon HMatchList. destruct xs as [ | x xs']; cbn in *; auto; modpon HMatchList. repeat split; auto.
+      { (* Then *) rename H into HCaseList.
+        modpon HCaseList. destruct xs as [ | x xs']; cbn in *; auto; modpon HCaseList. repeat split; auto.
       }
     }
   Qed.
@@ -824,8 +824,8 @@ Section Lenght.
 
   Definition Length_Step_steps (xs : list X) :=
     match xs with
-    | nil => 1 + MatchList_steps_nil
-    | x :: xs' => 2 + MatchList_steps_cons _ x + Reset_steps _ x + Constr_S_steps
+    | nil => 1 + CaseList_steps_nil
+    | x :: xs' => 2 + CaseList_steps_cons _ x + Reset_steps _ x + Constr_S_steps
     end.
 
   Definition Length_Step_T : tRel sig^+ 3 :=
@@ -841,12 +841,12 @@ Section Lenght.
     {
       intros tin k (xs&n&HEncXs&HEncN&HRight2&Hk). unfold Length_Step_steps in Hk.
       destruct xs as [ | x xs'].
-      - exists MatchList_steps_nil, 0. repeat split; cbn in *; try omega.
+      - exists CaseList_steps_nil, 0. repeat split; cbn in *; try omega.
         eexists; repeat split; simpl_surject; eauto; cbn; eauto.
-        intros tmid b (HMatchList&HInjMatchList); TMSimp. modpon HMatchList. destruct b; cbn in *; auto.
-      - exists (MatchList_steps_cons _ x), (1 + Reset_steps _ x + Constr_S_steps). repeat split; cbn in *; try omega.
+        intros tmid b (HCaseList&HInjCaseList); TMSimp. modpon HCaseList. destruct b; cbn in *; auto.
+      - exists (CaseList_steps_cons _ x), (1 + Reset_steps _ x + Constr_S_steps). repeat split; cbn in *; try omega.
         eexists; repeat split; simpl_surject; eauto; cbn; eauto.
-        intros tmid b (HMatchList&HInjMatchList); TMSimp. modpon HMatchList. destruct b; cbn in *; auto; modpon HMatchList.
+        intros tmid b (HCaseList&HInjCaseList); TMSimp. modpon HCaseList. destruct b; cbn in *; auto; modpon HCaseList.
         exists (Reset_steps _ x), Constr_S_steps. repeat split; cbn; try omega.
         eexists; repeat split; simpl_surject; eauto; cbn; eauto. unfold Reset_steps. now rewrite !Encode_map_hasSize.
         now intros _ _ _.

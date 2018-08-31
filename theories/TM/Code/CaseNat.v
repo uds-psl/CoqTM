@@ -2,11 +2,11 @@ Require Import TM.Code.ProgrammingTools.
 
 (** * Constructor and Deconstructor Machines for Natural Numbers *)
 
-Section MatchNat.
+Section CaseNat.
 
   (** ** Deconstructor *)
 
-  Definition MatchNat_Rel : Rel (tapes sigNat^+ 1) (bool * tapes sigNat^+ 1) :=
+  Definition CaseNat_Rel : Rel (tapes sigNat^+ 1) (bool * tapes sigNat^+ 1) :=
     Mk_R_p
       (fun tin '(yout, tout) =>
          forall (n : nat),
@@ -17,7 +17,7 @@ Section MatchNat.
            | _, _ => False
            end).
 
-  Definition MatchNat : { M : mTM sigNat^+ 1 & states M -> bool } :=
+  Definition CaseNat : { M : mTM sigNat^+ 1 & states M -> bool } :=
     Move R;;
     Match (ReadChar)
           (fun o => match o with
@@ -26,12 +26,12 @@ Section MatchNat.
                  | _ => Return (Nop) default (* invalid input *)
                  end).
 
-  Definition MatchNat_steps := 5.
+  Definition CaseNat_steps := 5.
 
-  Lemma MatchNat_Sem : MatchNat ⊨c(MatchNat_steps) MatchNat_Rel.
+  Lemma CaseNat_Sem : CaseNat ⊨c(CaseNat_steps) CaseNat_Rel.
   Proof.
-    unfold MatchNat_steps. eapply RealiseIn_monotone.
-    { unfold MatchNat. TM_Correct. }
+    unfold CaseNat_steps. eapply RealiseIn_monotone.
+    { unfold CaseNat. TM_Correct. }
     { Unshelve. 4,8: reflexivity. all: omega. }
     {
       intros tin (yout&tout) H. intros n HEncN. TMSimp.
@@ -88,16 +88,16 @@ Section MatchNat.
 
   End NatConstructor.
 
-End MatchNat.
+End CaseNat.
 
 
 (** ** Tactical Support *)
 
-Ltac smpl_TM_MatchNat :=
+Ltac smpl_TM_CaseNat :=
   lazymatch goal with
-  | [ |- MatchNat ⊨ _ ] => eapply RealiseIn_Realise; apply MatchNat_Sem
-  | [ |- MatchNat ⊨c(_) _ ] => apply MatchNat_Sem
-  | [ |- projT1 (MatchNat) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply MatchNat_Sem
+  | [ |- CaseNat ⊨ _ ] => eapply RealiseIn_Realise; apply CaseNat_Sem
+  | [ |- CaseNat ⊨c(_) _ ] => apply CaseNat_Sem
+  | [ |- projT1 (CaseNat) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply CaseNat_Sem
   | [ |- Constr_O ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_O_Sem
   | [ |- Constr_O ⊨c(_) _ ] => apply Constr_O_Sem
   | [ |- projT1 (Constr_O) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Constr_O_Sem
@@ -106,4 +106,4 @@ Ltac smpl_TM_MatchNat :=
   | [ |- projT1 (Constr_S) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Constr_S_Sem
   end.
 
-Smpl Add smpl_TM_MatchNat : TM_Correct.
+Smpl Add smpl_TM_CaseNat : TM_Correct.

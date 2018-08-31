@@ -1,5 +1,5 @@
 Require Import TM.Code.ProgrammingTools.
-Require Import TM.Code.MatchNat.
+Require Import TM.Code.CaseNat.
 
 
 (** * Machines that compte natural functions *)
@@ -54,7 +54,7 @@ Qed.
  * t1: b
  *)
 Definition Add_Step : { M : mTM _ 2 & states M -> option unit } :=
-  If (LiftTapes MatchNat [|Fin1|])
+  If (LiftTapes CaseNat [|Fin1|])
      (Return (LiftTapes Constr_S [|Fin0|]) None)
      (Return Nop (Some tt)).
 
@@ -365,7 +365,7 @@ Qed.
  * }
  *)
 Definition Mult_Step : { M : mTM _ 5 & states M -> option unit } :=
-  If (LiftTapes MatchNat [|Fin0|])
+  If (LiftTapes CaseNat [|Fin0|])
      (Return (
           LiftTapes Add [|Fin1; Fin2; Fin3; Fin4|];; (* Add(n, c, c') *)
           LiftTapes (Reset _) [|Fin2|];;
@@ -573,7 +573,7 @@ Definition Mult_Step_steps m' n c :=
   | O => 6
   | _ => 168 + 33 * c + 39 * n
   end.
-(* [5] for [If] and [1] for [MatchNat] *)
+(* [5] for [If] and [1] for [CaseNat] *)
 (* [98+12*n+22*c] for [Add] *)
 (* [12+c] for [Reset] (c) *)
 (* [36+12*(c+n)] for [CopyValue] (c' = c + n) *)

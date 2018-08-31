@@ -4,7 +4,7 @@ Require Export Basic.Mono Compound.Multi.
 
 (** * All tools for programming Turing machines *)
 
-(** All Coq modules in that the user programms Turing machine should [Require Import TM.Code.ProgrammingTools]. The module should additionally require and import the modules containing the constructor and deconstructor machines, e.g. [Require Import TM.Code.MatchNat], etc. *)
+(** All Coq modules in that the user programms Turing machine should [Require Import TM.Code.ProgrammingTools]. The module should additionally require and import the modules containing the constructor and deconstructor machines, e.g. [Require Import TM.Code.CaseNat], etc. *)
 
 
 (** This tactic applys [tape_contains_ext] *)

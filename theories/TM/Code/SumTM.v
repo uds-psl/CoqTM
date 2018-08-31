@@ -1,4 +1,4 @@
-Require Import ProgrammingTools MatchSum.
+Require Import ProgrammingTools CaseSum.
 
 (**
 If there are two function [f1 : X -> Z] and [f2 : Y -> Z], then there is only one canonical way to define a function [map_sum : X + Y -> Z]. This machine operator takes machines [M1] and [M2] that compute the functions [f] and [g]; and defines a machine [Map_sum] that computes [map_sum].
@@ -33,14 +33,14 @@ Section MapSum.
           end.
 
 
-  (** We don't know weather the alphabet of [M1] and [M2] contains [sigSum sigX sigY], so we have to extend the alphabet. We do this in the usual way, by assuming a alphabet [sigMap], which contains [sigSum sigX sigY] in addition to the alphabet of [M1] and [M2]. *)
+  (** We don't know whether the alphabet of [M1] and [M2] contains [sigSum sigX sigY], so we have to extend the alphabet. We do this in the usual way, by assuming a alphabet [sigMap], which contains [sigSum sigX sigY] in addition to the alphabet of [M1] and [M2]. *)
   Variable sigMap : finType.
   Variable (retr_sigM_sigMap : Retract sigM sigMap).
   Variable (retr_sigSum_sigMap : Retract (sigSum sigX sigY) sigMap).
 
 
   (** Now we observe that there a two possible ways how to encode [X] and [Y] on [sigM], by composing retracts. *)
-  Local Definition retr_sigX_sigMap  : Retract sigX sigMap := ComposeRetract retr_sigM_sigMap  retr_sigX_sigM.
+  Local Definition retr_sigX_sigMap  : Retract sigX sigMap := ComposeRetract retr_sigM_sigMap retr_sigX_sigM.
   Local Definition retr_sigX_sigMap' : Retract sigX sigMap := ComposeRetract retr_sigSum_sigMap (Retract_sigSum_X _ _).
 
   Local Definition retr_sigY_sigMap  : Retract sigY sigMap := ComposeRetract retr_sigM_sigMap retr_sigY_sigM.
@@ -50,15 +50,15 @@ Section MapSum.
   
   (** I use [Id] here to prevent [TM_Correct] to unfold [ChangeAlphabet], because we want to apply [ChangeAlphabet_Computes] instead. *)
   Definition MapSum : { M : mTM sigMap^+ (S (S n)) & states M -> unit } :=
-    If (MatchSum sigX sigY ⇑ _ @ [|Fin0|])
+    If (CaseSum sigX sigY ⇑ _ @ [|Fin0|])
        (Translate retr_sigX_sigMap' retr_sigX_sigMap @ [|Fin0|];; (* Translate the value [x] from the [sigSum] alphabet to the direct [sigX] alphabet *)
          Id (M1 ⇑ _);; (* Call [M1] *)
          Translate retr_sigX_sigMap retr_sigX_sigMap' @ [|Fin0|];; (* Translate [x] back to the alphabet [sigSum sigX sigY] *)
-        Constr_inl sigX sigY ⇑ _ @ [|Fin0|]) (* Apply the [inl] constructor again to [x], which has been removed by [MatchSum] *)
+        Constr_inl sigX sigY ⇑ _ @ [|Fin0|]) (* Apply the [inl] constructor again to [x], which has been removed by [CaseSum] *)
        (Translate retr_sigY_sigMap' retr_sigY_sigMap @ [|Fin0|];; (* Translate the value [y] from the [sigSum] alphabet to the direct [sigY] alphabet *)
          Id (M2 ⇑ _);; (* Call [M2] *)
          Translate retr_sigY_sigMap retr_sigY_sigMap' @ [|Fin0|];; (* Translate [y] back to the alphabet [sigSum sigY sigY] *)
-        Constr_inr sigX sigY ⇑ _ @ [|Fin0|]) (* Apply the [inr] constructor again to [y], which has been removed by [MatchSum] *)
+        Constr_inr sigX sigY ⇑ _ @ [|Fin0|]) (* Apply the [inr] constructor again to [y], which has been removed by [CaseSum] *)
   .
 
 
@@ -78,10 +78,10 @@ Section MapSum.
       destruct H; TMSimp. (* Both cases of the [If] are symmetric. *)
       { (* Then case, i.e. [s = inl x] *)
         (* First, give better names... *)
-        rename H into HMatchSum, H1 into HInject, H0 into HTranslate, H3 into HInject', H2 into HM, H4 into HTranslate', H7 into HInject'', H5 into HConstr, H6 into HInject'''.
+        rename H into HCaseSum, H1 into HInject, H0 into HTranslate, H3 into HInject', H2 into HM, H4 into HTranslate', H7 into HInject'', H5 into HConstr, H6 into HInject'''.
         (* The [simpl_not_in], which instantiates index-quantified tape-rewriting hypothesises like [HInject], works better for a fixed number of tapes, so we have to do some manual work here. *)
 
-        modpon HMatchSum. destruct s as [ x | y ]; auto; simpl_surject.
+        modpon HCaseSum. destruct s as [ x | y ]; auto; simpl_surject.
 
         modpon HTranslate.
 
@@ -99,10 +99,10 @@ Section MapSum.
       }
       { (* Then case, i.e. [s = iny y], completely symmetric *)
         (* First, give better names... *)
-        rename H into HMatchSum, H1 into HInject, H0 into HTranslate, H3 into HInject', H2 into HM, H4 into HTranslate', H7 into HInject'', H5 into HConstr, H6 into HInject'''.
+        rename H into HCaseSum, H1 into HInject, H0 into HTranslate, H3 into HInject', H2 into HM, H4 into HTranslate', H7 into HInject'', H5 into HConstr, H6 into HInject'''.
         (* The [simpl_not_in], which instantiates index-quantified tape-rewriting hypothesises like [HInject], works better for a fixed number of tapes, so we have to do some manual work here. *)
 
-        modpon HMatchSum. destruct s as [ x | y ]; auto; simpl_surject.
+        modpon HCaseSum. destruct s as [ x | y ]; auto; simpl_surject.
 
         modpon HTranslate.
 
@@ -128,8 +128,8 @@ Section MapSum.
   Definition MapSum_steps : X + Y -> nat :=
     fun s =>
       match s with
-      | inl x => 4 + MatchSum_steps + Translate_steps _ x + M1_steps x + Translate_steps _ x + Constr_inl_steps
-      | inr y => 4 + MatchSum_steps + Translate_steps _ y + M2_steps y + Translate_steps _ y + Constr_inr_steps
+      | inl x => 4 + CaseSum_steps + Translate_steps _ x + M1_steps x + Translate_steps _ x + Constr_inl_steps
+      | inr y => 4 + CaseSum_steps + Translate_steps _ y + M2_steps y + Translate_steps _ y + Constr_inr_steps
       end.
 
   (** This is useful when we work with running time polynoms *)
@@ -157,9 +157,9 @@ Section MapSum.
       intros tin k (s&HEncS&HRight&HInt&Hk).
       destruct s as [x|y]; cbn in *.
       { (* s = inl x *)
-        exists (MatchSum_steps), (3 + Translate_steps _ x + M1_steps x + Translate_steps _ x + Constr_inl_steps).
+        exists (CaseSum_steps), (3 + Translate_steps _ x + M1_steps x + Translate_steps _ x + Constr_inl_steps).
         repeat split; try omega.
-        intros tmid b (HMatchSum&HMatchSumInj). specialize (HMatchSum (inl x)). modpon HMatchSum. destruct b; auto. simpl_surject.
+        intros tmid b (HCaseSum&HCaseSumInj). specialize (HCaseSum (inl x)). modpon HCaseSum. destruct b; auto. simpl_surject.
         exists (Translate_steps _ x), (2 + M1_steps x + Translate_steps _ x + Constr_inl_steps).
         repeat split; try omega.
         { hnf. cbn. exists x. split; auto. contains_ext. }
@@ -168,12 +168,12 @@ Section MapSum.
         repeat split; try omega.
         { exists x. repeat split; auto.
           - contains_ext.
-          - now rewrite HTranslateInj1, HMatchSumInj by vector_not_in.
-          - intros i. now rewrite HTranslateInj1, HMatchSumInj by vector_not_in.
+          - now rewrite HTranslateInj1, HCaseSumInj by vector_not_in.
+          - intros i. now rewrite HTranslateInj1, HCaseSumInj by vector_not_in.
         }
         intros tmid3 () HM1. modpon HM1.
-        { now rewrite HTranslateInj1, HMatchSumInj by vector_not_in. }
-        { intros i. now rewrite HTranslateInj1, HMatchSumInj by vector_not_in. }
+        { now rewrite HTranslateInj1, HCaseSumInj by vector_not_in. }
+        { intros i. now rewrite HTranslateInj1, HCaseSumInj by vector_not_in. }
         exists (Translate_steps _ x), (Constr_inl_steps).
         repeat split; try omega.
         { hnf. cbn. exists x. repeat split; eauto. contains_ext. }
@@ -181,9 +181,9 @@ Section MapSum.
         reflexivity.
       }
       { (* s = inl y, completely symmetric *)
-        exists (MatchSum_steps), (3 + Translate_steps _ y + M2_steps y + Translate_steps _ y + Constr_inr_steps).
+        exists (CaseSum_steps), (3 + Translate_steps _ y + M2_steps y + Translate_steps _ y + Constr_inr_steps).
         repeat split; try omega.
-        intros tmid b (HMatchSum&HMatchSumInj). specialize (HMatchSum (inr y)). modpon HMatchSum. destruct b; auto. simpl_surject.
+        intros tmid b (HCaseSum&HCaseSumInj). specialize (HCaseSum (inr y)). modpon HCaseSum. destruct b; auto. simpl_surject.
         exists (Translate_steps _ y), (2 + M2_steps y + Translate_steps _ y + Constr_inr_steps).
         repeat split; try omega.
         { hnf. cbn. exists y. split; auto. contains_ext. }
@@ -192,12 +192,12 @@ Section MapSum.
         repeat split; try omega.
         { exists y. repeat split; auto.
           - contains_ext.
-          - now rewrite HTranslateInj1, HMatchSumInj by vector_not_in.
-          - intros i. now rewrite HTranslateInj1, HMatchSumInj by vector_not_in.
+          - now rewrite HTranslateInj1, HCaseSumInj by vector_not_in.
+          - intros i. now rewrite HTranslateInj1, HCaseSumInj by vector_not_in.
         }
         intros tmid3 () HM1. modpon HM1.
-        { now rewrite HTranslateInj1, HMatchSumInj by vector_not_in. }
-        { intros i. now rewrite HTranslateInj1, HMatchSumInj by vector_not_in. }
+        { now rewrite HTranslateInj1, HCaseSumInj by vector_not_in. }
+        { intros i. now rewrite HTranslateInj1, HCaseSumInj by vector_not_in. }
         exists (Translate_steps _ y), (Constr_inr_steps).
         repeat split; try omega.
         { hnf. cbn. exists y. repeat split; eauto. contains_ext. }

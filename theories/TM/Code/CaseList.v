@@ -2,7 +2,7 @@
 
 Require Import ProgrammingTools.
 
-Section MatchList.
+Section CaseList.
 
   (** ** Deconstructor *)
 
@@ -31,7 +31,7 @@ Section MatchList.
     CopySymbols_L stop;;
     LiftTapes (Write (inl START)) [|Fin1|].
 
-  Definition MatchList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
+  Definition CaseList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
     LiftTapes (Move R) [|Fin0|];;
     Match (LiftTapes (ReadChar) [|Fin0|])
           (fun s => match s with
@@ -124,7 +124,7 @@ Section MatchList.
   Qed.
 
 
-  Definition MatchList_Rel : Rel (tapes (sigList sigX)^+ 2) (bool * tapes (sigList sigX)^+ 2) :=
+  Definition CaseList_Rel : Rel (tapes (sigList sigX)^+ 2) (bool * tapes (sigList sigX)^+ 2) :=
     fun tin '(yout, tout) =>
       forall (l : list X),
         tin[@Fin0] ≃ l ->
@@ -140,10 +140,10 @@ Section MatchList.
         end.
 
 
-  Lemma MatchList_Realise : MatchList ⊨ MatchList_Rel.
+  Lemma CaseList_Realise : CaseList ⊨ CaseList_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold MatchList. TM_Correct. eapply M1_Realise. eapply Skip_cons_Realise. }
+    { unfold CaseList. TM_Correct. eapply M1_Realise. eapply Skip_cons_Realise. }
     {
       intros tin (yout, tout) H. intros l HEncL HRight.
       destruct HEncL as (ls&HEncL). pose proof HRight as (ls'&rs'&HRight'). TMSimp; clear_trivial_eqs.
@@ -224,26 +224,26 @@ Section MatchList.
     }
   Qed.
 
-  Definition MatchList_steps_cons (x : X) := 42 + 16 * size cX x.
+  Definition CaseList_steps_cons (x : X) := 42 + 16 * size cX x.
 
-  Definition MatchList_steps_nil := 5.
+  Definition CaseList_steps_nil := 5.
 
-  Definition MatchList_steps l :=
+  Definition CaseList_steps l :=
     match l with
-    | nil => MatchList_steps_nil
-    | x::l' => MatchList_steps_cons x
+    | nil => CaseList_steps_nil
+    | x::l' => CaseList_steps_cons x
     end.
 
-  Lemma MatchList_Terminates :
-    projT1 MatchList ↓
+  Lemma CaseList_Terminates :
+    projT1 CaseList ↓
            (fun tin k =>
               exists l : list X,
                 tin[@Fin0] ≃ l /\
                 isRight tin[@Fin1] /\
-                MatchList_steps l <= k).
+                CaseList_steps l <= k).
   Proof.
-    unfold MatchList_steps, MatchList_steps_cons, MatchList_steps_nil. eapply TerminatesIn_monotone.
-    { unfold MatchList. TM_Correct.
+    unfold CaseList_steps, CaseList_steps_cons, CaseList_steps_nil. eapply TerminatesIn_monotone.
+    { unfold CaseList. TM_Correct.
       - eapply M1_Realise.
       - eapply M1_Terminates.
       - eapply Skip_cons_Realise.
@@ -415,9 +415,9 @@ Section MatchList.
     }
   Qed.
 
-End MatchList.
+End CaseList.
 
-Arguments MatchList : simpl never.
+Arguments CaseList : simpl never.
 Arguments IsNil : simpl never.
 Arguments Constr_nil : simpl never.
 Arguments Constr_cons : simpl never.
@@ -429,13 +429,13 @@ Section Steps_comp.
   Variable (sig tau: finType) (X:Type) (cX: codable sig X).
   Variable (I : Retract sig tau).
 
-  Lemma MatchList_steps_cons_comp x :
-    MatchList_steps_cons (Encode_map cX I) x = MatchList_steps_cons cX x.
-  Proof. unfold MatchList_steps_cons. now rewrite Encode_map_hasSize. Qed.
+  Lemma CaseList_steps_cons_comp x :
+    CaseList_steps_cons (Encode_map cX I) x = CaseList_steps_cons cX x.
+  Proof. unfold CaseList_steps_cons. now rewrite Encode_map_hasSize. Qed.
 
-  Lemma MatchList_steps_comp l :
-    MatchList_steps (Encode_map cX I) l = MatchList_steps cX l.
-  Proof. unfold MatchList_steps. destruct l; auto. apply MatchList_steps_cons_comp. Qed.
+  Lemma CaseList_steps_comp l :
+    CaseList_steps (Encode_map cX I) l = CaseList_steps cX l.
+  Proof. unfold CaseList_steps. destruct l; auto. apply CaseList_steps_cons_comp. Qed.
 
   Lemma Constr_cons_steps_comp l :
     Constr_cons_steps (Encode_map cX I) l = Constr_cons_steps cX l.
@@ -446,10 +446,10 @@ End Steps_comp.
 
 (** ** Tactical Support *)
 
-Ltac smpl_TM_MatchList :=
+Ltac smpl_TM_CaseList :=
   lazymatch goal with
-  | [ |- MatchList _ ⊨ _ ] => apply MatchList_Realise
-  | [ |- projT1 (MatchList _) ↓ _ ] => apply MatchList_Terminates
+  | [ |- CaseList _ ⊨ _ ] => apply CaseList_Realise
+  | [ |- projT1 (CaseList _) ↓ _ ] => apply CaseList_Terminates
 
   | [ |- IsNil _ ⊨ _ ] => eapply RealiseIn_Realise; apply IsNil_Sem
   | [ |- IsNil _ ⊨c(_) _ ] => apply IsNil_Sem
@@ -463,4 +463,4 @@ Ltac smpl_TM_MatchList :=
   | [ |- projT1 (Constr_cons _) ↓ _ ] => apply Constr_cons_Terminates
   end.
 
-Smpl Add smpl_TM_MatchList : TM_Correct.
+Smpl Add smpl_TM_CaseList : TM_Correct.

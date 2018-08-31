@@ -2,7 +2,7 @@
 
 Require Import TM.Code.ProgrammingTools.
 Require Import TM.LM.Semantics TM.LM.Alphabets.
-Require Import TM.Code.ListTM TM.Code.MatchPair TM.Code.MatchSum TM.Code.MatchNat.
+Require Import TM.Code.ListTM TM.Code.CasePair TM.Code.CaseSum TM.Code.CaseNat.
 
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
@@ -70,9 +70,9 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
 
   Definition Lookup_Step : pTM sigLookup^+ (option bool) 5 :=
     If (Nth' retr_heap_lookup retr_nat_lookup_clos_ad @ [|Fin0; Fin1; Fin4; Fin3|])
-       (If (MatchOption sigHEnt'_fin ⇑ retr_hent_lookup @ [|Fin4|])
-           (MatchPair sigHClos_fin sigHAd_fin ⇑ retr_hent'_lookup @ [|Fin4; Fin3|];;
-            If (MatchNat ⇑ retr_nat_lookup_clos_var @ [|Fin2|])
+       (If (CaseOption sigHEnt'_fin ⇑ retr_hent_lookup @ [|Fin4|])
+           (CasePair sigHClos_fin sigHAd_fin ⇑ retr_hent'_lookup @ [|Fin4; Fin3|];;
+            If (CaseNat ⇑ retr_nat_lookup_clos_var @ [|Fin2|])
                (Return (CopyValue _ @ [|Fin4; Fin1|];; (* n = S n' *)
                         Translate retr_nat_lookup_entry retr_nat_lookup_clos_ad @ [|Fin1|];;
                         Reset _ @ [|Fin4|];;
@@ -133,33 +133,33 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
     {
       intros tin (yout, tout) H. cbn. intros heap a n HEncHeap HEncA HEncN HRight3 HRight4.
       destruct H; TMSimp.
-      { (* Then of [Nth'], i.e. nth_error H a = Some e *) rename H into HNth, H0 into HMatchOption.
+      { (* Then of [Nth'], i.e. nth_error H a = Some e *) rename H into HNth, H0 into HCaseOption.
         modpon HNth. destruct HNth as (e&HNth); modpon HNth.
-        destruct HMatchOption; TMSimp.
-        { (* Then of [MatchOption], i.e. e = Some e', where e' = (g, b) *) rename H into HMatchOption, H0 into HMatchPair, H1 into HMatchNat.
-          modpon HMatchOption. destruct e as [ e' | ]; auto; simpl_surject.
-          modpon HMatchPair.
-          destruct HMatchNat; TMSimp.
-          { (* Then of [MatchNat], i.e. n = S n' *)
-            rename H into HMatchNat, H0 into HCopy, H1 into HTranslate, H2 into HReset, H3 into HReset'.
-            modpon HMatchNat. destruct n as [ | n']; auto; simpl_surject.
+        destruct HCaseOption; TMSimp.
+        { (* Then of [CaseOption], i.e. e = Some e', where e' = (g, b) *) rename H into HCaseOption, H0 into HCasePair, H1 into HCaseNat.
+          modpon HCaseOption. destruct e as [ e' | ]; auto; simpl_surject.
+          modpon HCasePair.
+          destruct HCaseNat; TMSimp.
+          { (* Then of [CaseNat], i.e. n = S n' *)
+            rename H into HCaseNat, H0 into HCopy, H1 into HTranslate, H2 into HReset, H3 into HReset'.
+            modpon HCaseNat. destruct n as [ | n']; auto; simpl_surject.
             modpon HCopy.
             modpon HTranslate.
             modpon HReset.
             modpon HReset'.
             eauto 9.
           }
-          { (* Else of [MatchNat], i.e. n = 0 *)
-            rename H into HMatchNat, H0 into HReset, H1 into HReset', H2 into HTranslate.
-            modpon HMatchNat. destruct n as [ | n']; auto; simpl_surject.
+          { (* Else of [CaseNat], i.e. n = 0 *)
+            rename H into HCaseNat, H0 into HReset, H1 into HReset', H2 into HTranslate.
+            modpon HCaseNat. destruct n as [ | n']; auto; simpl_surject.
             modpon HReset.
             modpon HReset'.
             modpon HTranslate.
             eauto 8.
           }
         }
-        { (* Else of [MatchOption], i.e. e = None *) rename H into HMatchOption.
-          modpon HMatchOption. destruct e; auto; simpl_surject. rewrite lookup_eq, HNth. auto.
+        { (* Else of [CaseOption], i.e. e = None *) rename H into HCaseOption.
+          modpon HCaseOption. destruct e; auto; simpl_surject. rewrite lookup_eq, HNth. auto.
         }
       }
       { (* Else of [Nth'], i.e. nth_error H a = None *) rename H into HNth.
@@ -169,22 +169,22 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
   Qed.
 
   
-  Local Definition Lookup_Step_steps_MatchNat (n: nat) (e': HClos * HAd) :=
+  Local Definition Lookup_Step_steps_CaseNat (n: nat) (e': HClos * HAd) :=
     let (g,b) := (fst e', snd e') in
     match n with
     | S _ => 1 + CopyValue_steps _ b + 1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g
     | O => 1 + Reset_steps _ b + 1 + Reset_steps _ 0 + Translate_steps _ g
     end.
 
-  Local Definition Lookup_Step_steps_MatchOption (n:nat) (e: HEnt) :=
+  Local Definition Lookup_Step_steps_CaseOption (n:nat) (e: HEnt) :=
     match e with
-    | Some ((g, b) as e') => 1 + MatchPair_steps _ g + 1 + MatchNat_steps + Lookup_Step_steps_MatchNat n e'
+    | Some ((g, b) as e') => 1 + CasePair_steps _ g + 1 + CaseNat_steps + Lookup_Step_steps_CaseNat n e'
     | None => 0
     end.
 
   Local Definition Lookup_Step_steps_Nth' H a n :=
     match nth_error H a with
-    | Some e => 1 + MatchOption_steps + Lookup_Step_steps_MatchOption n e
+    | Some e => 1 + CaseOption_steps + Lookup_Step_steps_CaseOption n e
     | None => 0
     end.
 
@@ -229,18 +229,18 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
       unfold Lookup_Step_steps_Nth' in *.
       intros tmid b (HNth&HNthInj); TMSimp. modpon HNth. destruct b; modpon HNth.
       { (* nth_error H a = Some e *) destruct HNth as (e&HNth); modpon HNth. rewrite HNth in *.
-        exists (MatchOption_steps), (Lookup_Step_steps_MatchOption n e).
-        repeat split; try omega. unfold Lookup_Step_steps_MatchOption in *.
-        intros tmid0 b (HMatchOption&HMatchOptionInj); TMSimp. modpon HMatchOption. destruct b; auto.
+        exists (CaseOption_steps), (Lookup_Step_steps_CaseOption n e).
+        repeat split; try omega. unfold Lookup_Step_steps_CaseOption in *.
+        intros tmid0 b (HCaseOption&HCaseOptionInj); TMSimp. modpon HCaseOption. destruct b; auto.
         { (* e = Some e', where e' = (g,b) *) destruct e as [ e' | ]; auto; simpl_surject.
           destruct e' as [g b] eqn:Ee'.
-          exists (MatchPair_steps _ g), (1 + MatchNat_steps + Lookup_Step_steps_MatchNat n e'); subst.
+          exists (CasePair_steps _ g), (1 + CaseNat_steps + Lookup_Step_steps_CaseNat n e'); subst.
           repeat split; try omega. 2: now rewrite !Nat.add_assoc.
           { hnf; cbn. exists (g,b). repeat split; simpl_surject; eauto. contains_ext. }
-          intros tmid1 () (HMatchPair&HMatchPairInj). specialize (HMatchPair (g,b)); modpon HMatchPair.
-          exists (MatchNat_steps), (Lookup_Step_steps_MatchNat n (g,b)).
+          intros tmid1 () (HCasePair&HCasePairInj). specialize (HCasePair (g,b)); modpon HCasePair.
+          exists (CaseNat_steps), (Lookup_Step_steps_CaseNat n (g,b)).
           repeat split; try omega.
-          intros tmid2 bif (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct bif, n as [ | n']; auto; simpl_surject.
+          intros tmid2 bif (HCaseNat&HCaseNatInj); TMSimp. modpon HCaseNat. destruct bif, n as [ | n']; auto; simpl_surject.
           { (* n = S n' *)
             exists (CopyValue_steps _ b), (1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g).
             repeat split; try omega. 2: now rewrite !Nat.add_assoc.

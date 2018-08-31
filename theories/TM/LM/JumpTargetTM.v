@@ -2,8 +2,8 @@
 
 Require Import TM.Code.ProgrammingTools.
 Require Import TM.LM.Semantics TM.LM.Alphabets.
-Require Import TM.LM.MatchTok.
-Require Import TM.Code.ListTM TM.Code.MatchList TM.Code.MatchNat.
+Require Import TM.LM.CaseCom.
+Require Import TM.Code.ListTM TM.Code.CaseList TM.Code.CaseNat.
 
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
@@ -180,12 +180,12 @@ Qed.
 
 
 Definition JumpTarget_Step : pTM sigPro^+ (option bool) 5 :=
-  If (MatchList sigTok_fin @ [|Fin0; Fin3|])
-     (Match (ChangeAlphabet MatchTok _ @ [|Fin3|])
+  If (CaseList sigTok_fin @ [|Fin0; Fin3|])
+     (Match (ChangeAlphabet CaseCom _ @ [|Fin3|])
              (fun t : option ATok =>
                 match t with
                 | Some retAT =>
-                  If (MatchNat ⇑ retr_nat_prog @ [|Fin2|])
+                  If (CaseNat ⇑ retr_nat_prog @ [|Fin2|])
                      (Return (App_ATok retAT @ [|Fin1; Fin4|]) None) (* continue *)
                      (Return (ResetEmpty1 _ @ [|Fin2|]) (Some true)) (* return true *)
                 | Some lamAT =>
@@ -249,7 +249,7 @@ Lemma JumpTarget_Step_Realise : JumpTarget_Step ⊨ JumpTarget_Step_Rel.
 Proof.
   eapply Realise_monotone.
   { unfold JumpTarget_Step. TM_Correct.
-    - eapply RealiseIn_Realise. apply MatchTok_Sem.
+    - eapply RealiseIn_Realise. apply CaseCom_Sem.
     - apply App_ATok_Realise.
     - eapply RealiseIn_Realise. apply ResetEmpty1_Sem with (X := nat).
     - apply App_ATok_Realise.
@@ -261,19 +261,19 @@ Proof.
     intros tin (yout, tout) H. cbn. intros P Q k HEncP HEncQ HEncK HInt3 HInt4.
     unfold sigPro in *. rename H into HIf.
     destruct HIf; TMSimp.
-    { (* Then of [MatchList], i.e. P = t :: P' *) rename H into HMatchList, H0 into HMatchTok, H1 into HCase.
-      modpon HMatchList. destruct P as [ | t P']; auto; modpon HMatchList.
-      modpon HMatchTok.
+    { (* Then of [CaseList], i.e. P = t :: P' *) rename H into HCaseList, H0 into HCaseCom, H1 into HCase.
+      modpon HCaseList. destruct P as [ | t P']; auto; modpon HCaseList.
+      modpon HCaseCom.
       destruct ymid as [ [ | | ] | ]; try destruct t; auto; simpl_surject; TMSimp.
       { (* t = retT *)
         destruct HCase; TMSimp.
-        { (* k = S k' *) rename H into HMatchNat, H0 into HApp.
-          modpon HMatchNat. destruct k as [ | k']; auto; modpon HMatchNat.
+        { (* k = S k' *) rename H into HCaseNat, H0 into HApp.
+          modpon HCaseNat. destruct k as [ | k']; auto; modpon HCaseNat.
           modpon HApp.
           repeat split; auto.
         }
-        { (* k = 0 *) rename H into HMatchNat. rename H0 into HReset.
-          modpon HMatchNat. destruct k as [ | k']; auto; modpon HMatchNat. modpon HReset .
+        { (* k = 0 *) rename H into HCaseNat. rename H0 into HReset.
+          modpon HCaseNat. destruct k as [ | k']; auto; modpon HCaseNat. modpon HReset .
           repeat split; auto.
         }
       }
@@ -292,36 +292,36 @@ Proof.
         repeat split; auto.
       }
     }
-    { (* Else of [MatchList], i.e. P = nil *)
+    { (* Else of [CaseList], i.e. P = nil *)
       modpon H. destruct P; auto; modpon H; auto.
     }
   }
 Qed.
 
 
-(* Steps after the [MatchTok], depending on [t] *)
-Local Definition JumpTarget_Step_steps_MatchTok (Q: Pro) (k: nat) (t: Tok) :=
+(* Steps after the [CaseCom], depending on [t] *)
+Local Definition JumpTarget_Step_steps_CaseCom (Q: Pro) (k: nat) (t: Tok) :=
   match t with
   | retT =>
     match k with
-    | S _ => 1 + MatchNat_steps + App_ATok_steps Q retAT
-    | 0 => 2 + MatchNat_steps + ResetEmpty1_steps
+    | S _ => 1 + CaseNat_steps + App_ATok_steps Q retAT
+    | 0 => 2 + CaseNat_steps + ResetEmpty1_steps
     end
   | lamT => 1 + Constr_S_steps + App_ATok_steps Q lamAT
   | appT => App_ATok_steps Q appAT
   | varT n => 1 + Constr_varT_steps + App_Tok_steps Q t
   end.
 
-(* Steps after the [MatchList] *)
-Local Definition JumpTarget_Step_steps_MatchList (P Q : Pro) (k: nat) :=
+(* Steps after the [CaseList] *)
+Local Definition JumpTarget_Step_steps_CaseList (P Q : Pro) (k: nat) :=
   match P with
-  | t :: P' => 1 + MatchTok_steps + JumpTarget_Step_steps_MatchTok Q k t
+  | t :: P' => 1 + CaseCom_steps + JumpTarget_Step_steps_CaseCom Q k t
   | nil => 0
   end.
 
 (* Total steps *)
 Definition JumpTarget_Step_steps (P Q: Pro) (k: nat) :=
-  1 + MatchList_steps _ P + JumpTarget_Step_steps_MatchList P Q k.
+  1 + CaseList_steps _ P + JumpTarget_Step_steps_CaseList P Q k.
 
 
 Definition JumpTarget_Step_T : tRel sigPro^+ 5 :=
@@ -337,8 +337,8 @@ Lemma JumpTarget_Step_Terminates : projT1 JumpTarget_Step ↓ JumpTarget_Step_T.
 Proof.
   eapply TerminatesIn_monotone.
   { unfold JumpTarget_Step. TM_Correct.
-    - eapply RealiseIn_Realise. apply MatchTok_Sem.
-    - eapply RealiseIn_TerminatesIn. apply MatchTok_Sem.
+    - eapply RealiseIn_Realise. apply CaseCom_Sem.
+    - eapply RealiseIn_TerminatesIn. apply CaseCom_Sem.
     - apply App_ATok_Terminates.
     - eapply RealiseIn_TerminatesIn. apply ResetEmpty1_Sem with (X := nat).
     - apply App_ATok_Terminates.
@@ -350,22 +350,22 @@ Proof.
   {
     intros tin steps (P&Q&k&HEncP&HEncQ&HEncK&HRight3&HRight4&Hk). unfold JumpTarget_Step_steps in Hk. cbn in *.
     unfold sigPro in *.
-    exists (MatchList_steps _ P), (JumpTarget_Step_steps_MatchList P Q k). cbn; repeat split; try omega. eauto.
-    intros tmid bmatchlist (HMatchList&HMatchListInj); TMSimp. modpon HMatchList.
-    destruct bmatchlist, P as [ | t P']; auto; modpon HMatchList.
+    exists (CaseList_steps _ P), (JumpTarget_Step_steps_CaseList P Q k). cbn; repeat split; try omega. eauto.
+    intros tmid bmatchlist (HCaseList&HCaseListInj); TMSimp. modpon HCaseList.
+    destruct bmatchlist, P as [ | t P']; auto; modpon HCaseList.
     { (* P = t :: P' (* other case is done by auto *) *)
-      exists (MatchTok_steps), (JumpTarget_Step_steps_MatchTok Q k t). cbn; repeat split; try omega.
-      intros tmid1 ytok (HMatchTok&HMatchTokInj); TMSimp. modpon HMatchTok.
+      exists (CaseCom_steps), (JumpTarget_Step_steps_CaseCom Q k t). cbn; repeat split; try omega.
+      intros tmid1 ytok (HCaseCom&HCaseComInj); TMSimp. modpon HCaseCom.
       destruct ytok as [ [ | | ] | ]; destruct t; auto; simpl_surject; TMSimp.
       { (* t = retT *)
-        exists MatchNat_steps.
+        exists CaseNat_steps.
         destruct k as [ | k'].
         - (* k = 0 *)
           exists ResetEmpty1_steps. repeat split; try omega.
-          intros tmid2 bMatchNat (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct bMatchNat; auto.
+          intros tmid2 bCaseNat (HCaseNat&HCaseNatInj); TMSimp. modpon HCaseNat. destruct bCaseNat; auto.
         - (* k = S k' *)
           exists (App_ATok_steps Q retAT). repeat split; try omega.
-          intros tmid2 bMatchNat (HMatchNat&HMatchNatInj); TMSimp. modpon HMatchNat. destruct bMatchNat; auto. hnf; cbn. eauto.
+          intros tmid2 bCaseNat (HCaseNat&HCaseNatInj); TMSimp. modpon HCaseNat. destruct bCaseNat; auto. hnf; cbn. eauto.
       }
       { (* t = lamT *)
         exists (Constr_S_steps), (App_ATok_steps Q lamAT). repeat split; try omega.

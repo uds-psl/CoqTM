@@ -2,8 +2,8 @@
 
 Require Import TM.Code.ProgrammingTools.
 Require Import TM.LM.Semantics TM.LM.Alphabets.
-Require Import TM.LM.MatchTok TM.LM.LookupTM TM.LM.JumpTargetTM.
-Require Import TM.Code.ListTM TM.Code.MatchList TM.Code.MatchPair TM.Code.MatchSum.
+Require Import TM.LM.CaseCom TM.LM.LookupTM TM.LM.JumpTargetTM.
+Require Import TM.Code.ListTM TM.Code.CaseList TM.Code.CasePair TM.Code.CaseSum.
 
 Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
@@ -502,9 +502,9 @@ Section StepMachine.
 
   
   Definition Step_app : pTM sigStep^+ bool 11 :=
-    If (MatchList sigHClos_fin ⇑ _ @ [|Fin1; Fin5|])
-       (If (MatchList sigHClos_fin ⇑ _ @ [|Fin1; Fin6|])
-           (Return (MatchPair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin6; Fin7|];;
+    If (CaseList sigHClos_fin ⇑ _ @ [|Fin1; Fin5|])
+       (If (CaseList sigHClos_fin ⇑ _ @ [|Fin1; Fin6|])
+           (Return (CasePair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin6; Fin7|];;
                     TailRec @ [|Fin0; Fin3; Fin4|];;
                     Reset _ @ [|Fin4|];;
                     Put @ [|Fin2; Fin5; Fin7; Fin8; Fin9; Fin10|];;
@@ -528,13 +528,13 @@ Section StepMachine.
       intros tin (yout, tout) H. cbn. intros T V heap a P HEncT HEncV HEncH HEncP HEncA HInt.
       TMSimp. rename H into HIf.
       destruct HIf; TMSimp.
-      { (* Then of first [MatchList], i.e. [V = g :: V'] *) rename H into HMatchList, H0 into HIf'.
-        modpon HMatchList. destruct V as [ | g V']; auto; modpon HMatchList.
+      { (* Then of first [CaseList], i.e. [V = g :: V'] *) rename H into HCaseList, H0 into HIf'.
+        modpon HCaseList. destruct V as [ | g V']; auto; modpon HCaseList.
         destruct HIf'; TMSimp. (* This takes long *)
         {
-          rename H into HMatchList'; rename H0 into HMatchPair; rename H1 into HTailRec; rename H2 into HReset; rename H3 into HPut; rename H4 into HConsClos.
-          modpon HMatchList'. destruct V' as [ | (b, Q) V'']; auto. modpon HMatchList'.
-          specialize (HMatchPair (b,Q)). modpon HMatchPair. cbn in *.
+          rename H into HCaseList'; rename H0 into HCasePair; rename H1 into HTailRec; rename H2 into HReset; rename H3 into HPut; rename H4 into HConsClos.
+          modpon HCaseList'. destruct V' as [ | (b, Q) V'']; auto. modpon HCaseList'.
+          specialize (HCasePair (b,Q)). modpon HCasePair. cbn in *.
           modpon HTailRec.
           modpon HReset.
           modpon HPut.
@@ -549,20 +549,20 @@ Section StepMachine.
   Qed.
 
 
-  Definition Step_app_steps_MatchList' T g V' H P a :=
+  Definition Step_app_steps_CaseList' T g V' H P a :=
     match V' with
     | nil => 0 (* Nop *)
     | (b, Q) :: V'' =>
-      4 + MatchPair_steps _ b + TailRec_steps P a + Reset_steps _ a + Put_steps H g b + ConsClos_steps Q (length H)
+      4 + CasePair_steps _ b + TailRec_steps P a + Reset_steps _ a + Put_steps H g b + ConsClos_steps Q (length H)
     end.
 
-  Definition Step_app_steps_MatchList T V H P a :=
+  Definition Step_app_steps_CaseList T V H P a :=
     match V with
     | nil => 0 (* Nop *)
-    | g :: V' => 1 + MatchList_steps _ V' + Step_app_steps_MatchList' T g V' H P a
+    | g :: V' => 1 + CaseList_steps _ V' + Step_app_steps_CaseList' T g V' H P a
     end.
   
-  Definition Step_app_steps T V H a P := 1 + MatchList_steps _ V + Step_app_steps_MatchList T V H P a.
+  Definition Step_app_steps T V H a P := 1 + CaseList_steps _ V + Step_app_steps_CaseList T V H P a.
 
   Definition Step_app_T : tRel sigStep^+ 11 :=
     fun tin k =>
@@ -589,24 +589,24 @@ Section StepMachine.
     }
     {
       intros tin k. intros (T&V&H&P&a&HEncT&HEncV&HEncH&HEncP&HEncA&HInt&Hk). unfold Step_app_steps in Hk.
-      exists (MatchList_steps _ V), (Step_app_steps_MatchList T V H P a).
+      exists (CaseList_steps _ V), (Step_app_steps_CaseList T V H P a).
       cbn; repeat split; try omega.
       { exists V. repeat split; simpl_surject; eauto. apply HInt. }
-      intros tmid bml1 (HMatchList&HMatchListInj); TMSimp. modpon HMatchList.
-      destruct bml1, V as [ | g V']; auto; modpon HMatchList.
+      intros tmid bml1 (HCaseList&HCaseListInj); TMSimp. modpon HCaseList.
+      destruct bml1, V as [ | g V']; auto; modpon HCaseList.
       {
-        unfold Step_app_steps_MatchList.
-        exists (MatchList_steps _ V'), (Step_app_steps_MatchList' T g V' H P a).
+        unfold Step_app_steps_CaseList.
+        exists (CaseList_steps _ V'), (Step_app_steps_CaseList' T g V' H P a).
         cbn; repeat split; try omega.
         { exists V'. repeat split; simpl_surject; eauto. }
-        intros tmid1 bml2 (HMatchList'&HMatchListInj'); TMSimp. modpon HMatchList'.
-        destruct bml2, V' as [ | (b, Q) V'']; auto; modpon HMatchList'.
+        intros tmid1 bml2 (HCaseList'&HCaseListInj'); TMSimp. modpon HCaseList'.
+        destruct bml2, V' as [ | (b, Q) V'']; auto; modpon HCaseList'.
         {
-          unfold Step_app_steps_MatchList'.
-          exists (MatchPair_steps _ b), (1 + TailRec_steps P a + 1 + Reset_steps _ a + 1 + Put_steps H g b + ConsClos_steps Q (length H)).
+          unfold Step_app_steps_CaseList'.
+          exists (CasePair_steps _ b), (1 + TailRec_steps P a + 1 + Reset_steps _ a + 1 + Put_steps H g b + ConsClos_steps Q (length H)).
           cbn; repeat split; try omega.
           { hnf; cbn. exists (b, Q). repeat split; simpl_surject; eauto. contains_ext. }
-          intros tmid2 () (HMatchPair&HMatchPairInj); TMSimp. specialize (HMatchPair (b,Q)); modpon HMatchPair.
+          intros tmid2 () (HCasePair&HCasePairInj); TMSimp. specialize (HCasePair (b,Q)); modpon HCasePair.
           exists (TailRec_steps P a), (1 + Reset_steps _ a + 1 + Put_steps H g b + ConsClos_steps Q (length H)).
           cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
           { hnf; cbn. do 3 eexists. repeat split; simpl_surject; eauto. }
@@ -742,10 +742,10 @@ Section StepMachine.
 
   Definition Step : pTM sigStep^+ (option unit) 11 :=
     ChangePartition
-      (If (MatchList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|])
-          (MatchPair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
-           If (MatchList sigTok_fin ⇑ retr_pro_step @ [|Fin3; Fin5|])
-              (Match (MatchTok ⇑ retr_tok_step @ [|Fin5|])
+      (If (CaseList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|])
+          (CasePair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
+           If (CaseList sigTok_fin ⇑ retr_pro_step @ [|Fin3; Fin5|])
+              (Match (CaseCom ⇑ retr_tok_step @ [|Fin5|])
                      (fun t : option ATok =>
                         match t with
                         | Some lamAT =>
@@ -793,7 +793,7 @@ Section StepMachine.
   Proof.
     eapply Realise_monotone.
     { unfold Step. TM_Correct.
-      - eapply RealiseIn_Realise. apply MatchTok_Sem.
+      - eapply RealiseIn_Realise. apply CaseCom_Sem.
       - apply Step_lam_Realise.
       - apply Step_app_Realise.
       - apply Step_var_Realise.
@@ -802,13 +802,13 @@ Section StepMachine.
       intros tin (yout, tout) H. cbn. intros T V Heap HEncT HEncV HEncHeap HInt.
       TMSimp. rename H0 into HIf.
       destruct HIf; TMSimp.
-      { (* Then of [MatchList], i.e. [T = (a, P) :: T'] *) rename H into HMatchList, H0 into HMatchPair, H1 into HIf'.
-        modpon HMatchList. destruct T as [ | (a, P) T' ]; auto; modpon HMatchList.
-        specialize (HMatchPair (a, P)); modpon HMatchPair.
+      { (* Then of [CaseList], i.e. [T = (a, P) :: T'] *) rename H into HCaseList, H0 into HCasePair, H1 into HIf'.
+        modpon HCaseList. destruct T as [ | (a, P) T' ]; auto; modpon HCaseList.
+        specialize (HCasePair (a, P)); modpon HCasePair.
         destruct HIf'; TMSimp.
-        { (* Then of second [MatchList], i.e [P = t :: P'] *) rename H into HMatchList', H0 into HMatchTok, H1 into HCase.
-          modpon HMatchList'. destruct P as [ | t P']; auto; modpon HMatchList'.
-          modpon HMatchTok. destruct ymid0 as [ [ | | ] | ], t; auto; simpl_surject; cbn in *.
+        { (* Then of second [CaseList], i.e [P = t :: P'] *) rename H into HCaseList', H0 into HCaseCom, H1 into HCase.
+          modpon HCaseList'. destruct P as [ | t P']; auto; modpon HCaseList'.
+          modpon HCaseCom. destruct ymid0 as [ [ | | ] | ], t; auto; simpl_surject; cbn in *.
           { (* retT *)
             destruct HCase as (->&(?&->)); cbn. split; auto. hnf. intros s HStep. inv HStep.
           }
@@ -845,11 +845,11 @@ Section StepMachine.
             - split; auto. intros s' HStep. inv HStep. congruence.
           }
         }
-        { (* Else of the second [MatchList], i.e [P = nil] *)
+        { (* Else of the second [CaseList], i.e [P = nil] *)
           modpon H. destruct P; auto. split; auto. intros s HStep. now inv HStep.
         }
       }
-      { (* Else of the first [MatchList], i.e. [T = nil] *)
+      { (* Else of the first [CaseList], i.e. [T = nil] *)
         modpon H. destruct T; auto. modpon H. split; auto. intros s HStep. now inv HStep.
         repeat split; eauto. intros i; destruct_fin i; TMSimp_goal; auto.
       }
@@ -858,7 +858,7 @@ Section StepMachine.
 
 
 
-  Definition Step_steps_MatchTok a t P' T' V H :=
+  Definition Step_steps_CaseCom a t P' T' V H :=
     match t with
     | varT n => Step_var_steps P' V H a n
     | appT => Step_app_steps T' V H a P'
@@ -866,20 +866,20 @@ Section StepMachine.
     | retT => 0 (* Nop *)
     end.
 
-  Definition Step_steps_MatchList' a P T' V H :=
+  Definition Step_steps_CaseList' a P T' V H :=
     match P with
     | nil => 0
-    | t :: P' => 1 + MatchTok_steps + Step_steps_MatchTok a t P' T' V H
+    | t :: P' => 1 + CaseCom_steps + Step_steps_CaseCom a t P' T' V H
     end.
 
-  Definition Step_steps_MatchList T V H :=
+  Definition Step_steps_CaseList T V H :=
     match T with
     | nil => 0
-    | (a,P) :: T' => 2 + MatchPair_steps _ a + MatchList_steps _ P + Step_steps_MatchList' a P T' V H
+    | (a,P) :: T' => 2 + CasePair_steps _ a + CaseList_steps _ P + Step_steps_CaseList' a P T' V H
     end.
 
   Definition Step_steps T V H :=
-    1 + MatchList_steps _ T + Step_steps_MatchList T V H.
+    1 + CaseList_steps _ T + Step_steps_CaseList T V H.
 
   
   Definition Step_T : tRel sigStep^+ 11 :=
@@ -896,27 +896,27 @@ Section StepMachine.
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Step. TM_Correct.
-      - eapply RealiseIn_Realise. apply MatchTok_Sem.
-      - eapply RealiseIn_TerminatesIn. apply MatchTok_Sem.
+      - eapply RealiseIn_Realise. apply CaseCom_Sem.
+      - eapply RealiseIn_TerminatesIn. apply CaseCom_Sem.
       - apply Step_lam_Terminates.
       - apply Step_app_Terminates.
       - apply Step_var_Terminates.
     }
     {
       intros tin k (T&V&H&HEncT&HEncV&HEncH&HInt&Hk). unfold Step_steps in Hk.
-      exists (MatchList_steps _ T), (Step_steps_MatchList T V H). cbn; repeat split; try omega.
+      exists (CaseList_steps _ T), (Step_steps_CaseList T V H). cbn; repeat split; try omega.
       { do 1 eexists; repeat split; simpl_surject; eauto. apply HInt. }
-      intros tmid bif (HMatchList&HMatchListInj); TMSimp. modpon HMatchList.
-      destruct bif, T as [ | (a,P) T']; cbn; auto; modpon HMatchList.
-      exists (MatchPair_steps _ a), (1 + MatchList_steps _ P + Step_steps_MatchList' a P T' V H). cbn; repeat split; try omega.
+      intros tmid bif (HCaseList&HCaseListInj); TMSimp. modpon HCaseList.
+      destruct bif, T as [ | (a,P) T']; cbn; auto; modpon HCaseList.
+      exists (CasePair_steps _ a), (1 + CaseList_steps _ P + Step_steps_CaseList' a P T' V H). cbn; repeat split; try omega.
       { hnf; cbn. exists (a, P); repeat split; simpl_surject; eauto. contains_ext. }
-      intros tmid0 () (HMatchPair&HMatchPairInj); TMSimp. specialize (HMatchPair (a,P)). modpon HMatchPair. cbn in *.
-      exists (MatchList_steps _ P), (Step_steps_MatchList' a P T' V H). cbn; repeat split; try omega. 2: reflexivity.
+      intros tmid0 () (HCasePair&HCasePairInj); TMSimp. specialize (HCasePair (a,P)). modpon HCasePair. cbn in *.
+      exists (CaseList_steps _ P), (Step_steps_CaseList' a P T' V H). cbn; repeat split; try omega. 2: reflexivity.
       { hnf; cbn. exists P; repeat split; simpl_surject; eauto. contains_ext. }
-      intros tmid1 bif (HMatchList'&HMatchListInj'); TMSimp. modpon HMatchList'.
-      destruct bif, P as [ | t P']; auto; modpon HMatchList'. cbn.
-      exists (MatchTok_steps), (Step_steps_MatchTok a t P' T' V H). cbn; repeat split; try omega.
-      intros tmid2 ymid (HMatchTok&HMatchTokInj); TMSimp. modpon HMatchTok.
+      intros tmid1 bif (HCaseList'&HCaseListInj'); TMSimp. modpon HCaseList'.
+      destruct bif, P as [ | t P']; auto; modpon HCaseList'. cbn.
+      exists (CaseCom_steps), (Step_steps_CaseCom a t P' T' V H). cbn; repeat split; try omega.
+      intros tmid2 ymid (HCaseCom&HCaseComInj); TMSimp. modpon HCaseCom.
       destruct ymid as [ [ | | ] | ]; destruct t; cbn; auto; simpl_surject.
       - hnf; cbn. do 5 eexists; repeat split; TMSimp_goal; eauto. contains_ext. intros i; destruct_fin i; cbn; TMSimp_goal; auto.
       - hnf; cbn. do 5 eexists; repeat split; TMSimp_goal; eauto. contains_ext. intros i; destruct_fin i; cbn; TMSimp_goal; auto.

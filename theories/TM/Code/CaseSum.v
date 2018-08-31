@@ -2,7 +2,7 @@ Require Import ProgrammingTools.
 
 (** * Constructor and Deconstructor Machines for Sum Types and Option Types *)
 
-Section MatchSum.
+Section CaseSum.
 
   Variable X Y : Type.
 
@@ -11,7 +11,7 @@ Section MatchSum.
   Variable (sigX sigY : finType).
   Hypothesis (codX : codable sigX X) (codY : codable sigY Y).
 
-  Definition MatchSum_Rel : Rel (tapes (sigSum sigX sigY)^+ 1) (bool * tapes ((sigSum sigX sigY)^+) 1) :=
+  Definition CaseSum_Rel : Rel (tapes (sigSum sigX sigY)^+ 1) (bool * tapes ((sigSum sigX sigY)^+) 1) :=
     Mk_R_p (
         fun tin '(yout, tout) =>
           forall s : X + Y,
@@ -23,7 +23,7 @@ Section MatchSum.
             end).
 
 
-  Definition MatchSum : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> bool } :=
+  Definition CaseSum : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> bool } :=
     Move R;; (* skip the [START] symbol *)
     Match (ReadChar) (* read the "constructor" symbol *)
           (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding partition *)
@@ -32,12 +32,12 @@ Section MatchSum.
                  | _ => Return (Nop) true (* invalid input *)
                  end).
 
-  Definition MatchSum_steps := 5.
+  Definition CaseSum_steps := 5.
 
-  Lemma MatchSum_Sem : MatchSum ⊨c(MatchSum_steps) MatchSum_Rel.
+  Lemma CaseSum_Sem : CaseSum ⊨c(CaseSum_steps) CaseSum_Rel.
   Proof.
-    unfold MatchSum_steps. eapply RealiseIn_monotone.
-    { unfold MatchSum. TM_Correct. }
+    unfold CaseSum_steps. eapply RealiseIn_monotone.
+    { unfold CaseSum. TM_Correct. }
     { Unshelve. 4,10,11: constructor. all: cbn. all: omega. }
     {
       intros tin (yout&tout) H.
@@ -93,19 +93,19 @@ Section MatchSum.
 
   End SumConstr.
 
-End MatchSum.
+End CaseSum.
 
-Arguments MatchSum : simpl never.
+Arguments CaseSum : simpl never.
 Arguments Constr_inl : simpl never.
 Arguments Constr_inr : simpl never.
 
 (** ** Tactical Support for Sum Types *)
 
-Ltac smpl_TM_MatchSum :=
+Ltac smpl_TM_CaseSum :=
   lazymatch goal with
-  | [ |- MatchSum _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchSum_Sem
-  | [ |- MatchSum _ _ ⊨c(_) _ ] => apply MatchSum_Sem
-  | [ |- projT1 (MatchSum _ _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply MatchSum_Sem
+  | [ |- CaseSum _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply CaseSum_Sem
+  | [ |- CaseSum _ _ ⊨c(_) _ ] => apply CaseSum_Sem
+  | [ |- projT1 (CaseSum _ _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply CaseSum_Sem
   | [ |- Constr_inr _ _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_inr_Sem
   | [ |- Constr_inr _ _ ⊨c(_) _ ] => apply Constr_inr_Sem
   | [ |- projT1 (Constr_inr _ _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Constr_inr_Sem
@@ -114,13 +114,13 @@ Ltac smpl_TM_MatchSum :=
   | [ |- projT1 (Constr_inl _ _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Constr_inl_Sem
   end.
 
-Smpl Add smpl_TM_MatchSum : TM_Correct.
+Smpl Add smpl_TM_CaseSum : TM_Correct.
 
 
 
 
 
-Section MatchOption.
+Section CaseOption.
 
   (* Matching of option reduces to matching of sums with [Empty_set] *)
 
@@ -136,7 +136,7 @@ Section MatchOption.
   Let sig := FinType (EqType (sigSum sigX (FinType(EqType Empty_set)))).
   Let tau := FinType (EqType (sigOption sigX)).
 
-  Definition MatchOption_Rel : Rel (tapes tau^+ 1) (bool * tapes tau^+ 1) :=
+  Definition CaseOption_Rel : Rel (tapes tau^+ 1) (bool * tapes tau^+ 1) :=
     Mk_R_p (fun tin '(yout, tout) =>
               forall o : option X,
                 tin ≃ o ->
@@ -169,8 +169,8 @@ Section MatchOption.
   Defined.
 
 
-  Definition MatchOption : { M : mTM tau^+ 1 & states M -> bool } :=
-    If (ChangeAlphabet (MatchSum (sigX) (FinType (EqType Empty_set))) _)
+  Definition CaseOption : { M : mTM tau^+ 1 & states M -> bool } :=
+    If (ChangeAlphabet (CaseSum (sigX) (FinType (EqType Empty_set))) _)
        (Return Nop true)
        (Return (ResetEmpty _) false).
 
@@ -180,13 +180,13 @@ Section MatchOption.
     | None => inr tt
     end.
 
-  Definition MatchOption_steps := 7.
+  Definition CaseOption_steps := 7.
   
-  Lemma MatchOption_Sem :
-    MatchOption ⊨c(MatchOption_steps) MatchOption_Rel.
+  Lemma CaseOption_Sem :
+    CaseOption ⊨c(CaseOption_steps) CaseOption_Rel.
   Proof.
-    unfold MatchOption_steps. eapply RealiseIn_monotone.
-    { unfold MatchOption. TM_Correct. unfold ChangeAlphabet. TM_Correct.
+    unfold CaseOption_steps. eapply RealiseIn_monotone.
+    { unfold CaseOption. TM_Correct. unfold ChangeAlphabet. TM_Correct.
       - apply ResetEmpty_Sem with (X := unit).
     }
     { cbn. reflexivity. }
@@ -281,20 +281,20 @@ Section MatchOption.
     { intros tin ((), tout) H. cbn in *. auto. }
   Qed.
 
-End MatchOption.
+End CaseOption.
 
-Arguments MatchOption : simpl never.
+Arguments CaseOption : simpl never.
 Arguments Constr_None : simpl never.
 Arguments Constr_Some : simpl never.
 
 
 (** ** Tactical Support for Option Types *)
 
-Ltac smpl_TM_MatchOption :=
+Ltac smpl_TM_CaseOption :=
   lazymatch goal with
-  | [ |- MatchOption _ ⊨ _ ] => eapply RealiseIn_Realise; apply MatchOption_Sem
-  | [ |- MatchOption _ ⊨c(_) _ ] => apply MatchOption_Sem
-  | [ |- projT1 (MatchOption _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply MatchOption_Sem
+  | [ |- CaseOption _ ⊨ _ ] => eapply RealiseIn_Realise; apply CaseOption_Sem
+  | [ |- CaseOption _ ⊨c(_) _ ] => apply CaseOption_Sem
+  | [ |- projT1 (CaseOption _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply CaseOption_Sem
   | [ |- Constr_None _ ⊨ _ ] => eapply RealiseIn_Realise; apply Constr_None_Sem
   | [ |- Constr_None _ ⊨c(_) _ ] => apply Constr_None_Sem
   | [ |- projT1 (Constr_None _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Constr_None_Sem
@@ -303,4 +303,4 @@ Ltac smpl_TM_MatchOption :=
   | [ |- projT1 (Constr_Some _) ↓ _ ] => eapply RealiseIn_TerminatesIn; apply Constr_Some_Sem
   end.
 
-Smpl Add smpl_TM_MatchOption : TM_Correct.
+Smpl Add smpl_TM_CaseOption : TM_Correct.

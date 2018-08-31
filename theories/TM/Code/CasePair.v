@@ -10,7 +10,7 @@ Proof. intros H. now inv H. Qed.
 
 Local Arguments skipn { A } !n !l.
 
-Section MatchPair.
+Section CasePair.
 
   (** ** Deconstructor *)
 
@@ -33,7 +33,7 @@ Section MatchPair.
           end.
 
 
-  Definition MatchPair_Rel : Rel (tapes sigPair^+ 2) (unit * tapes sigPair^+ 2) :=
+  Definition CasePair_Rel : Rel (tapes sigPair^+ 2) (unit * tapes sigPair^+ 2) :=
     ignoreParam (
         fun tin tout =>
           forall p : X * Y,
@@ -43,16 +43,16 @@ Section MatchPair.
             tout[@Fin1] ≃ fst p
       ).
 
-  Definition MatchPair : { M : mTM sigPair^+ 2 & states M -> unit } :=
+  Definition CasePair : { M : mTM sigPair^+ 2 & states M -> unit } :=
     LiftTapes (WriteMove (inl STOP) L) [|Fin1|];;
     LiftTapes (MoveToSymbol stopAfterFirst id;; Move L) [|Fin0|];;
     CopySymbols_L stopAtStart;;
     LiftTapes (MoveToSymbol stopAfterFirst id;; Move L;; Write (inl START)) [|Fin0|].
 
-  Lemma MatchPair_Realise : MatchPair ⊨ MatchPair_Rel.
+  Lemma CasePair_Realise : CasePair ⊨ CasePair_Rel.
   Proof.
     eapply Realise_monotone.
-    { unfold MatchPair. TM_Correct. }
+    { unfold CasePair. TM_Correct. }
     {
       intros tin ((), tout) H.
       intros (x,y) HEncXY HRight.
@@ -89,18 +89,18 @@ Section MatchPair.
   Local Arguments plus : simpl never. Local Arguments mult : simpl never.
   Local Arguments size : simpl never.
 
-  Definition MatchPair_steps (x : X) :=
+  Definition CasePair_steps (x : X) :=
     34 + 16 * size _ x.
 
-  Definition MatchPair_T : tRel sigPair^+ 2 :=
-    fun tin k => exists (p : X * Y), tin[@Fin0] ≃ p /\ MatchPair_steps (fst p) <= k.
+  Definition CasePair_T : tRel sigPair^+ 2 :=
+    fun tin k => exists (p : X * Y), tin[@Fin0] ≃ p /\ CasePair_steps (fst p) <= k.
       
-  Lemma MatchPair_Terminates : projT1 MatchPair ↓ MatchPair_T.
+  Lemma CasePair_Terminates : projT1 CasePair ↓ CasePair_T.
   Proof.
     eapply TerminatesIn_monotone.
-    { unfold MatchPair. TM_Correct. }
+    { unfold CasePair. TM_Correct. }
     {
-      intros tin k ((x&y)&HEncP&Hk). unfold MatchPair_steps in *. cbn in *.
+      intros tin k ((x&y)&HEncP&Hk). unfold CasePair_steps in *. cbn in *.
       exists 1, (32 + 16 * size _ x). repeat split; try omega.
       intros tmid () ?; TMSimp.
       exists (10 + 4 * size _ x), (21 + 12 * size _ x). repeat split; try omega.
@@ -265,7 +265,7 @@ Section MatchPair.
   Qed.
 
 
-End MatchPair.
+End CasePair.
 
 (** ** Compatibility of running time functions with mapping of encodings *)
 
@@ -273,9 +273,9 @@ Section Steps_comp.
   Variable (sig tau: finType) (X Y:Type) (cX: codable sig X).
   Variable (I : Retract sig tau).
 
-  Lemma MatchPair_steps_comp l :
-    MatchPair_steps (Encode_map cX I) l = MatchPair_steps cX l.
-  Proof. unfold MatchPair_steps. now rewrite Encode_map_hasSize. Qed.
+  Lemma CasePair_steps_comp l :
+    CasePair_steps (Encode_map cX I) l = CasePair_steps cX l.
+  Proof. unfold CasePair_steps. now rewrite Encode_map_hasSize. Qed.
 
   Lemma Constr_pair_steps_comp l :
     Constr_pair_steps (Encode_map cX I) l = Constr_pair_steps cX l.
@@ -290,10 +290,10 @@ End Steps_comp.
 
 (** ** Tactical support *)
 
-Ltac smpl_TM_MatchPair :=
+Ltac smpl_TM_CasePair :=
   lazymatch goal with
-  | [ |- MatchPair _ _ ⊨ _ ] => apply MatchPair_Realise
-  | [ |- projT1 (MatchPair _ _) ↓ _ ] => apply MatchPair_Terminates
+  | [ |- CasePair _ _ ⊨ _ ] => apply CasePair_Realise
+  | [ |- projT1 (CasePair _ _) ↓ _ ] => apply CasePair_Terminates
 
   | [ |- Constr_pair _ _ ⊨ _ ] => apply Constr_pair_Realise
   | [ |- projT1 (Constr_pair _ _) ↓ _] => apply Constr_pair_Terminates
@@ -302,4 +302,4 @@ Ltac smpl_TM_MatchPair :=
   | [ |- projT1 (Snd _ _) ↓ _] => apply Snd_Terminates
   end.
 
-Smpl Add smpl_TM_MatchPair : TM_Correct.
+Smpl Add smpl_TM_CasePair : TM_Correct.
