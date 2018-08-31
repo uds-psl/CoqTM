@@ -26,7 +26,7 @@ Section CaseSum.
   Definition CaseSum : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> bool } :=
     Move R;; (* skip the [START] symbol *)
     Switch (ReadChar) (* read the "constructor" symbol *)
-          (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding partition *)
+          (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding label *)
                  | Some (inr sigSum_inl) => Return (Write (inl START)) true  (* inl *)
                  | Some (inr sigSum_inr) => Return (Write (inl START)) false (* inr *)
                  | _ => Return (Nop) true (* invalid input *)

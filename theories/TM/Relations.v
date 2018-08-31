@@ -72,7 +72,7 @@ Notation "R '=2' S"  := (eqrel R S) (at level 70).
 Instance eqrel_eq X Y : Equivalence (eqrel (X := X) (Y := Y)).
 Proof. constructor; firstorder. Qed.
 
-(** ** Relational operators on partioned relations *)
+(** ** Relational operators on labelled relations *)
 
 Definition restrict X Y Z (R : Rel X (Y * Z)) f : Rel X Z := (fun x1 x2 => R x1 (f, x2)).
 Notation "R '|_' f" := (restrict R f) (at level 30, format "R '|_' f").

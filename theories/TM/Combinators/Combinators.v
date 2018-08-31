@@ -19,7 +19,7 @@ End Id.
 
 
 
-(** Simple operator to change the partition *)
+(** Simple operator to change the labelling function *)
 Section Relabel.
   Variable (sig : finType) (n : nat).
   Variable F F' : finType.
@@ -54,7 +54,7 @@ End Relabel.
 Arguments Relabel : simpl never.
 
 
-(** Special case of the above operator, where we just fix a partitioparametern *)
+(** Special case of the above operator, where we just fix a label *)
 Section Return.
 
   Variable (sig : finType) (n : nat).

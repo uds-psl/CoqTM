@@ -14,14 +14,14 @@ Section Switch.
   Variable F' : finType.
   Variable pMf : F -> pTM sig F' n.
 
-  (** The (unpartioned) machine [M] *)
+  (** The (unlabelled) machine [M] *)
   Notation M1 := (projT1 pM1).
-  (** The partitioning of the machine [M] *)
+  (** The labelling function of the machine [M] *)
   Notation p1 := (projT2 pM1).
 
-  (** The (unpartioned) case-machine [M' y] *)
+  (** The (unlabelled) case-machine [M' y] *)
   Notation "'Mf' y" := (projT1 (pMf y)) (at level 10).
-  (** The partioning of the case-machine [M' y] *)
+  (** The labelling function of the case-machine [M' y] *)
   Notation "'p2' y" := (projT2 (pMf y)) (at level 10).
 
   Definition Switch_trans :

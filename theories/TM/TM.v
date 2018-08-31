@@ -1,6 +1,6 @@
 (** * Definition of Multi-Tape Turing Machines *)
 
-(** Definitions of tapes and (unpartioned) multi-tape Turing machines from Asperti, Riciotti "A formalization of multi-tape Turing machines" (2015) and the accompanying Matita code. *)
+(** Definitions of tapes and (unlabelled) multi-tape Turing machines from Asperti, Riciotti "A formalization of multi-tape Turing machines" (2015) and the accompanying Matita code. *)
 
 Require Export TM.Prelim TM.Relations.
 Require Import Shared.Vectors.Vectors.
@@ -712,7 +712,7 @@ Section Semantics.
       halt : states -> bool (* decidable subset of halting states *)
     }.
 
-  (** Partitioned Multi-Tape Turing Machines *)
+  (** Labelled Multi-Tape Turing Machines *)
   Definition pTM (F: Type) (n:nat) := { M : mTM n & states M -> F }.
   
 
@@ -747,7 +747,7 @@ Section Semantics.
   (** Parametrised relations *)
   Definition pRel (F: Type) (n : nat) := Rel (tapes sig n) (F * tapes sig n).
 
-  (** A (partitioned) machine [M] realises a (partitioned) relation [R], if: for every tape vectors [t], if [M] with [t] terminates in a configuration [c], then [R (t), (projT2 M (cstate c), ctapes c)]. That means that the pair of the input tape vectors, the partition where the machine terminated, and the output tape, must be in the relation [R]. *)
+  (** A (labelled) machine [M] realises a (labelled) relation [R], if: for every tape vectors [t], if [M] with [t] terminates in a configuration [c], then [R (t), (projT2 M (cstate c), ctapes c)]. That means that the pair of the input tape vectors, the labelled of the state in that the machine terminated, and the output tape, must be in the relation [R]. *)
   
   Definition Realise n F (pM : pTM n F) (R : pRel n F) :=
     forall t k outc, loopM (initc (projT1 pM) t) k = Some outc -> R t (projT2 pM (cstate outc), ctapes outc).
@@ -896,7 +896,7 @@ End Semantics.
 
 
 (** Notation for parametrised Turing machines *)
-Notation "'(' M ';' partitioning ')'" := (existT (fun x => states x -> _) M partitioning).
+Notation "'(' M ';' labelling ')'" := (existT (fun x => states x -> _) M labelling).
 
 (** Notations for semantic of concrete Turing machines *)
 Notation "M '⊨' R" := (Realise M R) (no associativity, at level 60, format "M  '⊨'  R").
