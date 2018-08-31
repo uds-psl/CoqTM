@@ -7,7 +7,7 @@ Require Import TM.LM.Semantics TM.LM.Alphabets.
 Definition CaseCom : { M : mTM sigTok^+ 1 & states M -> option ATok } :=
   If (CaseSum _ _)
      (Return Nop None)
-     (ChangePartition (ChangeAlphabet (CaseFin (FinType(EqType(ATok))) ) _) Some)
+     (Relabel (ChangeAlphabet (CaseFin (FinType(EqType(ATok))) ) _) Some)
 .
      
 

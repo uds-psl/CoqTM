@@ -737,11 +737,11 @@ Section StepMachine.
   Qed.
 
 
-  (* I forgot that [While] takes a machine over [option unit] instead of [bool]. But that's no problem since we have [ChangePartition]. *)
+  (* I forgot that [While] takes a machine over [option unit] instead of [bool]. But that's no problem since we have [Relabel]. *)
   Coercion bool2optunit := fun b : bool => if b then None else Some tt.
 
   Definition Step : pTM sigStep^+ (option unit) 11 :=
-    ChangePartition
+    Relabel
       (If (CaseList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|])
           (CasePair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
            If (CaseList sigTok_fin ⇑ retr_pro_step @ [|Fin3; Fin5|])

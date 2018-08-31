@@ -257,7 +257,7 @@ Section Nth'.
        (If (LiftTapes (ChangeAlphabet (CaseList sigX) _) [|Fin0; Fin2|]) (* n = S n' *)
            (Return (LiftTapes (Reset _) [|Fin2|]) None) (* l = x :: l'; continue *)
            (Return Nop (Some false))) (* l = nil; return false *)
-       (ChangePartition (LiftTapes (ChangeAlphabet (CaseList sigX) _) [|Fin0; Fin2|]) Some) (* n = 0 *)
+       (Relabel (LiftTapes (ChangeAlphabet (CaseList sigX) _) [|Fin0; Fin2|]) Some) (* n = 0 *)
   .
 
   Lemma Nth'_Step_Realise : Nth'_Step ⊨ Nth'_Step_Rel.
