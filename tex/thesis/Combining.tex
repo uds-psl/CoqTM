@@ -3,7 +3,7 @@
 
 Recall that Turing machines are unstructured -- the execution of a machine could continue from one state to any other state of the machine.  There is
 also no trivial way how to sequentially compose two machines.  We fix these problems and introduce \textit{control flow} operators, like ``if then
-else'', ``sequential composition'', and ``while''.  Thus we do not need to define transition functions $\delta$ or even states $Q$ for complex
+else'', ``sequential composition'', and ``while''.  Thus, we do not need to define transition functions $\delta$ or even states $Q$ for complex
 machines, because we only combine machines using these operators.  The transition function of the sequential composition of $M_1$ and $M_2$ is derived
 from the transition functions of $M_1$ and $M_2$.  But maybe more importantly, this also makes correctness of machines compositional: From the
 correctness of $M_1$ and $M_2$, we can conclude the correctness of the sequential composition of $M_1$ and $M_2$.  Also note that the number of
@@ -100,7 +100,7 @@ is the input of $f~l$.  Also, the choice of the case machine depends on the labe
 We can combine the correctness and running time lemma, in case $M$ and every $f~l$ terminates in constant time.
 \begin{lemma}[Correctness of $\MS{Switch}~M~f$ in constant time][Switch_RealiseIn]
   \label{lem:Switch_RealiseIn}
-  Let $k_1, k_2:\Nat$.\\
+  Let $k_1, k_2:\Nat$.
   If $M \RealiseIn{k_1} R$ and $f~l \RealiseIn{k_2} R'~l$ for every $l:L$, then
   \[ \MS{Switch}~M~f \RealiseIn{1+k_1+k_2} SwitchRel~R~R' \]
 \end{lemma}

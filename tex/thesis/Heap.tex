@@ -339,7 +339,7 @@ the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}), $\MS
 
 Because no initialisation or clean-up is needed before or after the loop, we can define $\MS{Lookup} := \While~\MS{LookupStep}$.  The correctness
 relation of $\MS{Lookup}$ says that if it terminated in the label $\true$, we have $H[a,n] = \Some{g}$ for some closure $g$, and tape~$3$ contains $g$
-w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still contains $H$ and all other tapes are reseted.  In case $\MS{Lookup}$
+w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still contains $H$ and all other tapes are resetted.  In case $\MS{Lookup}$
 terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there are two possible reasons for that: Either $H[a]=\None$ or
 $H[a]=\Some\None$, but we do not separate these two failure cases.
 
@@ -472,7 +472,7 @@ $T=(a, (\MS{APP} \cons P)) \cons T'$, the auxiliary machine for $\MS{APP}$ destr
 list-appending and a machine $\MS{Lenght}$ that computes the length of a list.  After that, it pushes the new closures to $T$ and $V$.  As another
 example, if $T=(a, (\MS{VAR}(n) \cons P)) \cons T'$, the auxiliary machine for $\MS{VAR}$ calls $\MS{Lookup}$ and pushes the output closure to the
 argument stack and the reset closure to the control stack.  If $\MS{Lookup}$ failed, $\MS{Step}$ immediately terminates in $\Some\unit$, indicating
-that the state was an halting state.
+that the state was a halting state.
 
 The machine $\MS{Step} : \TM_{\Sigma^+}^{11}(\Option(\Unit))$ is defined on an arbitrary alphabet $\Sigma^+$ with retractions
 $f_{Stack} : \Sigma_{List(Clos)} \hookrightarrow \Sigma$ and $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$.  We omit the definition of $\MS{Step}$

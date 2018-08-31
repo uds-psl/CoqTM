@@ -14,7 +14,7 @@ on~\cite{asperti2015}.
 
 The symbols $\Unit$, $\Bool$, $\Nat$, $X \times Y$, $X + Y$, $\Option(X)$, and $\List(X)$ stand for the well-known standard types.  $\Type$ stands for
 the type of types and $\Prop$ for the type of propositions.  The unit element $\unit$ is the only element of $\Unit$.  $\sum_{a:A} B(a)$ denotes sigma
-types, i.e.\ depended pairs, with the projections $\pi_1$ and $\pi_2$.  We write $(a,b)$ for elements of sigma types.  For (named) tuples
+types, i.e.\ dependent pairs, with the projections $\pi_1$ and $\pi_2$.  We write $(a,b)$ for elements of sigma types.  For (named) tuples
 $A = (a:X,~b:Y,~c:Z)$, we use subscripts, i.e.\ $a_A$, for the projections.  We use the symbols $\None$ and $\Some x$ as elements of the type
 $\Option(X)$.  $\Fin_n := \setOf{0, \dots, n-1}$ is the type with $n$ elements.  We use indices $i:\Fin_n$ for vector-access $x[i]$ with $x:X^n$,
 where $X^n$ denotes the type of vectors over $X$ of size $n$.  We usually leave subscripts out if they are clear from the context.
@@ -222,7 +222,7 @@ $\MS{TM}_\Sigma^n(L)$ for the type of labelled machines over $L$.\footnote{Forma
 unit-labelled machines $\TM_\Sigma^n(\Unit)$ with unlabelled machines $\TM_\Sigma^n$.  We use the symbol $M$ for both labelled and unlabelled machines
 $\TM_\Sigma^n$.  It should however be always clear from the context, whether $M$ is a labelled or unlabelled machine.
 
-On a \emph{tape}, arbitrarily much memory can be allocated.  However every tape has only finitely many symbols, i.e.\ there is a left-most and a
+On a \emph{tape}, arbitrarily much memory can be allocated.  However, every tape has only finitely many symbols, i.e.\ there is a left-most and a
 right-most symbol.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol under which the (read/write) head of tape is.  It
 is essential that the symbol lists ($ls$ and $rs$) are ordered such that the head of the list is the symbol next to the symbol $m$.  When we think of
 tapes as a finite sequence of symbols from left to right, this means that $ls$ is stored in reversed order.
@@ -313,7 +313,7 @@ remains unchanged.  Note that there is no way to decrease the number of symbols 
   \end{alignat*}
 \end{definition}
 
-To define the function $\MS{step} \from \Conf \to \Conf$, we need to know the symbols on the tapes.  Therefore we define a function
+To define the function $\MS{step} \from \Conf \to \Conf$, we need to know the symbols on the tapes.  Therefore, we define a function
 $\MS{current} \from Tape \to \Option(\Sigma)$.  It returns $\None$ if the head is not under a symbol, and $\Some m$ if the head is under the
 symbol~$m$.
 

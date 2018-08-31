@@ -137,9 +137,9 @@ is defined as an inductive type.
 \label{sec:coq-automation}
 
 The Coq proof scripts make use of the builtin feature of \textit{existential variable}.  An existential variable $?X$ is a type (that may contain
-variables referring to more existentials) and the environment in which this existential should be typed.  Existentials are refined during unification
-(e.g.\ using the \lstinline!apply! tactic) in the proof script.  Before the proof script can be finished and saved with the \lstinline!Qed! command,
-all existential variables must be bound to values.
+variables referring to more existential variables) and the environment in which this existential should be typed.  Existential variables are refined
+during unification (e.g.\ using the \lstinline!apply! tactic) in the proof script.  Before the proof script can be finished and saved with the
+\lstinline!Qed! command, all existential variables must be bound to values.
 
 The tactic \lstinline!TMSimp! destructs conjunctive assumptions in all hypothesises (i.e.\ logical conjunctions and logical existentials).  It also
 names introduced tapes to \lstinline!tmid!, \lstinline!tmid0! etc.  Furthermore, it instantiates and rewrites with hypothesis of the form
@@ -147,7 +147,7 @@ $H: \forall j.~ j \notin I \rightarrow tmid0[j] = tmid[j]$, that come from the c
 operator.
 
 The tactic \lstinline!modpon H! instantiates assumptions of the form $H: \forall x~\cdots.~P \rightarrow \cdots \rightarrow Q$.  For each premise that
-the tactic could not solve automatically, it creates a new subgoal with existentials for the quantified variables.
+the tactic could not solve automatically, it creates a new subgoal with existential variables for the quantified variables.
 
 The tactic \lstinline!TM_Correct! instantiates the existential relation $?R'$ and proves $M \Realise ?R'$.  For that, it applies all correctness
 lemmas of the primitive machines, combinators, lifts, constructors and deconstructors, and some other auxiliary machines.  It does not apply
@@ -309,8 +309,8 @@ the horizontal line in the middle.
 The total number of library lines is $153$ spec and $2638$ proof.  The total compilation time is circa 4:17~minutes.\footnote{Measured on the
   following hardware: \texttt{Intel(R) Core(TM) i7-4710MQ CPU}; 8 cores @ 2.50GHz; compiled on GNU/Linux with \texttt{make -j8} and Coq 8.8.1.}
 
-Using Coq`s \texttt{Extract} mechanism, we compiled the Coq implementation to Haskell and we were able to count the total number of states of the Heap
-machine simulator: The alphabet of $\MS{Loop}$ consists of $30$ symbols and it has $11537$ states.
+Using Coq`s \texttt{Extract} mechanism, we compiled the Coq implementation to Haskell, and we were able to count the total number of states of the
+Heap machine simulator: The alphabet of $\MS{Loop}$ consists of $30$ symbols and it has $11537$ states.
 
 
 

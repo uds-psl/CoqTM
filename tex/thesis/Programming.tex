@@ -7,8 +7,8 @@ instructions of our language for Turing machines.  Furthermore, we can reuse mac
 Recall that we do not reason about internal states of machines anymore.
 
 At this point, we want to abstract from concrete tapes.  We think of tapes as \textit{registers} that may either contain a value of an arbitrary
-encodable type, or may be reseted.  Note that this notion of a ``general register machine'' is more general than usual register machines, because
-registers can usually only contain numbers.
+encodable type, or may be resetted.  Note that this notion of a ``general register machine'' is more general than usual register machines, because
+registers usually can only contain numbers.
 
 When we ``program'' Turing machines, this means that instead of using primitive machines (like $\MS{DoAct}$) we only use machines that directly change
 the value of a tape (like $\MS{ConstrS}$, which increases a number).  Using the definition of value-containment, we can also specify a
@@ -600,7 +600,7 @@ Then it copies the symbols, from the stop symbol to the start symbol, to tape $1
   \]
 \end{definition}
 
-Note that the second parameter of $\MS{MoveToSymbol}$ is the a translation function.  In this case, the machine should simply move the head and leave
+Note that the second parameter of $\MS{MoveToSymbol}$ is the translation function.  In this case, the machine should simply move the head and leave
 the symbols unchanged, so we choose the identity function for the parameter.
 
 \begin{lemma}[Correctness of $\MS{CopyValue}$][CopyValue_Realise]
@@ -734,7 +734,7 @@ before and after the execution.
 The deconstructor machines do case-distinctions over the value on a tape, and may thereby alter the value on the tape.  Each deconstruction is
 reversible using the corresponding constructor machine.  However, if we use deconstructors inside a loop, we can not restore the value that the tape
 contained before the loop.  We have to copy the value to an internal tape, use the copy for the computation, and leave the ``original'' value
-unchanged.  After the loop, the internal tape for the copy is reseted.
+unchanged.  After the loop, the internal tape for the copy is resetted.
 
 
 With this distinction of input, output, and internal tapes, we can formalise a convention for functional computation of binary functions: The tapes
@@ -784,7 +784,7 @@ $\None$ to continue.  Note that $\MS{Step}$ and $\MS{Loop}$ have only ``access''
 and $t[1]$ of $M$.  This also means that $\MS{Step}$ has two tapes less than $M$.  The copy of $x$ and $l$ is on the $0$st and $1$st tape of
 $\MS{Step}$, the output is on tape $2$, all further tapes are internal tapes.  Before the loop, some tapes may be initialised with values (using
 either $\MS{WriteValue}$, or constructors).  After the loop, all tapes that $\MS{Step}$ did not reset, including the tapes that contain the modified
-copies of $x$ and $l$ and additional internal tapes, are reseted by $M$.
+copies of $x$ and $l$ and additional internal tapes, are resetted by $M$.
 
 Before we can define the machine $M$, we first have to decide on which alphabet $M$ is defined.  If the machine operates on only one data type, then
 we define $M$ over the smallest alphabet to encode this type on.  On the other hand, if $M$ operates on more alphabets, we use the technique from
@@ -843,7 +843,7 @@ Because the machine only operates on natural numbers, we choose $\Sigma_\Nat^+$ 
 
 The next step is to implement the step machine.  $\MS{AddStep}$ has only access to the variables $a$ and $b$, that are stored on tape $0$ and $1$, as
 also visualised in Table~\ref{tab:tapes-Add}.  The decrement operation and test whether $b$ was $0$ is implemented using the deconstructor machine
-$\MS{CaseNat}$.  In the case that $b$ is $0$, the step machine terminates in $\Some\unit$, so that the loop brakes.  In case $b$ is greater then $0$,
+$\MS{CaseNat}$.  In the case that $b$ is $0$, the step machine terminates in $\Some\unit$, so that the loop brakes.  In case $b$ is greater than $0$,
 $\MS{CaseNat}$ decreases $b$ and the step machine increases $a$.  Then it terminates in $\None$, so that the loop continues.
 \begin{definition}[$\MS{AddStep}$][Add_Step]
   \label{def:Add_Step}
@@ -981,7 +981,7 @@ Reset $m'$
 }%
 Note that we do not have to copy $n$, since we do not write on $n$ and the machine $\MS{Add}$ does not change
 $n$.  Also note that we can not simply add $n$ to $c$, since input and output tapes are distinct.  Therefore, we have to store the result of the
-addition to an intermediate variable (i.e.\ internal tape), which has to be reseted afterwards.
+addition to an intermediate variable (i.e.\ internal tape), which has to be resetted afterwards.
 
 \begin{table}[t]
   \centering
@@ -1092,8 +1092,8 @@ $(f+g)(\inr l):=g(l)$.  We want to define an operator that takes machines $M_1, 
 machine $\MS{MapSum}$ that computes the function $(f+g)$.
 
 First we have to define precisely, which machine has which alphabet.  Let $X, Y$ be encodable over $\Sigma_X, \Sigma_Y$.  We assume
-$M_1, M_2 : \TM_{\Sigma_M^+}^{2+n}$, i.e.\ both machines have the same alphabet and they have at least two tapes (i.e.\ an input and output tape).  We
-assume that $\Sigma_M$ includes $\Sigma_X$, $\Sigma_Y$, and $\Sigma_Z$.  Formally, this means that we assume retractions $f_X,f_Y,f_Z$ between
+$M_1, M_2 : \TM_{\Sigma_M^+}^{2+n}$, i.e.\ both machines have the same alphabet, and they have at least two tapes (i.e.\ an input and output tape).
+We assume that $\Sigma_M$ includes $\Sigma_X$, $\Sigma_Y$, and $\Sigma_Z$.  Formally, this means that we assume retractions $f_X,f_Y,f_Z$ between
 $\Sigma_X, \Sigma_Y, \Sigma_Z$ and $\Sigma_M$.  Let $\Sigma$ be the alphabet for $\MS{MapSum}$, with a retraction
 $f_M : \Sigma_M \hookrightarrow \Sigma$.  Furthermore, it should be possible to encode $X+Y$ on $\Sigma$, so we assume a retraction
 $f_{X+Y} : \Sigma_{X+Y} \hookrightarrow \Sigma$.  We notice that there are now two possibilities how to encode $X$ (and dually $Y$) on $\Sigma$: via
@@ -1225,8 +1225,8 @@ with the copies of $n$ and $xs$.  Note that for the correctness of $\MS{Reset}$ 
     \LiftTapes{\MS{Reset}}{\Vector{4}}
   \]
 \end{definition}
-Note that we copy and reset values of different types.  We have to insert this semantical information in the correctness proof, when we apply the
-respective correctness lemmas, in this case, Lemma~\ref{lem:CopyValue_Realise} and Lemma~\ref{lem:Reset_Realise}.
+Note that we copy and reset values of different types.  We have to insert this semantic information in correctness proofs, when we apply the
+respective correctness lemmas of $\MS{Copy}$ and $\MS{Reset}$ in the relation-derivation phase of the correctness proof.
 
 It follows that $\MS{Nth}$ computes the function $nth$.
 \begin{lemma}[Correctness of $\MS{Nth}$][Nth_Computes]
