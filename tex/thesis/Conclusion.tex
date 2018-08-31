@@ -11,7 +11,7 @@ of the call-by-value $\lambda$-calculus.  It should be easy to formalise the red
 version of the heap machine.  By that, we would formalise the reduction from the halting problem of $L$ to the halting problem of multi-tape Turing
 machines.  This is, however, outside the scope of this thesis.  It is an ongoing research project~\cite{ForsterLOLA2018}, to implement a Coq library
 of undecidability reductions, and this thesis provides one step towards this goal.  The reduction from halting problem of single-tape Turing machines
-to the Post correspondence problem (PCP) has already been mechanised in Coq in~\cite{PCPITP}.
+to the Post correspondence problem (PCP) has already been mechanised in Coq in~\cite{forster2018verification}.
 
 \paragraph{Differences to other implementations of Turing machines}
 We build on Asperti and Ricciotti`s framework from~\cite{asperti2015} inside the theorem prover Matita, and initially ported their definitions of
@@ -98,7 +98,7 @@ alphabet.  The framework can be used to program other simulator machines, for ex
 in~\cite{KunzeEtAl:2018:Formal}.  We could implement a universal Turing machines as in~\cite{asperti2015}, and formalise results of computationally
 and complexity theory, for example the undecidability of the halting problem and Rice`s theorem.  The opposite reduction from multi-tape Turing
 machines to $L$, i.e.\ programming an $L$ expression that simulates multi-tape Turing machines, is also open for future work.  This should be a ``less
-daunting prospect'', because there is a framework for verified extraction of Coq terms to expressions of $L$, see~\cite{LExtractITP}.
+daunting prospect'', because there is a framework for verified extraction of Coq terms to expressions of $L$, see~\cite{forster2016verified}.
 
 
 %%% Local Variables:
