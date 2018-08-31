@@ -4,9 +4,9 @@ Require Import Semantics.
 
 (** * Alphabets *)
 
-Inductive ATok : Type := retAT | lamAT | appAT.
+Inductive ACom : Type := retAT | lamAT | appAT.
 
-Coercion ATok2Tok (a : ATok) : Tok :=
+Coercion ACom2Com (a : ACom) : Com :=
   match a with
   | retAT => retT
   | lamAT => lamT
@@ -14,18 +14,18 @@ Coercion ATok2Tok (a : ATok) : Tok :=
   end.
 
 
-Instance ATok_eq_dec : eq_dec ATok.
+Instance ACom_eq_dec : eq_dec ACom.
 Proof. intros x y; hnf. decide equality. Defined.
 
-Instance ATok_finType : finTypeC (EqType ATok).
+Instance ACom_finType : finTypeC (EqType ACom).
 Proof. split with (enum := [retAT; lamAT; appAT]). intros [ | | ]; cbn; reflexivity. Defined.
 
-Instance ATok_inhab : inhabitedC ATok := ltac:(repeat constructor).
+Instance ACom_inhab : inhabitedC ACom := ltac:(repeat constructor).
 
-Instance Encode_ATok : codable ATok ATok := Encode_Finite (FinType(EqType ATok)).
+Instance Encode_ACom : codable ACom ACom := Encode_Finite (FinType(EqType ACom)).
 
 
-Coercion Tok_to_sum (t : Tok) : (nat + ATok) :=
+Coercion Com_to_sum (t : Com) : (nat + ACom) :=
   match t with
   | varT x => inl x
   | appT => inr appAT
@@ -33,41 +33,41 @@ Coercion Tok_to_sum (t : Tok) : (nat + ATok) :=
   | retT => inr retAT
   end.
 
-Definition sigTok := sigSum sigNat ATok.
-Definition sigTok_fin := FinType (EqType sigTok).
+Definition sigCom := sigSum sigNat ACom.
+Definition sigCom_fin := FinType (EqType sigCom).
 
-Instance Encode_Tok : codable sigTok Tok :=
+Instance Encode_Com : codable sigCom Com :=
   {|
-    encode x := encode (Tok_to_sum x)
+    encode x := encode (Com_to_sum x)
   |}.
 
-Definition Encode_Tok_size (t : Tok) : nat :=
-  size _ (Tok_to_sum t).
+Definition Encode_Com_size (t : Com) : nat :=
+  size _ (Com_to_sum t).
 
-Lemma Encode_Tok_hasSize (t : Tok) :
-  size _ t = Encode_Tok_size t.
+Lemma Encode_Com_hasSize (t : Com) :
+  size _ t = Encode_Com_size t.
 Proof. reflexivity. Qed.
 
 
-Definition sigHAd := sigNat.
-Definition sigHAd_fin := FinType(EqType sigHAd).
+Definition sigHAdd := sigNat.
+Definition sigHAdd_fin := FinType(EqType sigHAdd).
 
-Definition sigPro := sigList sigTok.
+Definition sigPro := sigList sigCom.
 Instance Encode_Prog : codable sigPro Pro := _.
 Definition sigPro_fin := FinType(EqType sigPro).
 
-Definition sigHClos := sigPair sigHAd sigPro.
+Definition sigHClos := sigPair sigHAdd sigPro.
 Definition sigHClos_fin := FinType(EqType sigHClos).
 Instance Encode_HClos : codable sigHClos HClos := _.
 
-Definition sigHEnt' := sigPair sigHClos sigHAd.
-Instance Encode_HEnt' : codable (sigHEnt') (HClos*HAd) := _.
-Definition sigHEnt'_fin := FinType(EqType sigHEnt').
+Definition sigHEntr' := sigPair sigHClos sigHAdd.
+Instance Encode_HEntr' : codable (sigHEntr') (HClos*HAdd) := _.
+Definition sigHEntr'_fin := FinType(EqType sigHEntr').
 
-Definition sigHEnt := sigOption sigHEnt'.
-Instance Encode_HEnt : codable (sigHEnt) HEnt := _.
-Definition sigHEnt_fin := FinType(EqType sigHEnt).
+Definition sigHEntr := sigOption sigHEntr'.
+Instance Encode_HEntr : codable (sigHEntr) HEntr := _.
+Definition sigHEntr_fin := FinType(EqType sigHEntr).
 
-Definition sigHeap := sigList sigHEnt.
+Definition sigHeap := sigList sigHEntr.
 Instance Encode_Heap : codable (sigHeap) Heap := _.
 Definition sigHeap_fin := FinType(EqType sigHeap).

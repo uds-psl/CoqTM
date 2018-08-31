@@ -1,19 +1,19 @@
-(** * Constructors and Deconstructors for Tokens *)
+(** * Constructors and Deconstructors for Comens *)
 
 Require Import ProgrammingTools.
 Require Import TM.Code.CaseNat TM.Code.CaseSum TM.Code.CaseFin.
 Require Import TM.LM.Semantics TM.LM.Alphabets.
 
-Definition CaseCom : { M : mTM sigTok^+ 1 & states M -> option ATok } :=
+Definition CaseCom : { M : mTM sigCom^+ 1 & states M -> option ACom } :=
   If (CaseSum _ _)
      (Return Nop None)
-     (Relabel (ChangeAlphabet (CaseFin (FinType(EqType(ATok))) ) _) Some)
+     (Relabel (ChangeAlphabet (CaseFin (FinType(EqType(ACom))) ) _) Some)
 .
      
 
-Definition CaseCom_Rel : pRel sigTok^+ (FinType (EqType (option ATok))) 1 :=
+Definition CaseCom_Rel : pRel sigCom^+ (FinType (EqType (option ACom))) 1 :=
   fun tin '(yout, tout) =>
-    forall t : Tok,
+    forall t : Com,
       tin[@Fin0] ≃ t ->
       match yout, t with
       | Some appAT, appT => isRight tout[@Fin0]
@@ -35,7 +35,7 @@ Proof.
   { cbn. reflexivity. }
   {
     intros tin (yout, tout) H. intros t HEncT. TMSimp.
-    unfold sigTok in *.
+    unfold sigCom in *.
     destruct H; TMSimp.
     { (* "Then" branche *)
       specialize (H t HEncT).
@@ -55,22 +55,22 @@ Qed.
 
 (** Use [WriteValue] for [appT], [lamT], and [retT] *)
 
-Definition Constr_ATok (t : ATok) : pTM sigTok^+ unit 1 := WriteValue (encode (ATok2Tok t)).
-Definition Constr_ATok_Rel (t : ATok) : pRel sigTok^+ unit 1 :=
-  Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ ATok2Tok t)).
-Definition Constr_ATok_steps := 7.
-Lemma Constr_ATok_Sem t : Constr_ATok t ⊨c(Constr_ATok_steps)Constr_ATok_Rel t.
+Definition Constr_ACom (t : ACom) : pTM sigCom^+ unit 1 := WriteValue (encode (ACom2Com t)).
+Definition Constr_ACom_Rel (t : ACom) : pRel sigCom^+ unit 1 :=
+  Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ ACom2Com t)).
+Definition Constr_ACom_steps := 7.
+Lemma Constr_ACom_Sem t : Constr_ACom t ⊨c(Constr_ACom_steps)Constr_ACom_Rel t.
 Proof.
-  unfold Constr_ATok_steps. eapply RealiseIn_monotone.
-  - unfold Constr_ATok. apply WriteValue_Sem.
+  unfold Constr_ACom_steps. eapply RealiseIn_monotone.
+  - unfold Constr_ACom. apply WriteValue_Sem.
   - cbn. destruct t; cbn; reflexivity.
   - intros tin ((), tout) H. cbn in *. auto.
 Qed.
 
 
 
-Definition Constr_varT : pTM sigTok^+ unit 1 := Constr_inl _ _.
-Definition Constr_varT_Rel : pRel sigTok^+ (FinType (EqType unit)) 1 :=
+Definition Constr_varT : pTM sigCom^+ unit 1 := Constr_inl _ _.
+Definition Constr_varT_Rel : pRel sigCom^+ (FinType (EqType unit)) 1 :=
   Mk_R_p (ignoreParam (fun tin tout => forall x : nat, tin ≃ x -> tout ≃ varT x)).
 Definition Constr_varT_steps := 3.
 Lemma Constr_varT_Sem : Constr_varT ⊨c(Constr_varT_steps) Constr_varT_Rel.
@@ -83,5 +83,5 @@ Qed.
 
 
 Arguments CaseCom : simpl never.
-Arguments Constr_ATok : simpl never.
+Arguments Constr_ACom : simpl never.
 Arguments Constr_varT : simpl never.

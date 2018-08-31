@@ -53,11 +53,11 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
   Definition retr_clos_heap : Retract sigHClos sigHeap := _.
   Definition retr_clos_lookup_heap : Retract sigHClos sigLookup := ComposeRetract retr_heap_lookup retr_clos_heap.
 
-  Definition retr_hent_heap : Retract sigHEnt sigHeap := _.
-  Local Definition retr_hent_lookup : Retract sigHEnt sigLookup := ComposeRetract retr_heap_lookup retr_hent_heap.
+  Definition retr_hent_heap : Retract sigHEntr sigHeap := _.
+  Local Definition retr_hent_lookup : Retract sigHEntr sigLookup := ComposeRetract retr_heap_lookup retr_hent_heap.
 
-  Definition retr_hent'_heap : Retract sigHEnt' sigHeap := _.
-  Local Definition retr_hent'_lookup : Retract sigHEnt' sigLookup := ComposeRetract retr_heap_lookup retr_hent'_heap.
+  Definition retr_hent'_heap : Retract sigHEntr' sigHeap := _.
+  Local Definition retr_hent'_lookup : Retract sigHEntr' sigLookup := ComposeRetract retr_heap_lookup retr_hent'_heap.
   
   (*
   Tapes:
@@ -70,8 +70,8 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
 
   Definition Lookup_Step : pTM sigLookup^+ (option bool) 5 :=
     If (Nth' retr_heap_lookup retr_nat_lookup_clos_ad @ [|Fin0; Fin1; Fin4; Fin3|])
-       (If (CaseOption sigHEnt'_fin ⇑ retr_hent_lookup @ [|Fin4|])
-           (CasePair sigHClos_fin sigHAd_fin ⇑ retr_hent'_lookup @ [|Fin4; Fin3|];;
+       (If (CaseOption sigHEntr'_fin ⇑ retr_hent_lookup @ [|Fin4|])
+           (CasePair sigHClos_fin sigHAdd_fin ⇑ retr_hent'_lookup @ [|Fin4; Fin3|];;
             If (CaseNat ⇑ retr_nat_lookup_clos_var @ [|Fin2|])
                (Return (CopyValue _ @ [|Fin4; Fin1|];; (* n = S n' *)
                         Translate retr_nat_lookup_entry retr_nat_lookup_clos_ad @ [|Fin1|];;
@@ -169,14 +169,14 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
   Qed.
 
   
-  Local Definition Lookup_Step_steps_CaseNat (n: nat) (e': HClos * HAd) :=
+  Local Definition Lookup_Step_steps_CaseNat (n: nat) (e': HClos * HAdd) :=
     let (g,b) := (fst e', snd e') in
     match n with
     | S _ => 1 + CopyValue_steps _ b + 1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g
     | O => 1 + Reset_steps _ b + 1 + Reset_steps _ 0 + Translate_steps _ g
     end.
 
-  Local Definition Lookup_Step_steps_CaseOption (n:nat) (e: HEnt) :=
+  Local Definition Lookup_Step_steps_CaseOption (n:nat) (e: HEntr) :=
     match e with
     | Some ((g, b) as e') => 1 + CasePair_steps _ g + 1 + CaseNat_steps + Lookup_Step_steps_CaseNat n e'
     | None => 0
@@ -188,7 +188,7 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
     | None => 0
     end.
 
-  Definition Lookup_Step_steps (H: Heap) (a: HAd) (n: nat) :=
+  Definition Lookup_Step_steps (H: Heap) (a: HAdd) (n: nat) :=
     1 + Nth'_steps _ H a + Lookup_Step_steps_Nth' H a n.
 
     
@@ -318,7 +318,7 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
     }
   Qed.
 
-  Fixpoint Lookup_steps (H : Heap) (a : HAd) (n : nat) : nat :=
+  Fixpoint Lookup_steps (H : Heap) (a : HAdd) (n : nat) : nat :=
     match nth_error H a with
     | Some (Some (g, b)) =>
       match n with

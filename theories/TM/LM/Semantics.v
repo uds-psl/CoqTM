@@ -5,16 +5,26 @@ Require Import FunInd.
 
 
 (** Types *)
-Inductive Tok := varT (n :nat) | appT | lamT | retT.
-Definition Pro := list Tok.
-Definition HAd : Type := nat.
-Definition HClos : Type := HAd * Pro.
-Definition HEnt : Type := option (HClos * HAd).
-Definition Heap : Type := list HEnt.
+Definition Var := nat.
+Inductive Com := varT (n : Var) | appT | lamT | retT.
+Definition Pro := list Com.
+
+Definition HAdd : Type := nat.
+Definition HClos : Type := HAdd * Pro.
+Definition HEntr : Type := option (HClos * HAdd).
+Definition Heap : Type := list HEntr.
 
 Section Semantics.
 
-  Definition put H e : HAd * Heap := (|H|, H++[e]).
+  Implicit Types H : Heap.
+  Implicit Types T V : list HClos.
+  Implicit Types n m : Var.
+  Implicit Types a b c : HAdd.
+  Implicit Types g : HClos.
+  Implicit Types P Q : Pro.
+  
+
+  Definition put H e : HAdd * Heap := (|H|, H++[e]).
 
   Definition tailRecursion : HClos -> list HClos -> list HClos :=
     fun '(a, P) T =>
@@ -37,7 +47,7 @@ Section Semantics.
     | [] => None
     end.
 
-  Fixpoint lookup (H:Heap) (a:nat) (n:nat) : option HClos :=
+  Fixpoint lookup H a n : option HClos :=
     match nth_error H a with
     | Some (Some (g, b)) =>
       match n with
@@ -67,9 +77,9 @@ Section Semantics.
   | step_beta a b g P Q H H' c T V :
       put H (Some (g, b)) = (c, H') ->
       step ((a, (appT :: P)) :: T, g :: (b, Q) :: V, H) ((c, Q) :: tailRecursion (a, P) T, V, H')
-  | step_load P a x g T V H :
-      lookup H a x = Some g ->
-      step ((a, (varT x :: P)) :: T, V, H) (tailRecursion (a, P) T, g :: V, H)
+  | step_load P a n g T V H :
+      lookup H a n = Some g ->
+      step ((a, (varT n :: P)) :: T, V, H) (tailRecursion (a, P) T, g :: V, H)
   .
 
   Definition halt_state (s : state) : Prop :=

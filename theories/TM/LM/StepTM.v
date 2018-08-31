@@ -15,7 +15,7 @@ Section StepMachine.
 
   Implicit Types H : Heap.
   Implicit Types T V : list HClos.
-  Implicit Types a b c : HAd.
+  Implicit Types a b c : HAdd.
   Implicit Types g : HClos.
   Implicit Types (P Q : Pro).
 
@@ -34,7 +34,7 @@ Section StepMachine.
 
   Definition retr_pro_clos : Retract sigPro sigHClos := _.
   Local Definition retr_pro_step : Retract sigPro sigStep := ComposeRetract retr_clos_step retr_pro_clos.
-  Local Definition retr_tok_step : Retract sigTok sigStep := ComposeRetract retr_pro_step _.
+  Local Definition retr_tok_step : Retract sigCom sigStep := ComposeRetract retr_pro_step _.
 
   Local Definition retr_nat_clos_ad : Retract sigNat sigHClos := Retract_sigPair_X _ (Retract_id _).
   Local Definition retr_nat_step_clos_ad : Retract sigNat sigStep := ComposeRetract retr_clos_step retr_nat_clos_ad.
@@ -63,9 +63,9 @@ Section StepMachine.
   
   
   Definition TailRec : pTM sigStep^+ unit 3 :=
-    If (IsNil sigTok_fin ⇑ retr_pro_step @ [|Fin1|])
+    If (IsNil sigCom_fin ⇑ retr_pro_step @ [|Fin1|])
        (Reset _ @ [|Fin1|])
-       (Constr_pair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin2; Fin1|];;
+       (Constr_pair sigHAdd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin2; Fin1|];;
         Constr_cons sigHClos_fin ⇑ _ @ [|Fin0; Fin1|];;
         Reset _ @ [|Fin1|]).
 
@@ -81,9 +81,9 @@ Section StepMachine.
       destruct H; TMSimp.
       - modpon H. destruct P; auto; modpon H. modpon H0. repeat split; auto.
       - modpon H. destruct P; auto; modpon H.
-        specialize (H0 a (t :: P)). modpon H0.
-        specialize (H1 T (a, t :: P)). modpon H1.
-        specialize (H2 (a, t :: P)). modpon H2.
+        specialize (H0 a (c :: P)). modpon H0.
+        specialize (H1 T (a, c :: P)). modpon H1.
+        specialize (H2 (a, c :: P)). modpon H2.
         repeat split; auto. contains_ext.
     }
   Qed.
@@ -145,7 +145,7 @@ Section StepMachine.
   
   
   Definition ConsClos : pTM sigStep^+ unit 3 :=
-    Constr_pair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin1; Fin2|];;
+    Constr_pair sigHAdd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin1; Fin2|];;
     Constr_cons sigHClos_fin ⇑ _ @ [|Fin0; Fin2|];;
     Reset _ @ [|Fin2|];;
     Reset _ @ [|Fin1|].
@@ -163,7 +163,7 @@ Section StepMachine.
       specialize (H a Q). modpon H. (* Constr_pair *)
       specialize (H0 T (a, Q)). modpon H0. (* Constr_cons *)
       specialize (H1 (a, Q)). modpon H1. (* Reset HClos *)
-      modpon H2. (* Reset HAd *) auto.
+      modpon H2. (* Reset HAdd *) auto.
     }
   Qed.
 
@@ -208,7 +208,7 @@ Section StepMachine.
 
   Definition Step_lam_Rel : pRel sigStep^+ bool 10 :=
     fun tin '(yout, tout) =>
-      forall (T V : list HClos) (H : Heap) (a : HAd) (P : Pro),
+      forall (T V : list HClos) (H : Heap) (a : HAdd) (P : Pro),
         tin[@Fin0] ≃ T ->
         tin[@Fin1] ≃ V ->
         tin[@Fin2] ≃ H ->
@@ -275,7 +275,7 @@ Section StepMachine.
 
   Definition Step_lam_T : tRel sigStep^+ 10 :=
     fun tin k =>
-      exists (T V : list HClos) (H : Heap) (a : HAd) (P : Pro),
+      exists (T V : list HClos) (H : Heap) (a : HAdd) (P : Pro),
         tin[@Fin0] ≃ T /\
         tin[@Fin1] ≃ V /\
         tin[@Fin2] ≃ H /\
@@ -319,7 +319,7 @@ Section StepMachine.
   Definition Put_Rel : pRel sigStep^+ unit 6 :=
     ignoreParam (
         fun tin tout =>
-          forall (H : Heap) (g : HClos) (b : HAd),
+          forall (H : Heap) (g : HClos) (b : HAdd),
             tin[@Fin0] ≃ H ->
             tin[@Fin1] ≃(Encode_map Encode_HClos retr_clos_step) g ->
             tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_step_clos_ad) b ->
@@ -338,19 +338,19 @@ Section StepMachine.
 
   Local Definition retr_clos_step_hent : Retract sigHClos sigStep := ComposeRetract retr_heap_step retr_clos_heap.
 
-  Local Definition retr_hent'_step : Retract sigHEnt' sigStep := ComposeRetract retr_heap_step retr_hent'_heap.
+  Local Definition retr_hent'_step : Retract sigHEntr' sigStep := ComposeRetract retr_heap_step retr_hent'_heap.
 
-  Local Definition retr_hent_step : Retract sigHEnt sigStep := ComposeRetract retr_heap_step retr_hent_heap.
+  Local Definition retr_hent_step : Retract sigHEntr sigStep := ComposeRetract retr_heap_step retr_hent_heap.
   
   Definition Put : pTM sigStep^+ unit 6 :=
     Length retr_heap_step retr_nat_step_clos_ad @ [|Fin0; Fin3; Fin4; Fin5|];;
-    Constr_nil sigHEnt_fin ⇑ _ @ [|Fin4|];;
+    Constr_nil sigHEntr_fin ⇑ _ @ [|Fin4|];;
     Translate retr_nat_step_clos_ad retr_nat_step_hent @ [|Fin2|];;
     Translate retr_clos_step retr_clos_step_hent @ [|Fin1|];;
-    Constr_pair sigHClos_fin sigHAd_fin ⇑ retr_hent'_step @ [|Fin1; Fin2|];;
-    Constr_Some sigHEnt'_fin ⇑ retr_hent_step @ [|Fin2|];;
-    Constr_cons sigHEnt_fin ⇑ _ @ [|Fin4; Fin2|];;
-    App' sigHEnt_fin ⇑ _ @ [|Fin0; Fin4|];;
+    Constr_pair sigHClos_fin sigHAdd_fin ⇑ retr_hent'_step @ [|Fin1; Fin2|];;
+    Constr_Some sigHEntr'_fin ⇑ retr_hent_step @ [|Fin2|];;
+    Constr_cons sigHEntr_fin ⇑ _ @ [|Fin4; Fin2|];;
+    App' sigHEntr_fin ⇑ _ @ [|Fin0; Fin4|];;
     MoveValue _ @ [|Fin4; Fin0|];;
     Reset _ @ [|Fin2|];;
     Reset _ @ [|Fin1|].
@@ -360,12 +360,12 @@ Section StepMachine.
   Proof.
     eapply Realise_monotone.
     { unfold Put. TM_Correct.
-      - apply Length_Computes with (X := HEnt).
+      - apply Length_Computes with (X := HEntr).
       - apply Translate_Realise with (X := nat).
       - apply Translate_Realise with (X := HClos).
-      - apply App'_Realise with (X := HEnt).
+      - apply App'_Realise with (X := HEntr).
       - apply MoveValue_Realise with (X := Heap) (Y := Heap).
-      - apply Reset_Realise with (cX := Encode_map Encode_HEnt retr_hent_step).
+      - apply Reset_Realise with (cX := Encode_map Encode_HEntr retr_hent_step).
       - apply Reset_Realise with (cX := Encode_map Encode_HClos retr_clos_step_hent).
     }
     {
@@ -395,7 +395,7 @@ Section StepMachine.
 
   Definition Put_T : tRel sigStep ^+ 6 :=
     fun tin k =>
-      exists (H : Heap) (g : HClos) (b : HAd),
+      exists (H : Heap) (g : HClos) (b : HAdd),
         tin[@Fin0] ≃ H /\
         tin[@Fin1] ≃(Encode_map Encode_HClos retr_clos_step) g /\
         tin[@Fin2] ≃(Encode_map Encode_nat retr_nat_step_clos_ad) b /\
@@ -406,18 +406,18 @@ Section StepMachine.
   Proof.
     eapply TerminatesIn_monotone.
     { unfold Put. TM_Correct.
-      - apply Length_Computes with (X := HEnt).
-      - apply Length_Terminates with (X := HEnt).
+      - apply Length_Computes with (X := HEntr).
+      - apply Length_Terminates with (X := HEntr).
       - apply Translate_Realise with (X := nat).
       - apply Translate_Terminates with (X := nat).
       - apply Translate_Realise with (X := HClos).
       - apply Translate_Terminates with (X := HClos).
-      - apply App'_Realise with (X := HEnt).
-      - apply App'_Terminates with (X := HEnt).
+      - apply App'_Realise with (X := HEntr).
+      - apply App'_Terminates with (X := HEntr).
       - apply MoveValue_Realise with (X := Heap) (Y := Heap).
       - apply MoveValue_Terminates with (X := Heap) (Y := Heap).
-      - apply Reset_Realise with (cX := Encode_map Encode_HEnt retr_hent_step).
-      - apply Reset_Terminates with (cX := Encode_map Encode_HEnt retr_hent_step).
+      - apply Reset_Realise with (cX := Encode_map Encode_HEntr retr_hent_step).
+      - apply Reset_Terminates with (cX := Encode_map Encode_HEntr retr_hent_step).
       - apply Reset_Terminates with (cX := Encode_map Encode_HClos retr_clos_step_hent).
     }
     {
@@ -480,7 +480,7 @@ Section StepMachine.
 
   Definition Step_app_Rel : pRel sigStep^+ bool 11 :=
     fun tin '(yout, tout) =>
-      forall (T V : list HClos) (H : Heap) (a : HAd) (P : Pro),
+      forall (T V : list HClos) (H : Heap) (a : HAdd) (P : Pro),
         tin[@Fin0] ≃ T ->
         tin[@Fin1] ≃ V ->
         tin[@Fin2] ≃ H ->
@@ -504,7 +504,7 @@ Section StepMachine.
   Definition Step_app : pTM sigStep^+ bool 11 :=
     If (CaseList sigHClos_fin ⇑ _ @ [|Fin1; Fin5|])
        (If (CaseList sigHClos_fin ⇑ _ @ [|Fin1; Fin6|])
-           (Return (CasePair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin6; Fin7|];;
+           (Return (CasePair sigHAdd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin6; Fin7|];;
                     TailRec @ [|Fin0; Fin3; Fin4|];;
                     Reset _ @ [|Fin4|];;
                     Put @ [|Fin2; Fin5; Fin7; Fin8; Fin9; Fin10|];;
@@ -566,7 +566,7 @@ Section StepMachine.
 
   Definition Step_app_T : tRel sigStep^+ 11 :=
     fun tin k =>
-      exists (T V : list HClos) (H : Heap) (P : Pro) (a : HAd),
+      exists (T V : list HClos) (H : Heap) (P : Pro) (a : HAdd),
         tin[@Fin0] ≃ T /\
         tin[@Fin1] ≃ V /\
         tin[@Fin2] ≃ H /\
@@ -628,7 +628,7 @@ Section StepMachine.
 
   Definition Step_var_Rel : pRel sigStep^+ bool 8 :=
     fun tin '(yout, tout) =>
-      forall (T V : list HClos) (H : Heap) (a : HAd) (n : nat) (P : Pro),
+      forall (T V : list HClos) (H : Heap) (a : HAdd) (n : nat) (P : Pro),
         tin[@Fin0] ≃ T ->
         tin[@Fin1] ≃ V ->
         tin[@Fin2] ≃ H ->
@@ -692,7 +692,7 @@ Section StepMachine.
 
   Definition Step_var_T : tRel sigStep^+ 8 :=
     fun tin k =>
-      exists (T V : list HClos) (H : Heap) (a : HAd) (n : nat) (P : Pro),
+      exists (T V : list HClos) (H : Heap) (a : HAdd) (n : nat) (P : Pro),
         tin[@Fin0] ≃ T /\
         tin[@Fin1] ≃ V /\
         tin[@Fin2] ≃ H /\
@@ -743,10 +743,10 @@ Section StepMachine.
   Definition Step : pTM sigStep^+ (option unit) 11 :=
     Relabel
       (If (CaseList sigHClos_fin ⇑ _ @ [|Fin0; Fin3|])
-          (CasePair sigHAd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
-           If (CaseList sigTok_fin ⇑ retr_pro_step @ [|Fin3; Fin5|])
+          (CasePair sigHAdd_fin sigPro_fin ⇑ retr_clos_step @ [|Fin3; Fin4|];;
+           If (CaseList sigCom_fin ⇑ retr_pro_step @ [|Fin3; Fin5|])
               (Switch (CaseCom ⇑ retr_tok_step @ [|Fin5|])
-                     (fun t : option ATok =>
+                     (fun t : option ACom =>
                         match t with
                         | Some lamAT =>
                           Step_lam @ [|Fin0; Fin1; Fin2; Fin3; Fin4; Fin5; Fin6; Fin7; Fin8; Fin9|]
