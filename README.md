@@ -34,7 +34,7 @@ This should take ca. 5-10 minutes.
 ## Acknowledgements
 
 The definitions of tapes and multi-tape Turing machines from Asperti, Riciotti ["A formalization of multi-tape Turing machines"](http://www.cs.unibo.it/~ricciott/PAPERS/multi_turing.pdf) (2015) and the accompanying Matita mechanisation.
-Please also read the Acknowledgements section inside the thesis.
+Please also read the [Acknowledgements](tex/thesis/acknowledgements.tex) section inside the thesis.
 
 ## Libraries
 
