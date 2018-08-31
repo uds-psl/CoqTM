@@ -18,7 +18,7 @@ theories/TM/Basic/Mono.v
 
 # Programming combinators
 theories/TM/Combinators/Combinators.v
-theories/TM/Combinators/Match.v
+theories/TM/Combinators/Switch.v
 theories/TM/Combinators/SequentialComposition.v
 theories/TM/Combinators/If.v
 theories/TM/Combinators/While.v
@@ -44,12 +44,12 @@ theories/TM/Code/ChangeAlphabet.v
 theories/TM/Code/Copy.v
 theories/TM/Code/ProgrammingTools.v
 
-# Matches and constructors
-theories/TM/Code/MatchNat.v
-theories/TM/Code/MatchSum.v
-theories/TM/Code/MatchList.v
-theories/TM/Code/MatchFin.v
-theories/TM/Code/MatchPair.v
+# Casees and constructors
+theories/TM/Code/CaseNat.v
+theories/TM/Code/CaseSum.v
+theories/TM/Code/CaseList.v
+theories/TM/Code/CaseFin.v
+theories/TM/Code/CasePair.v
 
 # Programming case studies
 theories/TM/Code/SumTM.v
@@ -59,7 +59,7 @@ theories/TM/Code/ListTM.v
 # Abstract Machine simulator
 theories/TM/LM/Semantics.v
 theories/TM/LM/Alphabets.v
-theories/TM/LM/MatchTok.v
+theories/TM/LM/CaseCom.v
 theories/TM/LM/LookupTM.v
 theories/TM/LM/JumpTargetTM.v
 theories/TM/LM/StepTM.v
