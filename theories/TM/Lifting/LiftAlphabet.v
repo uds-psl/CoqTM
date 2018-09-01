@@ -134,13 +134,13 @@ Section LiftAlphabet.
     fun c => mk_mconfig (cstate c) (injectTapes Retr_f (ctapes c)).
 *)
 
-  Lemma tape_move_mono_surject :
+  Lemma doAct_surject :
     forall (tape : tape tau) (act : option sig * move) (d : sig),
-      tape_move_mono (surjectTape Retr_g d tape) act =
-      surjectTape Retr_g d (tape_move_mono tape (map_act Retr_f act)).
+      doAct (surjectTape Retr_g d tape) act =
+      surjectTape Retr_g d (doAct tape (map_act Retr_f act)).
   Proof.
     intros tape. intros (w,m) d; cbn.
-    unfold surjectTape, tape_move_mono, tape_move, tape_write, surject; cbn.
+    unfold surjectTape, doAct, tape_move, tape_write, surject; cbn.
     destruct tape, m, w; cbn; f_equal; try retract_adjoint; auto.
     - destruct l; cbn; f_equal; now retract_adjoint.
     - destruct l; cbn; f_equal; now retract_adjoint.
@@ -159,10 +159,10 @@ Section LiftAlphabet.
     step (M := projT1 pMSig) (surjectConf c) = surjectConf (step (M := LiftAlphabet_TM) c).
   Proof.
     unfold surjectConf. destruct c as [q t]. cbn in *.
-    unfold step. cbn -[tape_move_multi].
+    unfold step. cbn -[doAct_multi].
     rewrite current_chars_surjectTapes.
     destruct (trans (q, surjectReadSymbols (current_chars t))) eqn:E. cbn.
-    f_equal. unfold tape_move_multi, surjectTapes. apply Vector.eq_nth_iff; intros i ? <-. simpl_tape. apply tape_move_mono_surject.
+    f_equal. unfold doAct_multi, surjectTapes. apply Vector.eq_nth_iff; intros i ? <-. simpl_tape. apply doAct_surject.
   Qed.
 
   Lemma LiftAlphabet_lift (c1 c2 : mconfig tau (states LiftAlphabet_TM) n) (k : nat) :

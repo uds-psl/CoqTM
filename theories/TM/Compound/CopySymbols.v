@@ -42,7 +42,7 @@ Section CopySymbols.
              tout[@Fin1] = tape_write tin[@Fin1] (Some x) /\
              yout = Some tt (* break *)
         else tout[@Fin0] = tape_move_right tin[@Fin0] /\
-             tout[@Fin1] = tape_move_mono tin[@Fin1] (Some x, R) /\
+             tout[@Fin1] = doAct tin[@Fin1] (Some x, R) /\
              yout = None (* continue *)
       | _ => tout = tin /\
             yout = Some tt
@@ -83,7 +83,7 @@ Section CopySymbols.
     | Some s =>
       if f s
       then (fst tin, tape_write (snd tin) (Some s))
-      else CopySymbols_Fun (tape_move_right (fst tin), tape_move_mono (snd tin) (Some s, R))
+      else CopySymbols_Fun (tape_move_right (fst tin), doAct (snd tin) (Some s, R))
     | _ => tin
     end.
   Proof.
@@ -98,7 +98,7 @@ Section CopySymbols.
   Lemma CopySymbols_false s t1 t2 :
     current t1 = Some s ->
     f s = false ->
-    CopySymbols_Fun (t1, t2) = CopySymbols_Fun (tape_move_right t1, tape_move_mono t2 (Some s, R)).
+    CopySymbols_Fun (t1, t2) = CopySymbols_Fun (tape_move_right t1, doAct t2 (Some s, R)).
   Proof. intros HCurrent Hs. rewrite CopySymbols_Fun_equation. cbn. now rewrite HCurrent, Hs. Qed.
 
   Lemma CopySymbols_true s t1 t2 :
@@ -186,7 +186,7 @@ Section CopySymbols.
     | Some s =>
       if f s
       then (fst tin, tape_write (snd tin) (Some s))
-      else CopySymbols_L_Fun (tape_move_left (fst tin), tape_move_mono (snd tin) (Some s, L))
+      else CopySymbols_L_Fun (tape_move_left (fst tin), doAct (snd tin) (Some s, L))
     | _ => tin
     end.
   Proof.

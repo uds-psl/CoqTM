@@ -186,10 +186,10 @@ Section LiftNM.
     current_chars (select I t) = select I (current_chars t).
   Proof. unfold current_chars, select. apply Vector.eq_nth_iff; intros i ? <-. now simpl_tape. Qed.
 
-  Lemma tape_move_multi_select (t : tapes sig n) act :
-    tape_move_multi (select I t) act = select I (tape_move_multi t (fill_default I (None, N) act)).
+  Lemma doAct_select (t : tapes sig n) act :
+    doAct_multi (select I t) act = select I (doAct_multi t (fill_default I (None, N) act)).
   Proof.
-    unfold tape_move_multi, select. apply Vector.eq_nth_iff; intros i ? <-. simpl_tape.
+    unfold doAct_multi, select. apply Vector.eq_nth_iff; intros i ? <-. simpl_tape.
     unfold fill_default. f_equal. symmetry. now apply fill_correct_nth.
   Qed.
 
@@ -198,10 +198,10 @@ Section LiftNM.
   Proof.
     unfold selectConf. unfold step; cbn.
     destruct c1 as [q t] eqn:E1.
-    unfold step in *. cbn -[current_chars tape_move_multi] in *.
+    unfold step in *. cbn -[current_chars doAct_multi] in *.
     rewrite current_chars_select.
     destruct (trans (q, select I (current_chars t))) as (q', act) eqn:E; cbn.
-    f_equal. apply tape_move_multi_select.
+    f_equal. apply doAct_select.
   Qed.
 
   Lemma LiftTapes_lift (c1 c2 : mconfig sig (states LiftTapes_TM) n) (k : nat) :

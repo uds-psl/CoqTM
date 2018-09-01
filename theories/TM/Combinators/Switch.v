@@ -113,7 +113,7 @@ Section Switch.
     unfold lift_confL, lift_confR. cbn. unfold haltConf in Halt.
     unfold step at 1; cbn.
     rewrite Halt. f_equal.
-    apply tape_move_nop_action.
+    apply doAct_nop.
   Qed.
 
   (** The starting configuration of [Switch] corresponds to the starting configuration of [M1]. *)

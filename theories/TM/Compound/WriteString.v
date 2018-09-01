@@ -24,7 +24,7 @@ Section Write_String.
     match str with
     | nil => t
     | [x] => tape_write t (Some x)
-    | x :: str' => WriteString_Fun (tape_move_mono t (Some x, D)) str'
+    | x :: str' => WriteString_Fun (doAct t (Some x, D)) str'
     end.
   
   Lemma Write_String_nil (sig' : Type) (t : tape sig') :

@@ -66,7 +66,7 @@ Section While.
   Proof.
     intros HHalt HRepeat. unfold haltConf in HHalt.
     destruct c as [q t]; cbn in *.
-    unfold step. cbn -[tape_move_multi] in *. rewrite HHalt. unfold initc. f_equal. apply tape_move_nop_action.
+    unfold step. cbn -[doAct_multi] in *. rewrite HHalt. unfold initc. f_equal. apply doAct_nop.
   Qed.
 
   Lemma While_split k (c1 c3 : mconfig sig (states (projT1 pM)) n) :

@@ -184,12 +184,12 @@ Section Fix_Sigma.
     end.
 
   (** A single step of the machine *)
-  Definition tape_move_mono (t : tape) (mv : option sig * move) :=
+  Definition doAct (t : tape) (mv : option sig * move) :=
     tape_move (tape_write t (fst mv)) (snd mv).
 
   (** One step on each tape *)
-  Definition tape_move_multi (n : nat) (ts : tapes n) (actions : Vector.t (option sig * move) n) :=
-    Vector.map2 tape_move_mono ts actions.
+  Definition doAct_multi (n : nat) (ts : tapes n) (actions : Vector.t (option sig * move) n) :=
+    Vector.map2 doAct ts actions.
 
   (** Read characters on all tapes *)
   Definition current_chars (n : nat) (tapes : tapes n) := Vector.map current tapes.
@@ -268,10 +268,10 @@ Section Nop_Action.
 
   Definition nop_action := Vector.const (@None sig, N) n.
 
-  Lemma tape_move_nop_action tapes :
-    tape_move_multi tapes nop_action = tapes.
+  Lemma doAct_nop tapes :
+    doAct_multi tapes nop_action = tapes.
   Proof.
-    unfold nop_action, tape_move_multi.
+    unfold nop_action, doAct_multi.
     apply Vector.eq_nth_iff; intros ? i <-.
     erewrite Vector.nth_map2; eauto.
     rewrite Vector.const_nth.
@@ -731,7 +731,7 @@ Section Semantics.
   Definition step {n} (M:mTM n) : mconfig (states M) n -> mconfig (states M) n :=
     fun c =>
       let (news,actions) := trans (cstate c, current_chars  (ctapes c)) in 
-      mk_mconfig news (tape_move_multi (ctapes c) actions).
+      mk_mconfig news (doAct_multi (ctapes c) actions).
 
   Definition haltConf {n} (M : mTM n) : mconfig (states M) n -> bool := fun c => halt (cstate c).
 

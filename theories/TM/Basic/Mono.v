@@ -47,7 +47,7 @@ Section DoAct.
   Definition DoAct : pTM sig unit 1 := (DoAct_TM; fun _ => tt).
 
   Definition DoAct_Rel : pRel sig unit 1 :=
-    Mk_R_p (ignoreParam (fun t t' => t' = tape_move_mono t act)).
+    Mk_R_p (ignoreParam (fun t t' => t' = doAct t act)).
 
   Lemma DoAct_Sem : DoAct ⊨c(1) DoAct_Rel.
   Proof. intros t. destruct_tapes. cbn. unfold initc; cbn. eexists (mk_mconfig _ _); cbn; eauto. Qed.
