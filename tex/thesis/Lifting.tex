@@ -6,24 +6,23 @@ following typing rule for the sequential composition of labelled Turing machines
 \[
   \inferrule{M_1 : \TM_\Sigma^n(L_1) \and M_2 : \TM_\Sigma^n(L_2)}{M_1 \Seq M_2 : \TM_\Sigma^n(L_2)}
 \]
-For example, assume that we have a one-tape machine $M_{aux} : \TM_\Sigma^1$ that moves the head to the right of the tape.  If we need a two-tape
-machine $M$ that moves both tapes to the right, we would like to use sequential composition and move one tape after the other tape to the right.  But
-according to the typing rule above, we would need two auxiliary two-tape machines $M_1$ and $M_2$.  $M_1$ moves the first tape to the right and $M_2$
-the second.
+Assume that we have a one-tape machine $M_{aux} : \TM_\Sigma^1$ that moves the head to the right of the tape.  If we need a two-tape machine $M$ that
+moves both tapes to the right, we would like to use sequential composition and move one tape after the other tape to the right.  But according to the
+typing rule above, we would need two auxiliary two-tape machines $M_1$ and $M_2$, where $M_1$ moves the first tape to the right and $M_2$ the second.
 
 There are multiple ways to solve this problem.  Maybe the most obvious solution is to define a class of $n$-tape machines $M_i : \TM_\Sigma^n$
 parametrised over the number of tapes and the tape-index $i$ of the tape to move.  The machine $M_i$ moves the $i$th tape to the right.  All other
 tapes are ``inactive'' and remain unchanged.  This approach of parametrising machines over the tape-indices of ``active'' tapes, however, becomes
 unhandy for machines with a lot of active tapes.
 
-We choose another approach.  We lift the one-tape machine $M_{aux}$ to $n$ different $n$-tape machines, for every $n\ge1$.  Asperti and
-Ricciotti~\cite{asperti2015} implement such an operator that translates a one-tape machine into $n$-tape machines.  It is in general easier to define
-machines with a fixed number of tapes.  We implement a generalised operator that takes an $m$-tape machine and a mapping from $\Fin_m$ to $\Fin_n$ and
-yields an $n$-tape machine, for~$m \le n$.
+We choose another approach, because it is in general easier to define and verify machines with a fixed number of tapes.  We lift the one-tape machine
+$M_{aux}$ to $n$ different $n$-tape machines, for every $n\ge1$.  Asperti and Ricciotti~\cite{asperti2015} implement such an operator that translates
+a one-tape machine into $n$-tape machines.  We implement a generalised operator that takes an $m$-tape machine and a mapping from $\Fin_m$ to
+$\Fin_n$, and yields an $n$-tape machine, for~$m \le n$.
 
-The second part of this problem is how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that sums
-(encodings of) natural numbers, we could want to build a machine $\MS{Sum}$ that sums numbers in a list of numbers.  Consider an alphabet
-$\Sigma_\Nat$ where we could encode natural numbers on, and an alphabet $\Sigma_{\List(\Nat)}$ to encode lists of natural numbers.  If the alphabet
+The second part of this problem is how to combine machines with different alphabets.  For example, if we have a machine $\MS{Add}$ that adds
+(encodings of) natural numbers, we could want to build a machine $\MS{Sum}$ that computes the sum of a list of numbers.  Consider an alphabet
+$\Sigma_\Nat$ where we could encode natural numbers on and an alphabet $\Sigma_{\List(\Nat)}$ to encode lists of natural numbers.  If the alphabet
 $\Sigma_\Nat$ is included in $\Sigma_{\List(\Nat)}$, we would like to lift $\MS{Add}$ to the alphabet $\Sigma_{\List(\Nat)}$, to define $\MS{Sum}$.
 
 Asperti and Ricciotti~\cite{asperti2015} avoid the problem of agreement of alphabets.  They consider a fixed alphabet to encode all needed data on and
@@ -38,11 +37,9 @@ Both lifting operators are easy to define and verify using the lemmas of the pre
 \label{sec:n-Lift}
 \setCoqFilename{ProgrammingTuringMachines.TM.Lifting.LiftTapes}%
 
-The tape-lift takes a machine $M:\TM_\Sigma^m(L)$ and a duplicate-free vector $I: \Fin_n^m$ and yields a machine
-$\LiftTapes{M}{I} : \TM_\Sigma^n(L)$.\footnote{ Note that instead of duplicate free index vectors $I:\Fin_n^m$ we could also use injective functions
-  $f: \Fin_m \to \Fin_n$.  We choose index-vectors, because they are easier to define in Coq.}  The tape of $\LiftTapes{M}{I}$ with the index
-$i = I[j]$ (with $i:\Fin_n$, $j:\Fin_m$) behaves exactly as the tape $j$ of $M$.  All other tapes of $\LiftTapes{M}{I}$ that are not in~$I$ are
-inactive and do not change.
+The tape-lift takes a machine $M:\TM_\Sigma^m(L)$ and a duplicate-free vector $I: \Fin_n^m$, and yields a machine
+$\LiftTapes{M}{I} : \TM_\Sigma^n(L)$.  The tape of $\LiftTapes{M}{I}$ with the index $i = I[j]$ (with $i:\Fin_n$, $j:\Fin_m$) behaves exactly as the
+tape $j$ of $M$.  All other tapes of $\LiftTapes{M}{I}$ that are not in~$I$ are inactive and do not change.
 
 
 The transition function of $\LiftTapes{M}{I}$ gets the $n$ read symbols and selects the $m$ relevant symbols.  Then it applies the transition function
@@ -62,7 +59,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 \end{lemma}
 
 \begin{definition}[Vector filling][fill]
-  Let $X:\Type$, $m,n:\Nat$,$I:\Fin_n^m$, $init:X^n$, and $V:X^m$.  Then $fill~I~init~V : X^n$ is defined per recursion:
+  Let $X:\Type$, $m,n:\Nat$, $I:\Fin_n^m$, $init:X^n$, and $V:X^m$.  Then $fill~I~init~V : X^n$ is defined per recursion:
   \begin{alignat*}{3}
     & fill~(\nil      )&& ~init~V &~:=~& init \\
     & fill~(i \cons I')&& ~init~V &~:=~& replace~(fill~I'~(\tl V))~i~(\hd V)
@@ -86,7 +83,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   \label{def:LiftTapes}
   Let $M:\TM_\Sigma^m(L)$ and $I : \Fin_n^m$.  We define $\LiftTapes{M}{I} : \TM_\Sigma^n(L)$.  All components are the same as in $M$, except:
   \begin{alignat*}{2}
-    &\delta(q,s) &~:=~& \Let{(q', act) := \delta_M(q, select~I~sym)}{\\%
+    &\delta(q,s) &~:=~& \Let{(q', act) := \delta_M(q, select~I~s)}{\\%
     &            &~  ~& (q', fill~I~(\None,N)^n~act)}
   \end{alignat*}
 \end{definition}
@@ -95,7 +92,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   \label{lem:LiftTapes_Realise}
   Let $M : \TM_\Sigma^m(L)$ and $I : \Fin_n^m$ duplicate-free.  If $M \Realise R$, then $\LiftTapes{M}{I} \Realise \LiftTapes{R}{I}$ with
   \[
-    \LiftTapes{R}{I} := \lambda t~(l,t').~ R~(select~I~t)~(l, select~I~t') \land \forall i:\Fin_n.~i \notin I \rightarrow t'[i]=t[i].
+    \LiftTapes{R}{I} := \lambda t~(l,t').~ R~(select~I~t)~(l, select~I~t') \land \forall i:\Fin_n.~i \notin I \rightarrow t'[i]=t[i]
   \]
 \end{lemma}
 
@@ -108,18 +105,18 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
 The proofs are similar to the former proofs, i.e.\ using Lemma~\ref{lem:loop_lift} and Lemma~\ref{lem:loop_unlift} with the following configuration
 lifting function:
 \[
-  selectConf(q,t) := (q, select~I~t).
+  selectConf(q,t) := (q, select~I~t)
 \]
 
-However, for the second part of the correctness, i.e.\ tapes that are not in $I$ do not change, we need another lemma about $loop$:
+However, for the second part of the correctness, i.e.\ tapes that are not in $I$ do not change, we need another lemma about $\Loop$:
 
 \begin{lemma}[Mapping loops][loop_map]
   \label{lem:loop_map}
   Let $A:\Type$, $f : A \to A$, $h:A \to \Bool$.  Let $B:\Type$ and $g : A \to B$.  If $g(f~a)=g(a)$ for all $a:A$, then
   \begin{alignat*}{1}
     & \forall (k:\Nat)~(a_1~a_2 : A). \\
-    & \quad loop~f~h~k~a_1 = \Some{a_2} \rightarrow \\
-    & \quad g(a_1) = g(a_2).
+    & \quad \Loop~f~h~k~a_1 = \Some{a_2} \rightarrow \\
+    & \quad g(a_1) = g(a_2)
   \end{alignat*}
 \end{lemma}
 \begin{proof}
@@ -136,13 +133,13 @@ We apply this lemma in the proof of Lemma~\ref{lem:LiftTapes_Realise} with $g :=
 
 Let $M : \TM_\Sigma^n(L)$ be a machine over the alphabet $\Sigma$, and $f : \Sigma \hookrightarrow \Tau$ a retraction on another alphabet $\Tau$.
 Note that then $\Tau$ has at least as many symbols as $\Sigma$.  We need a default symbol $def:\Sigma$.  In contrast to the default label we needed in
-the definition of $\While$, the choice of $def$ is semantically relevant.  This means that $def$ should be a symbol that $M$ does not expect to read.
-The alphabet-lift $\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n(L)$ is a machine over the bigger alphabet $\Tau$.
+the definition of $\While$, the choice of $def$ is semantically \textit{relevant}.  This means that $def$ should be a symbol that $M$ does not expect
+to read.  The alphabet-lift $\LiftAlphabet{M}{(f,def)} : \TM_\Tau^n(L)$ is a machine over the bigger alphabet $\Tau$.
 
-The transition function of the lifted machine $\LiftAlphabet{M}{(f,def)}$ reads the $n$ optional symbols $s : \Option(\Tau)^n$.  It tries to translate
-these symbols to $s': \Option(\Sigma)^n$, using the partial inversion function $f^{-1} : \Tau \to \Option(\Sigma)$.  If the symbol $\tau:\Tau$ has no
-corresponding symbol in $\Sigma$, it must be translated to $def$ instead.  The transition function $\delta_M$ of $M$ yields the successor state $q'$
-and a vector of actions $act: (\Option(\Sigma) \times \MS{Move})^n$, which is translated using $f:\Sigma\to\Tau$ to
+The transition function of the lifted machine $\LiftAlphabet{M}{(f,def)}$ reads the $n$ optional symbols $s : \Option(\Tau)^n$ and tries to translate
+them to $s': \Option(\Sigma)^n$ using the partial inversion function $f^{-1} : \Tau \to \Option(\Sigma)$.  If the symbol $\tau:\Tau$ has no
+corresponding symbol in $\Sigma$, it must be translated to $def$.  The transition function $\delta_M$ of $M$ yields the successor state $q'$ and a
+vector of actions $act: (\Option(\Sigma) \times \MS{Move})^n$, which is translated using $f:\Sigma\to\Tau$ to
 $act' : (\Option(\Tau) \times \MS{Move})^n$.
 
 \begin{definition}[$\LiftAlphabet{M}{(f,def)}$][LiftAlphabet]
@@ -178,7 +175,7 @@ that maps every symbol on a tape.  We write $\coqlink[mapTapes]{mapTapes}$ for t
   If $M \Realise R$, then $\LiftAlphabet{M}{(f,def)} \Realise \LiftAlphabet{R}{(f,def)}$ with
   \small
   \[
-    \LiftAlphabet{R}{(f,def)} := \lambda t~(l, t').~R~(mapTapes~(surject~f~def)~t)~(l, mapTapes~(surject~f~def)~t').
+    \LiftAlphabet{R}{(f,def)} := \lambda t~(l, t').~R~(mapTapes~(surject~f~def)~t)~(l, mapTapes~(surject~f~def)~t')
   \]
 \end{lemma}
 
@@ -186,13 +183,13 @@ that maps every symbol on a tape.  We write $\coqlink[mapTapes]{mapTapes}$ for t
   \label{lem:LiftAlphabet_TerminatesIn}
   If $M \TerminatesIn T$, then $\LiftAlphabet{M}{(f,def)} \TerminatesIn \LiftAlphabet{T}{(f,def)}$ with
   \[
-    \LiftAlphabet{T}{(f,def)} := \lambda t~k.~T~(mapTapes~(surject~f~def)~t)~k.
+    \LiftAlphabet{T}{(f,def)} := \lambda t~k.~T~(mapTapes~(surject~f~def)~t)~k
   \]
 \end{lemma}
 
-The proofs are analogous to the former proofs.  The configuration lifting is
+The proofs are analogous to the former proofs.  The configuration lifting is:
 \[
-  \coqlink[surjectConf]{surjectConf} (q,t) := (q, mapTapes~(surject~f~def)~t).
+  \coqlink[surjectConf]{surjectConf} (q,t) := (q, mapTapes~(surject~f~def)~t)
 \]
 
 

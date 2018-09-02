@@ -1,4 +1,4 @@
-\chapter{Simulating a Heap Machine}
+\chapter{Simulating a Call-By-Value $\lambda$-Calculus Machine}
 \label{chap:heap}
 
 \newcommand{\subst}[3]{{#1}^{#2}_{#3}}
@@ -13,10 +13,10 @@ halting problem of the abstract machine reduces to the halting problem of multi-
 \section{Heap Machine}
 \label{sec:heap}
 
-The abstract machine we present here is a variant of the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  They formally show in Coq, that
-their variant of the machine can simulate the language $L$, which implements the ``call-by-value'' subset of the $\lambda$-calculus.  Thus, we
-implement a simulator that also simulates $L$.  Here we define the language $L$ only briefly.  For more a more thoughtful treatment of this language,
-we refer to~\cite{forster2017weak} and~\cite{KunzeEtAl:2018:Formal}.  The concrete definition of the machine we are considering is due to F.~Kunze.
+The abstract machine we present here is a variant of the heap machine in Kunze et~al.~\cite{KunzeEtAl:2018:Formal}.  They formally show in Coq that
+their variant of the machine can simulate the language $L$, which implements the call-by-value subset of the $\lambda$-calculus.  Thus, we implement a
+simulator that also simulates $L$.  Here we define the language $L$ only briefly.  For more a more thorough treatment of this language, we refer
+to~\cite{forster2017weak} and~\cite{KunzeEtAl:2018:Formal}.  The concrete definition of the machine we are considering is due to F.~Kunze.
 
 
 \subsubsection{Call-By-Value $\lambda$-Calculus}
@@ -33,7 +33,7 @@ The language $L$ uses simple substitution:
   \subst{(st)}ku &~:=~(\subst sku)(\subst tku) \\
   \subst{(\lambda s)}ku &~:=~\lambda(\subst s{Sk}u)
 \end{align*}
-The reduction relation $s \red t$ is defined inductively on terms:
+The reduction relation $s \red t$ is inductively defined on terms:
 \begin{mathpar}
   \inferrule*{~}{(\lambda s) (\lambda t)\red\subst s0{\lambda t}} \and%
   \inferrule*{s\red s'} {st\red s't} \and%
@@ -80,8 +80,8 @@ States of the abstract machine are triples of two closure lists and a heap:
 \[
   (T, V, H) ~:~ \List(Clos) \times \List(Clos) \times Heap.
 \]
-$T$ is called the control stack.  It contains the closures that the machine has to process.  The second stack $V$ is called the argument stack.  The
-$\MS{APP}$ command fetches the functions and arguments from that stack.
+$T$ is called the control stack.  It contains the closures that the machine has to process.  The second stack $V$ is called the argument stack.  For
+example, the $\MS{APP}$ command fetches the functions and arguments from that stack.
 
 
 We first explain what each rule of the reduction predicate $(T,V,H) \succ (T',V',H')$ does, and then we define it formally.
@@ -95,9 +95,9 @@ continues executing $(c,Q)$ and the ``rest closure'' $(a,P)$, where $c$ is the p
 
 
 \paragraph{$\lambda$-Rule}
-If the head control closure is $(a, \MS{LAM} \cons P)$, the machine splits the linearised program $P$ into body $Q$ of the $\lambda$-expression and
-the rest program $P'$.  Then it pushes the closure of the rest program $(a,P')$ on the control stack, and the ``body closure'' $(a,Q)$ on the argument
-stack.  The splitting is realised with the function $\phi : Pro \to \Option(Pro \times Pro)$.  For example, {\small
+If the head control closure is $(a, \MS{LAM} \cons P)$, the machine splits the linearised program $P$ into the body $Q$ of the $\lambda$-expression
+and the rest program $P'$.  Then it pushes the closure of the rest program $(a,P')$ on the control stack, and the ``body closure'' $(a,Q)$ on the
+argument stack.  The splitting is realised with the function $\phi : Pro \to \Option(Pro \times Pro)$.  For example, {\small
   \[
     \phi[\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}; \MS{RET}; \MS{VAR}(1)] = \Some{([\MS{VAR}(0); \MS{LAM}; \MS{APP}; \MS{RET}], [\MS{VAR}(1)])}.
   \]
@@ -106,8 +106,8 @@ The first $\MS{RET}$ matches to the $\MS{LAM}$ in the program above, so it is pa
 tail-recursive auxiliary function:
 \begin{definition}[$\phi$][jumpTarget]
   \label{def:jumpTarget}
-  We define $\phi~P :=~ \phi'~0~\nil~P$ with the auxiliary function $\phi' : \Nat \to Pro \to Pro \to \Option(Pro \times Pro)$, which is defined by
-  recursion on $P:Pro$.
+  We define $\phi~P :=~ \phi'~0~\nil~P$ with the auxiliary function $\phi' : \Nat \to Pro \to Pro \to \Option(Pro \times Pro)$ which is defined by
+  recursion on $P:Pro$:
   \begin{alignat*}{4}
     &\phi'&~0~   &~Q&~(\MS{RET} \cons P) &&~:=~& \Some{(Q,P')} \\
     &\phi'&~(S~k)&~Q&~(\MS{RET} \cons P) &&~:=~& \phi'~k~(Q \app [\MS{RET}])~P \\
@@ -195,8 +195,8 @@ First, we notice that all types in Definition~\ref{def:Heap}, except commands ($
 Definition~\ref{def:basic-encodings}.  \setCoqFilename{ProgrammingTuringMachines.TM.LM.Alphabets}%
 \begin{definition}[Encoding of heaps][]
   \label{def:Heap-encode}
-  The type $Com$ is isomorphic to the sum of $ACom := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$ and $Var$.  $ACom$ is encodable on itself (since it is
-  finite), and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Com$ is encodable on $\Sigma_{Com} := \Sigma_{ACom+\Nat}$.  All
+  The type $Com$ is isomorphic to the sum of $Var$ and $ACom := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$.  $ACom$ is encodable on itself (since it is
+  finite), and $Var = \Nat$ is encodable on $\Sigma_{Var} := \Sigma_\Nat$.  Then $Com$ is encodable on $\Sigma_{Com} := \Sigma_{\Nat+ACom}$.  All
   other types are encodable according to Definition~\ref{def:basic-encodings}.
   For completeness, the alphabets are:\\
   $\Sigma_{Pro} := \Sigma_{\List(Com)}$, $\Sigma_{Add} := \Sigma_\Nat$, $\Sigma_{Clos}:=\Sigma_{Add \times Pro}$,
@@ -211,10 +211,10 @@ and $\Nat$), we can combine constructors and deconstructors from Section~\ref{se
   \begin{alignat*}{2}
     & \MS{CaseCom} &~:=~& \MS{If}~\MS{CaseSum} \\
     &               &    & \MS{Then}~   \Return{\Nop}{\None} \\
-    &               &    & \MS{Else}~~~ \MS{Relabel}~(\LiftAlphabet{\MS{CaseFin}}{RetrRgt})~(\Some\cdot)
+    &               &    & \MS{Else}~~~ \MS{Relabel}~(\LiftAlphabet{\MS{CaseFin}}{RetrInl})~(\Some\cdot)
   \end{alignat*}
 \end{definition}
-Note that $RetrRgt : \Sigma_{Var} \hookrightarrow \Sigma_{Com}$.
+Note that $RetrInl : \Sigma_{Var} \hookrightarrow \Sigma_{Com}$.
 \begin{lemma}[Correctness of $\MS{CaseCom}$][CaseTok_Sem]
   \label{lem:CaseCom_Sem}
   $\MS{CaseCom} \RealiseIn{11} CaseCom$ with
@@ -229,13 +229,13 @@ $CaseComRel :=$
       ].
 \end{lstlisting}
 \end{lemma}
-The $\MS{VAR}$ constructor is defined with $\MS{ConstrInr}$ and the constructor for $ACom$ is defined with $\MS{WriteSymbol}$.
+The $\MS{VAR}$ constructor is defined with $\MS{ConstrInl}$ and the constructor for $ACom$ is defined with $\MS{WriteSymbol}$.
 
 For the functions $\phi$ and $lookup$, we define machines that \textit{compute} these functions in a lesser strict sense than
 Definition~\ref{def:Computes2_Rel}.  The Turing machines only save the input-values that a caller machine needs again.  For example, we have a machine
 $\MS{Nth'}$ that saves the list, but not the index.  The second change is that for functions with optional outputs, like $nth$, we do not extend the
-alphabet with $\Sigma_{\Option(X)}$.  Instead, we encode whether the output is $\Some{\cdot}$ or $\None$ with the label type $\Bool$.  In case that
-the output is $\None$, the machine terminates in $\false$ and the output tape stays right.
+alphabet with $\Sigma_{\Option(X)}$.  Instead, we encode whether the output value is $\Some{\cdot}$ or $\None$ with the label type $\Bool$.  In case
+that the output is $\None$, the machine terminates in $\false$ and the output tape stays right.
 
 After we have defined and verified machines that compute $\phi$ and $lookup$, we define a machine $\MS{Step}$ that simulates a single step of the heap
 machine.
@@ -245,20 +245,35 @@ machine.
 \label{sec:Lookup}
 \setCoqFilename{ProgrammingTuringMachines.TM.LM.LookupTM}%
 
-The machine $\MS{Lookup} : \TM_{\Sigma^+}^5(\Bool)$ realises the heap $lookup$ function.  Note, that the heap is just a linked list of closures, where
-the pointers are indices.  It uses the machine $\MS{Nth}' : \TM_{\Sigma^+}^4(\Bool)$ which is like $\MS{Nth}$ from Section~\ref{sec:Nth}, but with the
-two changes mentioned above.
+\enlargethispage{0.5cm}
 
-First we consider the alphabet of $\MS{Lookup}$.  We can encode closures on the heap alphabet $\Sigma_{Heap}$.  However when $\MS{Step}$ calls
-$H[a,n]$, $a$ and $n$ are encoded on an alphabet of the closures of a closure stack.  Thus, we define $\MS{Lookup}$ on an alphabet $\Sigma$, with
+\begin{figure}[t]
+  \centering
+  \small
+  \begin{tikzcd}
+    & \underset{\text{\footnotesize(1)}}{\Sigma_{Add}} \arrow[r, "RetrFst", hook] & \Sigma_{Clos} \arrow[r, "RetrFst", hook] &%
+    \Sigma_{Clos \times Add} \arrow[r, "RetrOpt", hook] &
+    \Sigma_{\Option(Clos \times Add)} \arrow[r, "RetrList", hook] & \Sigma_{Heap} \arrow[d, "f_{Heap}", hook] \\
+    \underset{\text{\footnotesize(2)}}{\Sigma_{Var}} \arrow[r, "RetrInl", hook] & \Sigma_{Com} \arrow[r, "RetrList", hook] &%
+    \Sigma_{Pro} \arrow[u, "RetrSnd", hook] &%
+    \underset{\text{\footnotesize(3)}}{\Sigma_{Add}} \arrow[u, "RetrSnd", hook] & \Sigma_{Clos} \arrow[r, "f_{Clos}", hook] & \Sigma
+  \end{tikzcd}
+  \caption{The retractions of $\MS{Lookup}$.  The three encodings are marked with the numbers in the list below.}
+  \label{fig:retracts-Lookup}
+\end{figure}
+
+The machine $\MS{Lookup} : \TM_{\Sigma^+}^5(\Bool)$ realises the heap $lookup$ function.  It uses the machine $\MS{Nth}' : \TM_{\Sigma^+}^4(\Bool)$
+which is like $\MS{Nth}$ from Section~\ref{sec:Nth}, but with the two changes mentioned above.
+
+First we consider the alphabet of $\MS{Lookup}$.  We can encode closures on the heap alphabet $\Sigma_{Heap}$.  However, when $\MS{Step}$ calls
+$H[a,n]$, $a$ and $n$ are encoded on an alphabet for the closures on the closure stack.  Thus, we define $\MS{Lookup}$ on an alphabet $\Sigma$, with
 retractions $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$ and $f_{Clos} : \Sigma_{Clos} \hookrightarrow \Sigma$.  The second retraction correspond
 to the closure alphabet where $a$ and $n$ are encoded.  The retraction
 \[
   \coqlink[retr_clos_lookup_heap]{f_{Clos'}} : \Sigma_{Clos} \hookrightarrow \Sigma := f_{Heap} \circ RetrList \circ RetrOpt \circ RetrFst 
 \]
-is the canonical retraction of closures from the heap.
-
-There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depending on whether the number is:
+is the canonical retraction of closures from the heap.  In Figure~\ref{fig:retracts-Lookup}, the three relevant retractions
+$\Sigma_\Nat \hookrightarrow \Sigma$ are visualised:
 \begin{enumerate}
 \item a heap address of a closure on the stack alphabet:
   \[
@@ -266,7 +281,7 @@ There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depen
   \]
 \item a variable in a command of a closure on the stack alphabet:
   \[
-    \coqlink[retr_nat_lookup_clos_var]{f_{var}} := f_{Clos'} \circ RetrSnd \circ RetrList \circ RetrRgt
+    \coqlink[retr_nat_lookup_clos_var]{f_{var}} := f_{Clos'} \circ RetrSnd \circ RetrList \circ RetrInl
   \]
 \item a pointer to the next heap entry:
   \[
@@ -276,10 +291,12 @@ There are three relevant retractions $\Sigma_\Nat \hookrightarrow \Sigma$, depen
 
 Since the function $lookup$ is tail-recursive, we define the step machine with the type $LookupStep : \TM_{\Sigma^+}^5(\Option(\Bool))$.  It first
 calls the list lookup machine ($\MS{Nth'}$).  If it failed, $\MS{Lookup}$ immediately terminates in $\false$.  Else, it makes a case-distinction on
-the heap entry $e : \Option(Clos \times Add)$.  In case it is $\None$, $\MS{Lookup}$ also terminates in $\false$.  Else it destructs the closure
-$g = (P,b)$ and makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ resets the tapes for $b$ and $n$, translates $g$ from $f_{Clos'}$ to
+the heap entry $e : \Option(Clos \times Add)$.  In case it is $\None$, $\MS{Lookup}$ also terminates in $\false$.  If $e = \Some{e'}$, it destructs
+$e' = (g,b)$ and makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$ resets the tapes for $b$ and $n$, translates $g$ from $f_{Clos'}$ to
 $f_{Clos}$ and returns $\true$.  Else it translates $b$ from $f_{next}$ to $f_{add}$, moves it to the tape that contained $a$, and repeats the loop.
 We visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~\ref{tab:exec-LookupStep-0}.
+
+\enlargethispage{0.5cm}
 
 \begin{table}[H]
   \scriptsize
@@ -343,6 +360,9 @@ w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still contai
 terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there are two possible reasons for that: Either $H[a]=\None$ or
 $H[a]=\Some\None$, but we do not separate these two failure cases.
 
+
+\enlargethispage{1cm}
+
 \begin{lemma}[Correctness of $\MS{Lookup}$][Lookup_Step_Realise]
   \label{lem:Lookup_Realise}
   $\MS{Lookup} \Realise LookupRel$
@@ -351,9 +371,9 @@ $H[a]=\Some\None$, but we do not separate these two failure cases.
   \begin{alignat*}{1}
     & LookupRel := \\
     &\quad \lambda t~(l, t').~\forall H~a~n.~ t[0] \simeq H \rightarrow t[1] \simeq_{f_{add}} a \rightarrow t[2] \simeq_{f_{var}} n \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow \\
-    &\quad\quad \MS{if}~l~\MS{then}~\bigl(\exists g.~H[a,n] = \Some{g} \land \\
-    &\quad\quad \phantom{\MS{if}~l~\MS{then}~\bigl(\exists g.~} t'[0] \simeq H \land isRight~t'[1] \land isRight~t'[2] \land t'[3] \simeq_{f_{Clos}} g \land isRight~t[4]\bigr) \\
-    &\quad\quad \MS{else}~ H[a,n] = \None.
+    &\quad\quad \MS{if}~l~\pthen~\bigl(\exists g.~H[a,n] = \Some{g} \land \\
+    &\quad\quad \phantom{\MS{if}~l~\pthen~\bigl(\exists g.~} t'[0] \simeq H \land isRight~t'[1] \land isRight~t'[2] \land t'[3] \simeq_{f_{Clos}} g \land isRight~t[4]\bigr) \\
+    &\quad\quad \phantom{\MS{if}~l}~\pelse~H[a,n]=\None.
 \end{alignat*}
 \end{lemma}
 
@@ -362,6 +382,7 @@ $H[a]=\Some\None$, but we do not separate these two failure cases.
 \label{sec:SplitBody}
 \setCoqFilename{ProgrammingTuringMachines.TM.LM.JumpTargetTM}%
 
+
 The machine $\MS{SplitBody} : \TM_{\Sigma^+_{Pro}}^5(\Bool)$ computes the function $\phi$ (cf.\ Definition~\ref{def:jumpTarget}).  The
 implementation of this machine is straight-forward, because $\phi'$ is defined tail-recursively.  The machine
 $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$ computes $\phi'$, and $\MS{SplitBody}$ initialises the accumulators before executing the loop.
@@ -369,21 +390,21 @@ $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$ computes $\phi'$, and $\MS{Spl
 The step machine $\MS{SplitBodyStep} : \TM_{\Sigma^+_{Pro}}^5(\Option(\Bool))$ first makes a case-distinction over the program on tape $0$.  In the
 $\nil$ case, it returns $\Some{\false}$ so that the loop returns $\false$.  In the cons-case, it makes a case-distinction over the command, using
 $\MS{CaseCom}$.  In the case the head command is $\MS{RET}$, it does another case-distinction over $k$.  In the case that the head command is
-$\MS{VAR}(n)$, the machine again applies the $\MS{VAR}$ constructor to $n$ and appends this command to $Q$.  The case-machines use the auxiliary
-parametrised machine $\MS{AppACom}~t$ that appends a finite command (i.e.\ $t$ is either $\MS{APP}$, $\MS{LAM}$, or $\MS{RET}$) to the command list,
-and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
+$\MS{VAR}(n)$, the machine applies the $\MS{VAR}$ constructor to $n$ again and appends this command to $Q$.  The case-machines use the parametrised
+auxiliary machine $\MS{AppACom}~t$ that appends a finite command (i.e.\ $t$ is either $\MS{APP}$, $\MS{LAM}$, or $\MS{RET}$) to the command list, and
+the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
 
 
-\begin{definition}[$\MS{SplitBody}$][JumpTarget_Step]
+\begin{definition}[$\MS{SplitBodyStep}$][JumpTarget_Step]
   \label{def:JumpTarget}
-  We define the canonical retraction $f_{Var} : Var \hookrightarrow \Sigma_{Pro}$ by $f_{Var} := RetrList \circ RetrRgt$.
+  We define the canonical retraction $f_{Var} : Var \hookrightarrow \Sigma_{Pro}$ by $f_{Var} := RetrList \circ RetrInl$.
   %% This is a bad hack, but I think it looks nice...
   %% This hack assumes that $\MS{LAM}$ is the wider than of $\MS{RET}$ and $\MS{APP}$
   \begin{alignat*}{1}
     & \MS{SplitBodyStep} := \\
     & \quad \MS{If}~(\LiftTapes{\MS{CaseList}}{\Vector{0;3}}) \\
     & \quad \MS{Then}~\Switch~(\LiftBoth{\MS{CaseCom}}{RetrList}{\Vector{3}}) \\
-    & \quad \phantom{\MS{Then}}~(\lambda (t : \Option(ACom)).~\MS{match}~l\\
+    & \quad \phantom{\MS{Then}}~(\lambda (c : \Option(ACom)).~\MS{match}~c\\
     & \quad \phantom{\MS{Then}~(\lambda}~[~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{RET}}} \Rightarrow \MS{If}~(\LiftBoth{\MS{CaseNat}}{f_{Var}}{\Vector{2}}) \\
     & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Then}~ \Return{(\LiftTapes{\MS{AppACom~\MS{RET}}}{\Vector{1;4}})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda~[~ \Some{\MS{LAM} \Rightarrow}}~\MS{Else}~~~ \Return{(\LiftTapes{\MS{Reset}}{\Vector{2}})}{\Some\true} \\
@@ -391,12 +412,8 @@ and the machine $\MS{AppCom}$ that appends a command on a tape to $Q$.
     & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\Some{\MS{APP}}} \Rightarrow \Return{(\MS{AppACom}~\MS{APP})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda}~|~ \phalign{\Some{\MS{LAM}}}{\None} \Rightarrow \Return{(\LiftBoth{\MS{ConstrVar}}{f_{Var}}{\Vector{3}} \Seq \LiftTapes{\MS{AppCom}}{1;3;4})}{\None} \\
     & \quad \phantom{\MS{Then}~(\lambda}~]) \\
-    & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}.
+    & \quad \MS{Else}~~~ \Return{\Nop}{\Some\false}
   \end{alignat*}
-  We furthermore define $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$ and
-  \[
-    \MS{SplitBody} := \LiftTapes{\MS{ConstrNil}}{\Vector{1}} \Seq \LiftBoth{\MS{ConstrO}}{f_{Var}}{\Vector{2}} \Seq \MS{SplitBodyLoop}.
-  \]
 \end{definition}
 
 \begin{table}[t]
@@ -438,21 +455,27 @@ terminates in the label $\false$.
   \begin{alignat*}{1}
     & SplitBodyLoopRel := \\
     &\quad \lambda t~(l, t').~\forall P~Q~k.~t[0] \simeq P \rightarrow t[1] \simeq Q \rightarrow t[2] \simeq k \rightarrow isRight~t[3] \rightarrow isRight~t[4] \rightarrow \\
-    &\quad\quad \MS{if}~l~\MS{then}~\exists P'~Q'.~ \phi'~k~Q~P = \Some{(Q', P')} \land \\
-    &\quad\quad \phantom{\MS{if}~l~\MS{then}}~t'[0] \simeq P' \land t'[1] \simeq Q' \land \forall(i:\Fin_3).~isRigth~t'[2+i] \\
-    &\quad\quad \MS{else}~\phi'~k~Q~P=\None.
+    &\qquad \MS{if}~l~\pthen~\exists P'~Q'.~ \phi'~k~Q~P = \Some{(Q', P')} \land \\
+    &\qquad \phantom{\MS{if}~l~\pthen}~t'[0] \simeq P' \land t'[1] \simeq Q' \land \left(\forall(i:\Fin_3).~isRigth~t'[2+i]\right) \\
+    &\qquad \phantom{\MS{if}~l}~\pelse~\phi'~k~Q~P=\None
 \end{alignat*}
 \end{lemma}
 
-Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$.
-\begin{lemma}[Correctness of $\MS{SplitBodyLoop}$][JumpTarget_Realise]
+Before the loop, the tapes for $Q$ and $k$ are initialised to $\nil$ and $0$:
+\begin{definition}[$\MS{SplitBody}$][JumpTarget]
+  We define $\MS{SplitBodyLoop} := \While~\MS{SplitBodyStep}$ and
+  \[
+    \MS{SplitBody} := \LiftTapes{\MS{ConstrNil}}{\Vector{1}} \Seq \LiftBoth{\MS{ConstrO}}{f_{Var}}{\Vector{2}} \Seq \MS{SplitBodyLoop}
+  \]
+\end{definition}
+\begin{lemma}[Correctness of $\MS{SplitBody}$][JumpTarget_Realise]
   $\MS{SplitBody} \Realise SplitLoopRel$ with
   \begin{alignat*}{1}
     & SplitBodyRel := \\
     &\quad \lambda t~(l, t').~\forall P.~t[0] \simeq P \rightarrow isRigth~t[1] \rightarrow (\forall(i:\Fin_3).~isRigth~t[2+i]) \rightarrow \\
-    &\quad\quad \MS{if}~l~\MS{then}~\exists P'~Q.~ \phi~P = \Some{(Q, P')} \land \\
-    &\quad\quad \phantom{\MS{if}~l~\MS{then}}~t'[0] \simeq P' \land t'[1] \simeq Q \land \left(\forall(i:\Fin_3).~isRigth~t'[2+i]\right) \\
-    &\quad\quad \MS{else}~\phi~P=\None.
+    &\qquad \MS{if}~l~\pthen~\exists P'~Q.~ \phi~P = \Some{(Q, P')} \land \\
+    &\qquad \phantom{\MS{if}~l~\pthen}~t'[0] \simeq P' \land t'[1] \simeq Q \land \left(\forall(i:\Fin_3).~isRigth~t'[2+i]\right) \\
+    &\qquad \phantom{\MS{if}~l}~\pelse~\phi~P=\None.
 \end{alignat*}
 \end{lemma}
 
@@ -474,7 +497,7 @@ example, if $T=(a, (\MS{VAR}(n) \cons P)) \cons T'$, the auxiliary machine for $
 argument stack and the reset closure to the control stack.  If $\MS{Lookup}$ failed, $\MS{Step}$ immediately terminates in $\Some\unit$, indicating
 that the state was a halting state.
 
-The machine $\MS{Step} : \TM_{\Sigma^+}^{11}(\Option(\Unit))$ is defined on an arbitrary alphabet $\Sigma^+$ with retractions
+The machine $\MS{Step} : \TM_{\Sigma^+}^{11}(\Option(\Unit))$ is defined on an arbitrary finite alphabet $\Sigma^+$ with retractions
 $f_{Stack} : \Sigma_{List(Clos)} \hookrightarrow \Sigma$ and $f_{Heap} : \Sigma_{Heap} \hookrightarrow \Sigma$.  We omit the definition of $\MS{Step}$
 here.  Although it is quite complex, no new innovations are required, and the designing of the machine was reasonable easy.  The machine first matches
 on the control stack.  If it is empty, it immediately terminates in $\Some\unit$.
@@ -485,10 +508,10 @@ on the control stack.  If it is empty, it immediately terminates in $\Some\unit$
   \begin{alignat*}{1}
     & StepRel := \\
     &\quad \lambda t~(l, t').~\forall T~V~H.~ t[0] \simeq T \rightarrow t[1] \simeq V \rightarrow t[2] \simeq H \rightarrow \left(\forall (i:\Fin_8).~isRight~t[3+i]\right) \rightarrow \\
-    &\quad \MS{if}~l=\None~\MS{then}~\exists T'~V'~H'.~(T,V,H) \red (T',H',V') ~\land~ \\
-    &\quad \phantom{\MS{if}~l=\None~\MS{then}}~ t'[0] \simeq T' \land t'[1] \simeq V' \land t'[2] \simeq H' \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right) \\
-    &\quad \MS{else}~ halt(T,V,H) ~\land~ \\
-    &\quad \phantom{\MS{else}}~T=\nil \rightarrow t'[0] \simeq \nil \land t'[1] \simeq V \land t'[2] \simeq H \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right)
+    &\qquad \MS{if}~l=\None~\pthen~\exists T'~V'~H'.~(T,V,H) \red (T',H',V') ~\land~ \\
+    &\qquad \phantom{\MS{if}~l=\None~\pthen}~ t'[0] \simeq T' \land t'[1] \simeq V' \land t'[2] \simeq H' \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right) \\
+    &\qquad \phantom{\MS{if}~l=\None}~\pelse~ halt(T,V,H) ~\land~ T=\nil \rightarrow \\
+    &\qquad \phantom{\MS{if}~l=\None~\pelse}~t'[0] \simeq \nil \land t'[1] \simeq V \land t'[2] \simeq H \land \left(\forall (i:\Fin_8).~isRight~t'[3+i]\right)
   \end{alignat*}
 \end{lemma}
 
@@ -512,8 +535,8 @@ such that $\MS{Step}$ terminates in $stepSteps~T~V~H$ steps when the first three
 \setCoqFilename{ProgrammingTuringMachines.TM.LM.HaltingProblem}%
 
 We instantiate $\Sigma := \Sigma_{\List(Clos)} + \Sigma_{Heap}$ and define $\MS{Loop} := \While~\MS{Step}$.  This machine terminates if and only if
-the heap state that is encoded on the tape of $\MS{Loop}$ terminates.  Moreover, if the heap state terminates with an empty control stack
-$(\nil, V', H')$, the tapes of $\MS{Loop}$ contain $(\nil, V', H')$ after the execution.
+the heap state that is encoded on the tapes is a terminating state.  Moreover, if the heap state terminates with an empty control stack
+$(\nil, V', H')$, the tapes contain $(\nil, V', H')$ after the execution.
 
 \begin{lemma}[Correctness of $\MS{Loop}$][Loop_Realise]
   \label{lem:Loop_Realise}
@@ -526,8 +549,8 @@ $(\nil, V', H')$, the tapes of $\MS{Loop}$ contain $(\nil, V', H')$ after the ex
   \end{alignat*}
 \end{lemma}
 
-For the running time function $loopSteps$, we need the $step$ and $halt$ functions from Lemma~\ref{lem:heap-red}.  The running time-function of $\MS{Loop}$ is
-defined per recursion over the number $k$ of reduction steps of the heap machine.
+For the running time function $loopSteps$, we need the functions $step$ and $isHalt$ from Lemma~\ref{lem:heap-red}.  The running time-function of
+$\MS{Loop}$ is defined per recursion over the number $k'$ of reduction steps of the heap machine.
 \begin{lemma}[Runtime of $\MS{Loop}$][Loop_Terminates]
   \label{lem:Loop_Terminates}
   $\MS{Loop} \TerminatesIn LoopT$ with
@@ -570,8 +593,8 @@ such that the first three tapes of $initTape(T,V,H)$ contain $T$, $V$, or $H$, r
     initTapes(T,V,H) := initValue(T) \cons initValue(V) \cons initValue(H) \cons initRight^8
   \]
   \setCoqFilename{ProgrammingTuringMachines.TM.Code.CodeTM}%
-  With $\coqlink[initValue]{initValue}(x) := \MS{midtape}~\nil~\MS{START}~(encode(x) \app [\MS{STOP}])$ and $initRight := \MS{midtape}~\nil~\MS{STOP}~\nil$.
-  \setCoqFilename{ProgrammingTuringMachines.TM.LM.HaltingProblem}%
+  With $\coqlink[initValue]{initValue}(x) := \MS{midtape}~\nil~\MS{START}~(encode(x) \app [\MS{STOP}])$ and
+  $\coqlink[initRight]{initRight} := \MS{midtape}~\nil~\MS{STOP}~\nil$.  \setCoqFilename{ProgrammingTuringMachines.TM.LM.HaltingProblem}%
 \end{definition}
 
 \begin{theorem}[Halting problem reduction][HaltingProblem]

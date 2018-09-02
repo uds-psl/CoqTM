@@ -81,7 +81,7 @@ Similarly, we can define an operator that takes a binary relation and yields a l
   \label{def:rel-fix}
   Let $R \subseteq A \times A$ and $y : B$.
   \[
-    R \att y := \lambda x~(l', z).~R~x~z \land y'=y
+    R \att y := \lambda x~(y', z).~R~x~z \land y'=y
   \]
 \end{definition}
 
@@ -109,7 +109,7 @@ The direction from right to left of Definition~\ref{def:retract} means that $f^{
 diagram:
 \[
   \begin{tikzcd}
-    A \arrow[r, "f"] \arrow[d, "\Some \cdot", swap] & B \arrow[ld, "g"] \\
+    A \arrow[r, "f"] \arrow[d, "\Some \cdot", swap] & B \arrow[ld, "f^{-1}"] \\
     \Option(A) &
   \end{tikzcd}
 \]
@@ -117,7 +117,7 @@ The direction from left to right of Definition~\ref{def:retract} means that $f^{
 property is called \textit{tightness}.
 
 We write $f : A \hookrightarrow B$ when we assume that the pair $(f, f^{-1})$ is a retraction.  Note that this notation introduces two names for
-functions ($f : A \to B$ and $f^{-1} : B \to \Option(A)$), but mostly we use the name $f$ for the \textit{tuple} of both functions.
+functions ($f : A \to B$ and $f^{-1} : B \to \Option(A)$), but mostly we use the name $f$ for the \textit{pair} of both functions.
 
 
 \begin{lemma}[Basic properties of retractions]
@@ -140,7 +140,7 @@ functions ($f : A \to B$ and $f^{-1} : B \to \Option(A)$), but mostly we use the
   Claim~\ref{lem:retract_g_Some} follows by Claim~\ref{lem:retract_f_injective}.
 
   Proof of Claim~\ref{lem:retract_f_injective}.  Let $x, y: A$ and $f(x)=f(y)$.  We have to show $x=y$.  It is enough to show $\Some x = \Some y$.  By
-  Claim~\ref{lem:retract_g_adjoint}, we know $\Some x = f^{-1}(f(x))$ and $\Some y = f^{-1}(f(y))$, therefore it is enough to show that
+  Claim~\ref{lem:retract_g_adjoint}, we know $\Some x = f^{-1}(f(x))$ and $\Some y = f^{-1}(f(y))$.  Therefore, it is enough to show that
   $f^{-1}(f(x)) = f^{-1}(f(y))$.  This is trivial because we assumed $f(x)=f(y)$.
 \end{proof}
 
@@ -165,7 +165,7 @@ functions ($f : A \to B$ and $f^{-1} : B \to \Option(A)$), but mostly we use the
 
 \begin{definition}[Composition of retractions]
   \label{def:retract-compose}
-  Let $g : B \hookrightarrow C$ and $f : A \hookrightarrow B$.  Then $g \circ f : A \hookrightarrow C$ is defined as the following retraction:
+  Let $f : A \hookrightarrow B$ and $g : B \hookrightarrow C$.  Then $g \circ f : A \hookrightarrow C$ is defined as the following retraction:
   \begin{alignat*}{2}
     & (g \circ f)      & (a) &:= g(f(a)) \\
     & (g \circ f)^{-1} & (c) &:=
@@ -185,42 +185,42 @@ functions ($f : A \to B$ and $f^{-1} : B \to \Option(A)$), but mostly we use the
 
 % There are many variations of Turing machines.  We have chosen multi-Tape
 
-We use the definition of multi-tape Turing machines and their tapes and semantics from Asperti and Ricciotti~\cite{asperti2015}.
+We use the definition of multi-tape Turing machines, their tapes, and semantics from Asperti and Ricciotti~\cite{asperti2015}.\footnote{Asperti and
+  Ricciotti~\cite{asperti2015} restrict machines to have $n>0$ tapes.  We do not have this restriction.  We actually define a $0$-tape machine
+  $\MS{Null}$, see Section~\ref{sec:Null}.}
 
 \begin{definition}[Multi-tape Turing machine][mTM]
   \label{def:mTM}
-  An $n$-tape Turing machine%
-  \footnote{Asperti and Ricciotti~\cite{asperti2015} restrict this definition to machines with $n>0$.  We do not have this restriction.  We actually
-    define a $0$-tape machine $\MS{Null}$, see Section~\ref{sec:Null}.} %
-  over a finite alphabet $\Sigma$ is a tuple $M = (Q, \delta, start, halt)$ where
+  An $n$-tape Turing machine over a finite alphabet $\Sigma$ is a tuple $M = (Q, \delta, start, halt)$ where
   \begin{itemize}
   \item $Q$ is a finite type
   \item $\delta \from Q \times \left(\Option(\Sigma)\right)^n \to Q \times \left(\Option(\Sigma) \times \MS{Move}\right)^n$
   \item $start:Q$
   \item $halt \from Q \to \Bool$ 
   \end{itemize}
-  There are three possible movements: $\coqlink[move]{\MS{Move}} ::= L ~|~ R ~|~ N.$
+  There are three possible movements: $\coqlink[move]{\MS{Move}} ::= \MS{L} ~|~ \MS{R} ~|~ \MS{N}.$
 \end{definition}
 
 We write $\MS{TM}_\Sigma^n$ for the type of $n$-tape Turing machines over the alphabet $\Sigma$.
 
 While we parametrise Definition~\ref{def:mTM} over the alphabet $\Sigma$ and the number of tapes $n$, we abstract the finite type $Q$ of states inside
-the type of Turing machines.  The transition function $\delta$ yields for every state and vector of $n$ read symbols the new state and a vector of $n$
-(optional) symbols to write, and a direction to move.  The read symbols are also optional, since it can be the case that there is no symbol under the
+the type of Turing machines.  The transition function $\delta$ yields for every state and vector of $n$ read symbols the new state and for every tape
+an optional symbols to write and a direction to move.  The read symbols are also optional, since it can be the case that there is no symbol under the
 head of a tape.  $start$ is the start state of the machine and $halt$ represents the subset of halting states.  Tuples of the type
 $\Option(\Sigma) \times \Move$ are called \textit{actions}.  They are referred to with the symbol $\MS{Act}_\Sigma$ or $\MS{Act}$ if $\Sigma$ is
 clear.  Our machines behave deterministically, because $\delta$ is a function.
 
 When we want to verify complex machines, we do not want to reason about \textit{concrete machine states}, because the number of states of a machine
 could be huge.  Reasoning about \textit{all} states of a machine is thus unfeasible.  We still need to reason about states, but we do not need to
-distinct most of the states.  We introduce the notion of \textbf{labelled machines}.  A label could be, for example, the type $\Bool$.  Then we only
-distinct between two kinds of states.  If $L$ is a finite type, then $M = (M', lab)$ is a labelled machine, where $M'$ is an unlabelled machine and
-$lab : Q_{M'} \to L$ is called the \textit{labelling function} of $M$.  The value of $lab$ is irrelevant for non-terminating states.  The function
-$lab$ partitions the terminating states.  This means that all terminating states with the same label can be seen semantically equivalent.  We write
-$\MS{TM}_\Sigma^n(L)$ for the type of labelled machines over $L$.\footnote{Formally, the type is defined as a sigma type:
-  $\MS{TM}_\Sigma^n(L) := \sum_{M:\MS{TM}_\Sigma^n}\bigl(Q_M \to L\bigr)$.  We use the projections $\pi_1$ and $\pi_2$ implicitly.}  We identify
-unit-labelled machines $\TM_\Sigma^n(\Unit)$ with unlabelled machines $\TM_\Sigma^n$.  We use the symbol $M$ for both labelled and unlabelled machines
-$\TM_\Sigma^n$.  It should however be always clear from the context, whether $M$ is a labelled or unlabelled machine.
+distinct most of the states.  We introduce the notion of \textbf{labelled machines}, where we assign a \textit{label} to every state.  A label type
+could be, for example, the type $\Bool$.  Then we only distinct between two kinds of states.  If $L$ is a finite type, then $M = (M', lab)$ is a
+labelled machine, where $M'$ is an unlabelled machine and $lab : Q_{M'} \to L$ is called the \textit{labelling function} of $M$.  The value of $lab$
+is irrelevant for non-terminating states.  The function $lab$ partitions the terminating states.  This means that all terminating states with the same
+label can be seen semantically equivalent.  We write $\MS{TM}_\Sigma^n(L)$ for the type of labelled machines over $L$.\footnote{Formally, the type is
+  defined as a sigma type: $\MS{TM}_\Sigma^n(L) := \sum_{M':\MS{TM}_\Sigma^n}\bigl(Q_{M'} \to L\bigr)$.  We use the projection $\pi_1$ implicitly and
+  write $lab_M$ for $\pi_2(M)$.}  We identify unit-labelled machines $\TM_\Sigma^n(\Unit)$ with unlabelled machines $\TM_\Sigma^n$.  We use the symbol
+$M$ for both labelled and unlabelled machines $\TM_\Sigma^n$.  It should however be always clear from the context, whether $M$ is a labelled or
+unlabelled machine.
 
 On a \emph{tape}, arbitrarily much memory can be allocated.  However, every tape has only finitely many symbols, i.e.\ there is a left-most and a
 right-most symbol.  A tape essentially is a triple $(ls,m,rs)$, where the symbol $m$ is the symbol under which the (read/write) head of tape is.  It
@@ -237,7 +237,7 @@ non-empty tape.  Formally, tapes are defined inductively:
     & \Tape_\Sigma &~::=~& \MS{niltape} \\
     &&& |~ \MS{leftof}  ~ (r:\Sigma) ~ (rs:\List(\Sigma)) \\
     &&& |~ \MS{midtape} ~ (ls:\List(\Sigma)) ~ (m:\Sigma) ~ (rs:\List(\Sigma)) \\
-    &&& |~ \MS{rightof} ~ (l:\Sigma) ~ (ls:\List(\Sigma)).
+    &&& |~ \MS{rightof} ~ (l:\Sigma) ~ (ls:\List(\Sigma))
   \end{alignat*}
 \end{definition}
 
@@ -270,16 +270,16 @@ The function $\MS{mv} \from \Move \to \Tape_\Sigma \to \Tape_\Sigma$ moves a tap
 \begin{definition}[Tape movement][tape_move]
   \footnotesize
   \begin{alignat*}{4}
-    & \MS{mv}~L~(\MS{leftof}~r~rs)                &&:= \MS{leftof}~r~rs
-    && \MS{mv}~R~(\MS{leftof}~r~rs)               &&:= \MS{midtape}~\nil~r~rs \\
-    & \MS{mv}~L~(\MS{midtape}~\nil~m~rs)          &&:= \MS{leftof}~m~rs
-    && \MS{mv}~R~(\MS{midtape}~ls~m~\nil)         &&:= \MS{rightof}~m~ls \\
-    & \MS{mv}~L~(\MS{midtape}~(l \cons ls)~m~rs)  &&:= \MS{midtape}~ls~l~(m \cons rs)
-    && \MS{mv}~R~(\MS{midtape}~ls~m~(r \cons rs)) &&:= \MS{midtape}~(m \cons ls)~r~rs \\
-    & \MS{mv}~L~(\MS{rightof}~l~ls)               &&:= \MS{midtape}~ls~l~\nil
-    && \MS{mv}~R~(\MS{rightof}~l~ls)              &&:= \MS{rightof}~l~ls \\
-    & \MS{mv}~\_~(\MS{niltape})                   &&:= \MS{niltape}
-    && \MS{mv}~N~t                                &&:= t
+    & \MS{mv}~\MS{L}~(\MS{leftof}~r~rs)                &&:= \MS{leftof}~r~rs
+    && \MS{mv}~\MS{R}~(\MS{leftof}~r~rs)               &&:= \MS{midtape}~\nil~r~rs \\
+    & \MS{mv}~\MS{L}~(\MS{midtape}~\nil~m~rs)          &&:= \MS{leftof}~m~rs
+    && \MS{mv}~\MS{R}~(\MS{midtape}~ls~m~\nil)         &&:= \MS{rightof}~m~ls \\
+    & \MS{mv}~\MS{L}~(\MS{midtape}~(l \cons ls)~m~rs)  &&:= \MS{midtape}~ls~l~(m \cons rs)
+    && \MS{mv}~\MS{R}~(\MS{midtape}~ls~m~(r \cons rs)) &&:= \MS{midtape}~(m \cons ls)~r~rs \\
+    & \MS{mv}~\MS{L}~(\MS{rightof}~l~ls)               &&:= \MS{midtape}~ls~l~\nil
+    && \MS{mv}~\MS{R}~(\MS{rightof}~l~ls)              &&:= \MS{rightof}~l~ls \\
+    & \MS{mv}~\_~(\MS{niltape})                        &&:= \MS{niltape}
+    && \MS{mv}~\MS{N}~t                                &&:= t
   \end{alignat*}
 \end{definition}
 Note that moving further right (or left) when that tape already is to the right (or left) of the symbols, does not change the tape.
@@ -304,7 +304,7 @@ The functions $\MS{left},~\MS{right} \from \Tape \to \List(\Sigma)$ return the s
 
 Now we can define the function $\MS{wr} \from \Tape_\Sigma \to \Option(\Sigma) \to \Tape_\Sigma$, that writes an optional symbol to a tape.  When we
 write $\Some a$, we get a $\MS{midtape}$, where the left and right symbols remain unchanged and $a$ is now in the middle.  For $\None$, the tape
-remains unchanged.  Note that there is no way to decrease the number of symbols on a tape, or to write ``blank'' symbols.
+remains unchanged.  Note that there is no way to decrease the number of symbols on a tape or to write ``blank'' symbols.
 
 \begin{definition}[$\MS{wr}$][tape_write]
   \begin{alignat*}{3}
@@ -314,10 +314,11 @@ remains unchanged.  Note that there is no way to decrease the number of symbols 
 \end{definition}
 
 To define the function $\MS{step} \from \Conf \to \Conf$, we need to know the symbols on the tapes.  Therefore, we define a function
-$\MS{current} \from Tape \to \Option(\Sigma)$.  It returns $\None$ if the head is not under a symbol, and $\Some m$ if the head is under the
+$\MS{current} \from \Tape_\Sigma \to \Option(\Sigma)$.  It returns $\None$ if the head is not under a symbol, and $\Some m$ if the head is under the
 symbol~$m$.
 
 \begin{definition}[$\MS{current}$][current]
+  The function $\MS{current} \from \Tape_\Sigma \to \Option(\Sigma)$ is defined by
   \begin{alignat*}{2}
     \MS{current}&~(\MS{midtape}~{ls}~{m}~{rs})&&:= \Some m \\
     \MS{current}&~\_                          &&:= \None
@@ -340,8 +341,8 @@ We can state a correctness lemma of the function $\MS{wr}$:
 %   All claims follow by case analysis over $t$.
 % \end{proof}
 
-We can now define the function $\MS{step} \from \Conf \to \Conf$.  First, the machine reads all the current symbols from the tapes.  It inserts this
-vector and the machine state into the transition function $\delta$.  Then, each tape writes the symbol and moves its head into the direction that
+We can now define the function $\MS{step} \from \Conf \to \Conf$.  First, the machine reads all the current symbols from the tapes.  We apply this
+vector and the machine state to the transition function $\delta$.  Then, each tape writes the symbol and moves its head into the direction that
 $\delta$ yielded for it.  The machine ends up in a new state $q'$.
 
 \begin{definition}[$\MS{step}$][step]
@@ -435,7 +436,7 @@ To show realisation, e.g.\ $M \Realise R$, it suffices to find a (smaller) relat
   If $M \Realise R'$ and $R' \subseteq R$, then $M \Realise R$.
 \end{lemma}
 
-The running time part of the semantics implies termination of the machine on certain inputs.  It links the input $t:\Tape_\Sigma^n$ to the number of
+The running time part of the semantics implies termination of the machine on certain inputs.  It relates the input $t:\Tape_\Sigma^n$ to the number of
 steps that the machine needs for the computation.
 
 \begin{definition}[Termination in a running time relation][TerminatesIn]
@@ -477,7 +478,8 @@ For machines that always terminate in a constant number of steps, it is useful t
 Asperti and Ricciotti~\cite{asperti2015} make a distinction between weak and strong realisation, where the strong version implies termination for
 every input, however, in an uncertain number of steps.  We use a variant of their weak realisation.  They have no notion of time complexity.  Because
 we do not want to reason about concrete machine states, we introduced the notion of labelled machines.  The idea to label the states of machines with
-elements of a finite type is due to Y.~Forster.  He also invented the realisation of labelled relations and the notion for time complexity.
+elements of a finite type is due to Y.~Forster and F.~Kunze.  They also invented the realisation of labelled relations and the notion for time
+complexity.
 
 \section{Canonical Relations}
 \label{sec:canonical}

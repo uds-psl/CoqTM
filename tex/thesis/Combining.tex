@@ -2,7 +2,7 @@
 \label{chap:combining}
 
 Recall that Turing machines are unstructured -- the execution of a machine could continue from one state to any other state of the machine.  There is
-also no trivial way how to sequentially compose two machines.  We fix these problems and introduce \textit{control flow} operators, like ``if then
+also no trivial way how to sequentially compose two machines.  We fix these problems and introduce \textit{control-flow} operators, like ``if then
 else'', ``sequential composition'', and ``while''.  Thus, we do not need to define transition functions $\delta$ or even states $Q$ for complex
 machines, because we only combine machines using these operators.  The transition function of the sequential composition of $M_1$ and $M_2$ is derived
 from the transition functions of $M_1$ and $M_2$.  But maybe more importantly, this also makes correctness of machines compositional: From the
@@ -10,12 +10,12 @@ correctness of $M_1$ and $M_2$, we can conclude the correctness of the sequentia
 machine states can be \textit{huge} for complex machines, so it is important to not refer to any concrete machine state, either in the definition or
 in the verification of a machine.\footnote{Using this framework, we define and verify a machine with 11537 states.}
 
-We define control flow operators as \textit{first-class citizen} in Coq's type theory.  As a result, we get a \textit{shallow-embedded} language for
+We define control-flow operators as \textit{first-class citizen} in Coq's type theory.  As a result, we get a \textit{shallow-embedded} language for
 programming multi-tape Turing machines in an imperative way.  The primitive machines defined in Chapter~\ref{chap:basic} serve as the ``primitive
 instructions'' of our language.  Another possible approach, called \textit{deep embedding}, is to define a fixed syntax of a language as an inductive
 data type.  We would need a compiler from syntax trees of Turing machine programs to actual Turing machines.  This compiler would have to be extended,
 whenever we add a new feature to our language.  In our approach, we can just ``extend'' our language by defining a function, and we use the same
-verification technique (i.e.\ realisation and termination) on each stage of the development.
+verification techniques (i.e.\ realisation and termination) on each stage of the development.
 
 
 \section{$\Switch$}
@@ -24,8 +24,8 @@ verification technique (i.e.\ realisation and termination) on each stage of the 
 \setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Switch}
 
 Asperti and Ricciotti~\cite{asperti2015} define the control-flow operators sequential composition, conditional, and while.  Their conditional operator
-takes a concrete machine state as parameter.  We noticed that that is not acceptable for a control-flow operator.  We now introduce a generalised
-operator on labelled machines, called $\MS{Switch}$, and derive sequential composition and conditional from this operator.
+takes a concrete machine state as a parameter.  We noticed that this is not acceptable.  We now introduce a generalised operator on labelled machines,
+called $\MS{Switch}$, and derive sequential composition and conditional from this operator.
 
 \begin{definition}[$\MS{Switch}~M~f$][Switch]
   \label{def:Switch}
@@ -55,14 +55,14 @@ $\MS{Switch}~M~f$.  We just use a canonical value.
   \input{fig-SwitchExample}
   \caption{Example of a $\MS{Switch}$.  The left box stands for the first machine $M_1:\TM_\Sigma^n(\Bool)$.  The final states $q_1$ and $q_2$ are
     mapped to $\true$ and $q_3$ to $\false$.  After $\MS{Switch}$ reaches one of the injections of the terminal states $q_1, q_2, q_3$ of $M_1$, it
-    continues its execution either in the top case machine $M_2$ or in the bottom case machine $M_3$.  The halting states of $\MS{Switch}$ are exactly
+    continues its execution either in the top case-machine $M_2$ or in the bottom case-machine $M_3$.  The halting states of $\MS{Switch}$ are exactly
     the injections of the halting states of the case-machines.}
   \label{fig:match}
 \end{figure}
 
 $\MS{Switch}~M~f$ first executes a copy of $M$.  When it reaches a final state $q$ of $M$, it does a ``nop'' action (i.e.\ $(\None,N)^n$) and changes
 to the injection of the start state of the machine $f(lab_M~q)$.  When $\MS{Switch}~M~f$ reaches a state that is the injection of a final state of a
-machine $f~l$, it terminates.  The correctness lab of the semantics can be expressed using the following lemma:
+machine $f~l$, it terminates.  The correctness part of the semantics can be expressed using the following lemma:
 
 \begin{lemma}[Correctness of $\MS{Switch}~M~f$][Switch_Realise]
   \label{lem:Switch_Realise}
@@ -83,7 +83,7 @@ which has type $L'$.
 
 To specify the running time of $\MS{Switch}~M~f$, we need to know the running time relation in that $M$ terminates, and for each $l:L$ the running
 time relation of $f~l$.  We also need to know the correctness relation of $M$, because the running time of $f~l$ depends on the output of $M$, which
-is the input of $f~l$.  Also, the choice of the case machine depends on the label of the terminating state of $M$.
+is the input of $f~l$.  Also, the choice of the case-machine depends on the label of the terminating state of $M$.
 
 \begin{lemma}[Running Time of $\MS{Switch}~M~f$][Switch_TerminatesIn]
   \label{lem:Switch_Terminates}
@@ -126,16 +126,15 @@ machine $M_2$.
     \bigr)
   \]
 \end{definition}
-This means that regardless in which state the machine $M_1$ terminated, the sequential composition $M_1 \Seq M_2$ continues its execution in the start
-state of $M_2$.  The following lemma is the correctness lemma of sequential composition, for constant-time termination.  The version without
+
+This means that regardless in which state the machine $M_1$ terminates, the sequential composition $M_1 \Seq M_2$ continues its execution in the start
+state of $M_2$.  The following lemma is the correctness lemma of sequential composition for constant-time termination.  The version without
 constant-time termination, i.e.\ the lemma we get notationally by removing the step numbers, holds as well.
 
 \begin{lemma}[Correctness of sequential composition][Seq_RealiseIn]
   \label{lem:Seq_RealiseIn}
   If $M_1 \RealiseIn{k_1} R_1$ and $M_2 \RealiseIn{k_2} R_2$, then
-  $
-  M_1 \Seq M_2 \RealiseIn{1+k_1+k_2} \bigcup_{l:L} \left(R_1\at l \circ R_2 \right)
-  $
+  $M_1 \Seq M_2 \RealiseIn{1+k_1+k_2} \bigcup_{l:L} \left(R_1\at l \circ R_2 \right)$.
 \end{lemma}
 
 We often have the case that the first machine $M_1$ is labelled over the unit-type $L = \Unit$.  In this case, the relation is
@@ -157,15 +156,15 @@ Lemma~\ref{lem:Switch_Terminates}.
 
 
 For the conditional $\If{M_1}{M_2}{M_3}$ with $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(L)$, the function $f : \Bool \to \TM_\Sigma^n(L)$
-simply maps $\true$ to $M_2$ and $\false$ to $M_3$.  The conditional, as defined below, first executes $M_1$.  If terminated in a state with label
-$\true$, it continues the execution in $M_2$, else in $M_3$.
+simply maps $\true$ to $M_2$ and $\false$ to $M_3$.  The conditional, as defined below, first executes $M_1$.  If $M_1$ terminates in a state with
+label $\true$, it continues the execution in $M_2$, else in $M_3$.
 
 \setCoqFilename{ProgrammingTuringMachines.TM.Combinators.If}%
 \begin{definition}[Conditional][If]
   \label{def:If}
   Let $M_1 : \TM_\Sigma^n(\Bool)$, $M_2, M_3 : \TM_\Sigma^n(L)$.
   \[
-    \If{M_1}{M_2}{M_3} := \Switch~M_1~
+    \If{M_1}{M_2}{M_3} := \Switch~M_1
     \left(\lambda b.~\cond{b}{M_2}{M_3} \right)
   \]
 \end{definition}
@@ -173,14 +172,12 @@ $\true$, it continues the execution in $M_2$, else in $M_3$.
 \begin{lemma}[Correctness of conditional][If_RealiseIn]
   \label{lem:If_RealiseIn}
   If $M_1 \RealiseIn{k_1} R_1$, $M_2 \RealiseIn{k_2} R_2$, and $M_3 \RealiseIn{k_3} R_3$, then
-  $
-    \If{M_1}{M_2}{M_3} \RealiseIn{1+k_1+max(k_2+k_3)} (R_1\at\true \circ R_2) \cup (R_1\at\false \circ R_3)
-  $
+  $\If{M_1}{M_2}{M_3} \RealiseIn{1+k_1+max(k_2+k_3)} (R_1\at\true \circ R_2) \cup (R_1\at\false \circ R_3)$.
 \end{lemma}
 
 The correctness relation $(R_1\at\true \circ R_2) \cup (R_1\at\false \circ R_3)$ captures the idea of the following case-distinction: If the
-conditional machine terminated, than the copy of $M_1$ either terminated in a state with label $\true$ or $\false$.  In the first case, the
-conditional proceeded in $M_2$, else in $M_3$.
+conditional machine terminates, than the copy of $M_1$ either terminates in a state with label $\true$ or $\false$.  In the first case, the
+conditional proceeds in $M_2$, else in $M_3$.
 
 The running time lemma of the conditional can also be derived from Lemma~\ref{lem:Switch_Terminates}.
 \begin{lemma}[Running Time of the conditional][If_TerminatesIn]
@@ -196,14 +193,14 @@ The running time lemma of the conditional can also be derived from Lemma~\ref{le
 
 Asperti and Ricciotti~\cite{asperti2015} also define sequential composition and a conditional operator.  However, they have two fundamental
 differences.  First, they define and verify each operator separately.  Secondly, they do not consider state labelling.  Their conditional operator
-takes one concrete ``negative'' state, i.e.\ the machine $M_3$ is only executed if $M_1$ terminated in this particular state.  This makes programming
+takes one concrete ``negative'' state, i.e.\ the machine $M_3$ is only executed if $M_1$ terminates in this particular state.  This makes programming
 and reasoning about concrete machines tedious, because complex machines also have many states.  They also have to introduce a separate notion for
 correctness, because they do not have states in their original one.  By introducing state-labelled machines and by implementing the more general
-$\Switch$ combinator, we solve both problems.  We no longer have to specify concrete machine states in the definition and verification of machines.
+$\Switch$ operator, we solve both problems.  We no longer have to specify concrete machine states in the definition and verification of machines.
 Moreover, we often exploit the convenient generality of the $\Switch$ operator.  For example, it can be used to implement a machine that copies a
 symbol from one tape to another tape, as demonstrated in Chapter~\ref{chap:combining}.  Also note, that Asperti and Ricciotti~\cite{asperti2015} have
 no notion of time complexity; their strong notion of realisation only implies termination in an uncertain number of steps.  The idea of
-state-labelling and $\Switch$ is due to Y.~Forster.
+state-labelling and $\Switch$ is due to Y.~Forster and F.~Kunze.
 
 
 \subsection{Proof of $\Switch$}
@@ -217,10 +214,10 @@ machines, i.e.\ we argue on the abstract $\Loop$ function.
 
 For the first feature, \textit{lifting}, we assume two types $A$, $B$ for abstract configurations, a function $lift : A \to B$, two step functions
 $f : A \to A$, $f' : B \to B$, and two halting functions $h : A \to \Bool$, $h' : B \to \Bool$.  We assume that the step functions $f$ and $f'$ are
-compatible with $lift$ in non-halting states of $A$.  Formally, this means
+compatible with $lift$ in non-halting states of $A$.  Formally, this means:
 \begin{equation}
   \label{eq:loop_lift_assumption1}
-  \forall a:A.~\lnot h(x) \rightarrow f' (lift~x) = lift (f~x)
+  \forall a:A.~ h(x)=\false \rightarrow f' (lift~x) = lift (f~x)
 \end{equation}
 
 The second assumption is that $h'$ and $h$ are compatible w.r.t.\ $lift$; formally:
@@ -277,7 +274,7 @@ Under these two assumptions we can show two lemmas that essentially say that the
 The Lemmas~\ref{lem:loop_lift} and~\ref{lem:loop_unlift} are visualised in Figure~\ref{fig:loop_lift_lemmas}.
 
 For the second feature, \textit{sequential execution}, we assume another type $A$ with a step function $f \from A \to A$ and two halting functions
-$h, h' \from A \to \Bool$.  We assume, that if $a$ is a halting state w.r.t.\ $h$, then $a$ also is a halting state w.r.t.\ $h'$:
+$h, h' \from A \to \Bool$.  We assume, that if $a$ is a non-halting state w.r.t.\ $h$, then $a$ also is a non-halting state w.r.t.\ $h'$:
 \begin{equation}
   \label{eq:loop_merge_assumption}
   \forall(a:A).~h~a = \false \rightarrow h'~a = \false
@@ -316,8 +313,8 @@ $h, h' \from A \to \Bool$.  We assume, that if $a$ is a halting state w.r.t.\ $h
 Back to the verification of $\Switch~M~f$.  In the following, we simply write $\Switch$.  For a configuration $c_k$, we write $q_k$ and $t_k$ for the
 state and tapes component of $c_k$.
 
-The execution steps of $\Switch$ are essentially a sequence of first, the lifted steps of execution of $M$, second, a ``nop'' transition, and third,
-the lifted steps of the execution of $f~l$.  We give the concrete lifting functions from $M$ to $\Switch$ and from $M~l$ to $\Switch$:
+The execution steps of $\Switch$ are essentially a sequence of first, the lifted steps of an execution of $M$, second, a ``nop'' transition, and
+third, the lifted steps of the execution of $f~l$.  We give the concrete lifting functions from $M$ to $\Switch$ and from $f~l$ to $\Switch$:
 \setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Switch}%
 \begin{definition}[Liftings of $\Switch$][lift_confL]
   We define the functions \\$liftL : \Conf_M \to \Conf_\Switch$ and $liftR_l : \Conf_{f(l)} \to \Conf_\Switch$ for all $l:L$:
@@ -348,13 +345,13 @@ Using Lemma~\ref{lem:loop_merge} and~\ref{lem:loop_lift}, we can show the lemma 
 \begin{proof}
   We apply Lemma~\ref{lem:loop_merge} and have to show:
   \begin{enumerate}
-  \item $\forall a:\Conf_\Switch.~ \lnot haltConfL~a \rightarrow \lnot \MS{haltConf}~a$.  This holds trivially by case-analysis over $a$.
+  \item $\forall a:\Conf_\Switch.~ haltConfL~a = \false \rightarrow \MS{haltConf}~a = \false$.  This holds trivially by case-analysis over $a$.
   \item $\Loop~step_\Switch~haltConfL~(\MS{initConf}_\Switch~t)~k_1 =
     \Some{liftL~c_1}$.  By definition, we have $\MS{initConf}_\Switch~t=liftL(\MS{initConf}_M~t)$.  The claim follows with Lemma~\ref{lem:loop_lift}.
   \item $\Loop~step_\Switch~haltConf_\Switch~(liftL~c1)~(1+k_2) =
     \Some{liftR(c_2)}$.  By definition, we know that the first step must be a ``nop'' transition from
     $liftL~c_1$ to\\
-    $liftR~\bigl(\MS{initConf}_{f(lab_M~q_1)}~t_1 \bigr)$.  It remains to show that
+    $liftR~\bigl(\MS{initConf}_{f(lab_M~q_1)}~t_1 \bigr)$.  It remains to show that:
     $$\Loop~step_\Switch~haltConf_\Switch~liftR \bigl(\MS{initConf}_{f(lab_M~q_1)}~t_1 \bigr)~k_2 = \Some{liftR(c_2)}$$
     This follows with Lemma~\ref{lem:loop_merge}.
   \end{enumerate}
@@ -385,9 +382,8 @@ Asperti and Ricciotti~\cite{asperti2015} have a version of Lemma~\ref{lem:loop_l
 \setCoqFilename{ProgrammingTuringMachines.TM.Combinators.While}%
 
 The machine $\While~M$ essentially behaves like a ``do-while'' loop in imperative languages like C.  At the end of the execution of the loop body $M$,
-$M$ decides either to continue or break out of the loop.  If $M$ terminated in a state with label $\None$, then the loop is continued, and if $M$
-terminated in $\Some{l}$, the loop breaks and $\While~M$ terminates in a state with label $l$.  When $M : \TM_\Sigma^n(\Option(L))$, then
-$\While~M : \TM_\Sigma^n(L)$.
+$M$ decides either to continue or break out of the loop.  If $M$ terminates in a state with label $\None$, then the loop is continued, and if $M$
+terminates in $\Some{l}$, the loop breaks and $\While~M$ terminates in a state with label $l$.
 
 \begin{definition}[$\MS{While}~M$][While]
   \label{def:While}
@@ -413,8 +409,8 @@ $\While~M : \TM_\Sigma^n(L)$.
   \center
   \input{fig-WhileExample}
   \caption{Example for $\While~M$ with $M:\TM_\Sigma^n(\Option(\Bool))$.  When $M$ reaches the state $q_1$, the loop is continued, because $q_1$ is in
-    assumed to have label $\None$.  $q_2$ and $q_3$ have the labels $\Some{\true}$ and $\Some{\false}$.  Therefore $\While~M$ terminates in a state
-    with label $\true$ or $\false$, when $M$ terminated in $q_2$ or $q_3$, respectively.}
+    assumed to have label $\None$.  The other halting states $q_2$ and $q_3$ have the labels $\Some{\true}$ and $\Some{\false}$.  Therefore $\While~M$
+    terminates in a state with label $\true$ or $\false$, when $M$ terminates in $q_2$ or $q_3$, respectively.}
   \label{fig:while-example}
 \end{figure}
 
@@ -444,15 +440,14 @@ We can also express the correctness relation of $\While$ using the Kleene star:
   \]
 \end{fact}
 
-Both definitions of $WhileRel$ should make clear what $\While~M$ does: It repeats the execution of $M$ as long as it terminated in $\None$, and after
-$M$ terminated in $\Some{l}$, $\While~M$ terminates in a state with label $l$.  This is visualised in Figure~\ref{fig:while-example}.  The inductive
-definition is more practical when we prove correctness of concrete $\MS{While}$ machines, because we can just do induction on the inductive predicate.
+Both definitions of $WhileRel$ should make clear what $\While~M$ does: It repeats the execution of $M$ as long as it terminates in $\None$, and after
+$M$ terminates in $\Some{l}$, $\While~M$ terminates in a state with label $l$.  This is visualised in Figure~\ref{fig:while-example}.
 
-When we want to prove $\While~M \Realise R$ for some machine $M:\TM_\Sigma^n(L)$ and relation
+When we want to prove $\While~M \Realise R$ for some machine $M:\TM_\Sigma^n(\Option(L))$ and relation
 $R \subseteq \Tape_\Sigma^n \times L \times \Tape_\Sigma^n$, we must of course have already proven that $M \Realise R'$ for some relation
-$R' \subseteq \Tape_\Sigma^n \times \Option(L) \times \Tape_\Sigma^n$.  Then we apply Lemma~\ref{lem:Realise_monotone} and~\ref{lem:While_Realise},
-and have to show $WhileRel~R' \subseteq R$.  We can prove this by induction on the inductive predicate, which is equivalent to applying the following
-lemma:
+$R' \subseteq \Tape_\Sigma^n \times \Option(L) \times \Tape_\Sigma^n$.  Then we apply the monotonicity Lemma~\ref{lem:Realise_monotone} and the above
+correctness Lemma~\ref{lem:While_Realise}, and have to show $WhileRel~R' \subseteq R$.  We can prove this by induction on the inductive predicate,
+which is equivalent to applying the following lemma:
 \begin{lemma}[Induction for $WhileRel$][WhileInduction]
   \label{lem:WhileInduction}
   ~
@@ -479,8 +474,8 @@ and $T$ is the running time relation in that $M$ terminates.
 \end{lemma}
 
 When we want to show $\While~M \TerminatesIn T$, this is dual to showing $\While~M \Realise R$.  We apply the anti-monotonicity
-Lemma~\ref{lem:TerminatesIn_monotone} and the above running time lemma, and have to show $T \subseteq WhileT~R~T'$.  For that, we use the co-induction
-lemma of $WhileT$:
+Lemma~\ref{lem:TerminatesIn_monotone} and the above running time lemma (where $T'$ is the running time relation in that $M$ terminates), and have to
+show $T \subseteq WhileT~R~T'$.  For that, we use the co-induction lemma of $WhileT$:
 \begin{lemma}[$WhileT$ co-induction][WhileCoInduction]
   \label{lem:WhileCoInduction}
   To show $T \subseteq WhileT~R~T'$, it suffices to show:
@@ -492,7 +487,7 @@ lemma of $WhileT$:
   \end{alignat*}
 \end{lemma}
 The number $k_1$ is the number of steps needed for the first iteration of the loop.  We have to consider all possible outputs of the first loop.  If
-$M$ terminated in label $\Some{l}$ in $k_1$ steps, then $\While~M$ also only needs $k_1$ steps.  However, if $M$ terminated in $\None$, and $\While~M$
+$M$ terminates in label $\Some{l}$ in $k_1$ steps, then $\While~M$ also only needs $k_1$ steps.  However, if $M$ terminates in $\None$, and $\While~M$
 needs $k_2$ steps for all other loops, then $\While~M$ needs $1+k_1+k_2$ steps in total.  The one additional step comes from the ``nop''-transition
 back to the starting state.
 
@@ -502,9 +497,10 @@ back to the starting state.
 \label{sec:while-proofs}
 
 The running time and correctness proofs are similar to the proofs of $\Switch$, as explained in Section~\ref{sec:match-proofs}.  The configurations of
-$\Switch$ are exactly the configurations of $M$, so the lifting function is the identity function.  However, the fundamental difference between
-$\Switch$ and $\While$ is that $\While$ can execute $M$ arbitrary often.  As a consequence, we also need complete induction on step-numbers, in
-addition to the loop-splitting and loop-merging lemmas.  We present the key lemmas here and the most important parts of the proofs.
+$\While$ are exactly the configurations of $M$, so the lifting function is the identity function.  However, the fundamental difference between
+$\Switch$ and $\While$ is that $\While$ can execute $M$ arbitrarily often; it could also diverge.  As a consequence, we also need complete induction
+on step-numbers, in addition to the loop-splitting and loop-merging lemmas.  We present the key lemmas here and the most important parts of the
+proofs.
 
 We simply write $\While$ instead of $\While~M$ in this section.  Since we have $\Conf_M = \Conf_\While$, we also only write $\Conf$.
 
@@ -524,7 +520,7 @@ The first lemma says that an execution of $\While$ consists of an execution of $
   Follows with Lemma~\ref{lem:loop_split} and Lemma~\ref{lem:loop_lift}.
 \end{proof}
 
-We have two more splitting lemmas, one for the case that $\While$ terminated immediately, and one for the case that $\While$ continued the loop.
+We have two more splitting lemmas, one for the case that $\While$ terminates immediately, and one for the case that $\While$ continues the loop.
 \begin{lemma}[Splitting, break case][While_split_term]
   \label{lem:While_split_term}
   Let $c_1$, $c_2 : \Conf$, $k:\Nat$, and $l:L$.
@@ -598,8 +594,8 @@ symbol.  Using this operator, we get a machine ``for free'' that moves the head 
 the correctness and running time relations.
 
 \setCoqFilename{ProgrammingTuringMachines.TM.TM}%
-Using the proving techniques developed in the previous sections, verifying the $\MS{Mirror}$ operator is very easy.  The function
-$\coqlink[mirror_tape]{\MS{mirror}} : \Tape_\Sigma \to \Tape_\Sigma$ swaps the left and right lab of a tape.  %
+Using the proof techniques developed in the previous sections, verifying the $\MS{Mirror}$ operator is very easy.  The function
+$\coqlink[mirror_tape]{\MS{mirror}} : \Tape_\Sigma \to \Tape_\Sigma$ swaps the left and right part of a tape.  %
 % \begin{definition}[Mirror tape][mirror_tape]
 %   \label{def:mirror_tape}
 %   Let $t : \Tape_\Sigma$.
@@ -629,13 +625,13 @@ $\coqlink[mirror_tape]{\MS{mirror}} : \Tape_\Sigma \to \Tape_\Sigma$ swaps the l
 % % \begin{proof}
 % %   By case analysis over the tape(s).
 % % \end{proof}
-Furthermore, we assume an injective and involutive function $\coqlink[mirror_move]{\MS{swap}}:\MS{Move} \to \MS{Move}$ that simply swaps the movements
+Furthermore, we define an injective and involutive function $\coqlink[mirror_move]{\MS{swap}}:\MS{Move} \to \MS{Move}$ that simply swaps the movements
 $L$ and $R$.  \setCoqFilename{ProgrammingTuringMachines.TM.Combinators.Mirror}%
 \begin{definition}[$\MS{Mirror}~M$][Mirror]
   \label{def:Mirror}
   Let $M:\TM_\Sigma^n(L)$.  The machine $\MS{Mirror}~M : \TM_\Sigma^n(L)$ has the same components as $M$, except:
   \[
-    \delta(q, s) :=~ \Let{(q', a) := \delta_M(q,s)}{\bigl(q', \map{(\lambda(w, m).~(w, \MS{swap}(m)))}{a} \bigr)}
+    \delta(q, s) :=~ \Let{(q', a) := \delta_M(q,s)}{\bigl(q', \map{(\lambda(w, m).~(w, \MS{swap}~m))}{a} \bigr)}
   \]
 \end{definition}
 
@@ -710,8 +706,8 @@ labelling function $lab : Q_M \to L$.  This is for example useful if we want a m
 \end{definition}
 
 The correctness for these simple operators is obvious.  Note that we do not need lemmas for running time, because Definition~\ref{def:TerminatesIn} of
-running time is defined over the bare machine without label function.  So the running time lemmas for $M$ also apply for $\MS{Relabel}$
-and $\MS{Return}$.
+running time is defined over the bare machine without labelling function.  So the running time lemmas for $M$ also apply for $\MS{Relabel}$ and
+$\MS{Return}$.
 \begin{lemma}[Correctness of $\MS{Relabel}$ and $\MS{Return}$][Relabel_Realise]
   If $M \Realise R$, then
   \begin{alignat*}{1}

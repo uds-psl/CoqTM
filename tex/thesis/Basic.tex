@@ -2,11 +2,11 @@
 \label{chap:basic}
 
 In this chapter, we define several classes of \textit{primitive} machines.\footnote{Asperti and Ricciotti~\cite{asperti2015} call these machines
-  \textit{basic} machines.}  These machines are defined on an arbitrary alphabet $\Sigma$, but they have at most one tape, and they terminate after at
-most one transition.  Primitive machines are the only concrete machines for that we give transition functions $\delta$ explicitly.  They are also the
-only concrete machines, for that we fully specify the type of machine states $Q$.  In the following two chapters, we will show how to combine these
-machines and build (and verify) complex machines without mentioning $Q$ or $\delta$ again.  All states and transition function will be derived from
-these machines.
+  \textit{basic} machines.}  These machines are defined on an arbitrary finite alphabet $\Sigma$, but they have at most one tape, and they terminate
+after at most one transition.  Primitive machines are the only concrete machines for that we give transition functions $\delta$ explicitly.  They are
+also the only concrete machines, for that we fully specify the type of machine states $Q$.  In the following two chapters, we will show how to combine
+these machines and build (and verify) complex machines without mentioning $Q$ or $\delta$ again.  All states and transition functions will be derived
+from these machines.
 
 
 \section{$\MS{Null}$}
@@ -15,9 +15,8 @@ these machines.
 \setCoqFilename{ProgrammingTuringMachines.TM.Basic.Null}
 
 
-$\MS{Null}$ is a very simple class of machines.  The machine $\MS{Null}_\Sigma$ is parametrised over the alphabet $\Sigma$.  Because $\Sigma$ is
-always clear from the context, we leave the index out.  We fix an alphabet $\Sigma$.  $\MS{Null}$ has zero tapes and terminates immediately, i.e.\
-after $0$ steps.
+The machine $\MS{Null}_\Sigma$ is parametrised over the alphabet $\Sigma$.  Because $\Sigma$ is always clear from the context, we leave the index out.
+We fix an alphabet $\Sigma$.  $\MS{Null}$ has zero tapes and terminates immediately, i.e.\ after $0$ steps.
 
 \begin{definition}[$\MS{Null}$][Null]
   \label{def:Null}
@@ -75,7 +74,7 @@ We define some abbreviations:
  \label{def:DoAct-derived} 
  \begin{align*}
    \MS{Move}       ~d &:= \MS{DoAct} (\None, d) \\
-   \MS{Write}    ~s   &:= \MS{DoAct} (\Some{s}, N) \\
+   \MS{Write}    ~s   &:= \MS{DoAct} (\Some{s}, \MS{N}) \\
    \MS{WriteMove}~s~d &:= \MS{DoAct} (\Some{s}, d)
  \end{align*}
 \end{definition}

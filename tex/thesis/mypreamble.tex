@@ -197,10 +197,10 @@
 %% Idea from https://tex.stackexchange.com/questions/212710/fill-space-created-by-phantom-with-other-text
 \newcommand{\phalign}[2]{\makebox[0pt][l]{\ensuremath{#2}}\phantom{#1}}
 
-\newcommand{\pthen}{\phalign{\MS{else}}{{\MS{then}}}}
-\newcommand{\pelse}{\phalign{\MS{else}}{{\MS{else}}}}
-\newcommand{\pThen}{\phalign{\MS{Else}}{{\MS{Then}}}}
-\newcommand{\pElse}{\phalign{\MS{Else}}{{\MS{Else}}}}
+\newcommand{\pthen}{\phalign{\MS{then}}{{\MS{then}}}}
+\newcommand{\pelse}{\phalign{\MS{then}}{{\MS{else}}}}
+\newcommand{\pThen}{\phalign{\MS{Then}}{{\MS{Then}}}}
+\newcommand{\pElse}{\phalign{\MS{Then}}{{\MS{Else}}}}
 
 \lstdefinestyle{semicoqstyle}{
   mathescape=true,
@@ -231,8 +231,8 @@
     {Switch}{{$\MS{Switch}$}}5
     {match}{{$\MS{match}$}}5
     {if}{{$\MS{if}$}}1
-    {then}{{$\pthen$}}2
-    {else}{{$\pelse$}}2
+    {then}{{$\pthen$}}3
+    {else}{{$\pelse$}}3
     {If}{{$\MS{If}$}}2
     {Then}{{$\pThen$}}4
     {Else}{{$\pElse$}}4
@@ -277,7 +277,9 @@
   mathescape=true,%
   language=coq,%
   breaklines=true,%
+  breakatwhitespace,%
   literate={%
+    {|-}{{$\vdash$}}1%
     {->}{{$\rightarrow$}}1%
     {=>}{{$\Rightarrow$}}1%
     {>->}{{$\rightarrowtail\,$}}1%
