@@ -139,7 +139,7 @@ heap entry at the address $a$, and gets the $n$th entry. We write $H[a,n]$ for $
 
 We formally define the reduction rules.  Note that there is no reduction rule for the command $\MS{RET}$, because the purpose of $\MS{RET}$ is solely
 to mark the end of the encoding of the body of a $\lambda$-expression.
-\begin{definition}[Semantics of the heap machine]
+\begin{definition}[Semantics of the heap machine][step]
   {\small
     \begin{alignat*}{4}
       & \left((a, (\MS{APP} \cons P)) \cons T, g \cons (b, Q) \cons V, H\right) &~\red~& \left((c, Q) \cons (a,P) \cons_{tr} T, V, H'\right)
@@ -191,8 +191,10 @@ usage for tail recursive programs.
 \section{Implementation of a Simulator}
 \label{sec:heap-implementation}
 
-First, we notice that all types in Definition~\ref{def:Heap}, except commands ($Com$), are encodable over canonical alphabets, according to
-Definition~\ref{def:basic-encodings}.  \setCoqFilename{ProgrammingTuringMachines.TM.LM.Alphabets}%
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.Alphabets}%
+
+First, we notice that all types in Definition~\ref{def:Heap}, except commands ($Com$), are encodable on minimal alphabets, according to
+Definition~\ref{def:basic-encodings}:
 \begin{definition}[Encoding of heaps][]
   \label{def:Heap-encode}
   The type $Com$ is isomorphic to the sum of $Var$ and $ACom := \MS{APP} ~|~ \MS{LAM} ~|~ \MS{RET}$.  $ACom$ is encodable on itself (since it is
@@ -205,8 +207,8 @@ Definition~\ref{def:basic-encodings}.  \setCoqFilename{ProgrammingTuringMachines
 
 First, we derive constructor and deconstructor machines for commands.  As the type of commands essentially is the sum of two encodable types ($ACom$
 and $\Nat$), we can combine constructors and deconstructors from Section~\ref{sec:constructors-deconstructors}.
-\setCoqFilename{ProgrammingTuringMachines.TM.LM.CaseTok}%
-\begin{definition}[$\MS{CaseCom}$][CaseTok]
+\setCoqFilename{ProgrammingTuringMachines.TM.LM.CaseCom}%
+\begin{definition}[$\MS{CaseCom}$][CaseCom]
   $\MS{CaseCom} : \TM_{\Sigma^+_{Com}}^1(\Option(ACom))$ is defined by
   \begin{alignat*}{2}
     & \MS{CaseCom} &~:=~& \MS{If}~\MS{CaseSum} \\
@@ -215,7 +217,7 @@ and $\Nat$), we can combine constructors and deconstructors from Section~\ref{se
   \end{alignat*}
 \end{definition}
 Note that $RetrInl : \Sigma_{Var} \hookrightarrow \Sigma_{Com}$.
-\begin{lemma}[Correctness of $\MS{CaseCom}$][CaseTok_Sem]
+\begin{lemma}[Correctness of $\MS{CaseCom}$][CaseCom_Sem]
   \label{lem:CaseCom_Sem}
   $\MS{CaseCom} \RealiseIn{11} CaseCom$ with
 \begin{lstlisting}[style=semicoqstyle]
@@ -258,7 +260,7 @@ machine.
     \Sigma_{Pro} \arrow[u, "RetrSnd", hook] &%
     \underset{\text{\footnotesize(3)}}{\Sigma_{Add}} \arrow[u, "RetrSnd", hook] & \Sigma_{Clos} \arrow[r, "f_{Clos}", hook] & \Sigma
   \end{tikzcd}
-  \caption{The retractions of $\MS{Lookup}$.  The three encodings are marked with the numbers in the list below.}
+  \caption{The retractions of $\MS{Lookup}$.}
   \label{fig:retracts-Lookup}
 \end{figure}
 
@@ -296,7 +298,7 @@ $e' = (g,b)$ and makes a case-distinction over $n$.  If $n=0$, $\MS{LookupStep}$
 $f_{Clos}$ and returns $\true$.  Else it translates $b$ from $f_{next}$ to $f_{add}$, moves it to the tape that contained $a$, and repeats the loop.
 We visualise the execution in the latter two cases in Tables~\ref{tab:exec-LookupStep-S} and~\ref{tab:exec-LookupStep-0}.
 
-\enlargethispage{0.5cm}
+% \enlargethispage{0.5cm}
 
 \begin{table}[H]
   \scriptsize
@@ -319,7 +321,7 @@ We visualise the execution in the latter two cases in Tables~\ref{tab:exec-Looku
     $3:~\dashv$ &                  &                       & $1: g$               &                 &              &              & $0:g$            \\
     $4:~\dashv$ & $2:\Some{(g,b)}$ & $0:(g,b)$             & $0:b$                &                 & $0:~\dashv$  &              &                  \\
   \end{tabular}
-  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0$.  It terminates in the label $Some\true$.  The
+  \caption{Execution protocol of $\MS{LookupStep}$ in case $H[a] = \Some{\Some{(g,b)}}$ and $n=0$.  It terminates in the label $\Some\true$.  The
     translation is from $f_{Clos'}$ to $f_{Clos}$.}
   \label{tab:exec-LookupStep-0}
 \end{table}
@@ -357,7 +359,7 @@ the successfully termination case (cf.\ Table~\ref{tab:exec-LookupStep-0}), $\MS
 Because no initialisation or clean-up is needed before or after the loop, we can define $\MS{Lookup} := \While~\MS{LookupStep}$.  The correctness
 relation of $\MS{Lookup}$ says that if it terminated in the label $\true$, we have $H[a,n] = \Some{g}$ for some closure $g$, and tape~$3$ contains $g$
 w.r.t.\ the retraction $f_{Clos}$.  Furthermore, the input tape~$0$ still contains $H$ and all other tapes are resetted.  In case $\MS{Lookup}$
-terminated in $\false$, the postcondition only asserts that $H[a,n]=\None$.  Note that there are two possible reasons for that: Either $H[a]=\None$ or
+terminated in $\false$, the postcondition only commits that $H[a,n]=\None$.  Note that there are two possible reasons for that: Either $H[a]=\None$ or
 $H[a]=\Some\None$, but we do not separate these two failure cases.
 
 
@@ -520,7 +522,7 @@ For each developed machine, we also have running time proofs, but we omitted the
   stepSteps : \List(HClos) \to \List(HClos) \to Heap \to \Nat
 \]
 such that $\MS{Step}$ terminates in $stepSteps~T~V~H$ steps when the first three tapes contain $T$, $V$, $H$, and the internal tapes are right.
-\begin{lemma}[Runtime of $\MS{Step}$][Step_Terminates]
+\begin{lemma}[Running time of $\MS{Step}$][Step_Terminates]
   \label{lem:Step_Terminates}
   $\MS{Step} \TerminatesIn StepT$ with
   \begin{alignat*}{3}
@@ -551,7 +553,7 @@ $(\nil, V', H')$, the tapes contain $(\nil, V', H')$ after the execution.
 
 For the running time function $loopSteps$, we need the functions $step$ and $isHalt$ from Lemma~\ref{lem:heap-red}.  The running time-function of
 $\MS{Loop}$ is defined per recursion over the number $k'$ of reduction steps of the heap machine.
-\begin{lemma}[Runtime of $\MS{Loop}$][Loop_Terminates]
+\begin{lemma}[Running time of $\MS{Loop}$][Loop_Terminates]
   \label{lem:Loop_Terminates}
   $\MS{Loop} \TerminatesIn LoopT$ with
   \begin{alignat*}{2}

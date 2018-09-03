@@ -230,7 +230,7 @@ The correctness of $\MS{CopySymbols}$ can be expressed using a recursive functio
 We observe that the running time of $\MS{CopySymbols}$ only depends on the $0$th tape.  Therefore, we define a function
 $copySymbolsSteps : \Tape_\Sigma \to \Nat$ that overestimates the number of steps needed for the loop, depending on the $0$th tape.  Note that
 $\While$ requires one additional step for each repeat of the loop.
-\begin{lemma}[Runtime of $\MS{CopySymbols}$][CopySymbols_TerminatesIn]
+\begin{lemma}[Running time of $\MS{CopySymbols}$][CopySymbols_Terminates]
   $\MS{CopySymbols} \TerminatesIn CopySymbolsT$ with \\
   $CopySymbolsT := \lambda t~k.~copySymbolsSteps(t) \leq k$ and
   \begin{align*}
@@ -266,6 +266,7 @@ the correctness relations and their respective functions.  We do not repeat the 
 
 \section{$\MS{MoveToSymbol}$}
 \label{sec:MoveToSymbol}
+\setCoqFilename{ProgrammingTuringMachines.TM.Compound.MoveToSymbol}%
 
 \enlargethispage{0.5cm}
 

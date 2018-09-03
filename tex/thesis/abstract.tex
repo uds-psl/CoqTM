@@ -1,9 +1,9 @@
 Turing machines build the traditional foundation of the theory of computation and complexity.  However, concrete Turing machines are often only
-sketched out.  Even if authors define the complete Turing machine, they leave the invariants to figure out for the reader.  Moreover, it is common to
-employ the \textit{Church-Turing thesis}, to (informally) conclude that a function is Turing-computable.  Reasons for that are manifold.  Turing
-machines are very low-level, because the operations on tapes are primitive.  They are also non-compositional; control-flow operators like sequential
-composition and loops are not available.  Reasoning about invariants and concrete machine states is tedious, because the execution of the machine
-could proceed from one state of the machine to any other state; the set of states may also be huge for complex machines.
+sketched out.  Even if authors define the complete machine, they leave the invariants to figure out for the reader.  Moreover, it is common to employ
+the \textit{Church-Turing thesis}, to (informally) conclude that a function is Turing-computable.  Reasons for that are manifold.  Turing machines are
+very low-level, because the operations on tapes are primitive.  They are also non-compositional; control-flow operators like sequential composition
+and loops are not available.  Reasoning about invariants and concrete machine states is tedious, because the execution of the machine could proceed
+from one state of the machine to any other state; the set of states may also be huge for complex machines.
 
 In this thesis, we fill these gaps.  We present a framework developed in the theorem prover Coq, in that we can define, specify, and formally verify
 multi-tape Turing machines.  The framework eases programming and verification of Turing machines, because it provides abstractions like values and

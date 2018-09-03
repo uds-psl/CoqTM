@@ -96,7 +96,7 @@ fills ``nop''-actions into $act$, to get an action vector $act':\Act^n$.
   \]
 \end{lemma}
 
-\begin{lemma}[Runtime of $\LiftTapes{M}{I}$][LiftTapes_TerminatesIn]
+\begin{lemma}[Running time of $\LiftTapes{M}{I}$][LiftTapes_Terminates]
   \label{lem:LiftTapes_TerminatesIn}
   Let $M : \TM_\Sigma^m(L)$ and $I : \Fin_n^m$ duplicate-free. If $M \TerminatesIn T$, then $\LiftTapes{M}{R} \TerminatesIn \LiftTapes{T}{I}$ with
   $ \LiftTapes{T}{I} := \lambda t~k.~ T~(select~I~t)~k.  $
@@ -179,7 +179,7 @@ that maps every symbol on a tape.  We write $\coqlink[mapTapes]{mapTapes}$ for t
   \]
 \end{lemma}
 
-\begin{lemma}[Runtime of $\LiftAlphabet{M}{(f,def)}$][LiftAlphabet_TerminatesIn]
+\begin{lemma}[Running time of $\LiftAlphabet{M}{(f,def)}$][LiftAlphabet_TerminatesIn]
   \label{lem:LiftAlphabet_TerminatesIn}
   If $M \TerminatesIn T$, then $\LiftAlphabet{M}{(f,def)} \TerminatesIn \LiftAlphabet{T}{(f,def)}$ with
   \[

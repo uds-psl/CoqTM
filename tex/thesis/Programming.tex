@@ -72,7 +72,7 @@ define $\Sigma_{X(Y)}$ as the alphabet for $X(Y)$:
       &encode~&&(\inl x)&~:=~& \MS{INL} \cons encode(x) \\
       &encode~&&(\inr y)&~:=~& \MS{INR} \cons encode(y)
     \end{alignat*}
-  \coqitem[Encode_prod] Let $X$ be encodable on $\Sigma_X$ and $Y$ on $\Sigma_Y$.  Then $X \times Y$ is encodable on
+  \coqitem[Encode_pair] Let $X$ be encodable on $\Sigma_X$ and $Y$ on $\Sigma_Y$.  Then $X \times Y$ is encodable on
     \[ \Sigma_{X \times Y} ::= (x:\Sigma_X) ~|~ (y:\Sigma_Y) \] With the retractions
     $RetrFst : \Sigma_X \hookrightarrow \Sigma_{X \times Y}$, $RetrSnd : \Sigma_Y \hookrightarrow \Sigma_{X \times Y}$ and
     \[
@@ -254,7 +254,7 @@ $\MS{S}$ with a new start symbol and terminates on this symbol in the label $\tr
 $\MS{CaseNat} :=$
   $\MS{Move}~\MS{R}$; 
   $\Switch~\MS{Read}$ 
-       ($\lambda(o:\Option(\Sigma_\Nat^+)).~\MS{match}~o$
+       ($\lambda(s:\Option(\Sigma_\Nat^+)).~\MS{match}~s$
           [$\Some {\MS{S}}$=>$\Return{(\MS{Write}~\MS{START})}{\true}$
           |$\Some {\MS{O}}$=>$\Return{(\MS{Move}~\MS{L})}{\false}$
           |_=>_ 
@@ -444,7 +444,7 @@ encoding of $y$.  In both cases, $\MS{Move}~L$ moves to the last symbol of $x$ (
     CasePairRel := \lambda t~t'.~\forall (p: X \times Y).~t[0] \simeq p \rightarrow isRight~t[1] \rightarrow t'[0] \simeq \pi_2(p) \land t'[1] \simeq \pi_1(p)
   \]
 \end{lemma}
-\begin{lemma}[Runtime of $\MS{CasePair}$][CasePair_Terminates]
+\begin{lemma}[Running time of $\MS{CasePair}$][CasePair_Terminates]
   \label{lem:CasePair_TerminatesIn}
   $\MS{CasePair} \TerminatesIn CasePairT$ with
   \[
@@ -472,7 +472,7 @@ that, it overwrites the start symbol on tape $1$ with the last symbol of the enc
     ConstrPairRel := \lambda t~t'.~\forall (x:X)~(y:Y).~t[0] \simeq x \rightarrow t[1] \simeq y \rightarrow t'[0] \simeq x \land t'[1] \simeq (x,y)
   \]
 \end{lemma}
-\begin{lemma}[Runtime of $\MS{ConstrPair}$][Constr_pair_Terminates]
+\begin{lemma}[Running time of $\MS{ConstrPair}$][Constr_pair_Terminates]
   \label{lem:Constr_pair_TerminatesIn}
   $\MS{ConstrPair} \TerminatesIn ConstrPairT$ with
   \[
@@ -611,7 +611,7 @@ the symbols unchanged, so we choose the identity function for the parameter.
 \end{lemma}
 
 The running time of $\MS{CopyValue}$ is linear in the size of the encoding of $x$.
-\begin{lemma}[Runtime of $\MS{CopyValue}$][CopyValue_TerminatesIn]
+\begin{lemma}[Running time of $\MS{CopyValue}$][CopyValue_Terminates]
   \label{lem:CopyValue_TerminatesIn}
   ~
   \[
@@ -888,7 +888,7 @@ after the execution of the loop, $t'[0]$ contains $a+b$ and $t'[1]$ contains $0$
 
 The running time of $\MS{AddLoop}$ must be shown separately.  We know that the loop is executed $b+1$ times, and each iteration takes $9$ steps.  We
 have to add $1$ step for each re-iteration of the loop.  Thus, the total step number is $9+10 \cdot b$.
-\begin{lemma}[Runtime of $\MS{AddLoop}$][Add_Loop_Terminates]
+\begin{lemma}[Running time of $\MS{AddLoop}$][Add_Loop_Terminates]
   \label{lem:Add_Loop_TerminatesIn}
   $\MS{AddLoop} \downarrow AddLoopT$ with
   \[
@@ -939,7 +939,7 @@ proofs.  We conclude the correctness of $\MS{Add}$.
 
 For the running time function of $\MS{Add}$, we have to add linear components for copying $m$ and $n$, a constant for $\MS{Reset}$, and $1$ step for
 each sequential composition operator.
-\begin{lemma}[Runtime of $\MS{Add}$][Add_Terminates]
+\begin{lemma}[Running time of $\MS{Add}$][Add_Terminates]
   $\MS{Add} \downarrow FunT~stepsAdd$ with
   \[
     stepsAdd~m~n := 98 + 22 \cdot m + 12 \cdot n
@@ -949,7 +949,7 @@ each sequential composition operator.
 \begin{table}[h]
   \centering
   \begin{tabular}{l|l|l}
-    Sub-Machine & Runtime & Accumulated running time \\ \hline
+    Sub-Machine & Running time & Accumulated running time \\ \hline
     $\LiftTapes{\MS{CopyValue}}{\Vector{1;2}}$  & $37 + 12 \cdot n$ & $98 + 22 \cdot m + 12 \cdot n$ \\
     $\LiftTapes{\MS{CopyValue}}{\Vector{0;3}}$  & $37 + 12 \cdot m$ & $60 + 22 \cdot m$ \\
     $\LiftTapes{\MS{AddLoop}}{\Vector{2;3}}$    & $9 + 10 \cdot m$  & $22 + 10 \cdot m$ \\
@@ -1085,7 +1085,7 @@ It follows that $\MS{Mult}$ computes the function $mult$, w.r.t.\ Definition~\re
 \end{lemma}
 
 For brevity,  we omit the concrete running time function here.  
-\begin{lemma}[Runtime of $\MS{Mult}$][Mult_Terminates]
+\begin{lemma}[Running time of $\MS{Mult}$][Mult_Terminates]
   There is a function $multSteps : \Nat\to\Nat\to\Nat$, such that $multSteps \in \mathcal{O}(m \cdot n^2)$ and
   $\MS{Mult} \TerminatesIn FunT~multSteps$.
 \end{lemma}
@@ -1130,7 +1130,7 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
   \end{align*}
 \end{definition}
 
-\begin{lemma}[Correctness of $\MS{MapSum}$][Mult_Sum_Computes]
+\begin{lemma}[Correctness of $\MS{MapSum}$][MapSum_Computes]
   \label{lem:MapSum_Computes}
   If $M_1 \Realise FunRel(f_1)$ and $M_2 \Realise FunRel(f_2)$, then $\MS{MapSum} \Realise FunRel(f_1+f_2)$.
 \end{lemma}
@@ -1141,14 +1141,14 @@ input tape contains $\inl x$ again.  The case when the input was $s=\inl y$ is s
     \Sigma_X \arrow[r, "f_X", hook] \arrow[d, "RetrInl", hook, swap] & \Sigma_M \arrow[r, "f_M", hook] & \Sigma \\
     \Sigma_{X+Y} \arrow[urr, "f_{X+Y}", hook, swap]
   \end{tikzcd}
-  \caption{Retractions involved in the definition of $\MS{MapSum}$.  The diagram does not necessarily have to commute.}
+  \caption{Non-commutative diagram of the retractions involved in the definition of $\MS{MapSum}$}
   \label{fig:retracts-MapSum}
   \begin{tikzcd}
     & \Sigma_{\List(X)} \arrow[dr, "f_{\List(X)}", hook] & \\
     \Sigma_X \arrow[ur, "RetrList", hook] \arrow[dr, "RetrOpt", hook, swap] & & \Sigma \\
     & \Sigma_{\Option(X)} \arrow[ur, "f_{\Option(X)}", hook] & \Sigma_\Nat \arrow[u, "f_\Nat", hook, swap]
   \end{tikzcd}
-  \caption{Retractions involved in the definition of $\MS{Nth}$.  The diagram does not necessarily have to commute.}
+  \caption{Retractions involved in the definition of $\MS{Nth}$}
   \label{fig:retracts-Nth}
 \end{figure}
 
@@ -1259,7 +1259,7 @@ It follows that $\MS{Nth}$ computes the function $nth$.
 
 % % This is not proven in Coq
 % For brevity, we omit the concrete running time function.
-% \begin{lemma}[Runtime of $\MS{Nth}$][Nth_Terminates]
+% \begin{lemma}[Running time of $\MS{Nth}$][Nth_Terminates]
 %   \label{lem:Nth_TerminatesIn}
 %   There is a function $NthSteps:\List(X)\to\Nat\to\Nat$, such that $NthSteps \in \mathcal{O}(\size{ls})$ and $\MS{Nth} \TerminatesIn NthSteps$.
 % \end{lemma}

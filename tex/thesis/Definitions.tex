@@ -369,7 +369,7 @@ $\Loop \from (A \to A) \to (A \to \Bool) \to A \to \Nat \to \Option(A)$ (for eve
   \end{align*}
 \end{definition}
 
-We can show some basic facts about $\Loop$.
+We can show basic facts about $\Loop$.
 \begin{lemma}[Basic facts about $\Loop$]
   \label{lem:loop}
   Let $k,l : \Nat$ and $a,b,c:A$.
@@ -481,26 +481,26 @@ we do not want to reason about concrete machine states, we introduced the notion
 elements of a finite type is due to Y.~Forster and F.~Kunze.  They also invented the realisation of labelled relations and the notion for time
 complexity.
 
-\section{Canonical Relations}
-\label{sec:canonical}
+% \section{Canonical Relations}
+% \label{sec:canonical}
 
-\enlargethispage{0.5cm}
+% \enlargethispage{0.5cm}
 
-Similar as in Asperti and Ricciotti~\cite{asperti2015}, we can define correctness relations that every machine realises.  Trivially, every machine
-realises the universal relation $Univ := \lambda t~(l,t').~\True$.  Every non-terminating (diverging) machine can only realise the empty relation
-$Empty := \lambda t~(l,t').~\False$.  The \textit{canonical relation} is the smallest relation that every machine realises:
+% Similar as in Asperti and Ricciotti~\cite{asperti2015}, we can define correctness relations that every machine realises.  Trivially, every machine
+% realises the universal relation $Univ := \lambda t~(l,t').~\True$.  Every non-terminating (diverging) machine can only realise the empty relation
+% $Empty := \lambda t~(l,t').~\False$.  The \textit{canonical relation} is the smallest relation that every machine realises:
 
-\begin{fact}[Canonical correctness][Canonical_Realise]
-  Let $M : \TM_\Sigma^n(L)$, then
-  \[
-    M \Realise \left( \lambda t~(l,t').~\exists q~k.~M(t) \terminates^k (q,t') \land lab_M(q) = l \right)
-  \]
-\end{fact}
+% \begin{fact}[Canonical correctness][Canonical_Realise]
+%   Let $M : \TM_\Sigma^n(L)$, then
+%   \[
+%     M \Realise \left( \lambda t~(l,t').~\exists q~k.~M(t) \terminates^k (q,t') \land lab_M(q) = l \right)
+%   \]
+% \end{fact}
 
-Dually, every machine terminates in the empty relation.  The canonical termination relation is the biggest relation in that every machine terminates:
-\begin{fact}[Canonical termination][Canonical_TerminatesIn]
-  Let $M : \TM_\Sigma^n$, then $M \TerminatesIn \left( \lambda t~k.~\exists c.~M(t) \terminates^k c \right)$.
-\end{fact}
+% Dually, every machine terminates in the empty relation.  The canonical termination relation is the biggest relation in that every machine terminates:
+% \begin{fact}[Canonical termination][Canonical_TerminatesIn]
+%   Let $M : \TM_\Sigma^n$, then $M \TerminatesIn \left( \lambda t~k.~\exists c.~M(t) \terminates^k c \right)$.
+% \end{fact}
 
 
 
