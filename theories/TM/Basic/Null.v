@@ -28,7 +28,7 @@ Arguments Null {sig}.
 Arguments Null_Rel { sig } x y / : rename.
 
 
-(** ** Tactical support *)
+(** ** Tactic Support *)
 
 Ltac smpl_TM_Null :=
   lazymatch goal with

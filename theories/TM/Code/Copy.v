@@ -1,4 +1,4 @@
-(** * Helper functions and machines for verifying machines using [CopySymbols] ane [MoveToSymbol] *)
+(** * Copying Machines and Helper functions for verifying machines using [CopySymbols] ane [MoveToSymbol] *)
 
 Require Import FunInd.
 

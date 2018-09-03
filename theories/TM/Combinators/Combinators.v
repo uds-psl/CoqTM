@@ -26,7 +26,7 @@ Section Relabel.
   Variable pM : { M : mTM sig n & states M -> F }.
   Variable p : F -> F'.
 
-  Definition Relabel : { M : mTM sig n & states M -> F' } :=
+  Definition Relabel : pTM sig F' n :=
     (projT1 pM; fun q => p (projT2 pM q)).
 
   Lemma Relabel_Realise R :
@@ -86,7 +86,7 @@ Arguments Return : simpl never.
 
 
 
-(** ** Tactical support *)
+(** ** Tactic Support *)
 
 
 (** Helper tactics for match *)

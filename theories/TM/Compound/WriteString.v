@@ -7,7 +7,7 @@ Local Arguments plus : simpl never.
 Local Arguments mult : simpl never.
 
 
-(** The correctness and definition of [WriteString] is non-standard, because it is defined (and verified) by recursion (or induction) over the string *)
+(** The correctness and definition of [WriteString] is non-standard, because it is defined (and verified) by recursion (or induction). *)
 Section Write_String.
 
   Variable sig : finType.

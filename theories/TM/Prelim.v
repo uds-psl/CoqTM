@@ -119,7 +119,7 @@ Section LoopMerge.
   Variable f : A -> A. (** abstract step function *)
   Variable (h h' : A -> bool). (** abstract halting functions *)
 
-  (** Every halting state w.r.t. [h] is also a halting state w.r.t. [h'] *)
+  (** Every non-halting state w.r.t. [h] is also a non-halting state w.r.t. [h'] *)
   Hypothesis halt_comp : forall a, h a = false -> h' a = false.
 
   Lemma loop_merge (k1 k2 : nat) (a1 a2 a3 : A) :

@@ -74,11 +74,12 @@ Proof. constructor; firstorder. Qed.
 
 (** ** Relational operators on labelled relations *)
 
+(** Restrict the label of a labelled relation and return an unlabelled relation *)
 Definition restrict X Y Z (R : Rel X (Y * Z)) f : Rel X Z := (fun x1 x2 => R x1 (f, x2)).
 Notation "R '|_' f" := (restrict R f) (at level 30, format "R '|_' f").
 Arguments restrict { X Y Z } ( R f ) x y /.
 
-(** Introduce a param that is fixed to a value *)
+(** Introduce a label that is fixed to a value *)
 Definition rfix X Y Z (R : Rel X Z) (p : Y) : Rel X (Y*Z) := (fun x '(y, z) =>
 y = p /\ R x z).
 Notation "R '||_' f" := (rfix R f) (at level 30, format "R '||_' f").

@@ -7,11 +7,9 @@ Require Import TM.Prelim TM.Relations TM.TM.
 Definition select (m n: nat) (X: Type) (I : Vector.t (Fin.t n) m) (V : Vector.t X n) : Vector.t X m :=
   Vector.map (Vector.nth V) I.
 
-(*
 Corollary select_nth m n X (I : Vector.t (Fin.t n) m) (V : Vector.t X n) (k : Fin.t m) :
   (select I V) [@ k] = V [@ (I [@ k])].
 Proof. now apply Vector.nth_map. Qed.
-*)
 
 
 (** Relational tapes-lift *)
@@ -361,7 +359,7 @@ End AddTapes.
 
 
 
-(** * Tactical support *)
+(** * Tactic Support *)
 
 
 Lemma smpl_dupfree_helper1 (n : nat) :

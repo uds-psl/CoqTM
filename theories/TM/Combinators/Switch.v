@@ -238,5 +238,6 @@ End Switch.
 
 Arguments Switch : simpl never.
 
-(* Deprecated name *)
+(* Deprecated names *)
 Notation MATCH := Switch.
+Notation Match := Switch.

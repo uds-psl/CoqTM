@@ -23,7 +23,7 @@ Section CaseSum.
             end).
 
 
-  Definition CaseSum : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> bool } :=
+  Definition CaseSum : pTM (sigSum sigX sigY)^+ bool 1 :=
     Move R;; (* skip the [START] symbol *)
     Switch (ReadChar) (* read the "constructor" symbol *)
           (fun o => match o with (* Write a new [START] symbol and terminate in the corresponding label *)
@@ -58,10 +58,10 @@ Section CaseSum.
     Definition Constr_inr_Rel : Rel (tapes (sigSum sigX sigY)^+ 1) (unit * tapes (sigSum sigX sigY)^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => forall y:Y, tin ≃ y -> tout ≃ inr y)).
 
-    Definition Constr_inl : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> unit } :=
+    Definition Constr_inl : pTM (sigSum sigX sigY)^+ unit 1 :=
       WriteMove (inr sigSum_inl) L;; Write (inl START).
 
-    Definition Constr_inr : { M : mTM (sigSum sigX sigY)^+ 1 & states M -> unit } :=
+    Definition Constr_inr : pTM (sigSum sigX sigY)^+ unit 1 :=
       WriteMove (inr sigSum_inr) L;; Write (inl START).
 
 
@@ -99,7 +99,7 @@ Arguments CaseSum : simpl never.
 Arguments Constr_inl : simpl never.
 Arguments Constr_inr : simpl never.
 
-(** ** Tactical Support for Sum Types *)
+(** ** Tactic Support for Sum Types *)
 
 Ltac smpl_TM_CaseSum :=
   lazymatch goal with
@@ -169,7 +169,7 @@ Section CaseOption.
   Defined.
 
 
-  Definition CaseOption : { M : mTM tau^+ 1 & states M -> bool } :=
+  Definition CaseOption : pTM (sigOption sigX)^+ bool 1 :=
     If (ChangeAlphabet (CaseSum (sigX) (FinType (EqType Empty_set))) _)
        (Return Nop true)
        (Return (ResetEmpty _) false).
@@ -238,7 +238,7 @@ Section CaseOption.
                     tin ≃ x ->
                     tout ≃ Some x)).
 
-  Definition Constr_Some : { M : mTM tau^+ 1 & states M -> unit } :=
+  Definition Constr_Some : pTM (sigOption sigX)^+ unit 1 :=
     ChangeAlphabet (Constr_inl sigX (FinType (EqType Empty_set))) _.
 
   Definition Constr_Some_steps := 3.
@@ -288,7 +288,7 @@ Arguments Constr_None : simpl never.
 Arguments Constr_Some : simpl never.
 
 
-(** ** Tactical Support for Option Types *)
+(** ** Tactic Support for Option Types *)
 
 Ltac smpl_TM_CaseOption :=
   lazymatch goal with

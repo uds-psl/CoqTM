@@ -4,7 +4,7 @@ Require Import TM.Lifting.LiftAlphabet.
 
 (** * Alphabet-lift for "programmed" Turing Machines *)
 
-(** All "programmed" Turing machines are defined on an alphabet [Σ^+]. In this module, we instanciate the [LiftAlphabet] operator. Given a machine [M:TM_{Σ^+}] and a retraction [f: Σ ↪ Γ, we define a machine [⇑M : TM_{Γ^+}]. *)
+(** All "programmed" Turing machines are defined on an alphabet [Σ^+]. In this module, we instanciate the [LiftAlphabet] operator. Given a machine [M:TM_{Σ^+}] and a retraction [f: Σ ↪ Γ], we define a machine [⇑M : TM_{Γ^+}]. *)
 
 
 Generalizable All Variables.
@@ -212,10 +212,10 @@ Arguments surjectTape : simpl never.
 Section ChangeAlphabet.
   Variable (sig tau : finType).
   Variable (n : nat) (F : finType).
-  Variable pM : {M : mTM sig^+ n & states M -> F}.
+  Variable pM : pTM sig^+ F n.
   Variable (retr : Retract sig tau).
 
-  Definition ChangeAlphabet : {M : mTM tau^+ n & states M -> F} :=
+  Definition ChangeAlphabet : pTM tau^+ F n :=
     LiftAlphabet pM (Retract_plus retr) (inl UNKNOWN).
 
 End ChangeAlphabet.
@@ -249,7 +249,7 @@ Section Computes_ChangeAlphabet.
   Variable (n_tapes : nat).
   Variable F : finType.
 
-  Variable (pM : {M : mTM (sig^+) (S (S n_tapes)) & states M -> F}).
+  Variable (pM : pTM sig^+ F (S (S n_tapes))).
 
   Variable retr : Retract sig tau.
   (** Use this to say the [TM_Correct] tactic to apply [ChangeAlphabet_Computes] instead of only unfolding [ChangeAlphabet] and applying [LiftAlphabet_Realise]. *)
@@ -308,7 +308,7 @@ Section Computes_ChangeAlphabet2.
 
   Variable (n_tapes : nat).
   Variable F : finType. 
-  Variable (pM : {M : mTM (sig^+) (S (S (S n_tapes))) & states M -> F}).
+  Variable (pM : pTM sig^+ F (S (S (S n_tapes)))).
 
   Variable retr : Retract sig tau.
 
@@ -363,7 +363,7 @@ End Computes_ChangeAlphabet2.
 
 
 
-(** ** Tactical support *)
+(** ** Tactic Support *)
 
 (** If you want to use [ChangeAlphabet_Computes], just apply [Id] to the machine, to prevent [TM_Correct] unfolding [ChangeAlphabet] *)
 

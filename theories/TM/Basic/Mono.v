@@ -13,7 +13,7 @@ Section Mk_Mono.
   Proof.
     split with (states := states).
     - intros (q&tape).
-      pose proof (mono_trans q (tape[@Fin.F1])) as (q', act).
+      pose proof (mono_trans q (tape[@Fin0])) as (q', act).
       apply (q', [| act |]).
     - apply init.
     - apply fin.
@@ -22,7 +22,7 @@ Section Mk_Mono.
   Variable (F : finType) (R : Rel (tape sig) (F * tape sig)).
 
   Definition Mk_R_p : Rel (tapes sig 1) (F * tapes sig 1) :=
-      fun tps1 '(p, tps2) => R (tps1[@Fin.F1]) (p, tps2[@Fin.F1]).
+      fun tps1 '(p, tps2) => R (tps1[@Fin0]) (p, tps2[@Fin0]).
 
 End Mk_Mono.
 
@@ -162,7 +162,7 @@ Arguments ReadChar {sig}.
 Arguments ReadChar_Rel sig x y /.
 
 
-(** ** Tactical support *)
+(** ** Tactic Support *)
 
 Ltac smpl_TM_Mono :=
   lazymatch goal with

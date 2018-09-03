@@ -4,11 +4,10 @@ Require Import ProgrammingTools.
 Require Import TM.Code.CaseNat TM.Code.CaseSum TM.Code.CaseFin.
 Require Import TM.LM.Semantics TM.LM.Alphabets.
 
-Definition CaseCom : { M : mTM sigCom^+ 1 & states M -> option ACom } :=
+Definition CaseCom : pTM sigCom^+ (option ACom) 1 :=
   If (CaseSum _ _)
      (Return Nop None)
-     (Relabel (ChangeAlphabet (CaseFin (FinType(EqType(ACom))) ) _) Some)
-.
+     (Relabel (ChangeAlphabet (CaseFin (FinType(EqType(ACom))) ) _) Some).
      
 
 Definition CaseCom_Rel : pRel sigCom^+ (FinType (EqType (option ACom))) 1 :=

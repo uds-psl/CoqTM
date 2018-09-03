@@ -17,7 +17,7 @@ Section CaseNat.
            | _, _ => False
            end).
 
-  Definition CaseNat : { M : mTM sigNat^+ 1 & states M -> bool } :=
+  Definition CaseNat : pTM sigNat^+ bool 1 :=
     Move R;;
     Switch (ReadChar)
           (fun o => match o with
@@ -49,7 +49,7 @@ Section CaseNat.
     Definition S_Rel : Rel (tapes sigNat^+ 1) (unit * tapes sigNat^+ 1) :=
       Mk_R_p (ignoreParam (fun tin tout => forall n : nat, tin ≃ n -> tout ≃ S n)).
 
-    Definition Constr_S : { M : mTM sigNat^+ 1 & states M -> unit } :=
+    Definition Constr_S : pTM sigNat^+ unit 1 :=
       WriteMove (inr sigNat_S) L;; Write (inl START).
 
 
@@ -91,7 +91,7 @@ Section CaseNat.
 End CaseNat.
 
 
-(** ** Tactical Support *)
+(** ** Tactic Support *)
 
 Ltac smpl_TM_CaseNat :=
   lazymatch goal with

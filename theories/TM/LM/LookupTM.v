@@ -23,9 +23,9 @@ Section Lookup.
   (**
 There are (more than) three possible ways how to encode [nat] on the [Heap] alphabet [sigLookup]:
 
-- 1: as an adress of a closure in an entry
-- 2: as a variable of a token inside a closure of the closure input alphabet
-- 3: as the "next" address of an entry
+- 1: as a heap address of a closure on the stack alphabet
+- 2: as a variable of a command inside a closure of the closure input alphabet
+- 3: as a "next" address of an heap entry
 
 [a] is stored in the second way and [n] in the third way.
 *)

@@ -49,7 +49,7 @@ Section MapSum.
 
   
   (** I use [Id] here to prevent [TM_Correct] to unfold [ChangeAlphabet], because we want to apply [ChangeAlphabet_Computes] instead. *)
-  Definition MapSum : { M : mTM sigMap^+ (S (S n)) & states M -> unit } :=
+  Definition MapSum : pTM sigMap^+ unit (S (S n)) :=
     If (CaseSum sigX sigY ⇑ _ @ [|Fin0|])
        (Translate retr_sigX_sigMap' retr_sigX_sigMap @ [|Fin0|];; (* Translate the value [x] from the [sigSum] alphabet to the direct [sigX] alphabet *)
          Id (M1 ⇑ _);; (* Call [M1] *)

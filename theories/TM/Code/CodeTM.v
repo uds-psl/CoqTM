@@ -71,7 +71,7 @@ Instance boundary_fin : finTypeC (EqType boundary).
 Proof. split with (enum := [START; STOP; UNKNOWN]). cbn. intros []; cbn; reflexivity. Defined.
 
 
-(** In this section, we define value-containing (≃). It is defined on tapes over arbitrary [Type]s (even infinite types), not [finType]. *)
+(** In this section, we define value-containment (≃). It is defined on tapes over arbitrary [Type]s (even infinite types), not [finType]. *)
 Section Fix_Sig.
 
   Variable (sig : Type).
@@ -81,7 +81,7 @@ Section Fix_Sig.
 
   (** A tape [t] contains a value [x], if [t=midtape rs (inl START) (map inr (encode x) ++ [inl STOP])] for some [rs : list (sig^+)]. This means, the pointer is on the start symbol, right to the pointer is the encoding of [x], which is terminated by the stop symbol [inl STOP]. We write [t ≃ x] for tape [t] contains [x]. *)
 
-  (** We also define a dual predicate for value-containing: reversed value containing. It is, however, only used internally. The difference is, that the pointer is on the stop symbol, instead of the start symbol. This predicate is useful for intermediate states of a machine, for example in the machine [CopyValue], which first has to move the head to the stop symbol. We write [t ≂ x] for [t] reversedly contains [x]. *)
+  (** We also define a dual predicate for value-containment: reversed value containment. It is, however, only used internally. The difference is, that the pointer is on the stop symbol, instead of the start symbol. This predicate is useful for intermediate states of a machine, for example in the machine [CopyValue], which first has to move the head to the stop symbol. We write [t ≂ x] for [t] reversedly contains [x]. *)
 
   Section Tape_Contains.
     Context `{cX : codable sig X}.
@@ -107,7 +107,7 @@ Section Fix_Sig.
   Arguments tape_contains' {X} (cX).
   Arguments tape_contains_rev' {X} (cX).
 
-  (** The variant of the containing relations with prime allow to explicitely give and print the encoding of the type. *)
+  (** The variant of the containment relations with prime allow to explicitely give and print the encoding of the type. *)
   Notation "t ≃ x" := (tape_contains t x) (at level 70, no associativity).
   Notation "t ≃( c ) x" := (tape_contains' c t x) (at level 70, no associativity).
   Notation "t ≂ x" := (tape_contains_rev t x) (at level 70, no associativity).
@@ -160,7 +160,7 @@ Section Fix_Sig.
     Variable F : Type.
 
     (*
-     * Tape [t0] is the input tapes, [t2] is the output tape.
+     * Tape [t0] is the input tapes, [t1] is the output tape.
      * All further tapes are "internal tapes", i.e. they pointer is right before and after the execution.
      *)
     Definition Computes_Rel (f : X -> Y) :
@@ -224,7 +224,7 @@ Section Fix_Sig.
      * All further tapes are "internal tapes", i.e. they pointer is right before and after the execution.
      *)
     Definition Computes2_Rel (f : X -> Y -> Z) :
-      Rel (tapes (sig ^+) (S (S (S n)))) (F * tapes (sig^+) (S (S (S n)))) :=
+      pRel (sig ^+) F (S (S (S n))) :=
       ignoreParam (
           fun tin tout =>
             forall (x : X) (y : Y),
@@ -239,7 +239,7 @@ Section Fix_Sig.
         ).
 
 
-    Definition Computes2_T (r : X -> Y -> nat) : Rel (tapes (sig ^+) (S (S (S n)))) nat :=
+    Definition Computes2_T (r : X -> Y -> nat) : tRel (sig ^+) (S (S (S n))) :=
       fun tin k =>
         exists (x : X) (y : Y),
           tin[@Fin0] ≃ x /\

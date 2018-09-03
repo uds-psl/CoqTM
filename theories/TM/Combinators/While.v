@@ -238,7 +238,7 @@ Arguments While {n sig F} pM {defF}.
 Notation WHILE := While.
 
 
-(** ** (Co-) Induction Principle for Correctness (Runtime) of [While] *)
+(** ** (Co-) Induction Principle for Correctness (Running Time) of [While] *)
 
 Section WhileInduction.
   Variable (sig : finType) (n : nat) (F : finType).

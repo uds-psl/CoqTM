@@ -19,19 +19,19 @@ Section CaseList.
     end.
   
 
-  Definition Skip_cons : { M : mTM (sigList sigX)^+ 1 & states M -> unit } :=
+  Definition Skip_cons : pTM (sigList sigX)^+ unit 1 :=
     Move R;;
     MoveToSymbol stop id.
 
 
-  Definition M1 : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
+  Definition M1 : pTM (sigList sigX)^+ unit 2 :=
     LiftTapes Skip_cons [|Fin0|];;
     LiftTapes (Write (inl STOP)) [|Fin1|];;
     MovePar L L;;
     CopySymbols_L stop;;
     LiftTapes (Write (inl START)) [|Fin1|].
 
-  Definition CaseList : { M : mTM (sigList sigX)^+ 2 & states M -> bool } :=
+  Definition CaseList : pTM (sigList sigX)^+ bool 2 :=
     LiftTapes (Move R) [|Fin0|];;
     Switch (LiftTapes (ReadChar) [|Fin0|])
           (fun s => match s with
@@ -47,7 +47,7 @@ Section CaseList.
 
   (** *** Corectness *)
 
-  Definition Skip_cons_Rel : Rel (tapes (sigList sigX)^+ 1) (unit * tapes (sigList sigX)^+ 1) :=
+  Definition Skip_cons_Rel : pRel (sigList sigX)^+ unit 1 :=
     Mk_R_p (
         ignoreParam (
             fun tin tout =>
@@ -88,7 +88,7 @@ Section CaseList.
   Qed.
   
 
-  Definition M1_Rel : Rel (tapes (sigList sigX)^+ 2) (unit * tapes (sigList sigX)^+ 2) :=
+  Definition M1_Rel : pRel (sigList sigX)^+ unit 2 :=
     ignoreParam (
         fun tin tout =>
           forall ls rs (x : X) (l : list X),
@@ -124,7 +124,7 @@ Section CaseList.
   Qed.
 
 
-  Definition CaseList_Rel : Rel (tapes (sigList sigX)^+ 2) (bool * tapes (sigList sigX)^+ 2) :=
+  Definition CaseList_Rel : pRel (sigList sigX)^+ bool 2 :=
     fun tin '(yout, tout) =>
       forall (l : list X),
         tin[@Fin0] ≃ l ->
@@ -332,7 +332,7 @@ Section CaseList.
   Proof. reflexivity. Qed.
 
 
-  Definition Constr_nil_Rel : Rel (tapes (sigList sigX)^+ 1) (unit * tapes (sigList sigX)^+ 1) :=
+  Definition Constr_nil_Rel : pRel (sigList sigX)^+ unit 1 :=
     Mk_R_p (ignoreParam (fun tin tout => isRight tin -> tout ≃ nil)).
 
 
@@ -349,12 +349,12 @@ Section CaseList.
 
   (** *** [cons] *)
   
-  Definition Constr_cons : { M : mTM (sigList sigX)^+ 2 & states M -> unit } :=
+  Definition Constr_cons : pTM (sigList sigX)^+ unit 2 :=
     LiftTapes (MoveRight _;; Move L) [|Fin1|];;
     LiftTapes (CopySymbols_L stop) [|Fin1;Fin0|];;
     LiftTapes (WriteMove (inr sigList_cons) L;; Write (inl START)) [|Fin0|].
 
-  Definition Constr_cons_Rel : Rel (tapes (sigList sigX)^+ 2) (unit * tapes (sigList sigX)^+ 2) :=
+  Definition Constr_cons_Rel : pRel (sigList sigX)^+ unit 2 :=
     ignoreParam (
         fun tin tout =>
           forall l y,
@@ -444,7 +444,7 @@ Section Steps_comp.
 End Steps_comp.
 
 
-(** ** Tactical Support *)
+(** ** Tactic Support *)
 
 Ltac smpl_TM_CaseList :=
   lazymatch goal with

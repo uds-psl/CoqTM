@@ -72,11 +72,11 @@ Section MovePar.
 
   Definition MovePar_R : pRel sig unit 2 :=
     ignoreParam(fun (t t' : tapes sig 2) =>
-                  t'[@Fin.F1] = tape_move t[@Fin.F1] D1 /\
-                  t'[@Fin.FS Fin.F1] = tape_move t[@Fin.FS Fin.F1] D2).
+                  t'[@Fin0] = tape_move t[@Fin0] D1 /\
+                  t'[@Fin1] = tape_move t[@Fin1] D2).
 
   Definition MovePar : pTM sig unit 2 :=
-    LiftTapes (Move D1) [|Fin.F1|];; LiftTapes (Move D2) [|Fin.FS Fin.F1|].
+    LiftTapes (Move D1) [|Fin0|];; LiftTapes (Move D2) [|Fin1|].
 
   Lemma MovePar_Sem : MovePar ⊨c(3) MovePar_R.
   Proof.
@@ -102,7 +102,7 @@ Section Copy.
   Variable f : sig -> sig.
 
   Definition CopyChar : pTM sig unit 2 :=
-    Switch (LiftTapes ReadChar [|Fin.F1|])
+    Switch (LiftTapes ReadChar [|Fin0|])
           (fun s : option sig =>
              match s with
              | None =>  Nop
@@ -179,7 +179,7 @@ Arguments ReadChar_at {sig n} k.
 Arguments ReadChar_at_Rel { sig n } ( k ) x y /.
 
 
-(** ** Tactical support *)
+(** ** Tactic Support *)
 
 Ltac smpl_TM_Multi :=
   lazymatch goal with

@@ -53,13 +53,13 @@ Qed.
  * t0: a
  * t1: b
  *)
-Definition Add_Step : { M : mTM _ 2 & states M -> option unit } :=
+Definition Add_Step : pTM sigNat^+ (option unit) 2 :=
   If (LiftTapes CaseNat [|Fin1|])
      (Return (LiftTapes Constr_S [|Fin0|]) None)
      (Return Nop (Some tt)).
 
 
-Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := While Add_Step.
+Definition Add_Loop : pTM sigNat^+ unit 2 := While Add_Step.
 
 (*
  * Full machine in pseudocode:
@@ -78,7 +78,7 @@ Definition Add_Loop : { M : mTM _ 2 & states M -> unit } := While Add_Step.
  * INT t3: b
  *)
 (* Everything, but not reset *)
-Definition Add_Main : { M : mTM sigNat^+ 4 & states M -> unit } :=
+Definition Add_Main : pTM sigNat^+ unit 4 :=
   LiftTapes (CopyValue _) [|Fin1; Fin2|];; (* copy n to a *)
   LiftTapes (CopyValue _) [|Fin0; Fin3|];; (* copy m to b *)
   LiftTapes Add_Loop [|Fin2; Fin3|]. (* Main loop *)
@@ -96,7 +96,7 @@ Definition Add :=
 
 (** *** Correctness of [Add] *)
 
-Definition Add_Step_Rel : Rel (tapes sigNat^+ 2) (option unit * tapes sigNat^+ 2) :=
+Definition Add_Step_Rel : pRel sigNat^+ (option unit) 2 :=
   fun tin '(yout, tout) =>
     forall a b,
       tin [@Fin0] ≃ a ->
@@ -127,7 +127,7 @@ Proof.
 Qed.
 
 
-Definition Add_Loop_Rel : Rel (tapes sigNat^+ 2) (unit * tapes sigNat^+ 2) :=
+Definition Add_Loop_Rel : pRel sigNat^+ unit 2 :=
   ignoreParam (
       fun tin tout =>
         forall a b,
@@ -156,7 +156,7 @@ Qed.
 
 
 (* Everything, but reset *)
-Definition Add_Main_Rel : Rel (tapes sigNat^+ 4) (unit * tapes sigNat^+ 4) :=
+Definition Add_Main_Rel : pRel sigNat^+ unit 4 :=
   ignoreParam (
       fun tin tout =>
         forall m n,
@@ -364,7 +364,7 @@ Qed.
  *   break
  * }
  *)
-Definition Mult_Step : { M : mTM _ 5 & states M -> option unit } :=
+Definition Mult_Step : pTM sigNat^+ (option unit) 5 :=
   If (LiftTapes CaseNat [|Fin0|])
      (Return (
           LiftTapes Add [|Fin1; Fin2; Fin3; Fin4|];; (* Add(n, c, c') *)
@@ -375,7 +375,7 @@ Definition Mult_Step : { M : mTM _ 5 & states M -> option unit } :=
      (Return Nop (Some tt)). (* break *)
 
 
-Definition Mult_Loop : { M : mTM _ 5 & states M -> unit } := While Mult_Step.
+Definition Mult_Loop := While Mult_Step.
 
 
 (*
@@ -386,20 +386,20 @@ Definition Mult_Loop : { M : mTM _ 5 & states M -> unit } := While Mult_Step.
  * INT t4:    (for Mult_Loop: t4)
  * INT t5: m' (for Mult_Loop: t0)
  *)
-Definition Mult_Main : { M : mTM _ 6 & states M -> unit } :=
+Definition Mult_Main : pTM sigNat^+ unit 6 :=
   LiftTapes (CopyValue _) [|Fin0; Fin5|];; (* m' := m *)
   LiftTapes (Constr_O) [|Fin2|];; (* c := 0 *)
   LiftTapes Mult_Loop [|Fin5; Fin1; Fin2; Fin3; Fin4|]. (* Main loop *)
 
 
-Definition Mult : { M : mTM _ 6 & states M -> unit } :=
+Definition Mult : pTM sigNat^+ unit 6 :=
   Mult_Main;;
   LiftTapes (Reset _) [|Fin5|]. (* Reset m' *)
 
 
 (** *** Correctness of [Mult] *)
 
-Definition Mult_Step_Rel : Rel (tapes sigNat^+ 5) (option unit * tapes sigNat^+ 5) :=
+Definition Mult_Step_Rel : pRel sigNat^+ (option unit) 5 :=
   fun tin '(yout, tout) =>
     forall c m' n,
       tin[@Fin0] ≃ m' ->
@@ -450,7 +450,7 @@ Proof.
   }
 Qed.
 
-Definition Mult_Loop_Rel : Rel (tapes sigNat^+ 5) (unit * tapes sigNat^+ 5) :=
+Definition Mult_Loop_Rel : pRel sigNat^+ unit 5 :=
   ignoreParam (
       fun tin tout =>
         forall c m' n,
@@ -507,7 +507,7 @@ Qed.
  * reset m'
  *)
 
-Definition Mult_Main_Rel : Rel (tapes sigNat^+ 6) (unit * tapes sigNat^+ 6) :=
+Definition Mult_Main_Rel : pRel sigNat^+ unit 6 :=
   ignoreParam (
       fun tin tout =>
         forall m n,

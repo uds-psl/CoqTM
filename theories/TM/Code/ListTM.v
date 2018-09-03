@@ -81,7 +81,7 @@ Section Nth.
         end.
 
 
-  Definition Nth_Step : { M : mTM sig^+ 3 & states M -> option unit } :=
+  Definition Nth_Step : pTM sig^+ (option unit) 3 :=
     If (LiftTapes (ChangeAlphabet CaseNat _) [|Fin1|])
        (If (LiftTapes (ChangeAlphabet (CaseList sigX) _) [|Fin0; Fin2|])
            (Return (LiftTapes (Reset _) [|Fin2|]) (None))
@@ -177,7 +177,7 @@ Section Nth.
   Qed.
 
 
-  Definition Nth : { M : mTM sig^+ 5 & states M -> unit } :=
+  Definition Nth : pTM sig^+ unit 5 :=
     LiftTapes (CopyValue _) [|Fin0; Fin3|];; (* Save l (on t0) to t3 and n (on t1) to t4 *)
     LiftTapes (CopyValue _) [|Fin1; Fin4|];;
     LiftTapes (Nth_Loop) [|Fin3; Fin4; Fin2|];; (* Execute the loop with the copy of n and l *)
@@ -252,7 +252,7 @@ Section Nth'.
         end.
 
 
-  Definition Nth'_Step : { M : mTM sig^+ 3 & states M -> option bool } :=
+  Definition Nth'_Step : pTM sig^+ (option bool) 3 :=
     If (LiftTapes (ChangeAlphabet CaseNat _) [|Fin1|])
        (If (LiftTapes (ChangeAlphabet (CaseList sigX) _) [|Fin0; Fin2|]) (* n = S n' *)
            (Return (LiftTapes (Reset _) [|Fin2|]) None) (* l = x :: l'; continue *)
@@ -434,7 +434,7 @@ Section Nth'.
 
 
   (** We don't want to save, but reset, [n]. *)
-  Definition Nth' : { M : mTM sig^+ 4 & states M -> bool } :=
+  Definition Nth' : pTM sig^+ bool 4 :=
     LiftTapes (CopyValue _) [|Fin0; Fin3|];; (* Save l (on t0) to t3 *)
     If (LiftTapes (Nth'_Loop) [|Fin3; Fin1; Fin2|]) (* Execute the loop with the copy of l *)
        (Return (LiftTapes (Reset _) [|Fin3|];; (* Reset the copy of [l] *)
@@ -630,7 +630,7 @@ Section Append.
                      tout[@Fin1] ≃ xs ++ ys).
 
 
-  Definition App' : { M : mTM sigList^+ 2 & states M -> unit } :=
+  Definition App' : pTM sigList^+ unit 2 :=
     LiftTapes (MoveRight _;; Move L;; Move L) [|Fin0|];;
     CopySymbols_L stop.
   Lemma App'_Realise : App' ⊨ App'_Rel.
@@ -713,7 +713,7 @@ Section Append.
   Qed.
     
     
-  Definition App : { M : mTM sigList^+ 3 & states M -> unit } :=
+  Definition App : pTM sigList^+ unit 3 :=
     LiftTapes (CopyValue _) [|Fin1; Fin2|];;
     LiftTapes (App') [|Fin0; Fin2|].
 

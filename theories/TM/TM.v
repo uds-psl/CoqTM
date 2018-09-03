@@ -12,9 +12,9 @@ Section Fix_Sigma.
 
   (** ** Definition of the tape *)
   
-  (** A tape is essentially a triple 〈left,current,right〉 where however the current symbol could be missing. This may happen for three different reasons: both tapes are empty; we are on the left extremity of a non-empty tape (left overflow), or we are on the right extremity of a non-empty tape (right overflow). *)
+  (** A tape is essentially a triple 〈left,current,right〉 where, however, the current symbol could be missing. This may happen for three different reasons: both tapes are empty, we are on the left extremity of a non-empty tape (left overflow), or we are on the right extremity of a non-empty tape (right overflow). *)
   
-  (** Note that the type constructor [tape] is parametrised over [Type], not [finType]. *)
+  (** Note that the alphabet has type [Type], not [finType]. *)
   Inductive tape : Type :=
   | niltape : tape
   | leftof : sig -> list sig -> tape
@@ -745,11 +745,11 @@ Section Semantics.
   (** *** Realisation *)
 
   (** Parametrised relations *)
-  Definition pRel (F: Type) (n : nat) := Rel (tapes sig n) (F * tapes sig n).
+  Definition pRel (sig : Type) (F: Type) (n : nat) := Rel (tapes sig n) (F * tapes sig n).
 
-  (** A (labelled) machine [M] realises a (labelled) relation [R], if: for every tape vectors [t], if [M] with [t] terminates in a configuration [c], then [R (t), (projT2 M (cstate c), ctapes c)]. That means that the pair of the input tape vectors, the labelled of the state in that the machine terminated, and the output tape, must be in the relation [R]. *)
+  (** A (labelled) machine [M] realises a (labelled) relation [R], if: for every tape vectors [t], if [M] with [t] terminates in a configuration [c], then [R (t), (projT2 M (cstate c), ctapes c)]. That means that the pair of the input tape vectors, the labelof the state in that the machine terminated, and the output tape, must be in the relation [R]. *)
   
-  Definition Realise n F (pM : pTM n F) (R : pRel n F) :=
+  Definition Realise n F (pM : pTM n F) (R : pRel sig n F) :=
     forall t k outc, loopM (initc (projT1 pM) t) k = Some outc -> R t (projT2 pM (cstate outc), ctapes outc).
 
   Notation "M '⊨' R" := (Realise M R) (no associativity, at level 30, format "M  '⊨'  R").
@@ -764,9 +764,9 @@ Section Semantics.
 
   (** A machine is said to "terminate in" a relation [T : Rel (tapes sig n) nat], if for every pair of input tape vectors [t] and step numbers [k] such that T t k, there exists an output configuration [cout] that [M] reaches from [t] in [k] steps. *)
 
-  Definition tRel n := Rel (tapes sig n) nat.
+  Definition tRel sig n := Rel (tapes sig n) nat.
 
-  Definition TerminatesIn {n : nat} (M : mTM n) (T : tRel n) :=
+  Definition TerminatesIn {n : nat} (M : mTM n) (T : tRel sig n) :=
     forall tin k, T tin k -> exists conf, loopM (initc M tin) k = Some conf.
   
 
@@ -774,11 +774,11 @@ Section Semantics.
   Notation "M ↓ T" := (TerminatesIn M T) (no associativity, at level 60, format "M  '↓'  T").
 
   (** Termination is anti-monotone *)
-  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T T' : tRel n) :
+  Lemma TerminatesIn_monotone {n : nat} (M : mTM n) (T T' : tRel sig n) :
     M ↓ T' -> (T <<=2 T') -> M ↓ T.
   Proof. intros H1 H2. firstorder. Qed.
 
-  Lemma TerminatesIn_extend {n : nat} (M : mTM n) (T : tRel n) :
+  Lemma TerminatesIn_extend {n : nat} (M : mTM n) (T : tRel sig n) :
     M ↓ T ->
     M ↓ (fun tin k => exists k', k' <= k /\ T tin k').
   Proof.
@@ -789,11 +789,11 @@ Section Semantics.
   
 
   (** Realisation plus termination in constant time *)
-  Definition RealiseIn n (F : finType) (pM : pTM F n) (R : pRel F n) (k : nat) :=
+  Definition RealiseIn n (F : finType) (pM : pTM F n) (R : pRel sig F n) (k : nat) :=
     forall input, exists outc, loopM (initc (projT1 pM) input) k = Some outc /\ R input ((projT2 pM (cstate outc)), ctapes outc).
   Notation "M '⊨c(' k ')' R" := (RealiseIn M R k) (no associativity, at level 45, format "M  '⊨c(' k ')'  R").
 
-  Lemma RealiseIn_monotone n (F : finType) (pM : pTM F n) (R R' : pRel F n) k k' :
+  Lemma RealiseIn_monotone n (F : finType) (pM : pTM F n) (R R' : pRel sig F n) k k' :
     pM ⊨c(k') R' -> k' <= k -> R' <<=2 R -> pM ⊨c(k) R.
   Proof.
     unfold RealiseIn. intros H1 H2 H3 input.
@@ -803,7 +803,7 @@ Section Semantics.
     - intuition.
   Qed.
 
-  Lemma RealiseIn_monotone' n (F : finType) (pM : pTM F n) (R : pRel F n) k k' :
+  Lemma RealiseIn_monotone' n (F : finType) (pM : pTM F n) (R : pRel sig F n) k k' :
     pM ⊨c(k') R -> k' <= k -> pM ⊨c(k) R.
   Proof.
     intros H1 H2. eapply RealiseIn_monotone. eapply H1. assumption. firstorder.
@@ -860,7 +860,7 @@ Section Semantics.
     Variable (F : finType).
     Variable (pM : pTM F n).
 
-    Definition Canonical_Rel : pRel F n :=
+    Definition Canonical_Rel : pRel sig F n :=
       fun t1 '(y, t2) =>
         exists outc k, loopM (M := projT1 pM) (initc (projT1 pM) t1) k = Some outc /\
                   ctapes outc = t2 /\ projT2 pM (cstate outc) = y.
@@ -881,7 +881,7 @@ Section Semantics.
     Variable (n : nat).
     Variable (M : mTM n).
 
-    Definition Canonical_T : tRel n :=
+    Definition Canonical_T : tRel sig n :=
       fun t k => exists outc, loopM (M := M) (initc M t) k = Some outc.
 
     Lemma Canonical_TerminatesIn :

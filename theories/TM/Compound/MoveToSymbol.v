@@ -84,9 +84,9 @@ Section MoveToSymbol.
 
   (*
    * The main loop of the machine.
-   * Execute MoveToSymbol_Step in a loop until MoveToSymbol_Step returned [ None ] or [ Some true ]
+   * Execute MoveToSymbol_Step in a loop until MoveToSymbol_Step returned [Some tt]
    *)
-  Definition MoveToSymbol : { M : mTM sig 1 & states M -> unit } := While MoveToSymbol_Step.
+  Definition MoveToSymbol : pTM sig unit 1 := While MoveToSymbol_Step.
   
   Definition rlength (t : tape sig) := length (tape_local t).
 
@@ -190,7 +190,7 @@ Section MoveToSymbol.
   Local Arguments plus : simpl never. Local Arguments mult : simpl never.
 
   Lemma MoveToSymbol_Terminates :
-    projT1 MoveToSymbol ↓ (fun tin k => MoveToSymbol_steps (tin[@Fin.F1]) <= k).
+    projT1 MoveToSymbol ↓ (fun tin k => MoveToSymbol_steps (tin[@Fin0]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold MoveToSymbol. TM_Correct.
@@ -285,7 +285,7 @@ Section MoveToSymbol.
   Qed.
 
   Lemma MoveToSymbol_L_Terminates :
-    projT1 MoveToSymbol_L ↓ (fun tin k => MoveToSymbol_L_steps (tin[@Fin.F1]) <= k).
+    projT1 MoveToSymbol_L ↓ (fun tin k => MoveToSymbol_L_steps (tin[@Fin0]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     - eapply Mirror_Terminates. eapply MoveToSymbol_Terminates.

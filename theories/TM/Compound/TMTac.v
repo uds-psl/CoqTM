@@ -93,7 +93,7 @@ Ltac TMSimp1 T :=
     | tapes _ _ -> Prop =>
       let tmid := fresh "tmid" in
       destruct H as (tmid&H)
-    | _ => (* probably some parameter *)
+    | _ => (* probably some label *)
       let ymid := fresh "ymid" in
       destruct H as (ymid&H)
     end

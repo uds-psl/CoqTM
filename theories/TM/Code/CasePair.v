@@ -16,7 +16,7 @@ Section CasePair.
 
   Variable (sigX sigY: finType) (X Y: Type) (cX: codable sigX X) (cY: codable sigY Y).
 
-  Notation sigPair := (sigPair sigX sigY).
+  Local Notation sigPair := (sigPair sigX sigY).
 
   Definition stopAfterFirst : sigPair^+ -> bool :=
     fun x => match x with
@@ -33,7 +33,7 @@ Section CasePair.
           end.
 
 
-  Definition CasePair_Rel : Rel (tapes sigPair^+ 2) (unit * tapes sigPair^+ 2) :=
+  Definition CasePair_Rel : pRel sigPair^+ unit 2 :=
     ignoreParam (
         fun tin tout =>
           forall p : X * Y,
@@ -43,7 +43,7 @@ Section CasePair.
             tout[@Fin1] ≃ fst p
       ).
 
-  Definition CasePair : { M : mTM sigPair^+ 2 & states M -> unit } :=
+  Definition CasePair : pTM sigPair^+ unit 2 :=
     LiftTapes (WriteMove (inl STOP) L) [|Fin1|];;
     LiftTapes (MoveToSymbol stopAfterFirst id;; Move L) [|Fin0|];;
     CopySymbols_L stopAtStart;;
@@ -146,7 +146,7 @@ Section CasePair.
 
   (** ** Constructor *)
   
-  Definition Constr_pair_Rel : Rel (tapes sigPair^+ 2) (unit * tapes sigPair^+ 2) :=
+  Definition Constr_pair_Rel : pRel sigPair^+ unit 2 :=
     ignoreParam (
         fun tin tout =>
           forall (x : X) (y : Y),
@@ -157,7 +157,7 @@ Section CasePair.
       ).
 
 
-  Definition Constr_pair : { M : mTM sigPair^+ 2 & states M -> unit } :=
+  Definition Constr_pair : pTM sigPair^+ unit 2 :=
     LiftTapes (MoveRight _;; Move L) [|Fin0|];;
     CopySymbols_L stopAtStart.
 
@@ -211,10 +211,10 @@ Section CasePair.
 
   (** [Snd] simply discard the first element *)
 
-  Definition Snd_Rel : Rel (tapes sigPair^+ 1) (unit * tapes sigPair^+ 1) :=
+  Definition Snd_Rel : pRel sigPair^+ unit 1 :=
     ignoreParam (fun tin tout => forall p : X*Y, tin[@Fin0] ≃ p -> tout[@Fin0] ≃ snd p).
 
-  Definition Snd : { M : mTM sigPair^+ 1 & states M -> unit } :=
+  Definition Snd : pTM sigPair^+ unit 1 :=
     MoveToSymbol stopAfterFirst id;;
     Move L;;
     Write (inl START).
@@ -288,7 +288,7 @@ Section Steps_comp.
 End Steps_comp.
 
 
-(** ** Tactical support *)
+(** ** Tactic Support *)
 
 Ltac smpl_TM_CasePair :=
   lazymatch goal with

@@ -69,7 +69,7 @@ Section CopySymbols.
 
   (*
    * The main loop of the machine.
-   * Execute CopySymbols_Step in a loop until CopySymbols_Step returned [ Some tt ]
+   * Execute CopySymbols_Step in a loop until CopySymbols_Step returned [Some tt]
    *)
   Definition CopySymbols : pTM sig unit 2 := While CopySymbols_Step.
 
@@ -153,7 +153,7 @@ Section CopySymbols.
 
 
   Lemma CopySymbols_Terminates :
-    projT1 CopySymbols ↓ (fun tin k => CopySymbols_steps (tin[@Fin.F1]) <= k).
+    projT1 CopySymbols ↓ (fun tin k => CopySymbols_steps (tin[@Fin0]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     { unfold CopySymbols. TM_Correct.
@@ -267,7 +267,7 @@ Section CopySymbols.
   Qed.
 
   Lemma CopySymbols_L_Terminates :
-    projT1 CopySymbols_L ↓ (fun tin k => CopySymbols_L_steps (tin[@Fin.F1]) <= k).
+    projT1 CopySymbols_L ↓ (fun tin k => CopySymbols_L_steps (tin[@Fin0]) <= k).
   Proof.
     eapply TerminatesIn_monotone.
     - eapply Mirror_Terminates. eapply CopySymbols_Terminates.

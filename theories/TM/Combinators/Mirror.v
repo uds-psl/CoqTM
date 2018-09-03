@@ -94,7 +94,7 @@ Section Mirror.
 
 
   Definition Mirror_Rel (R : pRel sig F n) : pRel sig F n :=
-    fun t '(f, t') => R (mirror_tapes t) (f, mirror_tapes t').
+    fun t '(l, t') => R (mirror_tapes t) (l, mirror_tapes t').
 
   Lemma Mirror_Realise R :
     pM ⊨ R -> Mirror ⊨ Mirror_Rel R.
