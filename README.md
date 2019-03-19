@@ -10,7 +10,7 @@ The GitHub repo is [here](https://github.com/uds-psl/CoqTM).
 
 ## Compilation
 
-[Coq](https://coq.inria.fr/) 8.7 or 8.8 is required.
+[Coq](https://coq.inria.fr/) 8.7 or 8.8 or 8.9 is required.
 
 Get the source code and the libraries via
 
