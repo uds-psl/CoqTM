@@ -14,7 +14,7 @@ The GitHub repo is [here](https://github.com/uds-psl/CoqTM).
 
 Get the source code and the libraries via
 
-	git clone https://github.com/mwuttke97/CoqTM
+	git clone https://github.com/uds-psl/CoqTM
 	cd CoqTM
 	git submodule update --init --recursive
 
