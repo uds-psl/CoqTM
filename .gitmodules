@@ -3,4 +3,4 @@
 	url = https://github.com/tebbi/coqdocjs.git
 [submodule "external/smpl"]
 	path = external/smpl
-	url = https://github.com/sigurdschneider/smpl.git
+	url = https://github.com/uds-psl/smpl.git
