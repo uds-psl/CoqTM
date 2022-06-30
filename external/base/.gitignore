@@ -41,6 +41,8 @@
 /.coq-native/
 Makefile.coq
 CoqMakefile.conf
+*.vok
+*.vos
 
 ### Emacs ###
 # -*- mode: gitignore; -*-

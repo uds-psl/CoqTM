@@ -129,7 +129,7 @@ Section ComposeRetracts.
           end.
 
   (* No instance (outside of this section), for obvious reasons... *)
-  Local Instance ComposeRetract (retr1 : Retract B C) (retr2 : Retract A B) : Retract A C :=
+  #[refine] Local Instance ComposeRetract (retr1 : Retract B C) (retr2 : Retract A B) : Retract A C :=
     {|
       Retr_f := retr_comp_f Retr_f Retr_f;
       Retr_g := retr_comp_g Retr_g Retr_g;
@@ -155,7 +155,7 @@ Section Usefull_Retracts.
 
 
   (** Identity retract *)
-  Global Instance Retract_id : Retract A A :=
+  #[refine] Global Instance Retract_id : Retract A A :=
     {|
       Retr_f a := a;
       Retr_g b := Some b;
@@ -164,7 +164,7 @@ Section Usefull_Retracts.
 
 
   (** Empty retract *)
-  Global Instance Retract_Empty : Retract Empty_set A :=
+  #[refine] Global Instance Retract_Empty : Retract Empty_set A :=
     {|
       Retr_f e := @Empty_set_rect (fun _ => A) e;
       Retr_g b := None;
@@ -172,7 +172,7 @@ Section Usefull_Retracts.
   Proof. abstract now intros x; elim x. Defined.
 
   (** Eliminate the [Empty_set] from the source sum type *)
-  Global Instance Retract_Empty_left `{retr: Retract A B} : Retract (A + Empty_set) B :=
+  #[refine] Global Instance Retract_Empty_left `{retr: Retract A B} : Retract (A + Empty_set) B :=
     {|
       Retr_f a := match a with
                   | inl a => Retr_f a
@@ -190,7 +190,7 @@ Section Usefull_Retracts.
       ].
   Defined.
 
-  Global Instance Retract_Empty_right `{retr: Retract A B} : Retract (Empty_set + A) B :=
+  #[refine] Global Instance Retract_Empty_right `{retr: Retract A B} : Retract (Empty_set + A) B :=
     {|
       Retr_f a := match a with
                   | inl e => @Empty_set_rect (fun _ => B) e
@@ -210,7 +210,7 @@ Section Usefull_Retracts.
 
 
   (** We can introduce an additional [Some] and use the identity as the retract function *)
-  Global Instance Retract_option `{retr: Retract A B} : Retract A (option B) :=
+  #[refine] Global Instance Retract_option `{retr: Retract A B} : Retract A (option B) :=
     {|
       Retr_f a := Some (Retr_f a);
       Retr_g ob := match ob with
@@ -238,7 +238,7 @@ Section Usefull_Retracts.
           | inr c => None
           end.
 
-  Global Instance Retract_inl (retrAB : Retract A B) : Retract A (B + C) :=
+  #[refine] Global Instance Retract_inl (retrAB : Retract A B) : Retract A (B + C) :=
     {|
       Retr_f := retract_inl_f Retr_f;
       Retr_g := retract_inl_g Retr_g;
@@ -261,7 +261,7 @@ Section Usefull_Retracts.
           | inl c => None
           end.
 
-  Global Instance Retract_inr (retrAB : Retract A B) : Retract A (C + B) :=
+  #[refine] Global Instance Retract_inr (retrAB : Retract A B) : Retract A (C + B) :=
     {|
       Retr_f := retract_inr_f Retr_f;
       Retr_g := retract_inr_g Retr_g;
@@ -298,7 +298,7 @@ Section Usefull_Retracts.
                       end
             end.
 
-    Local Instance Retract_sum (retr1 : Retract A C) (retr2 : Retract B D) : Retract (A+B) (C+D) :=
+    #[refine] Local Instance Retract_sum (retr1 : Retract A C) (retr2 : Retract B D) : Retract (A+B) (C+D) :=
       {|
         Retr_f := retract_sum_f Retr_f Retr_f;
         Retr_g := retract_sum_g Retr_g Retr_g;
