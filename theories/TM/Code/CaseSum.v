@@ -38,7 +38,7 @@ Section CaseSum.
   Proof.
     unfold CaseSum_steps. eapply RealiseIn_monotone.
     { unfold CaseSum. TM_Correct. }
-    { Unshelve. 4,10,11: constructor. all: cbn. all: omega. }
+    { Unshelve. 4,10,11: constructor. all: cbn. all: lia. }
     {
       intros tin (yout&tout) H.
       intros s HEncS. destruct HEncS as (ls&HEncS). TMSimp; clear_trivial_eqs. clear HEncS tin.
@@ -146,7 +146,7 @@ Section CaseOption.
                 | _, _ => False
                 end).
 
-  Local Instance Retract_sigOption_sigSum :
+  #[refine] Local Instance Retract_sigOption_sigSum :
     Retract (sigSum sigX Empty_set) (sigOption sigX) :=
     {|
       Retr_f x := match x : (sigSum sigX (FinType (EqType Empty_set))) with

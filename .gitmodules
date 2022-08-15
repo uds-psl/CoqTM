@@ -4,3 +4,6 @@
 [submodule "external/smpl"]
 	path = external/smpl
 	url = https://github.com/uds-psl/smpl.git
+[submodule "external/base"]
+	path = external/base
+	url = https://github.com/haansn08/base-library.git

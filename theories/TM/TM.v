@@ -3,7 +3,7 @@
 (** Definitions of tapes and (unlabelled) multi-tape Turing machines from Asperti, Riciotti "A formalization of multi-tape Turing machines" (2015) and the accompanying Matita code. *)
 
 Require Export TM.Prelim TM.Relations.
-Require Import Shared.Vectors.Vectors.
+Require Import PslBase.Vectors.Vectors.
 
 
 Section Fix_Sigma.
@@ -821,7 +821,7 @@ Section Semantics.
     pM ⊨ R /\ projT1 pM ↓ (fun _ i => k <= i) <-> pM ⊨c(k) R.
   Proof.
     split.
-    - intros (HR & Ht) t. edestruct (Ht t k). cbn; omega. eauto.
+    - intros (HR & Ht) t. edestruct (Ht t k). cbn; lia. eauto.
     - intros H.
       split.
       + intros t i cout Hc.

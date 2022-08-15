@@ -190,14 +190,14 @@ Section Encode_sum.
     split with (enum := sigSum_inl :: sigSum_inr :: map sigSum_X enum ++ map sigSum_Y enum). intros [x|y| | ]; cbn; f_equal.
     - rewrite <- !countSplit.
       erewrite countMap_injective.
-      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + rewrite enum_ok. rewrite countMap_zero. lia. congruence.
       + eapply (retract_f_injective) with (I := Retract_sigSum_X sigY (Retract_id _)).
     - rewrite <- !countSplit.
       erewrite countMap_injective.
-      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + rewrite enum_ok. rewrite countMap_zero. lia. congruence.
       + eapply (retract_f_injective) with (I := Retract_sigSum_Y sigX (Retract_id _)).
-    - rewrite <- !countSplit. rewrite !countMap_zero. omega. all: congruence.
-    - rewrite <- !countSplit. rewrite !countMap_zero. omega. all: congruence.
+    - rewrite <- !countSplit. rewrite !countMap_zero. lia. all: congruence.
+    - rewrite <- !countSplit. rewrite !countMap_zero. lia. all: congruence.
   Qed.
 
   
@@ -255,11 +255,11 @@ Section Encode_pair.
     split with (enum := map sigPair_X enum ++ map sigPair_Y enum). intros [x|y]; cbn; f_equal.
     - rewrite <- !countSplit.
       erewrite countMap_injective.
-      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + rewrite enum_ok. rewrite countMap_zero. lia. congruence.
       + eapply (retract_f_injective) with (I := Retract_sigPair_X sigY (Retract_id _)).
     - rewrite <- !countSplit.
       erewrite countMap_injective.
-      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + rewrite enum_ok. rewrite countMap_zero. lia. congruence.
       + eapply (retract_f_injective) with (I := Retract_sigPair_Y sigX (Retract_id _)).
   Qed.
 
@@ -312,8 +312,8 @@ Section Encode_option.
     intros [x| | ]; cbn; f_equal.
     - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigOption_X (Retract_id _)).
       now apply enum_ok.
-    - rewrite countMap_zero. omega. congruence.
-    - rewrite countMap_zero. omega. congruence.
+    - rewrite countMap_zero. lia. congruence.
+    - rewrite countMap_zero. lia. congruence.
   Qed.
 
 
@@ -372,8 +372,8 @@ Section Encode_list.
     intros [x| | ]; cbn; f_equal.
     - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigList_X (Retract_id _)).
       now apply enum_ok.
-    - rewrite countMap_zero. omega. congruence.
-    - rewrite countMap_zero. omega. congruence.
+    - rewrite countMap_zero. lia. congruence.
+    - rewrite countMap_zero. lia. congruence.
   Qed.
 
 
@@ -463,11 +463,11 @@ Section Encode_nat.
 
 
   Lemma Encode_nat_hasSize n : size _ n = S n.
-  Proof. cbn. rewrite app_length, repeat_length. cbn. omega. Qed.
+  Proof. cbn. rewrite app_length, repeat_length. cbn. lia. Qed.
   
   Corollary Encode_nat_eq_nil n :
     Encode_nat n <> nil.
-  Proof. intros H % length_zero_iff_nil. fold (size _ n) in H. rewrite Encode_nat_hasSize in H. omega. Qed.
+  Proof. intros H % length_zero_iff_nil. fold (size _ n) in H. rewrite Encode_nat_hasSize in H. lia. Qed.
 
 End Encode_nat.
 

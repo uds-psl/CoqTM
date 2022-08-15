@@ -113,16 +113,16 @@ Section StepMachine.
     {
       intros tin k (T&P&a&HEncT&HEncP&HEncA&Hk). unfold TailRec_steps in Hk.
       destruct P as [ | t P]; cbn.
-      - exists (IsNil_steps), (Reset_steps _ nil). repeat split; try omega.
+      - exists (IsNil_steps), (Reset_steps _ nil). repeat split; try lia.
         intros tmid b (HIsNil&IsNilInj); TMSimp. modpon HIsNil. destruct b; auto; modpon HIsNil. eauto.
       - exists (IsNil_steps), (1 + Constr_pair_steps _ a + 1 + Constr_cons_steps _ (a,t::P) + Reset_steps _ (a, (t::P))).
-        repeat split; try omega.
+        repeat split; try lia.
         intros tmid b (HIsNil&IsNilInj); TMSimp. modpon HIsNil. destruct b; auto; modpon HIsNil.
-        exists (Constr_pair_steps _ a), (1 + Constr_cons_steps _ (a,t::P) + Reset_steps _ (a,t::P)). repeat split; try omega.
+        exists (Constr_pair_steps _ a), (1 + Constr_cons_steps _ (a,t::P) + Reset_steps _ (a,t::P)). repeat split; try lia.
         { hnf; cbn. eexists; split. simpl_surject; contains_ext. reflexivity. } now rewrite !Nat.add_assoc.
         intros tmid0 () (HPair&HPairInj); TMSimp.
         specialize (HPair a (t::P)); modpon HPair.
-        exists (Constr_cons_steps _ (a,t::P)), (Reset_steps _ (a,t::P)). repeat split; try omega.
+        exists (Constr_cons_steps _ (a,t::P)), (Reset_steps _ (a,t::P)). repeat split; try lia.
         { hnf; cbn. do 2 eexists; repeat split; simpl_surject; eauto. contains_ext. } reflexivity.
         intros tmid1 () (HCons&HConsInj); TMSimp. specialize (HCons T (a,t::P)). modpon HCons.
         exists (a, t :: P). split; eauto. contains_ext. now setoid_rewrite Reset_steps_comp.
@@ -190,15 +190,15 @@ Section StepMachine.
     {
       intros tin k. intros (T&Q&a&HEncT&HEnca&HEncQ&Hk). unfold ConsClos_steps in Hk.
       exists (Constr_pair_steps _ a), (1 + Constr_cons_steps _ (a,Q) + 1 + Reset_steps _ (a,Q) + Reset_steps _ a).
-      cbn; repeat split; try omega.
+      cbn; repeat split; try lia.
       { hnf; cbn. exists a. repeat split; simpl_surject; eauto. contains_ext. }
       intros tmid () (HPair&HPairInj); TMSimp. modpon HPair.
       exists (Constr_cons_steps _ (a,Q)), (1 + Reset_steps _ (a,Q) + Reset_steps _ a).
-      cbn; repeat split; try omega.
+      cbn; repeat split; try lia.
       { hnf; cbn. exists T, (a, Q). repeat split; simpl_surject; eauto. contains_ext. } now rewrite !Nat.add_assoc.
       intros tmid0 () (HCons&HConsInj); TMSimp. specialize (HCons T (a,Q)); modpon HCons.
       exists (Reset_steps _ (a,Q)), (Reset_steps _ a).
-      cbn; repeat split; try omega; eauto.
+      cbn; repeat split; try lia; eauto.
       { hnf; cbn. exists (a, Q). repeat split; simpl_surject; eauto. contains_ext. now setoid_rewrite Reset_steps_comp. }
       intros tmid1 () (HReset&HResetInj); TMSimp. clear HReset.
       exists a. split; eauto. contains_ext. now setoid_rewrite Reset_steps_comp.
@@ -296,7 +296,7 @@ Section StepMachine.
     }
     {
       intros tin k. intros (T&V&H&a&P&HEncT&HEncV&HEncH&HEncP&HEncA&HInt&Hk). unfold Step_lam_steps in Hk.
-      exists (JumpTarget_steps P), (Step_lam_steps_JumpTarget P a). cbn; repeat split; try omega.
+      exists (JumpTarget_steps P), (Step_lam_steps_JumpTarget P a). cbn; repeat split; try lia.
       { hnf; cbn. do 1 eexists; repeat split; simpl_surject; eauto.
         - apply HInt.
         - intros i; destruct_fin i; cbn; simpl_surject; TMSimp_goal; eauto; apply HInt. }
@@ -306,11 +306,11 @@ Section StepMachine.
       {
         destruct HJump as (P'&Q'&HJump); modpon HJump.
         unfold Step_lam_steps_JumpTarget. rewrite HJump.
-        exists (TailRec_steps P' a), (ConsClos_steps Q' a). cbn; repeat split; try omega. hnf; cbn; eauto 7.
+        exists (TailRec_steps P' a), (ConsClos_steps Q' a). cbn; repeat split; try lia. hnf; cbn; eauto 7.
         intros tmid0 () (HTailRec&HTailRecInj); TMSimp. modpon HTailRec.
         hnf; cbn. eauto 7.
       }
-      { omega. }
+      { lia. }
     }
   Qed.
   
@@ -426,52 +426,52 @@ Section StepMachine.
       (1 + Constr_nil_steps + 1 + Translate_steps _ b + 1 + Translate_steps _ g + 1 + Constr_pair_steps _ g + 1 + Constr_Some_steps +
        1 + Constr_cons_steps _ (Some (g, b)) + 1 + App'_steps _ H + 1 + MoveValue_steps _ _ (H++[Some(g,b)]) H + 1 + Reset_steps _ (Some (g, b)) +
        Reset_steps _ g).
-      cbn; repeat split; try omega. now hnf; cbn; eauto 10.
+      cbn; repeat split; try lia. now hnf; cbn; eauto 10.
       intros tmid () (HLength&HLengthInj); TMSimp. modpon HLength. 1: now intros i; destruct_fin i; cbn; auto.
       exists (Constr_nil_steps),
       (1 + Translate_steps _ b + 1 + Translate_steps _ g + 1 + Constr_pair_steps _ g + 1 + Constr_Some_steps +
        1 + Constr_cons_steps _ (Some (g, b)) + 1 + App'_steps _ H + 1 + MoveValue_steps _ _ (H++[Some(g,b)]) H + 1 + Reset_steps _ (Some (g, b)) +
        Reset_steps _ g).
-      cbn; repeat split; try omega. now rewrite !Nat.add_assoc.
+      cbn; repeat split; try lia. now rewrite !Nat.add_assoc.
       intros tmid0 () (HNil&HNilInj); TMSimp. modpon HNil. simpl_surject. exact (HLength1 Fin0).
       exists (Translate_steps _ b),
       (1 + Translate_steps _ g + 1 + Constr_pair_steps _ g + 1 + Constr_Some_steps + 1 + Constr_cons_steps _ (Some (g, b)) +
        1 + App'_steps _ H + 1 + MoveValue_steps _ _ (H++[Some(g,b)]) H + 1 + Reset_steps _ (Some (g, b)) + Reset_steps _ g).
-      cbn; repeat split; try omega. now hnf; cbn; eexists; split; eauto. now rewrite !Nat.add_assoc.
+      cbn; repeat split; try lia. now hnf; cbn; eexists; split; eauto. now rewrite !Nat.add_assoc.
       intros tmid1 () (HTranslate&HTranslateInj); TMSimp. modpon HTranslate.
       exists (Translate_steps _ g),
       (1 + Constr_pair_steps _ g + 1 + Constr_Some_steps + 1 + Constr_cons_steps _ (Some (g, b)) +
        1 + App'_steps _ H + 1 + MoveValue_steps _ _ (H++[Some(g,b)]) H + 1 + Reset_steps _ (Some (g, b)) + Reset_steps _ g).
-      cbn; repeat split; try omega. now hnf; cbn; eauto. now rewrite !Nat.add_assoc.
+      cbn; repeat split; try lia. now hnf; cbn; eauto. now rewrite !Nat.add_assoc.
       intros tmid2 () (HTranslate'&HTranslateInj'); TMSimp. modpon HTranslate'.
       exists (Constr_pair_steps _ g),
       (1 + Constr_Some_steps + 1 + Constr_cons_steps _ (Some (g, b)) +
        1 + App'_steps _ H + 1 + MoveValue_steps _ _ (H++[Some(g,b)]) H + 1 + Reset_steps _ (Some (g, b)) + Reset_steps _ g).
-      cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+      cbn; repeat split; try lia. 2: now rewrite !Nat.add_assoc.
       { hnf; cbn; eexists; split; simpl_surject; eauto; contains_ext. }
       intros tmid3 () (HPair&HPairInj); TMSimp. modpon HPair.
       exists (Constr_Some_steps),
       (1 + Constr_cons_steps _ (Some (g, b)) + 1 + App'_steps _ H + 1 + MoveValue_steps _ _ (H++[Some(g,b)]) H + 1 +
        Reset_steps _ (Some (g, b)) + Reset_steps _ g).
-      cbn; repeat split; try omega. now rewrite !Nat.add_assoc.
+      cbn; repeat split; try lia. now rewrite !Nat.add_assoc.
       intros tmid4 () (HSome&HSomeInj); TMSimp. specialize (HSome (g,b)); modpon HSome.
       exists (Constr_cons_steps _ (Some (g, b))),
          (1 + App'_steps _ H + 1 + MoveValue_steps _ _ (H++[Some(g,b)]) H + 1 + Reset_steps _ (Some (g, b)) + Reset_steps _ g).
-      cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+      cbn; repeat split; try lia. 2: now rewrite !Nat.add_assoc.
       { do 2 eexists; repeat split; simpl_surject; eauto. contains_ext. }
       intros tmid5 () (HCons&HConsInj); TMSimp. specialize (HCons [] (Some (g,b))); modpon HCons.
       exists (App'_steps _ H), (1 + MoveValue_steps _ _ (H++[Some(g,b)]) H + 1 + Reset_steps _ (Some (g, b)) + Reset_steps _ g).
-      cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+      cbn; repeat split; try lia. 2: now rewrite !Nat.add_assoc.
       { hnf; cbn. do 2 eexists; repeat split; simpl_surject; eauto. }
       intros tmid6 () (HApp&HAppInj); TMSimp. modpon HApp.
       exists (MoveValue_steps _ _ (H++[Some(g,b)]) H), (1 + Reset_steps _ (Some (g, b)) + Reset_steps _ g).
-      cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+      cbn; repeat split; try lia. 2: now rewrite !Nat.add_assoc.
       { hnf; cbn. do 2 eexists; repeat split; simpl_surject; eauto.
         now rewrite (MoveValue_steps_comp Encode_Heap Encode_Heap retr_heap_step retr_heap_step). }
       intros tmid7 () (HMove&HMoveInj); TMSimp. modpon HMove.
       exists (Reset_steps _ (Some (g, b))), (Reset_steps _ g).
-      cbn; repeat split; try omega.
-      { hnf; cbn. exists (Some (g, b)). split; eauto. contains_ext. now setoid_rewrite Reset_steps_comp. } reflexivity. (* oh omega... *)
+      cbn; repeat split; try lia.
+      { hnf; cbn. exists (Some (g, b)). split; eauto. contains_ext. now setoid_rewrite Reset_steps_comp. } reflexivity. (* oh lia... *)
       intros tmid8 () (HReset&HResetInj); TMSimp. specialize (HReset (Some (g,b))); modpon HReset.
       { hnf; cbn. exists g. repeat split; eauto. contains_ext. now setoid_rewrite Reset_steps_comp. }
     }
@@ -590,33 +590,33 @@ Section StepMachine.
     {
       intros tin k. intros (T&V&H&P&a&HEncT&HEncV&HEncH&HEncP&HEncA&HInt&Hk). unfold Step_app_steps in Hk.
       exists (CaseList_steps _ V), (Step_app_steps_CaseList T V H P a).
-      cbn; repeat split; try omega.
+      cbn; repeat split; try lia.
       { exists V. repeat split; simpl_surject; eauto. apply HInt. }
       intros tmid bml1 (HCaseList&HCaseListInj); TMSimp. modpon HCaseList.
       destruct bml1, V as [ | g V']; auto; modpon HCaseList.
       {
         unfold Step_app_steps_CaseList.
         exists (CaseList_steps _ V'), (Step_app_steps_CaseList' T g V' H P a).
-        cbn; repeat split; try omega.
+        cbn; repeat split; try lia.
         { exists V'. repeat split; simpl_surject; eauto. }
         intros tmid1 bml2 (HCaseList'&HCaseListInj'); TMSimp. modpon HCaseList'.
         destruct bml2, V' as [ | (b, Q) V'']; auto; modpon HCaseList'.
         {
           unfold Step_app_steps_CaseList'.
           exists (CasePair_steps _ b), (1 + TailRec_steps P a + 1 + Reset_steps _ a + 1 + Put_steps H g b + ConsClos_steps Q (length H)).
-          cbn; repeat split; try omega.
+          cbn; repeat split; try lia.
           { hnf; cbn. exists (b, Q). repeat split; simpl_surject; eauto. contains_ext. }
           intros tmid2 () (HCasePair&HCasePairInj); TMSimp. specialize (HCasePair (b,Q)); modpon HCasePair.
           exists (TailRec_steps P a), (1 + Reset_steps _ a + 1 + Put_steps H g b + ConsClos_steps Q (length H)).
-          cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+          cbn; repeat split; try lia. 2: now rewrite !Nat.add_assoc.
           { hnf; cbn. do 3 eexists. repeat split; simpl_surject; eauto. }
           intros tmid3 () (HTailRec&HTailRecInj); TMSimp. modpon HTailRec.
           exists (Reset_steps _ a), (1 + Put_steps H g b + ConsClos_steps Q (length H)).
-          cbn; repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+          cbn; repeat split; try lia. 2: now rewrite !Nat.add_assoc.
           { hnf; cbn. do 1 eexists. repeat split; simpl_surject; eauto. now setoid_rewrite Reset_steps_comp. }
           intros tmid4 () (HReset&HResetInj); TMSimp. modpon HReset.
           exists (Put_steps H g b), (ConsClos_steps Q (length H)).
-          cbn; repeat split; try omega.
+          cbn; repeat split; try lia.
           { hnf; cbn. do 3 eexists. repeat split; simpl_surject; eauto; contains_ext. }
           intros tmid5 () (HPut&HInjPut); TMSimp. modpon HPut.
           { hnf; cbn. do 3 eexists. repeat split; simpl_surject; eauto; contains_ext. }
@@ -715,11 +715,11 @@ Section StepMachine.
     {
       intros tin k. intros (T&V&H&a&n&P&HEncT&HEncV&HEncH&HEncP&HEncA&HEncN&HRight6&HRigth7&Hk). unfold Step_var_steps in Hk.
       exists (TailRec_steps P a), (1 + Lookup_steps H a n + Step_var_steps_Lookup P V H a n).
-      cbn; repeat split; try omega.
+      cbn; repeat split; try lia.
       { hnf; cbn. do 3 eexists; repeat split; eauto. }
       intros tmid () (HTailRec&HTailRecInj); TMSimp. modpon HTailRec.
       exists (Lookup_steps H a n), (Step_var_steps_Lookup P V H a n).
-      cbn; repeat split; try omega.
+      cbn; repeat split; try lia.
       { hnf; cbn. do 3 eexists; repeat split; eauto. }
       intros tmid0 ymid (HLookup&HLookupInj); TMSimp. modpon HLookup.
       destruct ymid.
@@ -727,12 +727,12 @@ Section StepMachine.
         destruct HLookup as (g&HLookup); modpon HLookup.
         unfold Step_var_steps_Lookup. rewrite HLookup.
         exists (Constr_cons_steps _ g), (Reset_steps _ g).
-        cbn; repeat split; try omega.
+        cbn; repeat split; try lia.
         { hnf; cbn. do 2 eexists; repeat split; simpl_surject; eauto. contains_ext. }
         intros tmid1 () (HCons&HConsInj); TMSimp. modpon HCons.
         { hnf; cbn. do 1 eexists; repeat split; simpl_surject; eauto. contains_ext. now setoid_rewrite Reset_steps_comp. }
       }
-      { omega. }
+      { lia. }
     }
   Qed.
 
@@ -904,18 +904,18 @@ Section StepMachine.
     }
     {
       intros tin k (T&V&H&HEncT&HEncV&HEncH&HInt&Hk). unfold Step_steps in Hk.
-      exists (CaseList_steps _ T), (Step_steps_CaseList T V H). cbn; repeat split; try omega.
+      exists (CaseList_steps _ T), (Step_steps_CaseList T V H). cbn; repeat split; try lia.
       { do 1 eexists; repeat split; simpl_surject; eauto. apply HInt. }
       intros tmid bif (HCaseList&HCaseListInj); TMSimp. modpon HCaseList.
       destruct bif, T as [ | (a,P) T']; cbn; auto; modpon HCaseList.
-      exists (CasePair_steps _ a), (1 + CaseList_steps _ P + Step_steps_CaseList' a P T' V H). cbn; repeat split; try omega.
+      exists (CasePair_steps _ a), (1 + CaseList_steps _ P + Step_steps_CaseList' a P T' V H). cbn; repeat split; try lia.
       { hnf; cbn. exists (a, P); repeat split; simpl_surject; eauto. contains_ext. }
       intros tmid0 () (HCasePair&HCasePairInj); TMSimp. specialize (HCasePair (a,P)). modpon HCasePair. cbn in *.
-      exists (CaseList_steps _ P), (Step_steps_CaseList' a P T' V H). cbn; repeat split; try omega. 2: reflexivity.
+      exists (CaseList_steps _ P), (Step_steps_CaseList' a P T' V H). cbn; repeat split; try lia. 2: reflexivity.
       { hnf; cbn. exists P; repeat split; simpl_surject; eauto. contains_ext. }
       intros tmid1 bif (HCaseList'&HCaseListInj'); TMSimp. modpon HCaseList'.
       destruct bif, P as [ | t P']; auto; modpon HCaseList'. cbn.
-      exists (CaseCom_steps), (Step_steps_CaseCom a t P' T' V H). cbn; repeat split; try omega.
+      exists (CaseCom_steps), (Step_steps_CaseCom a t P' T' V H). cbn; repeat split; try lia.
       intros tmid2 ymid (HCaseCom&HCaseComInj); TMSimp. modpon HCaseCom.
       destruct ymid as [ [ | | ] | ]; destruct t; cbn; auto; simpl_surject.
       - hnf; cbn. do 5 eexists; repeat split; TMSimp_goal; eauto. contains_ext. intros i; destruct_fin i; cbn; TMSimp_goal; auto.

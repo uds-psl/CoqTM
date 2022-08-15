@@ -26,7 +26,7 @@ Section IsRight.
 
   Lemma isRight_size_monotone (sig : Type) (t : tape sig) (s1 s2 : nat) :
     isRight_size t s1 -> s1 <= s2 -> isRight_size t s2.
-  Proof. intros (x&rs&->&Hr) Hs. exists x, rs. split. eauto. omega. Qed.
+  Proof. intros (x&rs&->&Hr) Hs. exists x, rs. split. eauto. lia. Qed.
 
   Lemma mapTape_isRight (sig tau : Type) (t : tape sig) (f : sig -> tau) :
     isRight (mapTape f t) <-> isRight t.

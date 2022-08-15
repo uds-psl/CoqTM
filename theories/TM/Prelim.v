@@ -1,14 +1,14 @@
-Require Export Shared.FiniteTypes.FinTypes Shared.FiniteTypes.BasicFinTypes Shared.FiniteTypes.CompoundFinTypes Shared.FiniteTypes.VectorFin.
-Require Export Shared.Vectors.FinNotation.
-Require Export Shared.Retracts.
-Require Export Shared.Inhabited.
-Require Export Shared.Base.
-Require Export Shared.Vectors.Vectors Shared.Vectors.VectorDupfree.
+Require Export PslBase.FiniteTypes.FinTypes PslBase.FiniteTypes.BasicFinTypes PslBase.FiniteTypes.CompoundFinTypes PslBase.FiniteTypes.VectorFin.
+Require Export PslBase.Vectors.FinNotation.
+Require Export PslBase.Retracts.
+Require Export PslBase.Inhabited.
+Require Export PslBase.Base.
+Require Export PslBase.Vectors.Vectors PslBase.Vectors.VectorDupfree.
 
 Require Export smpl.Smpl.
 
 Global Open Scope vector_scope.
-
+Export VectorNotations2.
 
 Section Loop.
   Variable (A : Type) (f : A -> A) (p : A -> bool).
@@ -68,8 +68,8 @@ Section Loop.
     - destruct (p a) eqn:E.
       + inv HLoop. now apply loop_0.
       + destruct k2 as [ | k2']; cbn in *; rewrite E.
-        * exfalso. omega.
-        * apply IH. assumption. omega.
+        * exfalso. lia.
+        * apply IH. assumption. lia.
   Qed.
 
 End Loop.
@@ -130,7 +130,7 @@ Section LoopMerge.
     revert a1 a2 a3. induction k1 as [ | k1' IH]; intros a1 a2 a3 HLoop1 HLoop2; cbn in HLoop1.
     - now destruct (h a1); inv HLoop1.
     - destruct (h a1) eqn:E.
-      + inv HLoop1. eapply loop_monotone; eauto. omega.
+      + inv HLoop1. eapply loop_monotone; eauto. lia.
       + cbn. rewrite (halt_comp E). eapply IH; eauto.
   Qed.
 
@@ -151,8 +151,8 @@ Section LoopMerge.
     - destruct (h a1) eqn:E.
       + exists 0, a1, (S k'). cbn. rewrite E. auto.
       + rewrite (halt_comp E) in HLoop.
-        apply IH in HLoop as (k1&c2&k2&IH1&IH2&IH3); [ | omega].
-        exists (S k1), c2, k2. cbn. rewrite E. repeat split; auto. omega.
+        apply IH in HLoop as (k1&c2&k2&IH1&IH2&IH3); [ | lia].
+        exists (S k1), c2, k2. cbn. rewrite E. repeat split; auto. lia.
   Qed.
   
 End LoopMerge.

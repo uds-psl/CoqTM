@@ -40,7 +40,7 @@ Section WriteValue.
     unfold WriteValue_steps. eapply RealiseIn_monotone.
     { unfold WriteValue. eapply WriteString_Sem. }
     { unfold WriteString_steps. rewrite !rev_length. cbn [length]. rewrite app_length.
-      unfold size. cbn. rewrite map_length. omega. }
+      unfold size. cbn. rewrite map_length. lia. }
     {
       intros tin ((), tout) H. intros x <- HRight.
       TMSimp; clear_trivial_eqs. eapply tape_local_contains. rewrite WriteString_L_local.

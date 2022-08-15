@@ -17,15 +17,15 @@ Proof. induction n; cbn; auto. Qed.
 Lemma max_plus_minus_le (m n : nat) :
   n + (m - n) <= max m n.
 Proof.
-  assert (m <= n \/ n <= m) as [H|H] by omega.
-  - rewrite <- Nat.le_max_r. omega.
-  - rewrite <- Nat.le_max_l. omega.
+  assert (m <= n \/ n <= m) as [H|H] by lia.
+  - rewrite <- Nat.le_max_r. lia.
+  - rewrite <- Nat.le_max_l. lia.
 Qed.
 
 Lemma max_max_le (m n : nat) :
   max (max m n) n = max m n.
 Proof.
-  assert (m <= n \/ n <= m) as [H|H] by omega.
+  assert (m <= n \/ n <= m) as [H|H] by lia.
   - erewrite Nat.max_r.
     + symmetry. now eapply max_r.
     + eapply Nat.eq_le_incl. now eapply max_r.
@@ -233,28 +233,28 @@ Proof.
     destruct b.
     (* (* In case I want to use the [WhileInduction] principle without [match] *)
     - exists 11. repeat split.
-      + omega.
-      + intros () ? _. omega.
+      + lia.
+      + intros () ? _. lia.
       + intros tmid H. cbn in *. specialize (H _ _ HEncA HEncB). cbn in *. auto.
     - exists 11. repeat split.
-      + omega.
+      + lia.
       + intros () tmid H. cbn in H. specialize (H _ _ HEncA HEncB). now cbn in *.
       + intros tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn in *. destruct H as (H1&H2).
         exists (11 + b * 12). repeat split.
-        * exists (S a), b. repeat split; eauto. omega.
-        * omega.
+        * exists (S a), b. repeat split; eauto. lia.
+        * lia.
         *)
     - exists 9. repeat split.
-      + omega.
+      + lia.
       + intros o tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn in *.
         destruct o; auto.
     - exists 9. repeat split.
-      + omega.
+      + lia.
       + intros o tmid H. cbn in H. specialize (H _ _ HEncA HEncB). cbn -[plus mult] in *.
         destruct o as [ () | ]; auto. destruct H.
         exists (9 + b * 10). repeat split.
-        * do 2 eexists. repeat split; eauto. omega.
-        * omega.
+        * do 2 eexists. repeat split; eauto. lia.
+        * lia.
   }
 Qed.
 
@@ -279,14 +279,14 @@ Proof.
   {
     intros tin k (m&n&HEncM&HEncN&HOut&HInt&Hk).
     exists (37 + 12 * n), (47 + 22 * m). repeat split; cbn.
-    - cbn. exists n. split; eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize. omega.
-    - omega.
+    - cbn. exists n. split; eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize. lia.
+    - lia.
     - intros tmid ymid. intros (H1&H2). TMSimp.
       specialize (H1 _ HEncN HOut). TMSimp.
       specialize (HInt Fin0).
       exists (37 + 12 * m), (Add_Loop_steps m). repeat split.
-      + exists m. split. eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize. omega.
-      + unfold Add_Loop_steps. omega.
+      + exists m. split. eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize. lia.
+      + unfold Add_Loop_steps. lia.
       + intros tmid2 () (HComp & HInj). TMSimp.
         specialize (HComp _ HEncM HInt) as (HComp&HComp').
         do 2 eexists; repeat split; eauto; do 2 eexists; eassumption.
@@ -311,7 +311,7 @@ Proof.
     intros tin k (m&n&HEncM&HEncN&HOut&HInt&Hk).
     exists (Add_Main_steps m n), 12. repeat split.
     - cbn. exists m, n. repeat split; eauto.
-    - unfold Add_Main_steps. omega.
+    - unfold Add_Main_steps. lia.
     - intros tmid () HComp. cbn in *.
       specialize (HInt Fin0).
       specialize (HComp _ _ HEncM HEncN HOut HInt) as (HComp1&HComp2&HComp3&HComp4).
@@ -481,8 +481,8 @@ Proof.
     - specialize (HStar _ _ _ HEncM' HEncN HEncC HInt3 HInt4).
       destruct m' as [ | m']; auto. destruct HStar as (HStar1&HStar2&HStar3&HStar4&HStar5).
       specialize (HLastStep _ _ _ ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto) ltac:(eauto)) as (HL1&HL2&HL3&HL4&HL).
-      rewrite Nat.add_assoc in HL3. replace (n + m' * n + c) with (m' * n + n + c) by omega.
-      repeat split; auto. apply tape_contains_ext with (1 := HL3). f_equal. rewrite Nat.mul_succ_l. omega.
+      rewrite Nat.add_assoc in HL3. replace (n + m' * n + c) with (m' * n + n + c) by lia.
+      repeat split; auto. apply tape_contains_ext with (1 := HL3). f_equal. rewrite Nat.mul_succ_l. lia.
   }
 Qed.
 
@@ -613,19 +613,19 @@ Proof.
       specialize (HComp _ HEncM'). cbn in *. destruct y; auto.
       exists (Add_steps n c), (63 + 21 * c + 17 * n); cbn in *; repeat split.
       do 2 eexists. repeat split; eauto. intros i; destruct_fin i; cbn. eauto.
-      unfold Add_steps. omega.
+      unfold Add_steps. lia.
       intros tmid0 () (HComp2&HInj). TMSimp.
       specialize HComp2 with (1 := HEncN) (2 := HEncC) (3 := HInt3).
       spec_assert HComp2 as (HComp2&HComp3&HComp4&HComp5) by (intros i; destruct_fin i; cbn; auto).
       specialize (HComp5 Fin0). cbn in *. TMSimp.
-      exists (12 + 4 * c), (50 + 17 * (c + n)). repeat split; try omega.
-      eexists. repeat split. eauto. unfold Reset_steps. rewrite Encode_nat_hasSize. omega.
+      exists (12 + 4 * c), (50 + 17 * (c + n)). repeat split; try lia.
+      eexists. repeat split. eauto. unfold Reset_steps. rewrite Encode_nat_hasSize. lia.
       intros tmid1 () (HComp6&HInj). TMSimp.
       specialize HComp6 with (1 := HComp3).
-      exists (37 + 12 * (c + n)), (12 + 4 * (c + n)). repeat split; try omega.
-      eexists. repeat split. eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize. omega.
+      exists (37 + 12 * (c + n)), (12 + 4 * (c + n)). repeat split; try lia.
+      eexists. repeat split. eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize. lia.
       intros tmid2 () (HComp7&HInj7); TMSimp. specialize HComp7 with (1 := HComp4) (2 := HComp6) as (HComp7&HComp8).
-      eexists. repeat split. eauto. unfold Reset_steps. rewrite Encode_nat_hasSize. omega.
+      eexists. repeat split. eauto. unfold Reset_steps. rewrite Encode_nat_hasSize. lia.
   }
 Qed.
 
@@ -656,21 +656,21 @@ Proof.
     destruct m' as [ | m''] eqn:E; cbn in *; exists (Mult_Step_steps m' n c).
     {
       repeat split.
-      - do 3 eexists. repeat split; eauto. cbn. unfold Mult_Step_steps. destruct m'; omega.
+      - do 3 eexists. repeat split; eauto. cbn. unfold Mult_Step_steps. destruct m'; lia.
       - intros o tmid H1.
         specialize H1 with (1 := HEncM') (2 := HEncN) (3 := HEncC) (4 := HRight3) (5 := HRight4).
         destruct o as [ () | ]; auto. destruct H1 as (HComp1&HComp2&HComp3&HComp4&HComp5).
-        subst. cbn. omega.
+        subst. cbn. lia.
     }
     {
       repeat split.
-      - do 3 eexists. repeat split; eauto. cbn. unfold Mult_Step_steps. destruct m'; omega.
+      - do 3 eexists. repeat split; eauto. cbn. unfold Mult_Step_steps. destruct m'; lia.
       - intros o tmid H1.
         specialize H1 with (1 := HEncM') (2 := HEncN) (3 := HEncC) (4 := HRight3) (5 := HRight4).
         destruct o as [ () | ]; auto. destruct H1 as (HComp1&HComp2&HComp3&HComp4&HComp5).
         cbn. eexists. repeat split.
         + do 3 eexists. repeat split; eauto.
-        + cbn. rewrite <- Hk. subst. clear_all. unfold Mult_Step_steps. omega.
+        + cbn. rewrite <- Hk. subst. clear_all. unfold Mult_Step_steps. lia.
     }
   }
 Qed.
@@ -693,11 +693,11 @@ Proof.
   }
   {
     intros tin k (m&n&HEncM&HEncN&HOut&HInt&Hk). cbn in *. unfold Mult_Main_steps in Hk.
-    exists (37 + 12 * m), (6 + Mult_Loop_steps m n 0). repeat split; try omega.
-    eexists. repeat split; eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize; cbn. omega.
+    exists (37 + 12 * m), (6 + Mult_Loop_steps m n 0). repeat split; try lia.
+    eexists. repeat split; eauto. unfold CopyValue_steps. rewrite Encode_nat_hasSize; cbn. lia.
     intros tmid () (H1&H2); TMSimp. specialize H1 with (1 := HEncM) (2 := HInt _) as (H1&H1').
-    exists 5, (Mult_Loop_steps m n 0). repeat split; try omega.
-    unfold Constr_O_steps. omega.
+    exists 5, (Mult_Loop_steps m n 0). repeat split; try lia.
+    unfold Constr_O_steps. lia.
     intros tmid2 () (H2&HInj2); TMSimp. specialize H2 with (1 := HOut).
     do 3 eexists. repeat split; eauto.
   }
@@ -716,7 +716,7 @@ Proof.
   }
   {
     intros tin k (m&n&HEncM&HEncN&HOut&HInt&Hk). cbn in *. unfold Mult_steps in Hk.
-    exists (Mult_Main_steps m n), 12. repeat split; try omega.
+    exists (Mult_Main_steps m n), 12. repeat split; try lia.
     do 2 eexists; repeat split; eauto.
     intros tmid () H1; TMSimp.
     specialize H1 with (1 := HEncM) (2 := HEncN) (3 := HOut) (4 := HInt _) (5 := HInt _) (6 := HInt _) as (H1&H2&H3&H4&H5&H6).
