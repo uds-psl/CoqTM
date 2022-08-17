@@ -7,6 +7,8 @@
 // Coq Files
 CoqMakefile.conf
 *.vo
+*.vok
+*.vos
 *.glob
 *.aux
 *.d

@@ -107,10 +107,10 @@ Proof.
         * apply is_halt_state_correct in EHalt. pose proof (halt_state_steps_k EHalt HSteps) as (H&->); inv H.
           exists (Step_steps T1 V1 Heap1). split.
           -- do 3 eexists. eexists 0. cbn -[step_fun]. repeat split; hnf; eauto.
-          -- omega.
+          -- lia.
         * exists (Loop_steps T1 V1 Heap1 k). split.
           -- do 3 eexists. exists k. repeat split; hnf; eauto.
-          -- omega.
+          -- lia.
   }
 Qed.
 

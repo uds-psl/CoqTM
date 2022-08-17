@@ -56,10 +56,10 @@ Section If.
     eapply RealiseIn_monotone.
     eapply Switch_RealiseIn; eauto.
     - intros. cbn in f. destruct f.
-      + eapply RealiseIn_monotone. destruct pM2. eassumption. instantiate (1 := Nat.max k2 k3); firstorder.
+      + eapply RealiseIn_monotone. destruct pM2. eassumption. instantiate (1 := Nat.max k2 k3). apply Nat.le_max_l.
         instantiate (1 := fun t => match t with true => R2 | _ => R3 end). reflexivity.
-      + eapply RealiseIn_monotone. destruct pM3. eassumption. firstorder. reflexivity.
-    - omega.
+      + eapply RealiseIn_monotone. destruct pM3. eassumption. apply Nat.le_max_r. reflexivity.
+    - lia.
     - hnf. intros H2 (f& t). intros ([ | ]& (y & H3&H3')). left. hnf. eauto. right. hnf. eauto.
   Qed.
 

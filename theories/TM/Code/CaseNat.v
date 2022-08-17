@@ -32,7 +32,7 @@ Section CaseNat.
   Proof.
     unfold CaseNat_steps. eapply RealiseIn_monotone.
     { unfold CaseNat. TM_Correct. }
-    { Unshelve. 4,8: reflexivity. all: omega. }
+    { Unshelve. 4,8: reflexivity. all: lia. }
     {
       intros tin (yout&tout) H. intros n HEncN. TMSimp.
       destruct HEncN as (r1&HEncN). TMSimp.
@@ -59,7 +59,7 @@ Section CaseNat.
     Proof.
       unfold Constr_S_steps. eapply RealiseIn_monotone.
       { unfold Constr_S. TM_Correct. }
-      { cbn. omega. }
+      { cbn. lia. }
       {
         intros tin (yout, tout) H. intros n HEncN.
         TMSimp. clear all except HEncN.

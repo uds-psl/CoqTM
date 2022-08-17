@@ -92,7 +92,7 @@ Arguments Return : simpl never.
 (** Helper tactics for match *)
 
 (** This tactic destructs a variable recursivle and shelves each goal where it couldn't destruct the variable further. The purpose of this tactic is to pre-instantiate functions to relations with holes of the form [Param -> Rel _ _]. We need this for the [Switch] Machine.
-The implementation of this tactic is quiete uggly but works for parameters with up to 9 constructor arguments. This tactic may generates a lot of warnings, which can be ignored. *)
+The implementation of this tactic is quite ugly but works for parameters with up to 9 constructor arguments. This tactic may generates a lot of warnings, which can be ignored. *)
 Ltac destruct_shelve e :=
   cbn in e;
   idtac "Input:";

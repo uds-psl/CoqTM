@@ -25,7 +25,7 @@ Section CaseFin.
   Proof.
     eapply RealiseIn_monotone.
     { unfold CaseFin. TM_Correct. }
-    { Unshelve. 4,8:reflexivity. all:omega. }
+    { Unshelve. 4,8:reflexivity. all:lia. }
     {
       intros tin (yout, tout) H. intros x HEncX.
       destruct HEncX as (ls&HEncX).

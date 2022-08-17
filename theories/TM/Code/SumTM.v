@@ -158,14 +158,14 @@ Section MapSum.
       destruct s as [x|y]; cbn in *.
       { (* s = inl x *)
         exists (CaseSum_steps), (3 + Translate_steps _ x + M1_steps x + Translate_steps _ x + Constr_inl_steps).
-        repeat split; try omega.
+        repeat split; try lia.
         intros tmid b (HCaseSum&HCaseSumInj). specialize (HCaseSum (inl x)). modpon HCaseSum. destruct b; auto. simpl_surject.
         exists (Translate_steps _ x), (2 + M1_steps x + Translate_steps _ x + Constr_inl_steps).
-        repeat split; try omega.
+        repeat split; try lia.
         { hnf. cbn. exists x. split; auto. contains_ext. }
         intros tmid2 () (HTranslate1&HTranslateInj1). modpon HTranslate1.
         exists (M1_steps x), (1 + Translate_steps _ x + Constr_inl_steps).
-        repeat split; try omega.
+        repeat split; try lia.
         { exists x. repeat split; auto.
           - contains_ext.
           - now rewrite HTranslateInj1, HCaseSumInj by vector_not_in.
@@ -175,21 +175,19 @@ Section MapSum.
         { now rewrite HTranslateInj1, HCaseSumInj by vector_not_in. }
         { intros i. now rewrite HTranslateInj1, HCaseSumInj by vector_not_in. }
         exists (Translate_steps _ x), (Constr_inl_steps).
-        repeat split; try omega.
+        repeat split; try lia.
         { hnf. cbn. exists x. repeat split; eauto. contains_ext. }
-        intros tmid4 () (HTranslate2&HTranslateInj2). modpon HTranslate2.
-        reflexivity.
       }
       { (* s = inl y, completely symmetric *)
         exists (CaseSum_steps), (3 + Translate_steps _ y + M2_steps y + Translate_steps _ y + Constr_inr_steps).
-        repeat split; try omega.
+        repeat split; try lia.
         intros tmid b (HCaseSum&HCaseSumInj). specialize (HCaseSum (inr y)). modpon HCaseSum. destruct b; auto. simpl_surject.
         exists (Translate_steps _ y), (2 + M2_steps y + Translate_steps _ y + Constr_inr_steps).
-        repeat split; try omega.
+        repeat split; try lia.
         { hnf. cbn. exists y. split; auto. contains_ext. }
         intros tmid2 () (HTranslate1&HTranslateInj1). modpon HTranslate1.
         exists (M2_steps y), (1 + Translate_steps _ y + Constr_inr_steps).
-        repeat split; try omega.
+        repeat split; try lia.
         { exists y. repeat split; auto.
           - contains_ext.
           - now rewrite HTranslateInj1, HCaseSumInj by vector_not_in.
@@ -199,7 +197,7 @@ Section MapSum.
         { now rewrite HTranslateInj1, HCaseSumInj by vector_not_in. }
         { intros i. now rewrite HTranslateInj1, HCaseSumInj by vector_not_in. }
         exists (Translate_steps _ y), (Constr_inr_steps).
-        repeat split; try omega.
+        repeat split; try lia.
         { hnf. cbn. exists y. repeat split; eauto. contains_ext. }
         intros tmid4 () (HTranslate2&HTranslateInj2). modpon HTranslate2.
         reflexivity.

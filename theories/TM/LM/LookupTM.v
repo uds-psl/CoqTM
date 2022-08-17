@@ -224,45 +224,45 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
     {
       intros tin k. cbn. intros (H&a&n&HEncH&HEncA&HEncN&HRight3&HRight4&Hk). unfold Lookup_Step_steps in Hk.
       exists (Nth'_steps _ H a), (Lookup_Step_steps_Nth' H a n).
-      repeat split; try omega.
+      repeat split; try lia.
       { hnf; cbn; eauto 7. }
       unfold Lookup_Step_steps_Nth' in *.
       intros tmid b (HNth&HNthInj); TMSimp. modpon HNth. destruct b; modpon HNth.
       { (* nth_error H a = Some e *) destruct HNth as (e&HNth); modpon HNth. rewrite HNth in *.
         exists (CaseOption_steps), (Lookup_Step_steps_CaseOption n e).
-        repeat split; try omega. unfold Lookup_Step_steps_CaseOption in *.
+        repeat split; try lia. unfold Lookup_Step_steps_CaseOption in *.
         intros tmid0 b (HCaseOption&HCaseOptionInj); TMSimp. modpon HCaseOption. destruct b; auto.
         { (* e = Some e', where e' = (g,b) *) destruct e as [ e' | ]; auto; simpl_surject.
           destruct e' as [g b] eqn:Ee'.
           exists (CasePair_steps _ g), (1 + CaseNat_steps + Lookup_Step_steps_CaseNat n e'); subst.
-          repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+          repeat split; try lia. 2: now rewrite !Nat.add_assoc.
           { hnf; cbn. exists (g,b). repeat split; simpl_surject; eauto. contains_ext. }
           intros tmid1 () (HCasePair&HCasePairInj). specialize (HCasePair (g,b)); modpon HCasePair.
           exists (CaseNat_steps), (Lookup_Step_steps_CaseNat n (g,b)).
-          repeat split; try omega.
+          repeat split; try lia.
           intros tmid2 bif (HCaseNat&HCaseNatInj); TMSimp. modpon HCaseNat. destruct bif, n as [ | n']; auto; simpl_surject.
           { (* n = S n' *)
             exists (CopyValue_steps _ b), (1 + Translate_steps _ b + 1 + Reset_steps _ b + Reset_steps _ g).
-            repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+            repeat split; try lia. 2: now rewrite !Nat.add_assoc.
             { eexists; repeat split; eauto. contains_ext. now setoid_rewrite CopyValue_steps_comp. }
             intros tmid3 () (HCopyValue&HCopyValueInj); TMSimp. modpon HCopyValue.
             exists (Translate_steps _ b), (1 + Reset_steps _ b + Reset_steps _ g).
-            repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+            repeat split; try lia. 2: now rewrite !Nat.add_assoc.
             { hnf; cbn. eauto. }
             intros tmid4 () (HTranslate&HTranslateInj); TMSimp. modpon HTranslate.
             exists (Reset_steps _ b), (Reset_steps _ g).
-            repeat split; try omega. 2: reflexivity.
+            repeat split; try lia. 2: reflexivity.
             { hnf; cbn. eexists; repeat split; eauto. now setoid_rewrite Reset_steps_comp. }
             intros tmid5 () (HReset&HResetInj); TMSimp. modpon HReset.
             { hnf; cbn. eexists; repeat split; eauto. contains_ext. now setoid_rewrite Reset_steps_comp. }
           }
           { (* n = 0 *)
             exists (Reset_steps _ b), (1 + Reset_steps _ 0 + Translate_steps _ g).
-            repeat split; try omega. 2: now rewrite !Nat.add_assoc.
+            repeat split; try lia. 2: now rewrite !Nat.add_assoc.
             { eexists; split; eauto. contains_ext. now setoid_rewrite Reset_steps_comp. }
             intros tmid3 () (HReset&HResetInj); TMSimp. modpon HReset.
             exists (Reset_steps _ 0), (Translate_steps _ g).
-            repeat split; try omega. 2: reflexivity.
+            repeat split; try lia. 2: reflexivity.
             { eexists; split; eauto. }
             intros tmid4 () (HReset'&HResetInj'); TMSimp. modpon HReset'.
             { hnf; cbn. eexists; split; eauto. contains_ext. }
@@ -350,7 +350,7 @@ There are (more than) three possible ways how to encode [nat] on the [Heap] alph
       - intros ymid tmid HStep. cbn in *. modpon HStep. destruct ymid as [ [ | ] | ], n as [ | n']; cbn in *; auto.
         + destruct HStep as (g&b&HStep); modpon HStep. rewrite HStep in Hk. auto.
         + destruct (nth_error Heap a) as [ [ (g&b) | ] | ] eqn:E; auto.
-        + destruct (nth_error Heap a) as [ [ (g&b) | ] | ] eqn:E; auto. omega.
+        + destruct (nth_error Heap a) as [ [ (g&b) | ] | ] eqn:E; auto. lia.
         + destruct HStep as (g&b&HStep); modpon HStep. rewrite HStep in Hk.
           eexists; repeat split; eauto. hnf. do 3 eexists; repeat split; eauto.
     }

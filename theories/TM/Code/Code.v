@@ -10,7 +10,7 @@ Class codable (sig: Type) (X: Type) := {
 }.
 Arguments encode {sig} {X} {_}.
 
-Hint Extern 4 (codable (FinType(EqType ?sigX)) ?X) => cbn : typeclass_instances.
+#[export] Hint Extern 4 (codable (FinType(EqType ?sigX)) ?X) => cbn : typeclass_instances.
 
 (** We often use the above coercion to write [cX x] instead of [encode x], because [encode x] can be ambigious, see [Encode_map] *)
 Coercion encode : codable >-> Funclass.
@@ -20,7 +20,7 @@ Arguments size {sig X} (cX x).
 
 
 
-Instance Encode_unit : codable Empty_set unit :=
+#[export] Instance Encode_unit : codable Empty_set unit :=
   {|
     encode x := nil
   |}.
@@ -30,7 +30,7 @@ Lemma Encode_unit_hasSize t :
 Proof. cbn. reflexivity. Qed.
 
 
-Instance Encode_bool : codable bool bool:=
+#[export] Instance Encode_bool : codable bool bool:=
   {|
     encode x := [x]
   |}.
@@ -39,7 +39,7 @@ Lemma Encode_bool_hasSize b :
   size Encode_bool b = 1.
 Proof. cbn. reflexivity. Qed.
 
-Instance Encode_Fin n : codable (Fin.t n) (Fin.t n):=
+#[export] Instance Encode_Fin n : codable (Fin.t n) (Fin.t n):=
   {|
     encode i := [i]
   |}.
@@ -190,14 +190,14 @@ Section Encode_sum.
     split with (enum := sigSum_inl :: sigSum_inr :: map sigSum_X enum ++ map sigSum_Y enum). intros [x|y| | ]; cbn; f_equal.
     - rewrite <- !countSplit.
       erewrite countMap_injective.
-      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + rewrite enum_ok. rewrite countMap_zero. lia. congruence.
       + eapply (retract_f_injective) with (I := Retract_sigSum_X sigY (Retract_id _)).
     - rewrite <- !countSplit.
       erewrite countMap_injective.
-      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + rewrite enum_ok. rewrite countMap_zero. lia. congruence.
       + eapply (retract_f_injective) with (I := Retract_sigSum_Y sigX (Retract_id _)).
-    - rewrite <- !countSplit. rewrite !countMap_zero. omega. all: congruence.
-    - rewrite <- !countSplit. rewrite !countMap_zero. omega. all: congruence.
+    - rewrite <- !countSplit. rewrite !countMap_zero. lia. all: congruence.
+    - rewrite <- !countSplit. rewrite !countMap_zero. lia. all: congruence.
   Qed.
 
   
@@ -225,9 +225,14 @@ Section Encode_sum.
 
 End Encode_sum.
 
-Arguments sigSum_inl {sigX sigY}. Arguments sigSum_inr {sigX sigY}. Arguments sigSum_X {sigX sigY}. Arguments sigSum_Y {sigX sigY}.
-Hint Extern 4 (finTypeC (EqType (sigSum _ _))) => eapply sigSum_fin : typeclass_instances.
-Check FinType (EqType (sigSum bool bool)).
+Arguments sigSum_inl {sigX sigY}.
+Arguments sigSum_inr {sigX sigY}.
+Arguments sigSum_X {sigX sigY}.
+Arguments sigSum_Y {sigX sigY}.
+
+#[export] Hint Extern 4 (finTypeC (EqType (sigSum _ _))) => eapply sigSum_fin : typeclass_instances.
+
+(* Check FinType (EqType (sigSum bool bool)). *)
 
 
 
@@ -255,11 +260,11 @@ Section Encode_pair.
     split with (enum := map sigPair_X enum ++ map sigPair_Y enum). intros [x|y]; cbn; f_equal.
     - rewrite <- !countSplit.
       erewrite countMap_injective.
-      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + rewrite enum_ok. rewrite countMap_zero. lia. congruence.
       + eapply (retract_f_injective) with (I := Retract_sigPair_X sigY (Retract_id _)).
     - rewrite <- !countSplit.
       erewrite countMap_injective.
-      + rewrite enum_ok. rewrite countMap_zero. omega. congruence.
+      + rewrite enum_ok. rewrite countMap_zero. lia. congruence.
       + eapply (retract_f_injective) with (I := Retract_sigPair_Y sigX (Retract_id _)).
   Qed.
 
@@ -279,13 +284,13 @@ End Encode_pair.
 
 Arguments sigPair_X {sigX sigY}. Arguments sigPair_Y {sigX sigY}.
 
-Hint Extern 4 (finTypeC (EqType (sigPair _ _))) => eapply sigPair_fin : typeclass_instances.
-Check FinType (EqType (sigPair bool bool)).
+#[export] Hint Extern 4 (finTypeC (EqType (sigPair _ _))) => eapply sigPair_fin : typeclass_instances.
+(* Check FinType (EqType (sigPair bool bool)). *)
 
 
 Compute Encode_pair Encode_bool (Encode_sum Encode_unit Encode_bool) (true, inl tt).
 
-Check _ : codable (sigPair bool (sigSum Empty_set bool)) unit.
+(* Check _ : codable (sigPair bool (sigSum Empty_set bool)) unit. *)
 
 
 
@@ -312,8 +317,8 @@ Section Encode_option.
     intros [x| | ]; cbn; f_equal.
     - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigOption_X (Retract_id _)).
       now apply enum_ok.
-    - rewrite countMap_zero. omega. congruence.
-    - rewrite countMap_zero. omega. congruence.
+    - rewrite countMap_zero. lia. congruence.
+    - rewrite countMap_zero. lia. congruence.
   Qed.
 
 
@@ -341,8 +346,8 @@ End Encode_option.
 Arguments sigOption_Some {sigX}. Arguments sigOption_None {sigX}. Arguments sigOption_X {sigX}.
 
 
-Hint Extern 4 (finTypeC (EqType (sigOption _))) => eapply sigOption_fin : typeclass_instances.
-Check FinType (EqType (sigOption bool)).
+#[export] Hint Extern 4 (finTypeC (EqType (sigOption _))) => eapply sigOption_fin : typeclass_instances.
+(* Check FinType (EqType (sigOption bool)). *)
 
 
 Compute Encode_option Encode_bool None.
@@ -372,8 +377,8 @@ Section Encode_list.
     intros [x| | ]; cbn; f_equal.
     - rewrite countMap_injective. 2: apply retract_f_injective with (I := Retract_sigList_X (Retract_id _)).
       now apply enum_ok.
-    - rewrite countMap_zero. omega. congruence.
-    - rewrite countMap_zero. omega. congruence.
+    - rewrite countMap_zero. lia. congruence.
+    - rewrite countMap_zero. lia. congruence.
   Qed.
 
 
@@ -434,8 +439,8 @@ End Encode_list.
 
 Arguments sigList_nil {sigX}. Arguments sigList_cons {sigX}. Arguments sigList_X {sigX}.
 
-Hint Extern 4 (finTypeC (EqType (sigList _))) => eapply sigList_fin : typeclass_instances.
-Check FinType(EqType (sigList bool)).
+#[export] Hint Extern 4 (finTypeC (EqType (sigList _))) => eapply sigList_fin : typeclass_instances.
+(* Check FinType(EqType (sigList bool)). *)
 
 
 Compute Encode_list Encode_bool (nil).
@@ -463,15 +468,15 @@ Section Encode_nat.
 
 
   Lemma Encode_nat_hasSize n : size _ n = S n.
-  Proof. cbn. rewrite app_length, repeat_length. cbn. omega. Qed.
+  Proof. cbn. rewrite app_length, repeat_length. cbn. lia. Qed.
   
   Corollary Encode_nat_eq_nil n :
     Encode_nat n <> nil.
-  Proof. intros H % length_zero_iff_nil. fold (size _ n) in H. rewrite Encode_nat_hasSize in H. omega. Qed.
+  Proof. intros H % length_zero_iff_nil. fold (size _ n) in H. rewrite Encode_nat_hasSize in H. lia. Qed.
 
 End Encode_nat.
 
-Check FinType(EqType sigNat).
+(* Check FinType(EqType sigNat). *)
 
 
 
