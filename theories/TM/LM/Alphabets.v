@@ -14,15 +14,15 @@ Coercion ACom2Com (a : ACom) : Com :=
   end.
 
 
-Instance ACom_eq_dec : eq_dec ACom.
+#[export] Instance ACom_eq_dec : eq_dec ACom.
 Proof. intros x y; hnf. decide equality. Defined.
 
-Instance ACom_finType : finTypeC (EqType ACom).
+#[export] Instance ACom_finType : finTypeC (EqType ACom).
 Proof. split with (enum := [retAT; lamAT; appAT]). intros [ | | ]; cbn; reflexivity. Defined.
 
-Instance ACom_inhab : inhabitedC ACom := ltac:(repeat constructor).
+#[export] Instance ACom_inhab : inhabitedC ACom := ltac:(repeat constructor).
 
-Instance Encode_ACom : codable ACom ACom := Encode_Finite (FinType(EqType ACom)).
+#[export] Instance Encode_ACom : codable ACom ACom := Encode_Finite (FinType(EqType ACom)).
 
 
 Coercion Com_to_sum (t : Com) : (nat + ACom) :=
@@ -36,7 +36,7 @@ Coercion Com_to_sum (t : Com) : (nat + ACom) :=
 Definition sigCom := sigSum sigNat ACom.
 Definition sigCom_fin := FinType (EqType sigCom).
 
-Instance Encode_Com : codable sigCom Com :=
+#[export] Instance Encode_Com : codable sigCom Com :=
   {|
     encode x := encode (Com_to_sum x)
   |}.
@@ -53,21 +53,21 @@ Definition sigHAdd := sigNat.
 Definition sigHAdd_fin := FinType(EqType sigHAdd).
 
 Definition sigPro := sigList sigCom.
-Instance Encode_Prog : codable sigPro Pro := _.
+#[export] Instance Encode_Prog : codable sigPro Pro := _.
 Definition sigPro_fin := FinType(EqType sigPro).
 
 Definition sigHClos := sigPair sigHAdd sigPro.
 Definition sigHClos_fin := FinType(EqType sigHClos).
-Instance Encode_HClos : codable sigHClos HClos := _.
+#[export] Instance Encode_HClos : codable sigHClos HClos := _.
 
 Definition sigHEntr' := sigPair sigHClos sigHAdd.
-Instance Encode_HEntr' : codable (sigHEntr') (HClos*HAdd) := _.
+#[export] Instance Encode_HEntr' : codable (sigHEntr') (HClos*HAdd) := _.
 Definition sigHEntr'_fin := FinType(EqType sigHEntr').
 
 Definition sigHEntr := sigOption sigHEntr'.
-Instance Encode_HEntr : codable (sigHEntr) HEntr := _.
+#[export] Instance Encode_HEntr : codable (sigHEntr) HEntr := _.
 Definition sigHEntr_fin := FinType(EqType sigHEntr).
 
 Definition sigHeap := sigList sigHEntr.
-Instance Encode_Heap : codable (sigHeap) Heap := _.
+#[export] Instance Encode_Heap : codable (sigHeap) Heap := _.
 Definition sigHeap_fin := FinType(EqType sigHeap).

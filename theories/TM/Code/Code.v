@@ -10,7 +10,7 @@ Class codable (sig: Type) (X: Type) := {
 }.
 Arguments encode {sig} {X} {_}.
 
-Hint Extern 4 (codable (FinType(EqType ?sigX)) ?X) => cbn : typeclass_instances.
+#[export] Hint Extern 4 (codable (FinType(EqType ?sigX)) ?X) => cbn : typeclass_instances.
 
 (** We often use the above coercion to write [cX x] instead of [encode x], because [encode x] can be ambigious, see [Encode_map] *)
 Coercion encode : codable >-> Funclass.
@@ -20,7 +20,7 @@ Arguments size {sig X} (cX x).
 
 
 
-Instance Encode_unit : codable Empty_set unit :=
+#[export] Instance Encode_unit : codable Empty_set unit :=
   {|
     encode x := nil
   |}.
@@ -30,7 +30,7 @@ Lemma Encode_unit_hasSize t :
 Proof. cbn. reflexivity. Qed.
 
 
-Instance Encode_bool : codable bool bool:=
+#[export] Instance Encode_bool : codable bool bool:=
   {|
     encode x := [x]
   |}.
@@ -39,7 +39,7 @@ Lemma Encode_bool_hasSize b :
   size Encode_bool b = 1.
 Proof. cbn. reflexivity. Qed.
 
-Instance Encode_Fin n : codable (Fin.t n) (Fin.t n):=
+#[export] Instance Encode_Fin n : codable (Fin.t n) (Fin.t n):=
   {|
     encode i := [i]
   |}.
@@ -225,9 +225,14 @@ Section Encode_sum.
 
 End Encode_sum.
 
-Arguments sigSum_inl {sigX sigY}. Arguments sigSum_inr {sigX sigY}. Arguments sigSum_X {sigX sigY}. Arguments sigSum_Y {sigX sigY}.
-Hint Extern 4 (finTypeC (EqType (sigSum _ _))) => eapply sigSum_fin : typeclass_instances.
-Check FinType (EqType (sigSum bool bool)).
+Arguments sigSum_inl {sigX sigY}.
+Arguments sigSum_inr {sigX sigY}.
+Arguments sigSum_X {sigX sigY}.
+Arguments sigSum_Y {sigX sigY}.
+
+#[export] Hint Extern 4 (finTypeC (EqType (sigSum _ _))) => eapply sigSum_fin : typeclass_instances.
+
+(* Check FinType (EqType (sigSum bool bool)). *)
 
 
 
@@ -279,13 +284,13 @@ End Encode_pair.
 
 Arguments sigPair_X {sigX sigY}. Arguments sigPair_Y {sigX sigY}.
 
-Hint Extern 4 (finTypeC (EqType (sigPair _ _))) => eapply sigPair_fin : typeclass_instances.
-Check FinType (EqType (sigPair bool bool)).
+#[export] Hint Extern 4 (finTypeC (EqType (sigPair _ _))) => eapply sigPair_fin : typeclass_instances.
+(* Check FinType (EqType (sigPair bool bool)). *)
 
 
 Compute Encode_pair Encode_bool (Encode_sum Encode_unit Encode_bool) (true, inl tt).
 
-Check _ : codable (sigPair bool (sigSum Empty_set bool)) unit.
+(* Check _ : codable (sigPair bool (sigSum Empty_set bool)) unit. *)
 
 
 
@@ -341,8 +346,8 @@ End Encode_option.
 Arguments sigOption_Some {sigX}. Arguments sigOption_None {sigX}. Arguments sigOption_X {sigX}.
 
 
-Hint Extern 4 (finTypeC (EqType (sigOption _))) => eapply sigOption_fin : typeclass_instances.
-Check FinType (EqType (sigOption bool)).
+#[export] Hint Extern 4 (finTypeC (EqType (sigOption _))) => eapply sigOption_fin : typeclass_instances.
+(* Check FinType (EqType (sigOption bool)). *)
 
 
 Compute Encode_option Encode_bool None.
@@ -434,8 +439,8 @@ End Encode_list.
 
 Arguments sigList_nil {sigX}. Arguments sigList_cons {sigX}. Arguments sigList_X {sigX}.
 
-Hint Extern 4 (finTypeC (EqType (sigList _))) => eapply sigList_fin : typeclass_instances.
-Check FinType(EqType (sigList bool)).
+#[export] Hint Extern 4 (finTypeC (EqType (sigList _))) => eapply sigList_fin : typeclass_instances.
+(* Check FinType(EqType (sigList bool)). *)
 
 
 Compute Encode_list Encode_bool (nil).
@@ -471,7 +476,7 @@ Section Encode_nat.
 
 End Encode_nat.
 
-Check FinType(EqType sigNat).
+(* Check FinType(EqType sigNat). *)
 
 
 

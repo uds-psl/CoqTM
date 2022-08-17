@@ -229,14 +229,14 @@ Tactic Notation "simpl_vector" "in" "*" :=
   simpl_vector.
 
 
-Hint Rewrite tapeToList_move : tape.
-Hint Rewrite tapeToList_move_R : tape.
-Hint Rewrite tapeToList_move_L : tape.
-Hint Rewrite tape_move_right_left using eauto : tape.
-Hint Rewrite tape_move_left_right using eauto : tape.
+#[export] Hint Rewrite tapeToList_move : tape.
+#[export] Hint Rewrite tapeToList_move_R : tape.
+#[export] Hint Rewrite tapeToList_move_L : tape.
+#[export] Hint Rewrite tape_move_right_left using eauto : tape.
+#[export] Hint Rewrite tape_move_left_right using eauto : tape.
 
 Arguments current_chars : simpl never.
-Hint Unfold current_chars : tape.
+#[export] Hint Unfold current_chars : tape.
 
 
 
@@ -248,10 +248,10 @@ Lemma nth_map2' (A B C : Type) (f : A -> B -> C) (n : nat) (v1 : Vector.t A n) (
   (VectorDef.map2 f v1 v2)[@k] = f v1[@k] v2[@k].
 Proof. erewrite VectorSpec.nth_map2; eauto. Qed.
 
-Hint Rewrite @nth_map' : vector.
-Hint Rewrite @nth_map2' : vector.
-Hint Rewrite @nth_tabulate : vector.
-Hint Rewrite VectorSpec.const_nth : vector.
+#[export] Hint Rewrite @nth_map' : vector.
+#[export] Hint Rewrite @nth_map2' : vector.
+#[export] Hint Rewrite @nth_tabulate : vector.
+#[export] Hint Rewrite VectorSpec.const_nth : vector.
 
 
 
@@ -394,16 +394,16 @@ Section MirrorTape.
 End MirrorTape.
 
 Arguments mirror_tapes : simpl never.
-Hint Unfold mirror_tapes : tape.
+#[export] Hint Unfold mirror_tapes : tape.
 
-Hint Rewrite mirror_tape_left : tape.
-Hint Rewrite mirror_tape_right : tape.
-Hint Rewrite mirror_tape_current : tape.
-Hint Rewrite mirror_tape_involution : tape.
-Hint Rewrite mirror_tape_move_left : tape.
-Hint Rewrite mirror_tape_move_right : tape.
-Hint Rewrite mirror_tapes_involution : tape.
-Hint Rewrite mirror_tapes_nth : tape.
+#[export] Hint Rewrite mirror_tape_left : tape.
+#[export] Hint Rewrite mirror_tape_right : tape.
+#[export] Hint Rewrite mirror_tape_current : tape.
+#[export] Hint Rewrite mirror_tape_involution : tape.
+#[export] Hint Rewrite mirror_tape_move_left : tape.
+#[export] Hint Rewrite mirror_tape_move_right : tape.
+#[export] Hint Rewrite mirror_tapes_involution : tape.
+#[export] Hint Rewrite mirror_tapes_nth : tape.
 
 
 
@@ -527,14 +527,14 @@ Section Tape_Local.
 
 End Tape_Local.
 
-Hint Rewrite tape_local_mirror  : tape.
-Hint Rewrite tape_local_mirror' : tape.
-Hint Rewrite tape_local_current_cons using auto : tape.
-Hint Rewrite tape_local_l_current_cons using auto : tape.
-Hint Rewrite tape_local_right        using auto : tape.
-Hint Rewrite tape_local_l_left        using auto : tape.
-Hint Rewrite tape_left_move_right    using auto : tape.
-Hint Rewrite tape_right_move_left    using auto : tape.
+#[export] Hint Rewrite tape_local_mirror  : tape.
+#[export] Hint Rewrite tape_local_mirror' : tape.
+#[export] Hint Rewrite tape_local_current_cons using auto : tape.
+#[export] Hint Rewrite tape_local_l_current_cons using auto : tape.
+#[export] Hint Rewrite tape_local_right        using auto : tape.
+#[export] Hint Rewrite tape_local_l_left        using auto : tape.
+#[export] Hint Rewrite tape_left_move_right    using auto : tape.
+#[export] Hint Rewrite tape_right_move_left    using auto : tape.
 
 
 (** ** Mapping tapes *)
@@ -614,13 +614,13 @@ End MapTape.
 
 (** Rewriting Hints *)
 
-Hint Rewrite mapTape_current    : tape.
-Hint Rewrite mapTape_left       : tape.
-Hint Rewrite mapTape_right      : tape.
-Hint Rewrite mapTape_move_left  : tape.
-Hint Rewrite mapTape_move_right : tape.
+#[export] Hint Rewrite mapTape_current    : tape.
+#[export] Hint Rewrite mapTape_left       : tape.
+#[export] Hint Rewrite mapTape_right      : tape.
+#[export] Hint Rewrite mapTape_move_left  : tape.
+#[export] Hint Rewrite mapTape_move_right : tape.
 (* Hint Rewrite mapTapes_nth       : tape. *)
-Hint Unfold mapTapes : tape.
+#[export] Hint Unfold mapTapes : tape.
 
 
 Lemma mapTape_mapTape (sig tau gamma : Type) (f : sig -> tau) (g : tau -> gamma) (t : tape sig) :
@@ -634,14 +634,14 @@ Proof. intros H. destruct t; cbn; auto; simpl_tape; rewrite H; f_equal; eapply m
 Lemma mapTape_id (sig : Type) (t : tape sig) :
   mapTape (fun x => x) t = t.
 Proof. destruct t; cbn; auto; f_equal; apply map_id. Qed.
-Hint Rewrite mapTape_mapTape : tape.
-Hint Rewrite mapTape_id : tape.
+#[export] Hint Rewrite mapTape_mapTape : tape.
+#[export] Hint Rewrite mapTape_id : tape.
 
 
 Lemma mapTape_local (sig tau : Type) (f : sig -> tau) t :
   tape_local (mapTape f t) = List.map f (tape_local t).
 Proof. destruct t; cbn; reflexivity. Qed.
-Hint Rewrite mapTape_local : tape.
+#[export] Hint Rewrite mapTape_local : tape.
 
 
 
@@ -684,14 +684,14 @@ Section MatchTapes.
 
 End MatchTapes.
 
-Hint Rewrite tape_right_move_left' : tape.
-Hint Rewrite tape_left_move_right' : tape.
-Hint Rewrite tape_right_move_right' : tape.
-Hint Rewrite tape_left_move_left' : tape.
-Hint Rewrite tape_local_move_right' : tape.
-Hint Rewrite tape_local_l_move_left' : tape.
-Hint Rewrite mirror_tape_move_left' : tape.
-Hint Rewrite mirror_tape_move_right' : tape.
+#[export] Hint Rewrite tape_right_move_left' : tape.
+#[export] Hint Rewrite tape_left_move_right' : tape.
+#[export] Hint Rewrite tape_right_move_right' : tape.
+#[export] Hint Rewrite tape_left_move_left' : tape.
+#[export] Hint Rewrite tape_local_move_right' : tape.
+#[export] Hint Rewrite tape_local_l_move_left' : tape.
+#[export] Hint Rewrite mirror_tape_move_left' : tape.
+#[export] Hint Rewrite mirror_tape_move_right' : tape.
 
 
 
@@ -826,7 +826,7 @@ Section Semantics.
       split.
       + intros t i cout Hc.
         destruct (H t) as (? & ? & ?).
-        cutrewrite (cout = x).
+        replace cout with x.
         eassumption.
         unfold loopM in *.
         eapply loop_injective; eauto.

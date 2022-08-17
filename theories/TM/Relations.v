@@ -46,7 +46,7 @@ Definition functional X Z (R : Rel X Z) :=
 Definition subrel X Y (R S: Rel X Y) := (forall x y, R x y -> S x y).
 Notation "R1 <<=2 R2" := (subrel R1 R2) (at level 60).
 
-Instance eqrel_pre X Y : PreOrder (subrel (X := X) (Y := Y)).
+#[export] Instance eqrel_pre X Y : PreOrder (subrel (X := X) (Y := Y)).
 Proof. constructor; firstorder. Qed.
 
 Fact subrel_and X Y (R1 R2 R3 : Rel X Y) :
@@ -69,7 +69,7 @@ Definition eqrel X Y (R S: Rel X Y) := (R <<=2 S /\ S <<=2 R) .
 
 Notation "R '=2' S"  := (eqrel R S) (at level 70).
 
-Instance eqrel_eq X Y : Equivalence (eqrel (X := X) (Y := Y)).
+#[export] Instance eqrel_eq X Y : Equivalence (eqrel (X := X) (Y := Y)).
 Proof. constructor; firstorder. Qed.
 
 (** ** Relational operators on labelled relations *)

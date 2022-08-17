@@ -63,11 +63,11 @@ Inductive boundary : Type :=
 | UNKNOWN : boundary.
 
 (** Declare discreteness of [boundary] *)
-Instance boundary_eq : eq_dec boundary.
+#[export] Instance boundary_eq : eq_dec boundary.
 Proof. unfold dec. decide equality. Defined.
 
 (** Declare finiteness of [boundary] *)
-Instance boundary_fin : finTypeC (EqType boundary).
+#[export] Instance boundary_fin : finTypeC (EqType boundary).
 Proof. split with (enum := [START; STOP; UNKNOWN]). cbn. intros []; cbn; reflexivity. Defined.
 
 
