@@ -1,5 +1,5 @@
 (** * Dupfree vector *)
-(* Author: Maximilian Wuttke *)
+(* Author: Maxi Wuttke *)
 
 Require Import Shared.Prelim.
 Require Import Shared.Tactics.Tactics.

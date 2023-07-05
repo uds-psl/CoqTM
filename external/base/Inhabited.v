@@ -1,6 +1,6 @@
 (** * Inhabited types *)
 
-(* Author: Maximilian Wuttke *)
+(* Author: Maxi Wuttke *)
 
 
 Require Shared.Prelim.

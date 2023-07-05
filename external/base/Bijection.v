@@ -1,6 +1,6 @@
 (** * Bijective functions *)
 
-(* Author: Maximilian Wuttke *)
+(* Author: Maxi Wuttke *)
 
 
 Require Import Shared.Base.

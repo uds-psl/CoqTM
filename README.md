@@ -1,7 +1,7 @@
 # Verified Programming of Turing Machines in Coq
 
 
-Maximilian Wuttke's Bachelor's Thesis at the [Programming Sytems Lab](http://www.ps.uni-saarland.de/) at [Saarland University](https://www.uni-saarland.de/en/home.html).
+Maxi Wuttke's Bachelor's Thesis at the [Programming Sytems Lab](http://www.ps.uni-saarland.de/) at [Saarland University](https://www.uni-saarland.de/en/home.html).
 
 The project's home page is [here](https://www.ps.uni-saarland.de/~wuttke/bachelor.php).
 The online CoqDoc can be found [here](https://www.ps.uni-saarland.de/~wuttke/bachelor/coqdoc/toc.html).
@@ -60,6 +60,6 @@ It can be downloaded from [here](https://www.ps.uni-saarland.de/~wuttke/bachelor
 
 ## License
 
-The source code is Copyright(c) 2017-2018 Maximilian Wuttke. It is licensed under the [MIT License](LICENSE).
+The source code is Copyright(c) 2017-2018 Maxi Wuttke. It is licensed under the [MIT License](LICENSE).
 
-All other files (including the thesis and its source code, but excluding the external libraries) are Copyright(c) 2017-2018 Maximilian Wuttke.
+All other files (including the thesis and its source code, but excluding the external libraries) are Copyright(c) 2017-2018 Maxi Wuttke.

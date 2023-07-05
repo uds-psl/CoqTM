@@ -1,5 +1,5 @@
 (** * Addendum for Vectors ([Vector.t]) *)
-(* Author: Maximilian Wuttke *)
+(* Author: Maxi Wuttke *)
 
 
 Require Import Shared.Prelim Shared.Tactics.Tactics Shared.EqDec.
