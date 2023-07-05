@@ -10,8 +10,8 @@ This library is based on the library for the lecture ["Introduction to Computati
 - Dominik Kirst
 - Yannick Forster
 - Fabian Kunze
-- Maximilian Wuttke
+- Maxi Wuttke
 
 ## Further contributions:
 - Jan Christian Menz: contributed modules for finite types (See his [Bachelor's Thesis](https://www.ps.uni-saarland.de/~menz/bachelor.php) "A Coq Library for Finite Types")
-- Maximilian Wuttke: contributed modules for vectors, retracts, and inhabited types
+- Maxi Wuttke: contributed modules for vectors, retracts, and inhabited types

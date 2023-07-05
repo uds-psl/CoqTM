@@ -1,6 +1,6 @@
 (** * Tactics for [Fin.t] *)
 
-(* Author: Maximilian Wuttke *)
+(* Author: Maxi Wuttke *)
 
 
 Require Import Shared.Base.
